@@ -514,6 +514,8 @@
 "activity.finished" = "Finished";
 "activity.cancelled" = "Cancelled";
 "activity.failed" = "Failed";
+"activity.waiting" = "Waiting";
+"activity.skipped" = "Skipped";
 "activity.remote" = "Remote";
 "activity.remote.help" = "Shows Remote Activities";
 "activity.repository" = "Repository";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "Pushed %@";
 "activity.titleFailed" = "%@ failed";
 "activity.titleCancelled" = "%@ cancelled";
+"activity.titleSkipped" = "%@ skipped";
+"queue.notRun" = "Not run: the repository changed while this operation was waiting.";
+"queue.cancelledAfterFailure" = "Cancelled because “%@” failed.";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";

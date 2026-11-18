@@ -472,12 +472,13 @@ extension OperationWiringTests {
         session.showSubmodule("missing")
         #expect(sidebar.deleteCommand == nil)
 
-        // 仓库正在写入时不删除
+        // 仓库正在写入时照样可以删除，确认后排进队列
         let location = try #require(session.repository)
-        #expect(RepositoryWriteLocks.shared.acquire(location))
-        defer { RepositoryWriteLocks.shared.release(location) }
+        let holder = RepositoryWrite(location: location, session: nil, title: "Hold")
+        #expect(RepositoryWriteQueue.shared.begin(holder))
+        defer { RepositoryWriteQueue.shared.finish(holder) }
 
-        #expect(press(["refs/heads/side"]) == nil)
+        #expect(press(["refs/heads/side"]) == "deleteBranches:side")
     }
 
     /// 以本地 origin/side 为期望值强推本地的 side，等写入结束；返回这次写入报告的失败，失败里保留 Git 的原文。

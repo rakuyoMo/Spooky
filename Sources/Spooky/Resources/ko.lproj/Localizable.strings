@@ -514,6 +514,8 @@
 "activity.finished" = "완료";
 "activity.cancelled" = "취소됨";
 "activity.failed" = "실패";
+"activity.waiting" = "대기 중";
+"activity.skipped" = "건너뜀";
 "activity.remote" = "원격";
 "activity.remote.help" = "원격 활동 보기";
 "activity.repository" = "저장소";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "%@에 푸시 완료";
 "activity.titleFailed" = "%@ (실패)";
 "activity.titleCancelled" = "%@ (취소됨)";
+"activity.titleSkipped" = "%@ (건너뜀)";
+"queue.notRun" = "실행되지 않음: 대기하는 동안 저장소가 변경되었습니다.";
+"queue.cancelledAfterFailure" = "“%@” 작업이 실패하여 취소되었습니다.";
 "dialog.options" = "옵션";
 "dialog.doNotAskAgain" = "다시 묻지 않음";
 "menu.repository" = "저장소";

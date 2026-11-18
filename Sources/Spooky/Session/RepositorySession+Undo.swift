@@ -49,8 +49,7 @@ extension RepositorySession {
         // 写操作与合并、变基等进行中的操作都要等它结束
         let operation = context?.operation
 
-        let busy = isWriting
-            || RepositoryWriteLocks.shared.contains(repository)
+        let busy = !RepositoryWriteQueue.shared.isIdle(repository)
             || (operation != nil && operation != aborted)
 
         if busy {

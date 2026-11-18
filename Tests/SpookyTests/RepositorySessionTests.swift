@@ -127,8 +127,8 @@ struct RepositorySessionTests {
         #expect(!session.isRefreshing)
     }
 
-    /// 用户取消后释放界面写锁，记录保留取消状态并允许重新刷新；退出时取消并等待写入结束，写锁随之释放，不遗留后台任务。
-    @Test("取消与退出结束写操作并释放写锁")
+    /// 用户取消后仓库回到空闲，记录保留取消状态并允许重新刷新；退出时取消并等待写入结束，仓库随之空闲，不遗留后台任务。
+    @Test("取消与退出结束写操作，仓库回到空闲")
     func cancelAndShutdown() async throws {
         let status = try snapshot("file")
         let session = RepositorySession(loadStatus: { _ in status }, activities: RepositoryActivities())
@@ -167,49 +167,8 @@ struct RepositorySessionTests {
         await session.shutdown()
 
         #expect(session.repository == nil && session.writeTask == nil)
-        #expect(!RepositoryWriteLocks.shared.contains(location))
+        #expect(RepositoryWriteQueue.shared.isIdle(location))
         #expect(session.activities.items.first { $0.title == "Fetch" }?.state == "activity.cancelled")
-    }
-
-    /// 同一仓库只允许一个明确的写操作：重复点击与另一个窗口都不能再启动写入，结束后统一恢复。
-    @Test("同一仓库同一时间只有一个写操作")
-    func singleWriter() async throws {
-        let status = try snapshot("file")
-        let location = RepositoryLocation.local(path: "/temporary/writer-" + UUID().uuidString)
-        let first = RepositorySession(loadStatus: { _ in status })
-        let second = RepositorySession(loadStatus: { _ in status })
-
-        first.display(location)
-        second.display(location)
-
-        defer {
-            first.close()
-            second.close()
-            RepositoryActivities.shared.items.removeAll { $0.repository == location }
-        }
-
-        var finished: [RepositoryLocation] = []
-        first.onWriteFinished = { finished.append($0) }
-
-        let (gate, release) = AsyncStream<Void>.makeStream()
-        let started = first.performGit({ _, _ in for await _ in gate { } }, title: "Push")
-
-        #expect(started)
-
-        // 重复点击与另一个窗口的同类写入都被拒绝，界面据此禁用入口。
-        let repeated = first.performGit({ _, _ in }, title: "Push")
-        let concurrent = second.performGit({ _, _ in }, title: "Push")
-
-        #expect(!repeated && !concurrent)
-        #expect(!second.canWrite)
-        #expect(RepositoryWriteLocks.shared.contains(location))
-
-        release.finish()
-        await first.writeTask?.value
-
-        #expect(first.canWrite && second.canWrite)
-        #expect(!RepositoryWriteLocks.shared.contains(location))
-        #expect(finished == [location])
     }
 
     /// 切换仓库保存视图状态，切回时恢复主视图、提交草稿与选中文件，重复显示同一仓库保留现状；
@@ -347,16 +306,5 @@ private actor ControlledStatusSource {
     /// 完成最早的读取请求。
     func complete(_ result: Result<WorkingCopyStatus, Error>) {
         pending.removeFirst().resume(with: result)
-    }
-}
-
-// MARK: - RepositorySession
-
-extension RepositorySession {
-    /// 等刷新全部结束：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后，只等当前的任务会读到旧状态。
-    func waitForRefresh() async {
-        while let task = refreshTask {
-            await task.value
-        }
     }
 }

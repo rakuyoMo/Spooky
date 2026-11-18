@@ -90,7 +90,7 @@ extension WorkingCopyFileList.Coordinator {
         let entry = node.entry
         let resolved = entry.map { $0.kind != .conflicted && renderResolved.contains($0.path) } ?? false
 
-        // 整个仓库被写操作占用时所有行一起变灰
+        // 改动工作区或索引的写操作执行期间所有行一起变灰
         let dimmed = renderState?.locked ?? false
             || entry.map { entry in
                 entry.kind == .ignored

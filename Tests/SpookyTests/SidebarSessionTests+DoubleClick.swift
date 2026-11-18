@@ -8,7 +8,7 @@ import TestSupport
 // MARK: - DoubleClick
 
 extension SidebarSessionTests {
-    /// 双击 HEAD 分支什么都不做；仓库正在写入时双击其它分支与标签响铃；在别的工作树检出的本地分支打开那个工作树；
+    /// 双击 HEAD 分支什么都不做；仓库正在写入时双击其它分支与标签不响铃，检出排进队列；在别的工作树检出的本地分支打开那个工作树；
     /// 远端分支有不跟踪它的同名本地分支时先询问，Continue 后只改上游并检出，本地提交不被重置，失败时按真实结果说明。
     @Test("双击 HEAD、不能检出、别的工作树与同名的远端分支")
     func doubleClickRules() async throws {
@@ -49,7 +49,7 @@ extension SidebarSessionTests {
         session.refresh()
         await settle(session)
 
-        try checkUnavailable(in: session, location: location)
+        try checkQueued(in: session, location: location)
         try await checkWorktreeRouting(in: session, worktree: parked)
         try await checkTrackingCheckout(in: session, runner: runner, parent: parent)
     }
@@ -58,8 +58,9 @@ extension SidebarSessionTests {
 // MARK: - Private
 
 extension SidebarSessionTests {
-    /// 仓库正在写入时，双击其它本地分支、远端分支与标签都响铃；双击 HEAD 分支不响铃，平时也不执行任何 Git。
-    private func checkUnavailable(in session: RepositorySession, location: RepositoryLocation) throws {
+    /// 仓库正在写入时，双击其它本地分支与标签不响铃，检出排进队列；双击 HEAD 分支不排队，任何时候都不执行 Git。
+    /// 排进队列的检出随后在队列里取消。
+    private func checkQueued(in session: RepositorySession, location: RepositoryLocation) throws {
         let references = session.history.snapshot?.references ?? []
         let main = try #require(references.first { $0.id == "refs/heads/main" })
 
@@ -67,19 +68,27 @@ extension SidebarSessionTests {
         #expect(session.writeTask == nil)
 
         // 另一个写操作占着仓库
-        #expect(RepositoryWriteLocks.shared.acquire(location))
-        defer { RepositoryWriteLocks.shared.release(location) }
+        let holder = RepositoryWrite(location: location, session: nil, title: "Hold")
+        #expect(RepositoryWriteQueue.shared.begin(holder))
+        defer { RepositoryWriteQueue.shared.finish(holder) }
 
-        var beeps: [String] = []
-        let ids = ["refs/heads/main", "refs/heads/other", "refs/remotes/origin/other", "refs/tags/v1"]
+        let ids = ["refs/heads/main", "refs/heads/other", "refs/tags/v1"]
 
         for id in ids {
             let reference = try #require(references.first { $0.id == id })
-            session.doubleClick(reference, in: .currentWindow) { beeps.append(id) }
+            session.doubleClick(reference, in: .currentWindow) { Issue.record("正在写入时不响铃：\(id)") }
         }
 
-        #expect(beeps == Array(ids.dropFirst()))
+        let waiting = session.activities.items.filter { $0.state == "activity.waiting" }
+
+        #expect(waiting.count == 2)
         #expect(session.writeTask == nil)
+
+        for record in waiting {
+            record.cancel?()
+        }
+
+        #expect(waiting.allSatisfy { $0.state == "activity.cancelled" })
     }
 
     /// 在别的工作树检出的本地分支：双击在本窗口打开那个工作树，按住 ⌘ 时在新标签页打开，不执行 Git。

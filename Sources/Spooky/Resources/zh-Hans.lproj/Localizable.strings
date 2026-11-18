@@ -514,6 +514,8 @@
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失败";
+"activity.waiting" = "等待中";
+"activity.skipped" = "已跳过";
 "activity.remote" = "远端";
 "activity.remote.help" = "显示远端活动";
 "activity.repository" = "仓库";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "已推送 %@";
 "activity.titleFailed" = "%@（失败）";
 "activity.titleCancelled" = "%@（已取消）";
+"activity.titleSkipped" = "%@（已跳过）";
+"queue.notRun" = "没有执行：等待期间仓库已经变了。";
+"queue.cancelledAfterFailure" = "“%@” 失败，已取消。";
 "dialog.options" = "选项";
 "dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";

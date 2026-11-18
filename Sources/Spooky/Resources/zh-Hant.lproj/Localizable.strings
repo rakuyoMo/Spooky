@@ -514,6 +514,8 @@
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失敗";
+"activity.waiting" = "等待中";
+"activity.skipped" = "已略過";
 "activity.remote" = "遠端";
 "activity.remote.help" = "顯示遠端活動";
 "activity.repository" = "儲存庫";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "已推送 %@";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（已取消）";
+"activity.titleSkipped" = "%@（已略過）";
+"queue.notRun" = "沒有執行：等待期間儲存庫已經變了。";
+"queue.cancelledAfterFailure" = "“%@” 失敗，已取消。";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";

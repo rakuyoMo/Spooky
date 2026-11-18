@@ -53,24 +53,34 @@ final class WriteActivity {
         didSet { current.cancel = cancel }
     }
 
-    /// 建立第一条记录并插进列表。
+    /// 建立第一条记录并插进列表；排过队的写操作接着用等待中的记录，从开始执行的时刻计时。
     ///
     /// - Parameters:
     ///   - activities: 记录所在的列表。
     ///   - repository: 写操作所在的仓库。
     ///   - title: 已本地化的操作名称。
     ///   - target: 连接的对象；不连接远端的写操作为 nil，记在 Repository 页。
+    ///   - waiting: 排队期间列出的等待中的记录；立即执行的写操作为 nil。
     init(
         activities: RepositoryActivities,
         repository: RepositoryLocation,
         title: String,
-        target: ActivityTarget?
+        target: ActivityTarget?,
+        waiting: RepositoryActivity? = nil
     ) {
         self.activities = activities
         self.repository = repository
         self.title = title
-        current = RepositoryActivity(repository: repository, title: title, target: target)
-        activities.insert(current)
+
+        guard let waiting else {
+            current = RepositoryActivity(repository: repository, title: title, target: target)
+            activities.insert(current)
+            return
+        }
+
+        waiting.state = "activity.running"
+        waiting.started = Date()
+        current = waiting
     }
 
     /// 按事件追加输出、换状态或另起一条记录。

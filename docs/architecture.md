@@ -46,12 +46,12 @@ Spooky 由两个 target 组成：
 | `RepositoryWindow/` | 仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放 |
 | `Navigation/` | 后退 / 前进记录、视图引用与窗口恢复 |
 | `QuickActions/` | 快捷操作面板 |
-| `Session/` | 仓库会话：状态与刷新、操作可用性、视图状态、文件监听与自动获取 |
+| `Session/` | 仓库会话：状态与刷新、操作可用性、仓库写队列、视图状态、文件监听与自动获取 |
 | `WorkingCopy/`、`Diff/`、`Text/` | 工作区与提交区、Diff、文本渲染与语法着色 |
 | `History/`、`FileViews/` | 历史与提交详情、文件历史、Blame 与原文 |
 | `Sidebar/`、`References/`、`BranchesReview/` | 侧边栏、分支 / 标签 / 远端的管理、分支整理 |
 | `Rewrite/`、`Reflog/`、`Undo/`、`Stash/` | 改写历史、Reflog、撤销与重做、储藏 |
-| `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数与它的基准、Remote 记录与增减基准的本机保存，以及仓库写锁 |
+| `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数与它的基准、Remote 记录与增减基准的本机保存 |
 | `ExternalTools/` | 外部比较与合并工具、Open With 与远程编辑 |
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
 | `LocalLocation/` | 服务器仓库的本机位置对话框与 Show in Finder 的流程 |
@@ -86,9 +86,14 @@ Spooky 由两个 target 组成：
   - 一轮采样中的两侧逐字节补丁和忽略空白的显示补丁共用范围。前后目标状态不同立即拒绝；仅排除范围改变时丢弃整轮结果，最多完整重读一次。指纹只包含选项、所选原始状态及补丁，不包含旁支状态或排除计划
   - 重命名后旧路径新建的独立未跟踪文件，其出现、消失或暂存使旧快照失效；只改内容不改变重命名指纹。按块 / 行写入只生成新路径补丁，不覆盖该独立文件
   - 按块 / 行写入在仓库锁内两次核对快照，并经 `git apply --check` 与正式写入检查。此锁只串行 App 内的写操作；外部 Git 和编辑器仍可改动仓库，因此属于乐观校验，不是跨进程原子快照
-- App 内同一仓库同时只允许一个写操作（`RepositoryWriteLocks`）；菜单、工具栏、右键菜单与拖放统一使用 `RepositorySession` 的 `can…` 可用性规则
+- App 内每个仓库一条写队列（`RepositoryWriteQueue`），全部窗口共用，只在内存里：同一时刻只执行一个写操作，其余的按提交的先后等待
+  - `performGit` 在仓库空闲时立即执行；正有写操作时排进队列并返回真，调用方照 “已接受” 处理，排队期间在 Activity 列出等待中的记录，它的停止按钮把这一项移出队列
+  - 前一项结束后，等它与下一项的会话都刷新完，再用入口所用的同一条 `can…` 规则（`performGit(available:)`）按当时的状态核对：不通过的不执行 Git，记为已跳过并写明原因，撤回先显示的目标状态（`performGit(withdrawn:)`）
+  - 执行中的用户写操作失败时，后面排着的全部取消，记录写明是哪个操作失败；被停止的只停这一个，后面的照常轮到
+  - 仓库管理详情区的写入不排队：仓库有执行中或排队的写操作时不可用，执行时同样占着队列
+- 入口的可用性分两层：`canWrite` 只看仓库能否接受写入（服务器仓库已连上），其上的 `can…` 规则只看各入口的前提，正在写入时入口照样可用，点了排队；菜单、工具栏、右键菜单与拖放统一使用这些规则
 - 文件列表勾选框的暂存与取消暂存只锁住受影响的行：执行期间这些行按 `stagingOverrides` 显示目标状态并禁用，其它行仍可勾选（`canToggleStaging`），点下的请求排进 `queuedStaging`，在同一个写操作里依次执行，写入仍然串行
-  - 失败或取消时丢弃队列，行按刷新后的真实索引恢复；写锁被别的写操作占着时（`isRepositoryLocked`）整个文件列表变灰
+  - 失败或取消时丢弃 `queuedStaging`，行按刷新后的真实索引恢复；改动工作区或索引的写操作执行期间（`isWorkingCopyLocked`，含别的窗口提交的）整个文件列表变灰，获取、推送这类写操作（`performGit(touchesWorkingCopy: false)`）执行期间不变灰
 - 检出、合并、拉取、变基、重置这类改动当前工作区的写操作经 `performGit(progress:)` 带上标题，会话发布 `workspaceProgress`：工作区视图整块换成 `WorkspaceProgressView`（标题、进度条、停止按钮与 Git 的最后一行输出，行里有百分比时按比例），侧边栏 Working Copy 行转圈；停止按钮取消 `writeTask`，写操作结束时清空
   - 同步只在拉取那一步显示，获取与推送开始时撤下
 - 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页

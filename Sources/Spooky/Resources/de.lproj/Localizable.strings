@@ -514,6 +514,8 @@
 "activity.finished" = "Abgeschlossen";
 "activity.cancelled" = "Abgebrochen";
 "activity.failed" = "Fehlgeschlagen";
+"activity.waiting" = "Wartet";
+"activity.skipped" = "Übersprungen";
 "activity.remote" = "Remote";
 "activity.remote.help" = "Remote-Aktivitäten anzeigen";
 "activity.repository" = "Repository";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "Nach %@ gepusht";
 "activity.titleFailed" = "%@ fehlgeschlagen";
 "activity.titleCancelled" = "%@ abgebrochen";
+"activity.titleSkipped" = "%@ übersprungen";
+"queue.notRun" = "Nicht ausgeführt: Das Repository hat sich während des Wartens geändert.";
+"queue.cancelledAfterFailure" = "Abgebrochen, weil „%@“ fehlgeschlagen ist.";
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";

@@ -514,6 +514,8 @@
 "activity.finished" = "完了";
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
+"activity.waiting" = "待機中";
+"activity.skipped" = "スキップ済み";
 "activity.remote" = "リモート";
 "activity.remote.help" = "リモートのアクティビティを表示";
 "activity.repository" = "リポジトリ";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "%@ にプッシュ完了";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（キャンセル済み）";
+"activity.titleSkipped" = "%@（スキップ済み）";
+"queue.notRun" = "実行されませんでした：待機中にリポジトリが変更されました。";
+"queue.cancelledAfterFailure" = "「%@」が失敗したため、キャンセルしました。";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";

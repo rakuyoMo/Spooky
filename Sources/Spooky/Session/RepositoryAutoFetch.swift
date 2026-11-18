@@ -150,7 +150,8 @@ final class RepositoryAutoFetch {
             showsRepository(),
             let session,
             let repository = session.repository,
-            session.canFetch
+            session.canFetch,
+            RepositoryWriteQueue.shared.isIdle(repository)
         else {
             return []
         }

@@ -11,7 +11,7 @@ import TestSupport
 extension WorkingCopyFileListTests {
     /// 暂存停在中途时只有受影响的行显示目标状态并禁用，其它行的勾选框仍可点、图标与文件名不变灰；
     /// 这时点下的请求排在后面，放行后在同一个写操作里依次执行。暂存失败时排在后面的请求一并丢弃，
-    /// 行按真实索引恢复；其它窗口占用仓库时所有行变灰、勾选框禁用。
+    /// 行按真实索引恢复；其它窗口改动索引的写操作执行期间所有行变灰、勾选框禁用，获取这类写操作执行期间不变灰。
     @Test("文件级写操作的局部忙态")
     func localBusyState() async throws {
         let fixture = try await UndoSessionTests.Fixture()
@@ -94,14 +94,31 @@ extension WorkingCopyFileListTests {
         #expect(!session.isStaging && session.queuedStaging.isEmpty && session.stagingOverrides.isEmpty)
         #expect(checkboxes(list).map(\.state) == [.on, .on, .off])
 
-        // 其它窗口占用仓库：所有行变灰，勾选框禁用
-        #expect(RepositoryWriteLocks.shared.acquire(fixture.location))
+        // 其它窗口改动索引的写操作执行期间：所有行变灰，勾选框禁用
+        let staging = RepositoryWrite(location: fixture.location, session: nil, title: "Stage")
+        #expect(RepositoryWriteQueue.shared.begin(staging))
         render(list)
 
         #expect(labelColors(list).allSatisfy { $0 == .secondaryLabelColor })
         #expect(checkboxes(list).allSatisfy { !$0.isEnabled })
 
-        RepositoryWriteLocks.shared.release(fixture.location)
+        RepositoryWriteQueue.shared.finish(staging)
+
+        // 不改动工作区的写操作（获取）执行期间：不变灰，勾选框照样可点
+        let fetching = RepositoryWrite(
+            location: fixture.location,
+            session: nil,
+            title: "Fetch",
+            touchesWorkingCopy: false
+        )
+
+        #expect(RepositoryWriteQueue.shared.begin(fetching))
+        render(list)
+
+        #expect(labelColors(list).allSatisfy { $0 == .controlTextColor })
+        #expect(checkboxes(list).allSatisfy { $0.isEnabled })
+
+        RepositoryWriteQueue.shared.finish(fetching)
         await session.shutdown()
     }
 }

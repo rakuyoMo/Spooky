@@ -514,6 +514,8 @@
 "activity.finished" = "Terminada";
 "activity.cancelled" = "Cancelada";
 "activity.failed" = "Fallida";
+"activity.waiting" = "En espera";
+"activity.skipped" = "Omitida";
 "activity.remote" = "Remoto";
 "activity.remote.help" = "Mostrar actividades remotas";
 "activity.repository" = "Repositorio";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "Push a %@ completado";
 "activity.titleFailed" = "%@: falló";
 "activity.titleCancelled" = "%@: cancelado";
+"activity.titleSkipped" = "%@: omitido";
+"queue.notRun" = "No se ejecutó: el repositorio cambió mientras esta operación esperaba.";
+"queue.cancelledAfterFailure" = "Cancelada porque “%@” falló.";
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";

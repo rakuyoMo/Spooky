@@ -1,0 +1,347 @@
+import Foundation
+import Observation
+import os
+import SpookyKit
+
+// MARK: - RepositoryWrite
+
+/// 交给仓库写队列的一个写操作：仓库空闲时立即执行，否则排在这个仓库的队列里，轮到时按当时的状态核对后再执行。
+@MainActor
+final class RepositoryWrite {
+    /// 写操作所在的仓库。
+    let location: RepositoryLocation
+
+    /// 已本地化的操作名称，写进日志与后面排着的写操作被取消的原因。
+    let title: String
+
+    /// 不由用户直接发起的写操作（自动获取）：不排队，失败时不取消后面排着的写操作。
+    let isBackground: Bool
+
+    /// 改动工作区或索引；执行期间文件列表变灰。
+    let touchesWorkingCopy: Bool
+
+    /// 等待中的 Activity 记录与它所在的列表；立即执行的写操作没有。
+    var waiting: (record: RepositoryActivity, activities: RepositoryActivities)? = nil
+
+    /// 提交它的会话；仓库管理详情区的写入没有会话。
+    private(set) weak var session: RepositorySession? = nil
+
+    /// 提交时会话的代次；会话关闭或换了仓库后，这一项不再属于它。
+    private let generation: Int
+
+    /// 轮到时的核对，与入口所用的 `can…` 规则相同；为 nil 时只核对仓库能否写入。
+    private let available: (@MainActor () -> Bool)?
+
+    /// 在队列里取消或轮到时没有执行时，撤回先显示的目标状态。
+    private let withdraw: (@MainActor () -> Void)?
+
+    /// 轮到时开始执行。
+    private let start: (@MainActor (RepositoryWrite) -> Void)?
+
+    /// 提交它的会话仍显示着这个仓库时为这个会话；会话已关闭或换了仓库时为 nil。
+    var owner: RepositorySession? {
+        guard let session, session.generation == generation, session.repository == location else {
+            return nil
+        }
+
+        return session
+    }
+
+    /// 建立一个写操作。
+    ///
+    /// - Parameters:
+    ///   - location: 写操作所在的仓库。
+    ///   - session: 提交它的会话；仓库管理详情区的写入传 nil。
+    ///   - title: 已本地化的操作名称。
+    ///   - isBackground: 是否不由用户直接发起。
+    ///   - touchesWorkingCopy: 是否改动工作区或索引。
+    ///   - available: 轮到时的核对；nil 时只核对仓库能否写入。
+    ///   - withdraw: 没有执行就结束时撤回先显示的目标状态。
+    ///   - start: 轮到时开始执行；只在仓库空闲时执行、从不排队的写入不传。
+    init(
+        location: RepositoryLocation,
+        session: RepositorySession?,
+        title: String,
+        isBackground: Bool = false,
+        touchesWorkingCopy: Bool = true,
+        available: (@MainActor () -> Bool)? = nil,
+        withdraw: (@MainActor () -> Void)? = nil,
+        start: (@MainActor (RepositoryWrite) -> Void)? = nil
+    ) {
+        self.location = location
+        self.session = session
+        generation = session?.generation ?? 0
+        self.title = title
+        self.isBackground = isBackground
+        self.touchesWorkingCopy = touchesWorkingCopy
+        self.available = available
+        self.withdraw = withdraw
+        self.start = start
+    }
+}
+
+// MARK: - RepositoryWriteQueue
+
+/// App 内每个仓库一条写队列，全部窗口共用：同一时刻只执行一个写操作，其余的按提交的先后等待；只在内存里，不跨重启保留。
+///
+/// 前一个写操作结束后，等它与下一项的会话都刷新完，再按当时的状态核对下一项：通过才执行，不通过记为已跳过。
+@MainActor
+@Observable
+final class RepositoryWriteQueue {
+    /// App 内唯一的写队列登记。
+    static let shared = RepositoryWriteQueue()
+
+    /// 在队列里被取消与轮到时没有执行的日志；只记操作名与原因类别。
+    private nonisolated static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RepositoryWriteQueue")
+
+    /// 各仓库的队列；空闲的仓库没有项。
+    private var lanes: [RepositoryLocation: Lane] = [:]
+
+    /// 仓库空闲：没有执行中、也没有排队的写操作。
+    func isIdle(_ location: RepositoryLocation) -> Bool {
+        lanes[location] == nil
+    }
+
+    /// 仓库有用户发起的写操作在执行或排队；只有后台写操作在执行时为假。
+    func hasUserWrite(in location: RepositoryLocation) -> Bool {
+        guard let lane = lanes[location] else {
+            return false
+        }
+
+        return !lane.pending.isEmpty || lane.current.map { !$0.isBackground } ?? false
+    }
+
+    /// 仓库里正在执行的写操作；轮到时还在核对的不算。
+    func executing(in location: RepositoryLocation) -> RepositoryWrite? {
+        guard let lane = lanes[location], lane.isExecuting else {
+            return nil
+        }
+
+        return lane.current
+    }
+
+    /// 仓库空闲时把写操作登记为执行中并返回真，调用方随即开始执行；不空闲时不登记，返回假。
+    func begin(_ write: RepositoryWrite) -> Bool {
+        guard isIdle(write.location) else {
+            return false
+        }
+
+        lanes[write.location] = Lane(current: write, isExecuting: true)
+        return true
+    }
+
+    /// 把写操作排在仓库队列的最后。
+    func enqueue(_ write: RepositoryWrite) {
+        var lane = lanes[write.location] ?? Lane()
+        lane.pending.append(write)
+        lanes[write.location] = lane
+    }
+
+    /// 执行中的写操作结束：轮到队列里的下一项。
+    func finish(_ write: RepositoryWrite) {
+        guard var lane = lanes[write.location], lane.current === write else {
+            return
+        }
+
+        lane.current = nil
+        lane.isExecuting = false
+        store(lane, for: write.location)
+
+        advance(write.location, after: write.session)
+    }
+
+    /// 执行中的用户写操作失败：后面排着的全部取消，原因写明失败的是哪个操作。
+    func failed(_ write: RepositoryWrite) {
+        guard !write.isBackground else {
+            return
+        }
+
+        remove(in: write.location, reason: .failure(write.title)) { _ in true }
+    }
+
+    /// 用户在活动区或 Activity 窗口取消一项等待中的写操作。
+    func cancel(_ write: RepositoryWrite) {
+        remove(in: write.location, reason: .user) { $0 === write }
+    }
+}
+
+// MARK: - Private
+
+extension RepositoryWriteQueue {
+    /// 一个仓库的队列。
+    private struct Lane {
+        /// 正在执行，或轮到时正在等刷新与核对的一项。
+        var current: RepositoryWrite? = nil
+
+        /// `current` 已开始执行；还在等刷新与核对时为假。
+        var isExecuting = false
+
+        /// 等待的项，按提交的先后。
+        var pending: [RepositoryWrite] = []
+
+        /// 没有任何写操作。
+        var isEmpty: Bool {
+            current == nil && pending.isEmpty
+        }
+    }
+
+    /// 写回一个仓库的队列；空了就去掉。
+    private func store(_ lane: Lane, for location: RepositoryLocation) {
+        lanes[location] = lane.isEmpty ? nil : lane
+    }
+
+    /// 没有正在执行或核对的项时取出下一项：等前一项与这一项的会话都刷新完，再核对并执行。
+    ///
+    /// - Parameters:
+    ///   - location: 仓库。
+    ///   - previous: 刚结束的写操作的会话；没有时只等下一项的会话。
+    private func advance(_ location: RepositoryLocation, after previous: RepositorySession?) {
+        guard var lane = lanes[location], lane.current == nil, !lane.pending.isEmpty else {
+            return
+        }
+
+        let next = lane.pending.removeFirst()
+        lane.current = next
+        lanes[location] = lane
+
+        Task {
+            // 核对与执行看到的是写入之后刷新出的状态；别的窗口的刷新由写操作结束时的通知带起
+            await previous?.waitForRefresh()
+            await next.session?.waitForRefresh()
+
+            // 等刷新期间被取消的已经离开队列
+            guard lanes[location]?.current === next else {
+                return
+            }
+
+            turn(next)
+        }
+    }
+
+    /// 轮到一项：提交它的窗口已关闭或换了仓库时取消，核对不通过时跳过，否则开始执行。
+    private func turn(_ write: RepositoryWrite) {
+        guard let session = write.owner else {
+            remove(in: write.location, reason: .closed) { $0 === write }
+            return
+        }
+
+        guard session.canWrite, write.isAvailable else {
+            remove(in: write.location, reason: .changed) { $0 === write }
+            return
+        }
+
+        lanes[write.location]?.isExecuting = true
+        write.begin()
+    }
+
+    /// 把还没开始执行的项移出队列：等待中的，以及轮到时还在核对的；记录按原因结束，再轮到下一项。
+    ///
+    /// - Parameters:
+    ///   - location: 仓库。
+    ///   - reason: 没有执行的原因。
+    ///   - matches: 要移出的项。
+    private func remove(
+        in location: RepositoryLocation,
+        reason: Reason,
+        where matches: (RepositoryWrite) -> Bool
+    ) {
+        guard var lane = lanes[location] else {
+            return
+        }
+
+        var removed = lane.pending.filter(matches)
+        lane.pending.removeAll(where: matches)
+
+        if let current = lane.current, !lane.isExecuting, matches(current) {
+            removed.insert(current, at: 0)
+            lane.current = nil
+        }
+
+        guard !removed.isEmpty else {
+            return
+        }
+
+        store(lane, for: location)
+
+        for write in removed {
+            write.end(reason)
+            Self.logger.info("排队的写操作没有执行：\(write.title, privacy: .public)，原因 \(reason.category, privacy: .public)")
+        }
+
+        advance(location, after: nil)
+    }
+}
+
+// MARK: RepositoryWriteQueue.Reason
+
+extension RepositoryWriteQueue {
+    /// 等待中的写操作没有执行就结束的原因。
+    enum Reason {
+        /// 用户在活动区或 Activity 窗口取消。
+        case user
+
+        /// 执行中的写操作失败，附它的名称。
+        case failure(String)
+
+        /// 提交它的窗口已关闭或换了仓库。
+        case closed
+
+        /// 轮到时核对不通过。
+        case changed
+
+        /// 记录的状态键：核对不通过记为已跳过，其余记为取消。
+        var state: String {
+            switch self {
+            case .changed: "activity.skipped"
+            case .user, .failure, .closed: "activity.cancelled"
+            }
+        }
+
+        /// 写进记录输出的说明；用户取消与关窗不写。
+        var detail: String? {
+            switch self {
+            case .failure(let title): AppLocalization.text("queue.cancelledAfterFailure", title)
+            case .changed: AppLocalization.text("queue.notRun")
+            case .user, .closed: nil
+            }
+        }
+
+        /// 日志里的原因类别。
+        var category: String {
+            switch self {
+            case .user: "user"
+            case .failure: "failure"
+            case .closed: "closed"
+            case .changed: "changed"
+            }
+        }
+    }
+}
+
+// MARK: - RepositoryWrite Private
+
+extension RepositoryWrite {
+    /// 轮到时的核对是否通过。
+    fileprivate var isAvailable: Bool {
+        available?() ?? true
+    }
+
+    /// 轮到时开始执行。
+    fileprivate func begin() {
+        start?(self)
+    }
+
+    /// 没有执行就结束：等待中的记录写上状态与原因后结束，撤回先显示的目标状态。
+    fileprivate func end(_ reason: RepositoryWriteQueue.Reason) {
+        if let waiting {
+            if let detail = reason.detail {
+                waiting.record.append(.standardError(Data((detail + "\n").utf8)))
+            }
+
+            waiting.record.state = reason.state
+            waiting.activities.finish(waiting.record)
+        }
+
+        withdraw?()
+    }
+}

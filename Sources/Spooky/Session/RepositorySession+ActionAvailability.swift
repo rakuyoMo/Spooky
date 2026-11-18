@@ -1,25 +1,32 @@
 import SpookyKit
 
 extension RepositorySession {
-    /// 连接可用、本窗口没有写操作，且应用内没有同一仓库的写操作时才允许写入。
+    /// 仓库能接受写入：有仓库，服务器仓库已连上。仓库正有写操作时同样为真，新的写操作排进队列。
     var canWrite: Bool {
-        guard let repository, !isWriting, !RepositoryWriteLocks.shared.contains(repository) else {
+        guard let repository else {
             return false
         }
 
         return repository.host == nil || connectionState == .connected
     }
 
-    /// 文件列表的勾选框能否点：仓库可写，或本会话正在暂存、新的请求排在后面。
+    /// 文件列表的勾选框能否点：仓库可写且文件列表没有变灰，或本会话正在暂存、新的请求排在后面。
     var canToggleStaging: Bool {
-        canWrite || isStaging
+        canWrite && !isWorkingCopyLocked || isStaging
     }
 
-    /// 整个仓库被写操作占用：写锁被占着，又不是本会话正在执行的暂存；文件列表的图标与文件名随之变灰。
-    var isRepositoryLocked: Bool {
-        guard let repository else { return false }
+    /// 这个仓库有用户发起的写操作在执行或排队，不论是哪个窗口提交的；只有后台自动获取在执行时为假。
+    var hasUserWrite: Bool {
+        repository.map(RepositoryWriteQueue.shared.hasUserWrite(in:)) ?? false
+    }
 
-        return RepositoryWriteLocks.shared.contains(repository) && !isStaging
+    /// 改动工作区或索引的写操作正在执行（含别的窗口提交的），又不是本会话正在合并请求的暂存；文件列表的图标与文件名随之变灰。
+    var isWorkingCopyLocked: Bool {
+        guard let repository, let write = RepositoryWriteQueue.shared.executing(in: repository) else {
+            return false
+        }
+
+        return write.touchesWorkingCopy && !isStaging
     }
 
     /// 新建请求的条件：有远端属于已登录账号的托管服务，对应到一个账号或同一实例上有几个账号待选都算。

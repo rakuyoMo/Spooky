@@ -514,6 +514,8 @@
 "activity.finished" = "Terminé";
 "activity.cancelled" = "Annulé";
 "activity.failed" = "Échec";
+"activity.waiting" = "En attente";
+"activity.skipped" = "Ignoré";
 "activity.remote" = "Distant";
 "activity.remote.help" = "Afficher les activités distantes";
 "activity.repository" = "Dépôt";
@@ -555,6 +557,9 @@
 "activity.pushedNamed" = "Poussé vers %@";
 "activity.titleFailed" = "%@ : échec";
 "activity.titleCancelled" = "%@ : annulé";
+"activity.titleSkipped" = "%@ : ignoré";
+"queue.notRun" = "Non exécuté : le dépôt a changé pendant l’attente de cette opération.";
+"queue.cancelledAfterFailure" = "Annulé, car « %@ » a échoué.";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";

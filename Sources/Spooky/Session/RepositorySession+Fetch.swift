@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Fetch
 
 extension RepositorySession {
-    /// 自动获取一个到期的远端：不询问凭据，失败只记进 Activity。
+    /// 自动获取一个到期的远端：只在仓库空闲时开始，不询问凭据，失败只记进 Activity。
     ///
     /// - Parameters:
     ///   - remote: 要获取的远端。
@@ -138,7 +138,7 @@ extension RepositorySession {
     ///   - remote: 要获取的远端；nil 表示全部远端，跳过设了 skipFetchAll 的。
     ///   - title: 已本地化的操作名称。
     ///   - undo: 与撤销记录的关系。
-    ///   - background: 不由用户直接发起：不询问凭据，失败只记进 Activity。
+    ///   - background: 不由用户直接发起：仓库不空闲时不获取，不询问凭据，失败只记进 Activity。
     ///   - defaults: 读取获取选项、记录获取时刻的偏好。
     /// - Returns: 是否已开始执行。
     @discardableResult
@@ -168,7 +168,8 @@ extension RepositorySession {
             },
             title: title,
             target: .fetch(remote),
-            reportsFailure: !background,
+            background: background,
+            touchesWorkingCopy: false,
             undo: undo
         )
     }
