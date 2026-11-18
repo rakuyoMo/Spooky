@@ -40,7 +40,7 @@ Spooky 由两个 target 组成：
 | 目录 | 职责 |
 |---|---|
 | `App/` | 入口、窗口与菜单协调、本地化与错误说明、外观、命名色与文本区主题、链接解析、系统通知 |
-| `AppIcon/` | App 图标：图标组的选择，随图标样式、深浅与连接状态切换，写入 App 包的自定义图标；`Icons/` 是各组的 icns |
+| `AppIcon/` | App 图标：图标组的选择，随图标样式、深浅与连接状态切换，写入 App 包的自定义图标；`Icons/` 下每组一个文件夹，放这一组的 icns |
 | `Components/` | 对话框骨架与呈现它的 sheet 或模态窗口，空状态、错误详情、连接状态、头像等共用视图 |
 | `RepositoryManager/`、`Launch/`、`Clone/` | 仓库管理与书签、启动窗口，新建、克隆与扫描 |
 | `RepositoryWindow/` | 仓库窗口与菜单动作、侧边栏、搜索、操作对话框与拖放 |
@@ -289,7 +289,7 @@ Spooky 由两个 target 组成：
   - `AppIconGroup` 有满怀、满怀 · 素底、满怀 · 紫底、栖枝、采撷、服务器幽灵与午夜七组，声明的先后就是图标列表里的顺序，默认的一组（`AppIconGroup.defaultGroup`）是满怀；所选的组存在偏好 `appIconGroup`，键不存在或值不认识时为默认的一组，Reset / Clear User Defaults 之后随之回到默认的一组
   - 每组四个 icns：默认、连接、深色、深色连接，文件名是 `AppIcon<组名>` 加上 `Dark`、`Connected`；连接版与灭灯版只差亮起来的部分，运行时的合成依赖这一点
   - 默认的一组的默认图标是包里的默认图标（`CFBundleIconFile`）
-  - 二十八份 icns 都由 `scripts/make-icon.swift` 在无窗口的 WebKit 里执行 `scripts/make-icon/` 下的绘制脚本画出，放在 `Sources/Spooky/AppIcon/Icons/`；`kit.js` 是各组共用的底板、入口与绘图工具，每组另有一个文件，满怀的三组只差背景、共用 `armful.js`；满怀的柔边与投影要用模糊与蒙版，这三组先拼成 SVG 再画进 Canvas，其余四组直接画 Canvas
+  - 二十八份 icns 都由 `scripts/make-icon.swift` 在无窗口的 WebKit 里执行 `scripts/make-icon/` 下的绘制脚本画出，放在 `Sources/Spooky/AppIcon/Icons/` 下各组的文件夹里，文件夹名是这一组的文件名前缀去掉 `AppIcon`，如 `Armful/`；打包时摊平拷进 `Contents/Resources/`；`kit.js` 是各组共用的底板、入口与绘图工具，每组另有一个文件，满怀的三组只差背景、共用 `armful.js`；满怀的柔边与投影要用模糊与蒙版，这三组先拼成 SVG 再画进 Canvas，其余四组直接画 Canvas
   - 重新生成时，直接画 Canvas 的四组与仓库里的逐字节相同；满怀三组的 1024 px 一张每次可能有几个像素差一个色阶（WebKit 画 SVG 滤镜时的舍入不固定，macOS 27 实测），看不出差别，没改画法时不必提交这种变化
 - 深浅：读全局偏好 `AppleIconAppearanceTheme`；值以 `Dark` 结尾为深色，以 `Automatic` 结尾时跟随 App 的外观，其余与键不存在时为浅色
 - 壳 App：

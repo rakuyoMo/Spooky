@@ -44,7 +44,12 @@ struct AppIconGroupTests {
             for isDark in [false, true] {
                 for isConnected in [false, true] {
                     let name = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: isConnected))
-                    let url = root.appending(path: "Sources/Spooky/AppIcon/Icons/\(name).icns", directoryHint: .notDirectory)
+                    let folder = group.iconName(for: .standard).dropFirst("AppIcon".count)
+
+                    let url = root.appending(
+                        path: "Sources/Spooky/AppIcon/Icons/\(folder)/\(name).icns",
+                        directoryHint: .notDirectory
+                    )
 
                     #expect(FileManager.default.fileExists(atPath: url.path(percentEncoded: false)), "\(name)")
                 }

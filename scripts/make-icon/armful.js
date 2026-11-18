@@ -1,7 +1,7 @@
 /**
  * 满怀的三组：白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边；三组只差身后的背景。
  * 满怀是炭黑底板上的一轮紫色满月与三颗小星，满怀 · 素底只有炭黑底板，满怀 · 紫底是上浅下深的紫色底板。
- * App 连着服务器时，眼睛亮成深橙。
+ * App 连着服务器时，两只眼睛变成一对亮着深橙的四角星。
  * 柔边、暗部与投影靠模糊与蒙版画出，WebKit 的 Canvas 2D 没有滤镜，所以这三组先拼成 SVG、再画进 Canvas。
  * 深色图标的幽灵换成浅米色，樱桃与叶子压暗一档；炭黑的底板换成纯黑，紫色的底板压深一档。
  */
@@ -56,7 +56,7 @@ const ARMFUL_PALETTES = {
 /**
  * 满怀连着服务器时亮起来的颜色，三组、两种图标相同。
  *
- * eye 是眼睛自上而下的三个色标，与午夜的琥珀光同一个色相、压深一档，在浅色的幽灵上才看得清；eyeGlow 是眼睛四周的光。
+ * eye 是四角星自上而下的三个色标，与午夜的琥珀光同一个色相、压深一档，在浅色的幽灵上才看得清；eyeGlow 是四角星四周的光。
  */
 const ARMFUL_LIT = {
     eye: ['#FFC453', '#FF9F2E', '#F27A1A'],
@@ -137,6 +137,14 @@ const ARMFUL_EYES = {
         { x: 649, y: 478, radiusX: 27.6, radiusY: 44.71 },
     ],
 };
+
+/**
+ * 连着服务器时的眼睛：每只眼睛换成一颗竖长的四角星，中心与倾斜照 ARMFUL_EYES。
+ *
+ * reachX 与 reachY 是角尖到中心的距离与眼睛两个半轴之比；pinch 是角尖之间的边往中心收的程度，
+ * 0 收到中心，0.5 是菱形；rounding 是修圆角尖的描边宽度。
+ */
+const ARMFUL_SPARKLES = { reachX: 1.42, reachY: 1.24, pinch: 0.26, rounding: 9 };
 
 /**
  * 满怀各块渐变的位置，满幅坐标下。
@@ -296,7 +304,7 @@ function armfulPurpleMarkup({ plate, sheen: [sheenColor, sheenOpacity] }) {
  * 从后往前：梗与樱桃之间的贴纸边、叶子、幽灵、眼睛、小果、大果、梗、压在大果上的那只手。
  *
  * @param {object} palette 所画图标的配色
- * @param {boolean} lit 眼睛是否亮着
+ * @param {boolean} lit 眼睛是否亮成四角星
  * @returns {string} 满幅坐标下的 SVG 片段
  */
 function armfulClusterMarkup(palette, lit) {
@@ -335,6 +343,13 @@ function armfulClusterMarkup(palette, lit) {
     const eyes = (fill) => ARMFUL_EYES.ovals
         .map(({ x, y, radiusX, radiusY }) => `<ellipse cx="${x}" cy="${y}" rx="${radiusX}" ry="${radiusY}" `
             + `transform="rotate(${ARMFUL_EYES.tilt} ${x} ${y})" fill="${fill}"/>`)
+        .join('');
+
+    // 四角星：同色的圆头描边把四个角尖修圆。
+    const sparkles = (fill) => ARMFUL_EYES.ovals
+        .map(({ x, y, radiusX, radiusY }) => `<path d="${sparkleData(x, y, radiusX * ARMFUL_SPARKLES.reachX, radiusY * ARMFUL_SPARKLES.reachY)}" `
+            + `transform="rotate(${ARMFUL_EYES.tilt} ${x} ${y})" fill="${fill}" `
+            + `stroke="${fill}" stroke-width="${ARMFUL_SPARKLES.rounding}" stroke-linejoin="round"/>`)
         .join('');
 
     const placed = `translate(${shift}) translate(${pivot}) scale(${scale}) rotate(${degrees}) translate(${-pivot[0]} ${-pivot[1]})`;
@@ -384,11 +399,11 @@ function armfulClusterMarkup(palette, lit) {
             + svgInnerBand('ghost-rim', ghostShape('#000'), { color: palette.rim, blur: 9, gain: 1.6, opacity: 0.8 }),
         );
 
-    // 眼睛：纯色的竖椭圆；亮着时自上而下由浅琥珀过渡到深橙，四周一圈光。
+    // 眼睛：纯色的竖椭圆；亮着时换成四角星，自上而下由浅琥珀过渡到深橙，四周一圈光。
     const eyesMarkup = lit
-        ? svgBlurred('eye-glow', eyes(ARMFUL_LIT.eyeGlow), { blur: 16, opacity: 0.75 })
+        ? svgBlurred('eye-glow', sparkles(ARMFUL_LIT.eyeGlow), { blur: 16, opacity: 0.75 })
             + `<linearGradient id="eye" x1="0" y1="0" x2="0" y2="1">${svgStops(ARMFUL_LIT.eye)}</linearGradient>`
-            + eyes('url(#eye)')
+            + sparkles('url(#eye)')
         : eyes(palette.eye);
 
     // 樱桃：平涂，小果上有大果挡出的短影，大果上有那只手压出的短影。
@@ -536,6 +551,22 @@ function svgRounding(id, radius) {
         + `<feGaussianBlur stdDeviation="${deviation}"/>`
         + `<feComponentTransfer><feFuncA type="linear" slope="${slope}" intercept="${-(slope - 1) / 2}"/></feComponentTransfer>`
         + '</filter>';
+}
+
+/**
+ * 眼睛亮成的四角星的 SVG 路径数据：四个角尖在中心的正上、正右、正下、正左，角尖之间的边按 ARMFUL_SPARKLES.pinch 往中心收。
+ *
+ * @param {number} x 中心的 x
+ * @param {number} y 中心的 y
+ * @param {number} reachX 左右两个角尖到中心的距离
+ * @param {number} reachY 上下两个角尖到中心的距离
+ * @returns {string}
+ */
+function sparkleData(x, y, reachX, reachY) {
+    const waist = (signX, signY) => `${x + signX * reachX * ARMFUL_SPARKLES.pinch},${y + signY * reachY * ARMFUL_SPARKLES.pinch}`;
+
+    return `M${x},${y - reachY}Q${waist(1, -1)} ${x + reachX},${y}Q${waist(1, 1)} ${x},${y + reachY}`
+        + `Q${waist(-1, 1)} ${x - reachX},${y}Q${waist(-1, -1)} ${x},${y - reachY}Z`;
 }
 
 /**
