@@ -54,7 +54,7 @@ extension RepositoryManagerController {
             return
         }
 
-        write(location, title: AppLocalization.text("bookmarks.identity.edit")) {
+        write(location, title: AppLocalization.text("bookmarks.detail.unset")) {
             try await WorkingCopyOperations(runner: $0).clearIdentity()
         }
     }
