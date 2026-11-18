@@ -76,13 +76,16 @@ final class LocalExecutionPreferences {
     /// 本机仓库使用的 Git 程序。
     private(set) var gitExecutable: String
 
-    /// 交给核心库的设置：登录 shell 的变量只在开启时带上。
+    /// 交给核心库的设置：登录 shell 的变量只在开启时带上；系统 agent 的 socket 先取自定义变量里的，再取开启时登录 shell 里的。
     var settings: LocalExecutionSettings {
-        LocalExecutionSettings(
+        let loginShell = usesLoginShell ? loginShellVariables : [:]
+        let custom = Dictionary(customVariables.map { ($0.name, $0.value) }) { $1 }
+
+        return LocalExecutionSettings(
             gitExecutable: gitExecutable,
-            loginShellVariables: usesLoginShell ? loginShellVariables : [:],
-            customVariables: Dictionary(customVariables.map { ($0.name, $0.value) }) { $1 },
-            sshAuthSocket: sshAgent.socket()
+            loginShellVariables: loginShell,
+            customVariables: custom,
+            sshAuthSocket: sshAgent.socket(customVariables: custom, loginShellVariables: loginShell)
         )
     }
 
@@ -142,7 +145,7 @@ final class LocalExecutionPreferences {
         checkSSHAgent()
     }
 
-    /// 开启或关闭读取登录 shell 环境；开启时立即读取，关闭后本机 Git 不再带上这些变量。
+    /// 开启或关闭读取登录 shell 环境；开启时立即读取，关闭后本机 Git 不再带上这些变量，系统 agent 也不再取其中的 socket。
     func setUsesLoginShell(_ enabled: Bool) {
         usesLoginShell = enabled
         defaults.set(enabled, forKey: Self.loginShellKey)
@@ -155,6 +158,9 @@ final class LocalExecutionPreferences {
         }
 
         apply(settings)
+
+        // 系统 agent 的 socket 随登录 shell 的变量变化
+        checkSSHAgent()
     }
 
     /// 保存自定义变量，下一条本机 Git 命令即使用它们；名称不合法的条目保留在表格里，但不交给 Git。
@@ -164,6 +170,9 @@ final class LocalExecutionPreferences {
         customVariables = variables
         defaults.set(variables.map { [$0.name, $0.value] }, forKey: Self.customVariablesKey)
         apply(settings)
+
+        // 自定义的 SSH_AUTH_SOCK 会改变系统 agent 的 socket
+        checkSSHAgent()
     }
 
     /// 选择 SSH agent 并检查它是否在运行。
@@ -183,7 +192,7 @@ final class LocalExecutionPreferences {
 
     // MARK: 读取与检查
 
-    /// 重新读取登录 shell 环境，读完后交给核心库；仍在读的上一次读取作废。
+    /// 重新读取登录 shell 环境，读完后交给核心库，并按新的 socket 检查 agent；仍在读的上一次读取作废。
     private func reloadLoginShell() {
         loginShellTask?.cancel()
         loginShellState = .reading
@@ -197,6 +206,7 @@ final class LocalExecutionPreferences {
                 loginShellVariables = variables
                 loginShellState = .loaded
                 apply(settings)
+                checkSSHAgent()
             } catch {
                 guard !Task.isCancelled else { return }
 
@@ -206,12 +216,12 @@ final class LocalExecutionPreferences {
         }
     }
 
-    /// 检查所选的 agent 是否在运行，供 SSH Agent 一行显示警告。
+    /// 检查所选的 agent 是否在运行，供 SSH Agent 一行显示警告；检查的是交给核心库的那个 socket。
     private func checkSSHAgent() {
         agentTask?.cancel()
         sshAgentRunning = nil
 
-        let socket = sshAgent.socket()
+        let socket = settings.sshAuthSocket
 
         agentTask = Task {
             let running = await SSHAgent.isRunning(socket: socket)

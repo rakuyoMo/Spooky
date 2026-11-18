@@ -39,7 +39,7 @@ struct LocalExecutionSettingsTests {
 
     /// 自定义变量覆盖登录 shell 的同名变量，所选 agent 的 socket 最后写入；
     /// 系统 Git 的目录已在 PATH 里时不改写 PATH，别处的 Git 把它的目录补在最前；
-    /// SSH Agent 只有系统 agent 一项，它取继承的 SSH_AUTH_SOCK，空值视为没有。
+    /// SSH Agent 只有系统 agent 一项，它依次取自定义变量、登录 shell 读到的与继承的 SSH_AUTH_SOCK，空值视为没有。
     @Test("变量的覆盖顺序、PATH 与 SSH agent")
     func overrides() {
         let settings = LocalExecutionSettings(
@@ -68,9 +68,27 @@ struct LocalExecutionSettingsTests {
         )
         #expect(named(shell.gitOverrides(inheritedPath: "/usr/bin"))["PATH"] == "/opt/homebrew/bin:/usr/bin")
 
-        // 系统 agent 的 socket
+        // 系统 agent 的 socket：自定义变量优先，其次是登录 shell，空值视为没有
+        let inherited = ["SSH_AUTH_SOCK": "/tmp/launchd.sock"]
+        let fromShell = ["SSH_AUTH_SOCK": "/tmp/shell.sock"]
+
         #expect(SSHAgent.allCases == [.system])
-        #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": "/tmp/launchd.sock"]) == "/tmp/launchd.sock")
+        #expect(SSHAgent.system.socket(environment: inherited) == "/tmp/launchd.sock")
+        #expect(SSHAgent.system.socket(loginShellVariables: fromShell, environment: inherited) == "/tmp/shell.sock")
+        #expect(
+            SSHAgent.system.socket(
+                customVariables: ["SSH_AUTH_SOCK": "/tmp/custom.sock"],
+                loginShellVariables: fromShell,
+                environment: inherited
+            ) == "/tmp/custom.sock"
+        )
+        #expect(
+            SSHAgent.system.socket(
+                customVariables: ["SSH_AUTH_SOCK": ""],
+                loginShellVariables: fromShell,
+                environment: inherited
+            ) == "/tmp/shell.sock"
+        )
         #expect(SSHAgent.system.socket(environment: ["SSH_AUTH_SOCK": ""]) == nil)
         #expect(SSHAgent.system.socket(environment: [:]) == nil)
     }
