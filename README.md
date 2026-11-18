@@ -104,7 +104,7 @@ A few designs run through the whole codebase:
 
 - **One way to run Git**: every Git call goes through `GitRunner`, which works the same way for local and server repositories. Local repositories run the Git program chosen in Settings, and server repositories run Git on the server through `/usr/bin/ssh`
 
-- **One write at a time**: each repository runs one write at a time, whichever window starts it. Read-only Git commands are registered in `RepositoryOperationQueue.isReadOnly`, and every other command is treated as a write
+- **One write at a time**: each repository has one write queue shared by all its windows. Writes run one at a time in the order they were started, and a write started while another is running waits its turn. Read-only Git commands are registered in `RepositoryOperationQueue.isReadOnly`, and every other command is treated as a write
 
 - **Server connections**: each server working tree gets its own SSH master connection (ControlMaster), which exits after 10 idle minutes. After the first connection check, the Perl helper `spooky-remote.pl` is installed in `~/.spooky/bin/` on the server, named after a digest of its contents, to manage remote processes and callbacks. Files are read and written over SFTP on the same master connection
 

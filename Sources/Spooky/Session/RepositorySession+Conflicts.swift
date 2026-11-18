@@ -215,7 +215,8 @@ extension RepositorySession {
                 try await WorkingCopyOperations(runner: runner).restoreConflicts(entries, to: version)
             },
             title: title,
-            recordsActivity: false
+            recordsActivity: false,
+            available: { $0.canRestoreConflicts(entries, to: version) }
         )
     }
 }

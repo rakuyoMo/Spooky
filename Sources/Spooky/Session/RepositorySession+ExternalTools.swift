@@ -443,7 +443,7 @@ extension RepositorySession {
         }
     }
 
-    /// 把合并结果写回工作区；文件在合并期间被别处改过时先询问是否覆盖。
+    /// 把合并结果写回工作区，仓库正有写操作时排进队列；文件在合并期间被别处改过时先询问是否覆盖。
     private func applyMergeResult(_ result: Data, files: MergeToolFiles, overwrite: Bool) {
         let keepBackup = UserDefaults.standard.bool(forKey: ExternalTool.keepBackupsKey)
         let changed = ChangeFlag()
@@ -468,7 +468,7 @@ extension RepositorySession {
             }
         )
 
-        // 仓库正在执行别的写操作或已断线：结果没有写回，说明原因
+        // 仓库正有写操作时写回排进队列；只有服务器已断开时结果没有写回，说明原因
         if !started {
             showNotice(AppLocalization.text("externalTool.notApplied"), AppLocalization.text("dialog.blocked"))
         }

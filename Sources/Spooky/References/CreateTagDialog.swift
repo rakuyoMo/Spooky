@@ -187,7 +187,7 @@ extension CreateTagDialog {
         }
     }
 
-    /// 捕获表单值后开始写入；仓库忙碌或已切换时表单保持打开。
+    /// 捕获表单值后开始写入；服务器已断开或仓库已切换时表单保持打开。
     private func submit() {
         let name = name
         let revision = session.revision(for: target)
@@ -205,7 +205,9 @@ extension CreateTagDialog {
                     .create(name: name, revision: revision, message: message, sign: sign, signingKey: key)
             },
             title: AppLocalization.text("tag.create.submit"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canCreateTag }
         )
 
         if started {

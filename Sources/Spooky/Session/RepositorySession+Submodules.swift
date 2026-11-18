@@ -251,7 +251,9 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
-            target: .fetch(nil)
+            target: .fetch(nil),
+            touchesWorkingCopy: false,
+            available: { $0.canFetchSubmodules }
         )
     }
 
@@ -268,7 +270,8 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).update(targets, recursive: recursive, onOutput: output)
             },
             title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
-            target: .pull(nil)
+            target: .pull(nil),
+            available: { $0.canUpdateSubmodules }
         )
     }
 
@@ -277,7 +280,8 @@ extension RepositorySession {
     func initializeSubmodule(_ submodule: Submodule) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).initialize([submodule]) },
-            title: AppLocalization.text("submodule.initialize")
+            title: AppLocalization.text("submodule.initialize"),
+            available: { $0.canInitialize(submodule) }
         )
     }
 
@@ -286,7 +290,8 @@ extension RepositorySession {
     func synchronizeSubmodule(_ submodule: Submodule) -> Bool {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).synchronize([submodule]) },
-            title: AppLocalization.text("submodule.synchronize")
+            title: AppLocalization.text("submodule.synchronize"),
+            available: { $0.canSynchronize(submodule) }
         )
     }
 
@@ -296,7 +301,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).setURL(url, for: submodule, in: scope) },
             title: AppLocalization.text("submodule.editURL"),
-            undo: .changingSubmoduleURL(url, of: submodule, in: scope)
+            undo: .changingSubmoduleURL(url, of: submodule, in: scope),
+            available: { $0.canModify(submodule) }
         )
     }
 
@@ -326,7 +332,8 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).set(option, to: value, for: submodule, in: scope)
             },
             title: AppLocalization.text(title),
-            undo: .changingSubmoduleOption(option, to: value, of: submodule, in: scope)
+            undo: .changingSubmoduleOption(option, to: value, of: submodule, in: scope),
+            available: { $0.canModify(submodule) }
         )
     }
 
@@ -335,7 +342,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).checkout(revision, in: submodule) },
             title: AppLocalization.text("submodule.checkoutSubmoduleRevision"),
-            undo: .checkingOutSubmoduleRevision(revision, in: submodule)
+            undo: .checkingOutSubmoduleRevision(revision, in: submodule),
+            available: { $0.canCheckoutRevision(in: submodule) }
         )
     }
 
@@ -347,7 +355,8 @@ extension RepositorySession {
                 try await RepositorySubmodules(runner: runner).move(submodule, to: path, renamesSubmodule: renaming)
             },
             title: AppLocalization.text("submodule.move"),
-            undo: .movingSubmodule(submodule, to: path, renaming: renaming)
+            undo: .movingSubmodule(submodule, to: path, renaming: renaming),
+            available: { $0.canModify(submodule) }
         )
     }
 
@@ -357,7 +366,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositorySubmodules(runner: runner).rename(submodule, to: name) },
             title: AppLocalization.text("submodule.rename"),
-            undo: .renamingSubmodule(submodule, to: name)
+            undo: .renamingSubmodule(submodule, to: name),
+            available: { $0.canModify(submodule) }
         )
     }
 
@@ -374,7 +384,8 @@ extension RepositorySession {
                 }
             },
             title: AppLocalization.text("submodule.deleteSubmodules"),
-            undo: .deletingSubmodule(submodule, keepsWorkingTree: keepsWorkingTree)
+            undo: .deletingSubmodule(submodule, keepsWorkingTree: keepsWorkingTree),
+            available: { $0.canModify(submodule) }
         )
     }
 

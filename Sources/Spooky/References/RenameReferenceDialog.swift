@@ -182,7 +182,7 @@ extension RenameReferenceDialog {
         }
     }
 
-    /// 捕获表单值后开始写入；仓库忙碌或已切换时表单保持打开。
+    /// 捕获表单值后开始写入；服务器已断开或仓库已切换时表单保持打开。
     private func submit() {
         let name = name
         let title = AppLocalization.text(keys.title)
@@ -202,12 +202,14 @@ extension RenameReferenceDialog {
                         },
                         title: title,
                         target: .push(parts.remote),
+                        touchesWorkingCopy: false,
                         undo: .renamingRemoteBranch(parts.branch, on: parts.remote, to: name)
                     )
                 } else {
                     session.performGit(
                         { runner, _ in try await RepositoryReferences(runner: runner).rename(reference.id, to: name) },
                         title: title,
+                        touchesWorkingCopy: false,
                         undo: .reversible
                     )
                 }
@@ -216,6 +218,7 @@ extension RenameReferenceDialog {
                 session.performGit(
                     { runner, _ in try await RepositoryRemotes(runner: runner).rename(remote, to: name) },
                     title: title,
+                    touchesWorkingCopy: false,
                     undo: .renamingRemote(remote, to: name),
                     success: { [session] in
                         if session.selectedRemote == remote { session.selectedRemote = name }

@@ -53,7 +53,7 @@ struct StashDialog: View {
             alternate: skipAction.map { (title: AppLocalization.text("stash.autoStash.skip"), action: $0) },
             error: notice,
             isValid: canSubmit,
-            cancel: close,
+            cancel: cancel,
             submit: submit
         ) {
             form
@@ -225,6 +225,15 @@ extension StashDialog {
     /// 自动储藏的操作完成后是否恢复改动：修补旧提交时总是保留储藏，其余按选项。
     private func reapplies(_ pending: AutoStashRequest) -> Bool {
         reapply && !pending.keepsStash
+    }
+
+    /// 取消或中止：关闭对话框；排进队列的检出轮到时的询问被中止时，连同它占着的轮次一起取消，后面排着的接着轮到。
+    private func cancel() {
+        close()
+
+        if case .autoStash(let pending) = request, let turn = pending.turn {
+            RepositoryWriteQueue.shared.cancel(turn)
+        }
     }
 
     /// 捕获表单值后开始执行；仓库暂不可写时对话框保持打开，已填写的内容保留。

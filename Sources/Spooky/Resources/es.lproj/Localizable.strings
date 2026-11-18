@@ -514,6 +514,9 @@
 "activity.finished" = "Terminada";
 "activity.cancelled" = "Cancelada";
 "activity.failed" = "Fallida";
+"activity.waiting" = "En espera";
+"activity.waitingDetail" = "En espera…";
+"activity.skipped" = "Omitida";
 "activity.remote" = "Remoto";
 "activity.remote.help" = "Mostrar actividades remotas";
 "activity.repository" = "Repositorio";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "Push a %@ completado";
 "activity.titleFailed" = "%@: falló";
 "activity.titleCancelled" = "%@: cancelado";
+"activity.titleSkipped" = "%@: omitido";
+"queue.notRun" = "No se ejecutó: el repositorio cambió mientras esta operación esperaba.";
+"queue.cancelledAfterFailure" = "Cancelada porque “%@” falló.";
+"queue.cancelledDisconnected" = "Cancelada porque se perdió la conexión con el servidor.";
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD sigue en %@. Comprobar la copia de trabajo antes de volver a intentarlo.";
 "recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
 "recovery.unborn" = "ningún commit";
-"dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
+"dialog.blocked" = "El servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo después de reconectar.";
 "history.loadingChanges" = "Cargando cambios…";
 "repositories.unavailableShort" = "No disponible";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Sincronizar";
 "sync.autoFetch" = "Fetch automático";
+"sync.autoFetch.yielded" = "Detenida para que “%@” se ejecute primero.";
 "sync.quickFetch" = "Fetch rápido";
 "sync.quickPull" = "Pull rápido";
 "sync.quickPush" = "Push rápido";
@@ -1979,8 +1987,14 @@
 "bookmarks.sortParent" = "Ordenar la carpeta superior por nombre";
 "bookmarks.delete.title" = "¿Eliminar “%@”?";
 "bookmarks.delete.titleMultiple" = "¿Eliminar %ld elementos?";
-"bookmarks.delete.message" = "Solo se eliminan los marcadores. Los repositorios siguen en el disco o en el servidor.";
+"bookmarks.delete.note" = "Se eliminan los marcadores. Las carpetas de los repositorios siguen en el disco, salvo que también las traslade a la Papelera.";
+"bookmarks.delete.noteServer" = "Se eliminan los marcadores. Los repositorios siguen donde están, salvo que también los traslade a la Papelera; los repositorios de un servidor van a la Papelera de ese servidor.";
+"bookmarks.delete.trash" = "Trasladar también la carpeta del repositorio a la Papelera, incluidos los cambios sin confirmar";
+"bookmarks.delete.trashMultiple" = "Trasladar también %ld carpetas de repositorios a la Papelera, incluidos los cambios sin confirmar";
 "bookmarks.delete.submit" = "Eliminar";
+"bookmarks.trashFailed.title" = "No se ha podido trasladar a la Papelera";
+"bookmarks.trashFailed.message" = "Se han eliminado los marcadores, pero estas carpetas siguen donde estaban:";
+"bookmarks.trashFailed.protected" = "No se ha trasladado: es una carpeta de inicio, una carpeta que contiene una o el nivel superior de un volumen.";
 "bookmarks.dropZone.title" = "Suelta una carpeta o una URL";
 "bookmarks.dropZone.subtitle" = "para añadir un repositorio Git";
 "bookmarks.dropZone.add" = "Añadir";
@@ -2225,6 +2239,8 @@
 "settings.crashReports.help" = "Los informes de fallos ayudan a diagnosticar y corregir problemas en Spooky.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "Mostrar los worktrees en la lista de repositorios";
+"settings.showHostAliasesInRepositoryList" = "Mostrar los alias de host SSH en la lista de repositorios";
 "settings.showDeveloperMenu" = "Mostrar el menú Developer";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

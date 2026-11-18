@@ -179,7 +179,7 @@ extension AddWorktreeDialog {
         }
     }
 
-    /// 捕获表单值后开始创建；仓库忙碌时表单保持打开。
+    /// 捕获表单值后开始创建；服务器已断开时表单保持打开。
     private func submit() {
         if session.addWorktree(at: destination, revision: revision, detach: detach, force: force) {
             close()
@@ -275,7 +275,7 @@ extension WorktreePathDialog {
         if panel.runModal() == .OK, let url = panel.url { path = url.path }
     }
 
-    /// 开始移动；仓库忙碌时表单保持打开。
+    /// 开始移动；服务器已断开时表单保持打开。
     private func submit() {
         if session.moveWorktree(worktree, to: path) {
             close()
@@ -435,7 +435,7 @@ extension RelocateWorktreeDialog {
         panel.beginSheetModal(for: window, completionHandler: finish)
     }
 
-    /// 开始修复；仓库忙碌时表单保持打开。
+    /// 开始修复；服务器已断开时表单保持打开。
     private func submit() {
         if session.repairWorktree(at: path) {
             close()
@@ -481,7 +481,7 @@ struct RemoveWorktreeDialog: View {
         }
     }
 
-    /// 开始删除；仓库忙碌时表单保持打开。
+    /// 开始删除；服务器已断开时表单保持打开。
     private func submit() {
         if session.removeWorktree(worktree, force: force) {
             close()

@@ -30,7 +30,7 @@ extension RepositoryActivity {
     /// 显示的标题，Activity 窗口与侧边栏底部的活动区共用。
     ///
     /// Remote 页按传输方向与状态写动词，后接远端名与 refspec，如 “Fetched origin” “Pulling origin refs/heads/main”；
-    /// 失败与取消在进行时的写法后面接 failed、cancelled。较早保存、没有方向的 Remote 记录与其余两页写操作名称。
+    /// 失败、取消与排队后没有执行的在进行时的写法后面接 failed、cancelled、skipped。较早保存、没有方向的 Remote 记录与其余两页写操作名称。
     var displayTitle: String {
         guard kind == .remote, let target else {
             return title
@@ -49,6 +49,7 @@ extension RepositoryActivity {
         switch state {
         case "activity.failed": return AppLocalization.text("activity.titleFailed", action)
         case "activity.cancelled": return AppLocalization.text("activity.titleCancelled", action)
+        case "activity.skipped": return AppLocalization.text("activity.titleSkipped", action)
         default: return action
         }
     }

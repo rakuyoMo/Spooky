@@ -514,6 +514,9 @@
 "activity.finished" = "Abgeschlossen";
 "activity.cancelled" = "Abgebrochen";
 "activity.failed" = "Fehlgeschlagen";
+"activity.waiting" = "Wartet";
+"activity.waitingDetail" = "Wartet …";
+"activity.skipped" = "Übersprungen";
 "activity.remote" = "Remote";
 "activity.remote.help" = "Remote-Aktivitäten anzeigen";
 "activity.repository" = "Repository";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "Nach %@ gepusht";
 "activity.titleFailed" = "%@ fehlgeschlagen";
 "activity.titleCancelled" = "%@ abgebrochen";
+"activity.titleSkipped" = "%@ übersprungen";
+"queue.notRun" = "Nicht ausgeführt: Das Repository hat sich während des Wartens geändert.";
+"queue.cancelledAfterFailure" = "Abgebrochen, weil „%@“ fehlgeschlagen ist.";
+"queue.cancelledDisconnected" = "Abgebrochen, weil die Verbindung zum Server getrennt wurde.";
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "„%@“ wurde durch die Verbindungstrennung unterbrochen und nicht wiederholt. HEAD ist weiterhin %@. Prüfen Sie die Arbeitskopie, bevor Sie es erneut versuchen.";
 "recovery.notStarted" = "„%@“ wurde nicht gestartet, weil die Serververbindung nicht verfügbar war. Auf dem Server wurde nichts geändert.";
 "recovery.unborn" = "keine Commits";
-"dialog.blocked" = "In diesem Repository läuft ein anderer Vorgang oder die Verbindung zum Server ist getrennt. Ihre Einstellungen bleiben erhalten; versuchen Sie es erneut, sobald das Repository verfügbar ist.";
+"dialog.blocked" = "Die Verbindung zum Server ist getrennt. Ihre Einstellungen bleiben erhalten; versuchen Sie es erneut, sobald die Verbindung wiederhergestellt ist.";
 "history.loadingChanges" = "Änderungen werden geladen …";
 "repositories.unavailableShort" = "Nicht verfügbar";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Synchronisieren";
 "sync.autoFetch" = "Automatisches Abrufen";
+"sync.autoFetch.yielded" = "Angehalten, damit „%@“ zuerst ausgeführt wird.";
 "sync.quickFetch" = "Schnell abrufen";
 "sync.quickPull" = "Schnell pullen";
 "sync.quickPush" = "Schnell pushen";
@@ -1979,8 +1987,14 @@
 "bookmarks.sortParent" = "Übergeordneten Ordner nach Name sortieren";
 "bookmarks.delete.title" = "„%@“ löschen?";
 "bookmarks.delete.titleMultiple" = "%ld Objekte löschen?";
-"bookmarks.delete.message" = "Nur die Lesezeichen werden entfernt. Die Repositorys bleiben auf dem Datenträger oder dem Server.";
+"bookmarks.delete.note" = "Die Lesezeichen werden entfernt. Die Repository-Ordner bleiben auf dem Datenträger, sofern Sie sie nicht auch in den Papierkorb legen.";
+"bookmarks.delete.noteServer" = "Die Lesezeichen werden entfernt. Die Repositorys bleiben, wo sie sind, sofern Sie sie nicht auch in den Papierkorb legen; Repositorys auf einem Server kommen in den Papierkorb dieses Servers.";
+"bookmarks.delete.trash" = "Repository-Ordner auch in den Papierkorb legen, einschließlich nicht committeter Änderungen";
+"bookmarks.delete.trashMultiple" = "%ld Repository-Ordner auch in den Papierkorb legen, einschließlich nicht committeter Änderungen";
 "bookmarks.delete.submit" = "Löschen";
+"bookmarks.trashFailed.title" = "Nicht in den Papierkorb gelegt";
+"bookmarks.trashFailed.message" = "Die Lesezeichen wurden entfernt, aber diese Ordner bleiben, wo sie sind:";
+"bookmarks.trashFailed.protected" = "Nicht bewegt: Es ist ein Benutzerordner, ein Ordner, der einen Benutzerordner enthält, oder die oberste Ebene eines Volumes.";
 "bookmarks.dropZone.title" = "Ordner oder URL hierher ziehen,";
 "bookmarks.dropZone.subtitle" = "um ein Git-Repository hinzuzufügen";
 "bookmarks.dropZone.add" = "Hinzufügen";
@@ -2225,6 +2239,8 @@
 "settings.crashReports.help" = "Absturzberichte helfen, Probleme in Spooky zu erkennen und zu beheben.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "Worktrees in der Repository-Liste anzeigen";
+"settings.showHostAliasesInRepositoryList" = "SSH-Host-Aliasse in der Repository-Liste anzeigen";
 "settings.showDeveloperMenu" = "Menü „Developer“ anzeigen";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

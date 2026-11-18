@@ -4,6 +4,22 @@ import SpookyKit
 // MARK: - Availability
 
 extension RepositorySession {
+    /// 工作树的位置：与所属仓库在同一台机器上；失效的工作树不能打开，为 nil。仓库管理里的工作树行同样按它打开。
+    ///
+    /// - Parameters:
+    ///   - worktree: 工作树。
+    ///   - repository: 工作树所属的仓库。
+    nonisolated static func location(of worktree: Worktree, in repository: RepositoryLocation) -> RepositoryLocation? {
+        guard worktree.isValid else {
+            return nil
+        }
+
+        switch repository {
+        case .local: return .local(path: worktree.path)
+        case .remote(let host, _): return .remote(host: host, path: worktree.path)
+        }
+    }
+
     /// 能否删除这个工作树：主工作树不能。
     func canRemove(_ worktree: Worktree) -> Bool {
         canWrite && !worktree.isMain && !worktree.isBare
@@ -19,16 +35,9 @@ extension RepositorySession {
         canWrite && !worktree.isValid && !worktree.isBare
     }
 
-    /// 工作树在仓库所在机器上的位置；失效的工作树不能打开，为 nil。
+    /// 工作树在本窗口仓库所在机器上的位置；失效的工作树或没有打开仓库时为 nil。
     func location(of worktree: Worktree) -> RepositoryLocation? {
-        guard worktree.isValid, let repository else {
-            return nil
-        }
-
-        switch repository {
-        case .local: return .local(path: worktree.path)
-        case .remote(let host, _): return .remote(host: host, path: worktree.path)
-        }
+        repository.flatMap { Self.location(of: worktree, in: $0) }
     }
 }
 
@@ -77,7 +86,8 @@ extension RepositorySession {
                 try await RepositoryWorktrees(runner: runner)
                     .add(at: path, revision: revision, detach: detach, force: force, onOutput: output)
             },
-            title: AppLocalization.text("worktree.add")
+            title: AppLocalization.text("worktree.add"),
+            touchesWorkingCopy: false
         )
     }
 
@@ -86,7 +96,9 @@ extension RepositorySession {
     func moveWorktree(_ worktree: Worktree, to destination: String) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).move(worktree, to: destination) },
-            title: AppLocalization.text("worktree.move")
+            title: AppLocalization.text("worktree.move"),
+            touchesWorkingCopy: false,
+            available: { $0.canMove(worktree) }
         )
     }
 
@@ -95,7 +107,9 @@ extension RepositorySession {
     func removeWorktree(_ worktree: Worktree, force: Bool) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).remove(worktree, force: force) },
-            title: AppLocalization.text("worktree.remove")
+            title: AppLocalization.text("worktree.remove"),
+            touchesWorkingCopy: false,
+            available: { $0.canRemove(worktree) }
         )
     }
 
@@ -130,7 +144,8 @@ extension RepositorySession {
     func repairWorktree(at location: String) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).repair(at: location) },
-            title: AppLocalization.text("worktree.repair")
+            title: AppLocalization.text("worktree.repair"),
+            touchesWorkingCopy: false
         )
     }
 }

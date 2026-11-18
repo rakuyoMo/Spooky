@@ -34,11 +34,19 @@ struct GeneralSettingsView: View {
     @AppStorage(SubmodulePreferences.alwaysUpdate)
     private var alwaysUpdateSubmodules = false
 
+    /// 在仓库管理列表里列出仓库的工作树。
+    @AppStorage(RepositoryManagerPreferences.showsWorktreesKey)
+    private var showsWorktrees = false
+
+    /// 在仓库管理列表里服务器仓库的名称前写主机别名。
+    @AppStorage(RepositoryManagerPreferences.showsHostAliasesKey)
+    private var showsHostAliases = true
+
     /// 在主菜单显示 Developer 菜单。
     @AppStorage(DeveloperPreferences.showsMenuKey)
     private var showsDeveloperMenu = false
 
-    /// General 表单按功能分为七组，组间以分隔线隔开；控件列宽 278 pt。
+    /// General 表单按功能分为八组，组间以分隔线隔开；控件列宽 278 pt。
     var body: some View {
         SettingsForm {
             CloneDirectoryRow()
@@ -65,6 +73,13 @@ struct GeneralSettingsView: View {
             SettingsSeparator()
 
             WindowSettingsRows()
+
+            SettingsSeparator(next: .checkbox)
+
+            toggleRow("settings.showWorktreesInRepositoryList", isOn: $showsWorktrees)
+
+            toggleRow("settings.showHostAliasesInRepositoryList", isOn: $showsHostAliases)
+                .padding(.top, SettingsFormLayout.checkboxSpacing)
 
             SettingsSeparator(next: .checkbox)
 

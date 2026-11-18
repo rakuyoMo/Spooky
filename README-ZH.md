@@ -104,7 +104,7 @@ Spooky 是一个 Swift Package，主要有两个 target，都按功能分目录�
 
 - **Git 一律经 `GitRunner` 执行**：本机与服务器仓库共用一套接口。本机仓库执行设置里选的 Git 程序，服务器仓库经 `/usr/bin/ssh` 在服务器上执行
 
-- **一次一个写操作**：同一仓库的写操作一次只执行一个，不论从哪个窗口发起。纯读取的 Git 命令登记在 `RepositoryOperationQueue.isReadOnly`，其余命令都按写操作处理
+- **一次一个写操作**：每个仓库一条写队列，打开它的窗口共用；写操作按发起的先后一次执行一个，正有写操作时发起的排队等着轮到。纯读取的 Git 命令登记在 `RepositoryOperationQueue.isReadOnly`，其余命令都按写操作处理
 
 - **服务器连接**：每个服务器工作区使用专属的 SSH 主连接（ControlMaster），空闲 10 分钟后退出。首次连接检查通过后，Perl 写的远端包装器 `spooky-remote.pl` 按内容摘要命名，安装到服务器的 `~/.spooky/bin/`，负责远端进程与回调。文件经 SFTP 读写，复用同一个主连接
 

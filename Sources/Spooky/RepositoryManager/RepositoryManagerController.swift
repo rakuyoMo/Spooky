@@ -72,6 +72,14 @@ final class RepositoryManagerController {
     @ObservationIgnored
     weak var coordinator: SpookyApplicationController?
 
+    /// 删除书签时把仓库文件夹移进废纸篓的入口；测试换成记录调用的假实现。
+    @ObservationIgnored
+    var folderTrash = RepositoryFolderTrash.system
+
+    /// 最近一次删除书签后在后台移动仓库文件夹的任务，结果是没能移走的仓库与原因。
+    @ObservationIgnored
+    var trashTask: Task<[TrashFailure], Never>? = nil
+
     /// 详情区的读取任务。
     @ObservationIgnored
     private var detailTask: Task<Void, Never>? = nil

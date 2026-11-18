@@ -372,8 +372,8 @@ extension WorkingCopyFileList.Coordinator {
             let enabled = await session.isLFSEnabled()
 
             files.isEnabled = session.canTrackLFS(entries, lfsEnabled: enabled)
-            type.isEnabled = enabled && session.canWrite && !types.isEmpty
-            pattern.isEnabled = enabled && session.canWrite
+            type.isEnabled = enabled && session.canWriteFiles && !types.isEmpty
+            pattern.isEnabled = enabled && session.canWriteFiles
         }
     }
 

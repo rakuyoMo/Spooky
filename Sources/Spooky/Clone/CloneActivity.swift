@@ -36,6 +36,10 @@ final class CloneActivity: Identifiable {
     @ObservationIgnored
     private var operation: GitOperation?
 
+    /// 等克隆结束并更新状态的任务；状态更新完它才结束。
+    @ObservationIgnored
+    private var completion: Task<Void, Never>?
+
     /// 列表与进度页显示的名称：目标目录的最后一段，服务器目标带主机前缀。
     var name: String {
         let directory = URL(fileURLWithPath: clone.destination.path).lastPathComponent
@@ -87,7 +91,7 @@ final class CloneActivity: Identifiable {
         self.operation = operation
         let destination = clone.destination
 
-        Task { [weak self] in
+        completion = Task { [weak self] in
             let result: State
 
             do {
@@ -109,6 +113,11 @@ final class CloneActivity: Identifiable {
         operation?.cancel()
     }
 
+    /// 停止进行中的克隆，等它结束、状态更新后返回；已经结束时立即返回。
+    func stop() async {
+        operation?.cancel()
+        await completion?.value
+    }
 }
 
 // MARK: - CloneActivities

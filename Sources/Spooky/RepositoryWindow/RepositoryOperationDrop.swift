@@ -236,6 +236,7 @@ extension RepositoryOperationDrop {
             session.performGit(
                 { runner, _ in try await RepositoryReferences(runner: runner).rename(branch.id, to: name) },
                 title: AppLocalization.text("branch.rename"),
+                touchesWorkingCopy: false,
                 undo: .reversible
             )
             return
@@ -248,6 +249,7 @@ extension RepositoryOperationDrop {
             },
             title: AppLocalization.text("branch.renameRemote"),
             target: .push(parts.remote),
+            touchesWorkingCopy: false,
             undo: .renamingRemoteBranch(parts.branch, on: parts.remote, to: name)
         )
     }

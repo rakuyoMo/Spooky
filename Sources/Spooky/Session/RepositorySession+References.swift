@@ -119,7 +119,8 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).fastForward(reference.id, onOutput: output)
             },
             title: AppLocalization.text("branch.fastForward", reference.name),
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canFastForward(reference) }
         )
     }
 
@@ -134,7 +135,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setUpstream(upstream.id, for: branch.id)
             },
             title: AppLocalization.text("branch.tracking.set"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canManage(branch) }
         )
     }
 
@@ -149,7 +152,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).unsetUpstream(of: branch.id)
             },
             title: AppLocalization.text("branch.tracking.remove"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canManage(branch) }
         )
     }
 
@@ -172,7 +177,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setParent(parent, of: id)
             },
             title: AppLocalization.text("branch.parent.set"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canManage(branch) }
         )
     }
 
@@ -187,7 +194,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setParent(nil, of: branch.id)
             },
             title: AppLocalization.text("branch.parent.remove"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canManage(branch) }
         )
     }
 
@@ -236,6 +245,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text(branches.count == 1 ? "branch.delete" : "branch.deleteMultiple"),
             target: tracked ? .push(upstream) : nil,
+            touchesWorkingCopy: false,
             undo: tracked ? .deletingBranch(withUpstream: branches[0]) : .reversible
         ) { [weak self] in
             if let offer = pending.offer.withLock({ $0 }) {
@@ -273,7 +283,8 @@ extension RepositorySession {
                 try await RepositoryTags(runner: runner).pushAll(to: remote, onOutput: output)
             },
             title: AppLocalization.text("tag.pushAll", remote),
-            target: .push(remote)
+            target: .push(remote),
+            touchesWorkingCopy: false
         )
     }
 
@@ -284,6 +295,7 @@ extension RepositorySession {
                 try await RepositoryRemotes(runner: runner).setSkipsFetchAll(skips, for: remote)
             },
             title: AppLocalization.text("remote.skipFetchAll.title"),
+            touchesWorkingCopy: false,
             undo: .changingRemote(remote)
         )
     }
@@ -303,6 +315,7 @@ extension RepositorySession {
             performGit(
                 { runner, _ in try await RepositoryRemotes(runner: runner).unsetPushURL(of: remote) },
                 title: title,
+                touchesWorkingCopy: false,
                 undo: .changingRemote(remote)
             )
         })
@@ -325,6 +338,7 @@ extension RepositorySession {
                     try await RepositoryRemotes(runner: runner).removeRefspec(refspec, from: remote, push: push)
                 },
                 title: title,
+                touchesWorkingCopy: false,
                 undo: .changingRemote(remote)
             )
         })

@@ -19,8 +19,9 @@ extension RepositorySession {
     var conflictCount: Int { status?.entries.filter { $0.kind == .conflicted }.count ?? 0 }
 
     /// 有标题、有暂存改动或可修补的 HEAD 时允许提交；合并可产生空树差异，进行中的操作没有任何改动时确认后建空提交。
+    /// 上一次提交已被接受、还在排队或执行时不再接受新的提交。
     var canCommit: Bool {
-        canWrite && commitResetTask == nil && conflictCount == 0
+        canWrite && !isCommitting && commitResetTask == nil && conflictCount == 0
             && !commitSubject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && (
                 amend
@@ -74,21 +75,24 @@ extension RepositorySession {
         }
     }
 
-    /// 提交命令已经开始：过了 `commitProgressDelay` 仍未结束才显示转圈；写操作结束时不论成败都结束提交状态。
+    /// 提交已被接受（立即执行或排进队列）：提交区随即锁住，过了 `commitProgressDelay` 仍未结束才显示转圈。
     func beginCommitProgress() {
-        let write = writeTask
         let delay = commitProgressDelay
         isCommitting = true
 
-        let progress = Task { [weak self] in
+        commitProgressTask = Task { [weak self] in
             try? await Task.sleep(for: delay)
 
             guard !Task.isCancelled else { return }
 
             self?.showsCommitProgress = true
         }
+    }
 
-        commitProgressTask = progress
+    /// 提交开始执行后调用：写操作结束时不论成败都结束提交状态。
+    func endCommitProgressAfterWriting() {
+        let write = writeTask
+        let progress = commitProgressTask
 
         // 失败与取消没有成功回调，等写操作结束后收起；这期间已经开始的下一次提交不受影响
         Task { [weak self] in
@@ -227,7 +231,8 @@ extension RepositorySession {
                         .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
                 },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                touchesWorkingCopy: false
             )
         })
     }
@@ -255,7 +260,8 @@ extension RepositorySession {
                         .applyGlobalIdentity(name: profile.name, email: profile.email)
                 },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                touchesWorkingCopy: false
             )
         })
     }

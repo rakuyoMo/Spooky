@@ -514,6 +514,9 @@
 "activity.finished" = "Finished";
 "activity.cancelled" = "Cancelled";
 "activity.failed" = "Failed";
+"activity.waiting" = "Waiting";
+"activity.waitingDetail" = "Waiting…";
+"activity.skipped" = "Skipped";
 "activity.remote" = "Remote";
 "activity.remote.help" = "Shows Remote Activities";
 "activity.repository" = "Repository";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "Pushed %@";
 "activity.titleFailed" = "%@ failed";
 "activity.titleCancelled" = "%@ cancelled";
+"activity.titleSkipped" = "%@ skipped";
+"queue.notRun" = "Not run: the repository changed while this operation was waiting.";
+"queue.cancelledAfterFailure" = "Cancelled because “%@” failed.";
+"queue.cancelledDisconnected" = "Cancelled because the connection to the server was lost.";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Do not ask me again";
 "menu.repository" = "Repository";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "“%@” was interrupted by the disconnection and was not retried. HEAD is still %@. Check the working copy before trying again.";
 "recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
 "recovery.unborn" = "no commits";
-"dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
+"dialog.blocked" = "The server is disconnected. Your settings are kept; try again after reconnecting.";
 "history.loadingChanges" = "Loading Changeset…";
 "repositories.unavailableShort" = "Unavailable";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Sync";
 "sync.autoFetch" = "Auto Fetch";
+"sync.autoFetch.yielded" = "Stopped so that “%@” can run first.";
 "sync.quickFetch" = "Quick Fetch";
 "sync.quickPull" = "Quick Pull";
 "sync.quickPush" = "Quick Push";
@@ -1979,8 +1987,14 @@
 "bookmarks.sortParent" = "Sort Parent Folder by Name";
 "bookmarks.delete.title" = "Delete “%@”?";
 "bookmarks.delete.titleMultiple" = "Delete %ld Items?";
-"bookmarks.delete.message" = "Only the bookmarks are removed. The repositories stay on disk or on the server.";
+"bookmarks.delete.note" = "The bookmarks are removed. The repository folders stay on disk unless you also move them to the Trash.";
+"bookmarks.delete.noteServer" = "The bookmarks are removed. The repositories stay where they are unless you also move them to the Trash; repositories on a server go to that server’s Trash.";
+"bookmarks.delete.trash" = "Also move the repository folder to the Trash, including uncommitted changes";
+"bookmarks.delete.trashMultiple" = "Also move %ld repository folders to the Trash, including uncommitted changes";
 "bookmarks.delete.submit" = "Delete";
+"bookmarks.trashFailed.title" = "Couldn’t Move to the Trash";
+"bookmarks.trashFailed.message" = "The bookmarks are removed, but these folders stay where they are:";
+"bookmarks.trashFailed.protected" = "Not moved: it’s a home folder, a folder containing one, or the top level of a volume.";
 "bookmarks.dropZone.title" = "Drop Folder or URL";
 "bookmarks.dropZone.subtitle" = "to Add Git Repository";
 "bookmarks.dropZone.add" = "Add";
@@ -2225,6 +2239,8 @@
 "settings.crashReports.help" = "Crash reports help diagnose and fix problems in Spooky.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "Show Worktrees in Repository List";
+"settings.showHostAliasesInRepositoryList" = "Show SSH Host Aliases in Repository List";
 "settings.showDeveloperMenu" = "Show Developer menu";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";

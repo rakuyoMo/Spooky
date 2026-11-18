@@ -193,6 +193,36 @@ struct ActivityRowTests {
         #expect(push.progress == 0.5)
     }
 
+    /// 等待中的记录还没开始，右上角不计时、空着，最后一行写 Waiting；开始执行后从开始执行的时刻计时，不算排队的时间。
+    @Test("等待中的记录")
+    func waiting() {
+        let activities = RepositoryActivities()
+        let push = RepositoryActivity(repository: location, title: "Push", target: .push("origin"))
+        let checkout = RepositoryActivity(repository: location, title: "Check Out", target: nil)
+
+        for activity in [push, checkout] {
+            activity.state = "activity.waiting"
+            activities.insert(activity)
+
+            #expect(ActivityRow(activity: activity).corner(now: activity.started.addingTimeInterval(5)).isEmpty)
+            #expect(ActivityRow(activity: activity).status == AppLocalization.text("activity.waiting"))
+        }
+
+        // 早就排进队列，轮到时接着用这条记录，从轮到的时刻开始计时
+        checkout.started = started
+
+        _ = WriteActivity(
+            activities: activities,
+            repository: location,
+            title: "Check Out",
+            target: nil,
+            waiting: checkout
+        )
+
+        #expect(checkout.started > started)
+        #expect(ActivityRow(activity: checkout).corner(now: checkout.started.addingTimeInterval(1.5)) == elapsed(1.5))
+    }
+
     /// 两位小数、按系统地区数字格式的耗时。
     private func elapsed(_ seconds: TimeInterval) -> String {
         AppLocalization.text("activity.elapsed", seconds.formatted(.number.precision(.fractionLength(2))))
@@ -218,6 +248,9 @@ struct ActivityRowTests {
             #expect(ActivityRow(activity: activity).leadingIcon == warning)
 
             activity.state = "activity.failed"
+            #expect(ActivityRow(activity: activity).leadingIcon == warning)
+
+            activity.state = "activity.skipped"
             #expect(ActivityRow(activity: activity).leadingIcon == warning)
 
             // 侧边栏底部的活动区按方向取图标，失败与取消不换

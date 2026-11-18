@@ -5,13 +5,13 @@ import SwiftUI
 // MARK: - Detail Editing
 
 extension RepositoryManagerController {
-    /// 详情区的写操作能否开始：概况已读出，且应用内没有同一仓库的写操作。
+    /// 详情区的写操作能否开始：概况已读出，且同一仓库没有执行中或排队的写操作；详情区的写入不排队。
     var canEditDetail: Bool {
         guard let detailLocation, case .loaded = detailState else {
             return false
         }
 
-        return !RepositoryWriteLocks.shared.contains(detailLocation)
+        return RepositoryWriteQueue.shared.isIdle(detailLocation)
     }
 
     /// 编辑描述的对话框，预填当前描述。
@@ -22,7 +22,9 @@ extension RepositoryManagerController {
 
         window?.presentDialog { [weak self] close in
             EditDescriptionDialog(text: summary.description ?? "", close: close) { text in
-                self?.write(location) { try await $0.setRepositoryDescription(text) }
+                self?.write(location, title: AppLocalization.text("bookmarks.description.edit")) {
+                    try await $0.setRepositoryDescription(text)
+                }
             }
         }
     }
@@ -39,7 +41,7 @@ extension RepositoryManagerController {
                 email: summary.committer?.email ?? "",
                 close: close
             ) { name, email in
-                self?.write(location) {
+                self?.write(location, title: AppLocalization.text("bookmarks.identity.edit")) {
                     try await WorkingCopyOperations(runner: $0).applyIdentity(name: name, email: email, signingKey: nil)
                 }
             }
@@ -52,7 +54,9 @@ extension RepositoryManagerController {
             return
         }
 
-        write(location) { try await WorkingCopyOperations(runner: $0).clearIdentity() }
+        write(location, title: AppLocalization.text("bookmarks.detail.unset")) {
+            try await WorkingCopyOperations(runner: $0).clearIdentity()
+        }
     }
 
     /// 选用身份档案：说明要写入的配置项与位置，确认后写进仓库本地配置。
@@ -89,20 +93,28 @@ extension RepositoryManagerController {
             submitTitle: AppLocalization.text("profiles.apply.submit"),
             close: close
         ) { [weak self] _ in
-            self?.write(location) {
+            self?.write(location, title: AppLocalization.text("profiles.apply")) {
                 try await WorkingCopyOperations(runner: $0)
                     .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
             }
         }
     }
 
-    /// 写入仓库：登记应用内的写锁，失败时显示原文；结束后重读概况，显示同一仓库的窗口随之刷新。
+    /// 写入仓库：仓库空闲时登记为执行中的写操作，不建 Activity 记录，失败时显示原文；期间各窗口提交的写操作排在它后面。
+    /// 结束后重读概况，显示同一仓库的窗口随之刷新。
     ///
     /// - Parameters:
     ///   - location: 详情区的仓库。
+    ///   - title: 已本地化的操作名称。
     ///   - operation: 经连接检查后的执行器完成的写入。
-    private func write(_ location: RepositoryLocation, operation: @escaping @Sendable (GitRunner) async throws -> Void) {
-        guard RepositoryWriteLocks.shared.acquire(location) else {
+    private func write(
+        _ location: RepositoryLocation,
+        title: String,
+        operation: @escaping @Sendable (GitRunner) async throws -> Void
+    ) {
+        let write = RepositoryWrite(location: location, session: nil, title: title, touchesWorkingCopy: false)
+
+        guard RepositoryWriteQueue.shared.begin(write) else {
             return
         }
 
@@ -114,7 +126,7 @@ extension RepositoryManagerController {
                 self?.window?.showFailure(AppFailure(error: error, opening: false, location: location, writing: true))
             }
 
-            RepositoryWriteLocks.shared.release(location)
+            RepositoryWriteQueue.shared.finish(write)
 
             guard let self else {
                 return

@@ -182,7 +182,7 @@ extension DeleteReferencesDialog {
 // MARK: - Actions
 
 extension DeleteReferencesDialog {
-    /// 捕获选项后开始删除；仓库忙碌或已切换时表单保持打开。
+    /// 捕获选项后开始删除；服务器已断开或仓库已切换时表单保持打开。
     private func submit() {
         guard session.repository == repository, start() else {
             return
@@ -216,7 +216,9 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: title,
-                target: .push(groups.count == 1 ? groups.keys.first : nil)
+                target: .push(groups.count == 1 ? groups.keys.first : nil),
+                touchesWorkingCopy: false,
+                available: { $0.canDeleteRemoteBranches(items) }
             )
 
         case .tags(let names):
@@ -233,6 +235,7 @@ extension DeleteReferencesDialog {
                 },
                 title: title,
                 target: remote.map { .push($0) },
+                touchesWorkingCopy: false,
                 undo: remote == nil ? .reversible : .irreversible
             )
 
@@ -246,6 +249,7 @@ extension DeleteReferencesDialog {
                     }
                 },
                 title: AppLocalization.text(keys.submit),
+                touchesWorkingCopy: false,
                 undo: .removingRemotes(names),
                 success: { [session] in
                     guard let selected = session.selectedRemote, names.contains(selected) else {

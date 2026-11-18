@@ -46,11 +46,10 @@ extension RepositorySession {
                 nil
             }
 
-        // 写操作与合并、变基等进行中的操作都要等它结束
+        // 用户发起的写操作（执行中或排队）与合并、变基等进行中的操作都要等它结束；只有自动获取在执行时它让路
         let operation = context?.operation
 
-        let busy = isWriting
-            || RepositoryWriteLocks.shared.contains(repository)
+        let busy = hasUserWrite
             || (operation != nil && operation != aborted)
 
         if busy {
