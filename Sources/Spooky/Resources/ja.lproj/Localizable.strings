@@ -2461,7 +2461,6 @@
 "worktree.remove.message" = "ワークツリー「%@」とそのディレクトリを完全に削除します。";
 "worktree.remove.submit" = "ワークツリーを削除";
 "worktree.repair" = "ワークツリーを修復";
-"worktree.repair.alreadyUsed" = "選択したフォルダはすでに別のワークツリーで使われています。";
 "worktree.repair.invalid" = "選択したパスにこのリポジトリの有効なワークツリーディレクトリがありません。";
 "worktree.repair.menu" = "ワークツリーを修復…";
 "worktree.repair.missingFolder" = "選択したフォルダは存在しません。";

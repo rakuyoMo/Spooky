@@ -18,9 +18,6 @@ public enum WorktreeRepairProblem: Error, Sendable, Equatable {
 
     /// `.git` 指向的不是这个仓库的工作树登记。
     case otherRepository
-
-    /// 选中的目录已是另一个工作树（含主工作树）的位置。
-    case alreadyUsed
 }
 
 // MARK: - Repair
@@ -59,11 +56,6 @@ extension RepositoryWorktrees {
         // 4. gitdir 要落在这个仓库的公共 Git 目录的 worktrees 之下
         guard normalized(resolved).hasPrefix(normalized(commonDirectory) + "/worktrees/") else {
             throw WorktreeRepairProblem.otherRepository
-        }
-
-        // 5. 不能是别的工作树已在用的目录
-        guard !worktrees.contains(where: { normalized($0.path) == normalized(directory) }) else {
-            throw WorktreeRepairProblem.alreadyUsed
         }
     }
 

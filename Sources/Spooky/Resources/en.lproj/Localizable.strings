@@ -2461,7 +2461,6 @@
 "worktree.remove.message" = "Permanently deletes the worktree “%@” and its directory.";
 "worktree.remove.submit" = "Remove Worktree";
 "worktree.repair" = "Repair Worktree";
-"worktree.repair.alreadyUsed" = "The selected folder is already used by another worktree.";
 "worktree.repair.invalid" = "The selected path does not contain a valid worktree directory for this repository.";
 "worktree.repair.menu" = "Repair Worktree…";
 "worktree.repair.missingFolder" = "The selected folder doesn’t exist.";

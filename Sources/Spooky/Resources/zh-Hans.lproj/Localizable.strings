@@ -2461,7 +2461,6 @@
 "worktree.remove.message" = "永久删除工作树 “%@” 及它的目录。";
 "worktree.remove.submit" = "删除工作树";
 "worktree.repair" = "修复工作树";
-"worktree.repair.alreadyUsed" = "选中的文件夹已被另一个工作树使用。";
 "worktree.repair.invalid" = "选中的路径里没有这个仓库的有效工作树目录。";
 "worktree.repair.menu" = "修复工作树…";
 "worktree.repair.missingFolder" = "选中的文件夹不存在。";
