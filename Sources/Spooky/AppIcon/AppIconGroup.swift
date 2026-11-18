@@ -25,7 +25,7 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
     /// 幽灵与机架。
     case serverGhost
 
-    /// 满月前探身进来的幽灵。
+    /// 从左下角探身进来的幽灵，身后是一轮紫色的满月。
     case midnight
 
     /// 默认的一组：没选过时用它，它的默认图标就是包里的默认图标，不需要壳 App 与自定义图标。
