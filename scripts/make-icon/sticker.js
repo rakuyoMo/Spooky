@@ -1,8 +1,8 @@
 /**
- * 满怀、午夜、栖枝与采撷共用的贴纸画法：炭黑底板上一轮紫色满月，幽灵、树枝与樱桃共用一圈奶油白的贴纸边。
+ * 各组共用的贴纸画法：炭黑底板上，幽灵与它身边的物件共用一圈奶油白的贴纸边。
  * 柔边、暗部与投影靠模糊与蒙版画出，WebKit 的 Canvas 2D 没有滤镜，所以画面先拼成 SVG、再画进 Canvas。
  *
- * 午夜、栖枝与采撷的画面由一块块贴纸拼成：每块给出 defs（滤镜的定义）、outline(fill)（染成一种颜色的剪影）
+ * 满怀之外各组的画面由一块块贴纸拼成：每块给出 defs（滤镜的定义）、outline(fill)（染成一种颜色的剪影）
  * 与 paint(palette, lit)（成品），由 paintStickerIcon 从后往前叠起来。配色、满月、四角星眼与贴纸边的宽度照 armful.js。
  * 坐标都是满幅坐标：1024 见方，整体缩进底板。
  */
@@ -75,7 +75,8 @@ function stickerClusterMarkup(palette, lit, stickers) {
  * @param {object} options
  * @param {{scale: number, place: Function, degrees: Function}} options.pose 姿态，见 ghostPose
  * @param {{line: number[][], from: number, to: number}[]} [options.hands] 小手：渐细的笔画，画面坐标下
- * @param {{u: number, v: number, size?: number}[]} options.eyes 眼睛在幽灵自身坐标里的位置，size 是相对近处那只的大小
+ * @param {{u: number, v: number, size?: number, tilt?: number}[]} options.eyes 眼睛在幽灵自身坐标里的位置，size 是相对近处那只的大小，
+ *     tilt 是相对身体顺时针转的度数，省略时照 STICKER_GHOST_EYE
  * @returns {{defs: string, outline: (fill: string) => string, paint: (palette: object, lit: boolean) => string}}
  */
 function ghostSticker({ pose, hands = [], eyes }) {
@@ -89,7 +90,7 @@ function ghostSticker({ pose, hands = [], eyes }) {
     const light = STICKER_GHOST_LIGHT;
 
     // 眼睛跟着身体在那里的走向转。
-    const ovals = eyes.map(({ u, v, size = 1 }) => {
+    const ovals = eyes.map(({ u, v, size = 1, tilt = STICKER_GHOST_EYE.tilt }) => {
         const [x, y] = pose.place(u, v);
 
         return {
@@ -97,7 +98,7 @@ function ghostSticker({ pose, hands = [], eyes }) {
             y,
             radiusX: STICKER_GHOST_EYE.radiusX * size * pose.scale,
             radiusY: STICKER_GHOST_EYE.radiusY * size * pose.scale,
-            tilt: pose.degrees(v) + STICKER_GHOST_EYE.tilt,
+            tilt: pose.degrees(v) + tilt,
         };
     });
 
@@ -295,14 +296,23 @@ function moonMarkup(moon, stars) {
     const id = stickerId('moon');
     const disc = discShape(moon);
 
-    // 四角星：四个角尖之间的边往中心收成弧。
-    const star = ({ x, y, size, color }) => `<path d="M${x},${y - size}Q${x},${y} ${x + size},${y}Q${x},${y} ${x},${y + size}`
-        + `Q${x},${y} ${x - size},${y}Q${x},${y} ${x},${y - size}Z" fill="${color}"/>`;
-
     return svgLinear(id, [0, moon.y - moon.radius, 0, moon.y + moon.radius], [...ARMFUL_PURPLES].reverse())
         + svgBlurred(`${id}-glow`, disc(ARMFUL_PURPLES[0]), { blur: 40, opacity: 0.5 })
         + disc(`url(#${id})`)
-        + stars.map(star).join('');
+        + starsMarkup(stars);
+}
+
+/**
+ * 几颗四角星：四个角尖之间的边往中心收成弧。
+ *
+ * @param {{x: number, y: number, size: number, color: string}[]} stars 每颗四角星的中心、从中心到角尖的长度与颜色
+ * @returns {string} 满幅坐标下的 SVG 片段
+ */
+function starsMarkup(stars) {
+    return stars
+        .map(({ x, y, size, color }) => `<path d="M${x},${y - size}Q${x},${y} ${x + size},${y}Q${x},${y} ${x},${y + size}`
+            + `Q${x},${y} ${x - size},${y}Q${x},${y} ${x},${y - size}Z" fill="${color}"/>`)
+        .join('');
 }
 
 /**

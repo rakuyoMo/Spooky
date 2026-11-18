@@ -21,7 +21,7 @@ mv "$app_directory/Contents/MacOS/Spooky.new" "$app_directory/Contents/MacOS/Spo
 rm -f "$app_directory/Contents/Resources/"AppIcon*.icns
 cp Sources/Spooky/AppIcon/Icons/*/*.icns "$app_directory/Contents/Resources/"
 
-# 非默认的图标组各有一个只装图标的壳 App，App 取它的系统图标作为该组的底。
+# 每个图标组各有一个只装图标的壳 App，App 取它的系统图标作为该组的底。
 scripts/make-icon-shells.sh "$app_directory"
 
 ditto "$binary_directory/Spooky_Spooky.bundle" "$app_directory/Contents/Resources/Spooky_Spooky.bundle"

@@ -5,7 +5,7 @@
  * 为每组的默认图标与深色图标各画指示灯灭着、亮着两版，逐个尺寸调用 renderIcon 取回 PNG。
  *
  * 每组一个文件：配色与几何常量、入口 paint…Icon、绘制函数，以及只有这一组用到的工具；两组以上用到的工具放在本文件。
- * 满怀的三组只差背景，共用 armful.js；满怀、午夜、栖枝与采撷同一种贴纸画法，共用的部分在 sticker.js。
+ * 躲猫猫的四组共用服务器的画法，放在 hide-and-seek.js；各组同一种贴纸画法，共用的部分在 sticker.js。
  * 加一组图标时新建一个文件，在 renderIcon 与 make-icon.swift 的表里各加一行。
  */
 
@@ -46,8 +46,8 @@ const PLATE_SHADOW = { offsetY: 10, blur: 20, color: 'rgba(0, 0, 0, 0.3)' };
  * 以给定像素尺寸渲染一组图标中的一个。
  *
  * @param {number} pixels 导出图片的边长
- * @param {'armful' | 'armfulPlain' | 'armfulPurple' | 'perch' | 'cherryPick' | 'serverGhost' | 'midnight'} group
- *     图标组：满怀、满怀 · 素底、满怀 · 紫底、栖枝、采撷、服务器幽灵或午夜
+ * @param {'rise' | 'front' | 'hide' | 'reveal' | 'midnight' | 'perch' | 'cherryPick' | 'armful'} group
+ *     图标组：探身、身前、藏身、显形、午夜、栖枝、采撷或满怀
  * @param {'default' | 'dark'} style 默认图标或深色图标
  * @param {boolean} lit 指示灯是否亮着
  * @returns {Promise<string>} PNG 的 data URL
@@ -55,13 +55,14 @@ const PLATE_SHADOW = { offsetY: 10, blur: 20, color: 'rgba(0, 0, 0, 0.3)' };
 async function renderIcon(pixels, group, style, lit) {
     // 各组的入口，定义在各组的文件里。
     const painters = {
-        armful: paintArmfulIcon,
-        armfulPlain: paintArmfulPlainIcon,
-        armfulPurple: paintArmfulPurpleIcon,
+        rise: paintRiseIcon,
+        front: paintFrontIcon,
+        hide: paintHideIcon,
+        reveal: paintRevealIcon,
+        midnight: paintMidnightIcon,
         perch: paintPerchIcon,
         cherryPick: paintCherryPickIcon,
-        serverGhost: paintServerGhostIcon,
-        midnight: paintMidnightIcon,
+        armful: paintArmfulIcon,
     };
 
     const canvas = document.createElement('canvas');
@@ -136,23 +137,6 @@ function withShadow(context, scale, shadow, draw) {
     context.shadowColor = shadow.color;
     draw();
     context.restore();
-}
-
-/**
- * 竖直方向的两色线性渐变。
- *
- * @param {CanvasRenderingContext2D} context 绘图上下文
- * @param {number} startY 渐变起点的 y，颜色为 top
- * @param {number} endY 渐变终点的 y，颜色为 bottom
- * @param {string} top 起点颜色
- * @param {string} bottom 终点颜色
- * @returns {CanvasGradient}
- */
-function verticalGradient(context, startY, endY, top, bottom) {
-    const gradient = context.createLinearGradient(0, startY, 0, endY);
-    gradient.addColorStop(0, top);
-    gradient.addColorStop(1, bottom);
-    return gradient;
 }
 
 /**
@@ -274,50 +258,4 @@ function continuousSquareData(left, top, size, radius) {
     }
 
     return `${data}Z`;
-}
-
-/**
- * 以左上角、宽高与圆角半径描述的圆角矩形。
- *
- * @param {number} x 左边的 x
- * @param {number} y 上边的 y
- * @param {number} width 宽度
- * @param {number} height 高度
- * @param {number} radius 圆角半径
- * @returns {Path2D}
- */
-function roundedRect(x, y, width, height, radius) {
-    const path = new Path2D();
-    path.roundRect(x, y, width, height, radius);
-    return path;
-}
-
-/**
- * 以中心与两个半轴描述的椭圆。
- *
- * @param {number} x 中心的 x
- * @param {number} y 中心的 y
- * @param {number} radiusX 水平半轴
- * @param {number} radiusY 竖直半轴
- * @param {number} rotation 绕中心顺时针旋转的弧度
- * @returns {Path2D}
- */
-function ellipse(x, y, radiusX, radiusY, rotation = 0) {
-    const path = new Path2D();
-    path.ellipse(x, y, radiusX, radiusY, rotation, 0, Math.PI * 2);
-    return path;
-}
-
-/**
- * 以圆心与半径描述的圆。
- *
- * @param {number} x 圆心的 x
- * @param {number} y 圆心的 y
- * @param {number} radius 半径
- * @returns {Path2D}
- */
-function circle(x, y, radius) {
-    const path = new Path2D();
-    path.arc(x, y, radius, 0, Math.PI * 2);
-    return path;
 }

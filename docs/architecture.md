@@ -286,15 +286,15 @@ Spooky 由两个 target 组成：
 ## App 图标
 
 - 图标组：
-  - `AppIconGroup` 有满怀、满怀 · 素底、满怀 · 紫底、栖枝、采撷、服务器幽灵与午夜七组，声明的先后就是图标列表里的顺序，默认的一组（`AppIconGroup.defaultGroup`）是满怀；所选的组存在偏好 `appIconGroup`，键不存在或值不认识时为默认的一组，Reset / Clear User Defaults 之后随之回到默认的一组
+  - `AppIconGroup` 有探身、身前、藏身、显形、午夜、栖枝、采撷与满怀八组，前四组属于 `AppIconSeries` 的躲猫猫系列，后四组属于 cherry-pick 系列；系列与组声明的先后就是设置页里自上而下、从左到右的顺序，默认的一组（`AppIconGroup.defaultGroup`）是探身；所选的组存在偏好 `appIconGroup`，键不存在或值不认识时为默认的一组，Reset / Clear User Defaults 之后随之回到默认的一组
   - 每组四个 icns：默认、连接、深色、深色连接，文件名是 `AppIcon<组名>` 加上 `Dark`、`Connected`；连接版与灭灯版只差亮起来的部分，运行时的合成依赖这一点
   - 默认的一组的默认图标是包里的默认图标（`CFBundleIconFile`）
-  - 二十八份 icns 都由 `scripts/make-icon.swift` 在无窗口的 WebKit 里执行 `scripts/make-icon/` 下的绘制脚本画出，放在 `Sources/Spooky/AppIcon/Icons/` 下各组的文件夹里，文件夹名是这一组的文件名前缀去掉 `AppIcon`，如 `Armful/`；打包时摊平拷进 `Contents/Resources/`；`kit.js` 是各组共用的底板、入口与绘图工具，每组另有一个文件，满怀的三组只差背景、共用 `armful.js`；满怀的柔边与投影要用模糊与蒙版，这三组先拼成 SVG 再画进 Canvas，其余四组直接画 Canvas
-  - 重新生成时，直接画 Canvas 的四组与仓库里的逐字节相同；满怀三组的 1024 px 一张每次可能有几个像素差一个色阶（WebKit 画 SVG 滤镜时的舍入不固定，macOS 27 实测），看不出差别，没改画法时不必提交这种变化
+  - 三十二份 icns 都由 `scripts/make-icon.swift` 在无窗口的 WebKit 里执行 `scripts/make-icon/` 下的绘制脚本画出，放在 `Sources/Spooky/AppIcon/Icons/` 下各组的文件夹里，文件夹名是这一组的文件名前缀去掉 `AppIcon`，如 `Rise/`；打包时摊平拷进 `Contents/Resources/`；`kit.js` 是各组共用的底板与入口，`sticker.js` 是各组共用的贴纸画法，每组另有一个文件，躲猫猫的四组共用 `hide-and-seek.js`；柔边与投影要用模糊与蒙版，画面先拼成 SVG 再画进 Canvas
+  - 重新生成时，1024 px 一张每次可能有几个像素差一个色阶（WebKit 画 SVG 滤镜时的舍入不固定，macOS 27 实测），看不出差别，没改画法时不必提交这种变化
 - 深浅：读全局偏好 `AppleIconAppearanceTheme`；值以 `Dark` 结尾为深色，以 `Automatic` 结尾时跟随 App 的外观，其余与键不存在时为浅色
 - 壳 App：
-  - 其它组各有一个只装该组默认图标的壳 App，放在 `Contents/Resources/<资源名>.app`，由 `scripts/make-icon-shells.sh` 在打包时写出
-  - 系统画包内图标时会裁成圆角形状、缩到标准大小并加上亮边；`AppIconController` 取壳 App 的系统图标作为该组的底，默认的一组取 Spooky.app 自己的
+  - 每组各有一个只装该组默认图标的壳 App，放在 `Contents/Resources/<资源名>.app`，由 `scripts/make-icon-shells.sh` 在打包时写出
+  - 系统画包内图标时会裁成圆角形状、缩到标准大小并加上亮边；`AppIconController` 取壳 App 的系统图标作为该组的底；默认的一组也取壳 App 的，Spooky.app 挂着别的组的自定义图标时，系统给出的包图标是那一张
 - 运行中的 Dock：`AppIconController` 按组、图标样式、深浅与连接状态挑出一版，由 `AppIconRenderer` 叠在该组的底上，设为 `NSApp.applicationIconImage`
   - 默认与深色样式下，连着服务器仓库时只有指示灯不同
   - 透明与色调样式下指示灯不亮：默认的一组交还包里的默认图标，其它组用系统按样式处理过的壳 App 图标

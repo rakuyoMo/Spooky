@@ -1,13 +1,12 @@
 /**
- * 满怀的三组：白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边；三组只差身后的背景。
- * 满怀是炭黑底板上的一轮紫色满月与三颗小星，满怀 · 素底只有炭黑底板，满怀 · 紫底是上浅下深的紫色底板。
+ * 满怀：炭黑底板上一轮紫色满月与三颗小星，白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边。
  * App 连着服务器时，两只眼睛变成一对亮着深橙的四角星。
  * 柔边、暗部与投影靠模糊与蒙版画出，画面先拼成 SVG、再画进 Canvas，见 sticker.js。
- * 深色图标的幽灵换成浅米色，樱桃与叶子压暗一档；炭黑的底板换成纯黑，紫色的底板压深一档。
+ * 深色图标的底板是纯黑，幽灵换成浅米色，樱桃与叶子压暗一档。
  */
 
 /**
- * 满怀两种图标的配色，三组共用。
+ * 满怀两种图标的配色，各组的贴纸共用。
  *
  * plate 是炭黑底板自上而下的三个色标，cast 是贴纸落在底板上的影子，edge 是贴纸边；
  * ghost 是幽灵从受光处到背光处的四个色标，rim 是轮廓内侧的一道淡色，fold 是褶，shadow 是樱桃落在幽灵身上的影子，
@@ -54,7 +53,7 @@ const ARMFUL_PALETTES = {
 };
 
 /**
- * 连着服务器时眼睛亮起来的颜色，各组、两种图标相同。
+ * 连着服务器时眼睛亮起来的颜色，眼睛会亮的各组、两种图标相同。
  *
  * eye 是四角星自上而下的三个色标，由浅琥珀到深橙，在浅色的幽灵上才看得清；eyeGlow 是四角星四周的光。
  */
@@ -77,15 +76,6 @@ const ARMFUL_MOON = {
         { x: 905, y: 860, size: 24, color: ARMFUL_PALETTES.default.cherry },
         { x: 900, y: 150, size: 18, color: ARMFUL_PURPLES[1] },
     ],
-};
-
-/**
- * 满怀 · 紫底两种图标的底板：plate 是底板自上而下的三个色标，sheen 是左上那团柔光的颜色与不透明度，
- * eye 是眼睛，cast 是贴纸落在底板上的影子，两者都换成深紫。
- */
-const ARMFUL_PURPLE_PLATES = {
-    default: { plate: ['#A593FF', '#7A63F6', '#4B3CCB'], sheen: ['#E2DAFF', 0.55], eye: '#221A55', cast: '#1A1250' },
-    dark: { plate: ['#6A58D8', '#4B3CCB', '#2A2090'], sheen: ['#B9AEF0', 0.35], eye: '#150F3A', cast: '#0D0830' },
 };
 
 /** 满怀的幽灵身体，满幅坐标下：轮廓从头顶起顺时针经过的锚点，曲线平滑地穿过它们，头往樱桃那边歪。 */
@@ -180,41 +170,10 @@ const ARMFUL_POSE = {
  */
 async function paintArmfulIcon(context, scale, pixels, style, lit) {
     const palette = ARMFUL_PALETTES[style];
+    const markup = armfulCharcoalMarkup(palette) + armfulMoonMarkup() + armfulClusterMarkup(palette, lit);
 
-    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette) + armfulMoonMarkup(), lit);
-}
-
-/**
- * 满怀 · 素底的入口：只有炭黑底板。参数见 paintArmfulIcon。
- */
-async function paintArmfulPlainIcon(context, scale, pixels, style, lit) {
-    const palette = ARMFUL_PALETTES[style];
-
-    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette), lit);
-}
-
-/**
- * 满怀 · 紫底的入口：紫色底板，眼睛与贴纸的影子换成深紫。参数见 paintArmfulIcon。
- */
-async function paintArmfulPurpleIcon(context, scale, pixels, style, lit) {
-    const { eye, cast } = ARMFUL_PURPLE_PLATES[style];
-    const palette = { ...ARMFUL_PALETTES[style], eye, cast };
-
-    await paintArmfulScene(context, scale, pixels, palette, armfulPurpleMarkup(ARMFUL_PURPLE_PLATES[style]), lit);
-}
-
-/**
- * 画出一组满怀：画面先铺满一张画布，再整张填进底板。
- *
- * @param {CanvasRenderingContext2D} context 已缩放到 1024 网格的上下文
- * @param {number} scale 导出像素与 1024 网格的比例
- * @param {number} pixels 导出图片的边长
- * @param {object} palette 所画图标的配色
- * @param {string} backdrop 幽灵身后的背景，满幅坐标下的 SVG 片段
- * @param {boolean} lit 眼睛是否亮着
- */
-async function paintArmfulScene(context, scale, pixels, palette, backdrop, lit) {
-    drawPlateScene(context, scale, await stickerScene(pixels, backdrop + armfulClusterMarkup(palette, lit)), palette.plate[2]);
+    // 画面先铺满一张画布，再整张填进底板。
+    drawPlateScene(context, scale, await stickerScene(pixels, markup), palette.plate[2]);
 }
 
 /**
@@ -245,26 +204,6 @@ function armfulMoonMarkup() {
         + svgBlurred('moon-glow', disc(ARMFUL_PURPLES[0]), { blur: 40, opacity: 0.5 })
         + disc('url(#moon)')
         + stars.map(star).join('');
-}
-
-/**
- * 紫色的底板：自上而下由浅到深，左上一团柔光，边缘内侧一圈宽的柔边。
- *
- * @param {{plate: string[], sheen: [string, number]}} plate 所画图标的底板，见 ARMFUL_PURPLE_PLATES
- * @returns {string} 满幅坐标下的 SVG 片段
- */
-function armfulPurpleMarkup({ plate, sheen: [sheenColor, sheenOpacity] }) {
-    // 底板的轮廓放大到满幅坐标，柔边才贴着底板的边。
-    const contour = continuousSquareData(0, 0, GRID, (PLATE_RADIUS * GRID) / PLATE_SIZE);
-
-    return svgLinear('plate', [0, 0, 0, GRID], plate)
-        + `<rect ${SVG_WIDE} fill="url(#plate)"/>`
-        + svgBlurred('sheen', `<circle cx="250" cy="130" r="300" fill="${sheenColor}"/>`, { blur: 120, opacity: sheenOpacity })
-        + svgMasked(
-            'contour',
-            `<path d="${contour}" fill="#fff"/>`,
-            svgInnerBand('rim', `<path d="${contour}" fill="#000"/>`, { color: '#fff', blur: 24, gain: 1.2, opacity: 0.3 }),
-        );
 }
 
 /**

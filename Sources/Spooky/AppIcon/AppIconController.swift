@@ -6,7 +6,7 @@ import Observation
 /// Dock、⌘Tab 与访达中的 App 图标：显示所选的一组，跟随 “系统设置 › 外观 › 图标与小组件样式”，连着服务器时指示灯亮起。
 ///
 /// Dock 画包内图标时会裁成系统的圆角形状、加上亮边与阴影，运行时设置的图标与写进包里的自定义图标都原样画出；
-/// 所以每组都以系统把这一组画成包内图标时的样子为底：默认的一组取 App 自身的系统图标，其它组取包里各自壳 App 的系统图标。
+/// 所以每组都以系统把这一组画成包内图标时的样子为底：取包里这一组的壳 App 的系统图标。
 ///
 /// - 默认与深色样式下系统不改动包内图标：深色样式换成该组的深色图标，连着服务器时换成指示灯亮着的一版
 /// - 透明、色调样式下系统按样式处理包内图标，运行时设置的图标做不到同样的效果，指示灯不亮：
@@ -354,11 +354,21 @@ final class AppIconController {
         updateIcon()
     }
 
-    /// 图标列表里这一组的小图标：当前深浅下指示灯灭着的一版，即包里的原图；取不到资源时为 nil。
+    /// 设置页图标选择区里这一组的小图标：当前深浅下指示灯灭着的一版，即包里的原图；取不到资源时为 nil。
     /// - Parameter group: 图标所属的组
     func bundledIcon(of group: AppIconGroup) -> NSImage? {
-        let variant = AppIconVariant(isDark: isDark, isConnected: false)
-        return bundle.image(forResource: group.iconName(for: variant))
+        bundledIcon(of: group, variant: AppIconVariant(isDark: isDark, isConnected: false))
+    }
+
+    /// 这一组中某一版在包里的原图；设置页的 Dock 示意并排显示四版时取用，取不到资源时为 nil。
+    /// - Parameters:
+    ///   - group: 图标所属的组
+    ///   - variant: 深浅与指示灯
+    func bundledIcon(
+        of group: AppIconGroup,
+        variant: AppIconVariant
+    ) -> NSImage? {
+        bundle.image(forResource: group.iconName(for: variant))
     }
 
     /// 这一组在当前样式下指示灯灭着的一版，画法与 Dock 相同；设置页预览指针所指的组时取用，生成不了时为 nil。
@@ -464,7 +474,7 @@ extension AppIconController {
 
     /// 在后台按 `requestedGroup` 与当前样式重写自定义图标，写完后重画运行时图标；不等写完，失败不提示。
     ///
-    /// 默认的一组的运行时图标以 App 自身的系统图标为底，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
+    /// 交还默认图标时 App 里显示的是系统给出的包图标，清掉自定义图标之后取到的才不是残留的那一张，所以写完再画一次。
     /// - Parameter restartsDock: 重新套用偏好时为真，算一次请求，写完结算是否重启 Dock；
     ///   样式与深浅变化的重写只换同一组的另一版，不算请求，不重启
     private func rewriteCustomIcon(restartsDock: Bool) {
@@ -592,14 +602,12 @@ extension AppIconController {
         return NSImage(cgImage: rendered, size: bundledIcon.size)
     }
 
-    /// 系统画这一组包内图标时用的包：默认的一组是 App 自身，其它组是包里与该组默认图标同名的壳 App；找不到时为 nil。
+    /// 系统画这一组包内图标时用的包：包里与该组默认图标同名的壳 App；找不到时为 nil。
+    ///
+    /// 默认的一组也取壳 App 的：App 包上挂着别的组的自定义图标时，系统给出的包图标是那一张。
     /// - Parameter group: 图标所属的组
     private func systemIconPath(of group: AppIconGroup) -> String? {
-        guard group != .defaultGroup else {
-            return bundle.bundlePath
-        }
-
-        return bundle.path(forResource: group.iconName(for: .standard), ofType: "app")
+        bundle.path(forResource: group.iconName(for: .standard), ofType: "app")
     }
 }
 

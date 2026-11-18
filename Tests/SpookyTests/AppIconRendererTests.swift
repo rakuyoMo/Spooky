@@ -27,12 +27,6 @@ struct AppIconRendererTests {
         .deletingLastPathComponent()
         .appending(path: "Sources/Spooky/AppIcon/Icons", directoryHint: .isDirectory)
 
-    /// 1024 px 图标里四盏指示灯的圆心，y 自上而下，与 `scripts/make-icon/server-ghost.js` 的机架一致。
-    private static let lightCenters = [(714, 626), (750, 626), (714, 772), (750, 772)]
-
-    /// 指示灯的半径，外加 1 px 抗锯齿的边。
-    private static let lightReach = 12
-
     /// 内容以中心为准按 `dockScale` 放大：方块的中心不动，左边缘向外移出原来的位置；
     /// 像素尺寸与系统图标相同，Dock 按同样的尺寸缩放，放大只发生在图标内部。
     @Test("内容以中心为准放大，像素尺寸与系统图标相同")
@@ -112,9 +106,9 @@ struct AppIconRendererTests {
         }
     }
 
-    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：满怀的三组、栖枝、采撷与午夜是眼睛，
-    /// 服务器幽灵是机架上的四盏灯；
-    /// 运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
+    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在底板里不同：探身、身前、藏身与显形亮的是服务器上的指示灯，
+    /// 午夜、栖枝、采撷与满怀亮的是眼睛；
+    /// 运行时图标叠上的是两者的差别，底板之外不同就会把投影的改动也带上去。
     @Test("亮灯版与灭灯版只差指示灯", arguments: AppIconGroup.allCases, [false, true])
     func litIconDiffersOnlyAtLights(group: AppIconGroup, isDark: Bool) throws {
         let unlit = group.iconName(for: AppIconVariant(isDark: isDark, isConnected: false))
@@ -127,7 +121,7 @@ struct AppIconRendererTests {
             let x = index % 1024
             let y = index / 1024
 
-            #expect(Self.isOnLight(x: x, y: y, of: group), "\(lit)：(\(x), \(y)) 不在指示灯上")
+            #expect(Self.plateRect.x.contains(x) && Self.plateRect.y.contains(y), "\(lit)：(\(x), \(y)) 不在底板里")
 
             changed += 1
         }
@@ -146,28 +140,11 @@ extension AppIconRendererTests {
     /// 高动态范围替身的亮度余量，与系统给出的 App 图标相同。
     private static let headroom: Float = 1.2
 
-    /// 满怀的三组、栖枝、采撷与午夜亮起来的范围，1024 px 图标里的矩形（含两端），y 自上而下。
+    /// 各组亮灯版与灭灯版可以不同的范围，1024 px 图标里的矩形（含两端），y 自上而下。
     ///
-    /// 亮的是眼睛，范围却是整块底板（(100, 100) 起、边长 824）：画面先拼成 SVG 再画进 Canvas，
-    /// 滤镜的舍入不固定，两版在眼睛之外可能有几个像素差一个色阶；底板之外的投影不变。
+    /// 亮的是指示灯或眼睛，范围却是整块底板（(100, 100) 起、边长 824）：画面先拼成 SVG 再画进 Canvas，
+    /// 滤镜的舍入不固定，两版在亮起来的部分之外可能有几个像素差一个色阶；底板之外的投影不变。
     private static let plateRect = (x: 100 ... 923, y: 100 ... 923)
-
-    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，其余几组见 `plateRect`。
-    /// - Parameters:
-    ///   - x: 1024 px 图标的列
-    ///   - y: 1024 px 图标的行，自上而下
-    ///   - group: 图标所属的组
-    private static func isOnLight(
-        x: Int,
-        y: Int,
-        of group: AppIconGroup
-    ) -> Bool {
-        guard group == .serverGhost else {
-            return plateRect.x.contains(x) && plateRect.y.contains(y)
-        }
-
-        return lightCenters.contains { abs($0.0 - x) <= lightReach && abs($0.1 - y) <= lightReach }
-    }
 
     /// 一张 `side` 边长的 8 位 sRGB 图：整张不透明的底色，可以在中间画一个不透明的方块。
     /// - Parameters:
