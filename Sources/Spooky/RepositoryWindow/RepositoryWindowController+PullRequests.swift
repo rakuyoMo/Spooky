@@ -85,11 +85,6 @@ extension RepositoryWindowController {
 
         split.addSplitViewItem(listItem)
         split.addSplitViewItem(detailItem)
-
-        if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.PullRequests") == nil {
-            split.splitView.setPosition(320, ofDividerAt: 0)
-        }
-
         return split
     }
 
