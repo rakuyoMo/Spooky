@@ -50,9 +50,6 @@ enum SidebarPreferences {
     static let newestChoices = [0, 10, 15, 25, 50, 100, 250, 500]
 
     /// 开关没有记录时的取值；只在没有显式保存的值时使用，不写回偏好。
-    #warning(
-        "TODO: 陈旧信息开启、Reflog 与自动归档关闭、标签按名称升序这几项默认值是选定的；核实方式：在全新的偏好里打开视图设置菜单比对勾选状态；影响首次打开时侧边栏显示哪些信息"
-    )
     static let defaultFlags: [String: Bool] = [
         showReflogKey: false,
         showStashCountKey: false,

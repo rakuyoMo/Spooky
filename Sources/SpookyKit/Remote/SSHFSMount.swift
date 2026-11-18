@@ -99,7 +99,7 @@ enum SSHFSMount {
     /// 运行 sshfs，等前台进程结束；退出码为 0 是挂上，否则带上原样的标准错误。
     ///
     /// 有的 FUSE 实现（如 FUSE-T）在挂载失败时写出标准错误后，前台进程一直等它启动的文件服务进程退出而不结束；
-    /// 写出标准错误后过了 ``failureGrace`` 仍没结束时，先结束它的子进程，再结束它自己。
+    /// 写出标准错误后过了 ``failureGrace`` 仍没结束时，先结束它的子进程，再结束它自己，不论它随后怎样退出都报失败。
     ///
     /// - Parameters:
     ///   - executable: sshfs 的路径。
@@ -136,6 +136,9 @@ extension SSHFSMount {
         /// 已读到的标准错误。
         private let standardError = Mutex(Data())
 
+        /// 前台进程是否已由 ``stopIfRunning()`` 结束；结束了的，不论随后怎样退出都算失败。
+        private let stopped = Mutex(false)
+
         /// 准备好进程：标准输入与输出接 `/dev/null`，标准错误接管道。
         init(executable: String, arguments: [String], environment: [String: String]) {
             process.executableURL = URL(filePath: executable)
@@ -153,8 +156,13 @@ extension SSHFSMount {
 
                 let text = collect(Self.drain(pipe.fileHandleForReading))
 
+                // 被结束的前台进程可能赶在信号之前自己以 0 退出，如子进程先结束、它随即返回，仍算失败
+                let succeeded = process.terminationStatus == 0
+                    && process.terminationReason == .exit
+                    && !stopped.withLock { $0 }
+
                 completion(
-                    process.terminationStatus == 0 && process.terminationReason == .exit
+                    succeeded
                         ? .success(())
                         : .failure(.sshfs(status: process.terminationStatus, standardError: text))
                 )
@@ -202,11 +210,14 @@ extension SSHFSMount {
             return String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        /// 前台进程还没结束时，先结束它的子进程，再结束它自己。
+        /// 前台进程还没结束时，先结束它的子进程，再结束它自己；这次运行随后报失败。
         private func stopIfRunning() {
             guard process.isRunning else {
                 return
             }
+
+            // 在发出信号之前记下，进程随后怎样退出都报失败
+            stopped.withLock { $0 = true }
 
             let parent = process.processIdentifier
             var children = [pid_t](repeating: 0, count: 64)

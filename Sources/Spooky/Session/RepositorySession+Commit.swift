@@ -236,10 +236,6 @@ extension RepositorySession {
     func applyGlobalProfile(_ profile: UserProfile) {
         guard canWrite, let repository else { return }
 
-        #warning(
-            "TODO: 服务器仓库的 Set as Global User 写的是服务器上的全局配置，依据是服务器仓库在服务器上提交；也可能应写本机的全局配置。核实方式：确认服务器仓库的快捷操作里这一项的预期作用范围；只影响服务器仓库的这一个动作。"
-        )
-
         let request = generation
         let message = repository.host.map { AppLocalization.text("quickActions.setGlobalUser.remote", $0) }
             ?? AppLocalization.text("quickActions.setGlobalUser.local")

@@ -95,7 +95,6 @@ enum SidebarRefTree {
     }
 
     /// 模糊匹配：过滤文字的每个字符按顺序出现在名字里即算匹配，不区分大小写与变音符号；空文字匹配一切。
-    #warning("TODO: 过滤按字符顺序的子序列匹配，未核实是否还应匹配单词首字母或容许错字；核实方式：输入跳字与错字比对结果；影响侧边栏过滤后留下哪些引用")
     static func matches(_ name: String, filter: String) -> Bool {
         let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive, .widthInsensitive]
         let pattern = filter.folding(options: options, locale: nil)
@@ -141,18 +140,12 @@ enum SidebarRefTree {
         return references.filter { keep.contains($0.id) }
     }
 
-    /// 标签按名称排序；名字里的数字按数值比较，v1.10 排在 v1.9 之后。
-    #warning("TODO: 标签名称按数值感知的本地化规则比较，未核实是否应按字典序；核实方式：建 v1.9 与 v1.10 两个标签比对顺序；只影响标签分组的顺序")
+    /// 标签按名称排序：名字按 ``ReferenceOrder/precedes(_:_:)`` 比较，不看分支的优先名。
     static func sortedTags(_ tags: [RepositoryReference], order: SidebarPreferences.TagOrder) -> [RepositoryReference] {
         tags.sorted { lhs, rhs in
-            let result = lhs.name.localizedStandardCompare(rhs.name)
-
-            // 名字比较相等时按引用名稳定排序
-            if result == .orderedSame {
-                return lhs.id < rhs.id
-            }
-
-            return order == .nameAscending ? result == .orderedAscending : result == .orderedDescending
+            order == .nameAscending
+                ? ReferenceOrder.precedes(lhs.name, rhs.name)
+                : ReferenceOrder.precedes(rhs.name, lhs.name)
         }
     }
 

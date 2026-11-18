@@ -56,6 +56,7 @@ struct SettingsPreferencesTests {
 
     /// 环境设置写进偏好并立即交给核心库；登录 shell 的变量只在开启时带上，重新创建时读回保存的值。
     /// 没有改过设置时读取登录 shell 的变量，本机 Git 才能找到 shell 配置里补进 PATH 的工具；存过关闭的不被默认值覆盖。
+    /// 登录 shell 设置了 SSH_AUTH_SOCK 时系统 agent 用它，关闭读取后改回继承的 socket；自定义变量里的 SSH_AUTH_SOCK 同样交给系统 agent。
     @Test("本机执行设置的持久化，登录 shell 环境默认读取")
     func localExecutionPreferences() async throws {
         let defaults = MemoryDefaults()
@@ -63,7 +64,7 @@ struct SettingsPreferencesTests {
         var applied: [LocalExecutionSettings] = []
         let preferences = LocalExecutionPreferences(
             defaults: defaults,
-            readLoginShell: { ["EDITOR": "nano"] },
+            readLoginShell: { ["EDITOR": "nano", "SSH_AUTH_SOCK": "/tmp/shell.sock"] },
             apply: { applied.append($0) }
         )
 
@@ -81,8 +82,8 @@ struct SettingsPreferencesTests {
         let last = try #require(applied.last)
         #expect(last.customVariables == ["TOKEN": "值"])
         #expect(last.gitExecutable == "/opt/homebrew/bin/git")
-        #expect(last.loginShellVariables == ["EDITOR": "nano"])
-        #expect(last.sshAuthSocket == SSHAgent.system.socket())
+        #expect(last.loginShellVariables == ["EDITOR": "nano", "SSH_AUTH_SOCK": "/tmp/shell.sock"])
+        #expect(last.sshAuthSocket == "/tmp/shell.sock")
 
         let reloaded = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })
         #expect(reloaded.customVariables.map(\.name) == ["TOKEN"])
@@ -91,6 +92,11 @@ struct SettingsPreferencesTests {
 
         preferences.setUsesLoginShell(false)
         #expect(applied.last?.loginShellVariables.isEmpty ?? false)
+        #expect(applied.last?.sshAuthSocket == SSHAgent.system.socket())
+
+        // 自定义变量里的 SSH_AUTH_SOCK
+        preferences.saveCustomVariables([CustomEnvironmentVariable(name: "SSH_AUTH_SOCK", value: "/tmp/custom.sock")])
+        #expect(applied.last?.sshAuthSocket == "/tmp/custom.sock")
 
         // 存过关闭的不被默认值覆盖
         let saved = LocalExecutionPreferences(defaults: defaults, readLoginShell: { [:] }, apply: { _ in })

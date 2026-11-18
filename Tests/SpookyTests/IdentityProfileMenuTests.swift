@@ -17,7 +17,7 @@ struct IdentityProfileMenuTests {
     private let home = UserProfile(title: "Home", name: "Ada Lovelace", email: "ada@home.example")
 
     /// 当前身份对应某个档案时只勾选它，不单列身份，也不提供存为档案；没有对应档案时单列当前身份，分隔线后可以把它存为档案；
-    /// 没有身份也没有档案时只有管理档案，前面不留分隔线；签名密钥也要相同才是当前档案。
+    /// 没有身份也没有档案时只有管理档案，前面不留分隔线；签名密钥也要指向同一把才是当前档案，SSH 公钥只差注释也是同一把。
     @Test("菜单列出的档案与当前身份")
     func menuItems() {
         let matching = IdentityProfileMenu.items(
@@ -69,6 +69,16 @@ struct IdentityProfileMenuTests {
         for key in ["FEDCBA9876543210BB199F7C", nil] {
             #expect(items(key) == [.profile(signed, isCurrent: false), .identity, .separator, .addCurrent, .manage])
         }
+
+        // SSH 公钥只差注释仍然匹配，换了公钥就单列当前身份
+        signed.signingKey = "key::" + Self.sshLiteral() + " ada@laptop"
+
+        #expect(items("key::" + Self.sshLiteral()) == [.profile(signed, isCurrent: true), .separator, .manage])
+
+        #expect(
+            items("key::" + Self.sshLiteral(fill: 2) + " ada@laptop")
+                == [.profile(signed, isCurrent: false), .identity, .separator, .addCurrent, .manage]
+        )
     }
 
     /// 括号里写本机密钥的格式与指纹末 8 位；没有密钥与本机认不出的密钥各有固定的写法，不写档案标题。
@@ -84,9 +94,7 @@ struct IdentityProfileMenuTests {
             comment: nil
         )
 
-        // 字面 SSH 公钥：长度前缀的类型名与 32 字节的 Ed25519 公钥
-        let blob = [0, 0, 0, 11] + Array("ssh-ed25519".utf8) + [0, 0, 0, 32] + Array(repeating: 1, count: 32)
-        let literal = "ssh-ed25519 " + Data(blob).base64EncodedString()
+        let literal = Self.sshLiteral()
 
         let ssh = SigningKey(
             format: .ssh,
@@ -113,5 +121,17 @@ struct IdentityProfileMenuTests {
 
         #expect(title(nil) == "Ada Lovelace <ada@work.example> (\(none))")
         #expect(title("~/.ssh/id_ed25519.pub") == "Ada Lovelace <ada@work.example> (\(unknown))")
+    }
+}
+
+// MARK: - Helpers
+
+extension IdentityProfileMenuTests {
+    /// 字面 SSH 公钥：长度前缀的类型名与 32 字节的 Ed25519 公钥，公钥的每个字节都是 `fill`。
+    ///
+    /// 只用于匹配与指纹计算，不是任何人在用的密钥，也不对应私钥。
+    static func sshLiteral(fill: UInt8 = 1) -> String {
+        let blob = [0, 0, 0, 11] + Array("ssh-ed25519".utf8) + [0, 0, 0, 32] + Array(repeating: fill, count: 32)
+        return "ssh-ed25519 " + Data(blob).base64EncodedString()
     }
 }

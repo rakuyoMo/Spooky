@@ -70,8 +70,8 @@ enum UserProfiles {
 
     /// 签名密钥菜单里一把密钥的名称，各处的签名密钥菜单共用。
     ///
-    /// GPG 写 `GPG: <签名人> (<指纹末 8 位>)`；SSH 的注释是现有文件时写 `SSH: <路径> (<指纹末 8 位>)`，路径的家目录缩写成 `~`，
-    /// 否则写 `SSH: (<指纹末 8 位>)`。SSH 的指纹末 8 位取 `SHA256:` 指纹字符串的最后 8 个字符。
+    /// GPG 写 `GPG: <签名人> (<指纹末 8 位>)`；SSH 有注释时写 `SSH: <注释> (<指纹末 8 位>)`，注释是现有文件的路径时把家目录缩写成 `~`；
+    /// 注释去掉首尾空白后为空时写 `SSH: (<指纹末 8 位>)`。SSH 的指纹末 8 位取 `SHA256:` 指纹字符串的最后 8 个字符。
     ///
     /// - Parameters:
     ///   - key: 本机的一把签名密钥。
@@ -83,11 +83,27 @@ enum UserProfiles {
             return "GPG: " + (key.signer.map { $0 + " " } ?? "") + fingerprint
         }
 
-        guard let comment = key.comment, FileManager.default.fileExists(atPath: comment) else {
+        let comment = key.comment?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+        guard !comment.isEmpty else {
             return "SSH: " + fingerprint
         }
 
-        return "SSH: " + HomePath.abbreviated(comment, home: home) + " " + fingerprint
+        // ssh-add 加入的密钥以私钥路径作注释，路径存在时缩写家目录
+        let name = FileManager.default.fileExists(atPath: comment)
+            ? HomePath.abbreviated(comment, home: home)
+            : comment
+
+        return "SSH: " + name + " " + fingerprint
+    }
+
+    /// 签名密钥菜单里本机找不到的已配置密钥：显示配置的值，超过 60 个字符时只留前 28 个与后 31 个，中间写 `...`。
+    ///
+    /// - Parameter value: `user.signingkey` 的值。
+    static func unknownKeyTitle(_ value: String) -> String {
+        guard value.count > 60 else { return value }
+
+        return "\(value.prefix(28))...\(value.suffix(31))"
     }
 
     /// 身份菜单里签名密钥的简述：`GPG: <指纹末 8 位>` 或 `SSH: <指纹末 8 位>`，末 8 位的取法与 `title(of:)` 相同。
@@ -483,7 +499,7 @@ extension UserProfileEditor {
 
     /// 签名密钥的弹出菜单：本机的 OpenPGP 与 SSH 密钥，找不到的已配置密钥，最后是不带密钥；本机没有密钥时整行不可用。
     ///
-    /// 下拉填满输入列，与上面几行的输入框左右对齐。
+    /// 下拉填满输入列，与上面几行的输入框左右对齐；菜单项与弹出按钮都不带提示。
     private var signingKeyRow: some View {
         GridRow {
             Text(AppLocalization.text("profiles.signingKey"))
@@ -491,24 +507,9 @@ extension UserProfileEditor {
                 .fixedSize()
                 .gridColumnAlignment(.trailing)
 
-            Picker(AppLocalization.text("profiles.signingKey"), selection: selectedKey) {
-                ForEach(keys, id: \.value) { key in
-                    Text(UserProfiles.title(of: key))
-                        .tag(Optional(key.value))
-                }
-
-                if let unknownKey {
-                    Text(UserProfiles.keyDescription(unknownKey))
-                        .tag(Optional(unknownKey))
-                        .disabled(true)
-                }
-
-                Text(AppLocalization.text("signing.none"))
-                    .tag(String?.none)
-            }
-            .labelsHidden()
-            .buttonSizing(.flexible)
-            .disabled(keys.isEmpty)
+            SigningKeyPopUp(keys: keys, unknown: unknownKey, selection: selectedKey, showsToolTips: false)
+                .disabled(keys.isEmpty)
+                .accessibilityLabel(AppLocalization.text("profiles.signingKey"))
         }
     }
 

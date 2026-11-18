@@ -120,7 +120,7 @@ struct RemoteMounterTests {
     }
 
     /// 前台以 0 退出算挂上，即使转入后台的进程还开着标准错误；非零时带上原样的标准错误；
-    /// 写出标准错误后一直不结束、等着子进程的，过了等待时间连同子进程一起结束并报失败；启动不了时报原因。
+    /// 写出标准错误后一直不结束、等着子进程的，过了等待时间连同子进程一起结束并报失败，即使它随后以 0 退出；启动不了时报原因。
     @Test("运行 sshfs 与它的结束方式")
     func running() async throws {
         let temporary = try TemporaryRepository()
@@ -157,10 +157,10 @@ struct RemoteMounterTests {
                 == .sshfs(status: 1, standardError: "spooky-test:/nope: No such file or directory")
         )
 
-        // 失败后一直等着子进程
+        // 失败后一直等着子进程；被结束时以 0 退出，子进程先退出时不带参数的 wait 同样返回 0
         let hanging = try Self.script(
             in: directory.appending(path: "hanging"),
-            body: "echo \"remote host has disconnected\" >&2\n/bin/sleep 600 &\nwait"
+            body: "trap 'exit 0' TERM\necho \"remote host has disconnected\" >&2\n/bin/sleep 600 &\nwait"
         )
 
         let result = await SSHFSMount.run(

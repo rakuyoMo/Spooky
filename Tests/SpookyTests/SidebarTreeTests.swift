@@ -79,14 +79,18 @@ struct SidebarTreeTests {
         #expect(remoteNodes.first?.children.first?.reference?.id == "refs/remotes/team/origin/feature/x")
     }
 
-    /// 分支的公共顺序：main、master、trunk、dev、develop、next 依次在前，其余按名字逐段比较，当前分支不提前；
-    /// 不置前时文件夹按名字插在同级分支之间，置前时排在最前。远端分支去掉远端名后同样排序，标签只按名字。
+    /// 分支的公共顺序：main、master、trunk、dev、develop、next 依次在前，当前分支不提前；
+    /// 其余比较整个名字：不分大小写，数字按数值，标点按码位（`-` `.` `/` `_` 依次），带变音符号的字母排在原字母旁边。
+    /// 不置前时文件夹出现在它第一个子项的位置，所以 `sub-x` 在文件夹 `sub` 之前；置前时文件夹排在最前。
+    /// 远端分支去掉远端名后同样排序，标签只按名字。
     /// 一组混合的引用里，本地分支、各远端的远端分支与标签各自成组，组的先后保持输入里第一次出现的位置。
     @Test("引用的公共顺序")
     func referenceOrder() {
         let names = [
             "zeta", "next", "feature/b", "develop", "Alpha", "main",
             "dev", "feature/a", "trunk", "master", "beta",
+            "item10", "item2", "release/1.10", "release/1.9", "fix_a", "fix.a",
+            "fix-a", "sub/y", "sub-x", "élan", "Gamma", "delta",
         ]
 
         let branches = names.map { reference("refs/heads/" + $0) }
@@ -95,18 +99,22 @@ struct SidebarTreeTests {
         #expect(
             entries.map(\.name) == [
                 "main", "master", "trunk", "dev", "develop", "next",
-                "Alpha", "beta", "feature/a", "feature/b", "zeta",
+                "Alpha", "beta", "delta", "élan", "feature/a", "feature/b",
+                "fix-a", "fix.a", "fix_a", "Gamma", "item2", "item10",
+                "release/1.9", "release/1.10", "sub-x", "sub/y", "zeta",
             ]
         )
 
-        // 文件夹不置前时按名字插在分支之间，置前时排在最前
+        // 文件夹不置前时出现在第一个子项的位置，置前时排在最前
         let interleaved = SidebarRefTree.nodes(for: entries, grouped: true, foldersFirst: false, scope: "branches")
         let foldersFirst = SidebarRefTree.nodes(for: entries, grouped: true, foldersFirst: true, scope: "branches")
 
         #expect(
             interleaved.map(\.name) == [
                 "main", "master", "trunk", "dev", "develop", "next",
-                "Alpha", "beta", "feature", "zeta",
+                "Alpha", "beta", "delta", "élan", "feature",
+                "fix-a", "fix.a", "fix_a", "Gamma", "item2", "item10",
+                "release", "sub-x", "sub", "zeta",
             ]
         )
         #expect(foldersFirst.map(\.name).first == "feature")
@@ -174,7 +182,7 @@ struct SidebarTreeTests {
     }
 
     /// 数量限制按时间取最新的若干个，选中的引用总会留下，结果保持原有顺序；时间相同时按引用名决定。
-    /// 标签按名称排序时数字按数值比较；数量限制先取最新的，再排序。
+    /// 标签按名称排序时与分支的名字比较相同：数字按数值，标点按码位；数量限制先取最新的，再排序。
     @Test("只显示最新的若干个，标签的排序")
     func newest() {
         let references = [
@@ -210,7 +218,7 @@ struct SidebarTreeTests {
         )
         #expect(filtered.map(\.name) == ["a"])
 
-        // 标签按名称排序时数字按数值比较
+        // 标签按名称排序时数字按数值，标点按码位
         let tags = ReferenceSnapshot(
             references: [
                 reference("refs/heads/main"),
@@ -218,6 +226,9 @@ struct SidebarTreeTests {
                 reference("refs/tags/v1.9", date: Date(timeIntervalSince1970: 200)),
                 reference("refs/tags/v1.2", date: Date(timeIntervalSince1970: 100)),
                 reference("refs/tags/release/v2", date: Date(timeIntervalSince1970: 400)),
+                reference("refs/tags/t_a", date: Date(timeIntervalSince1970: 30)),
+                reference("refs/tags/t.a", date: Date(timeIntervalSince1970: 20)),
+                reference("refs/tags/t-a", date: Date(timeIntervalSince1970: 10)),
             ],
             remotes: []
         )
@@ -229,7 +240,7 @@ struct SidebarTreeTests {
             including: [],
             order: .nameAscending
         )
-        #expect(ascending.map(\.name) == ["release/v2", "v1.2", "v1.9", "v1.10"])
+        #expect(ascending.map(\.name) == ["release/v2", "t-a", "t.a", "t_a", "v1.2", "v1.9", "v1.10"])
 
         // 数量限制先取最新的，再排序
         let newestTags = SidebarRefTree.tagEntries(

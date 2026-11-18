@@ -21,10 +21,6 @@ enum SigningPrograms {
 
     /// `~/.ssh/allowed_signers`；不存在时为 nil。
     static var defaultAllowedSigners: String? {
-        #warning(
-            "TODO: allowed signers 文件菜单列出的候选是推断：只列 ~/.ssh/allowed_signers。核实方式：在 ~/.ssh 下放几个不同名的 allowed signers 文件，对照 Git Config 页的菜单；只影响菜单里多列出哪些文件。"
-        )
-
         let path = URL(fileURLWithPath: NSHomeDirectory()).appending(path: ".ssh/allowed_signers").path
         return FileManager.default.fileExists(atPath: path) ? path : nil
     }

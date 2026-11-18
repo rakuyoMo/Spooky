@@ -232,8 +232,6 @@ extension WorkingCopyOperations {
 
             switch scope {
             case .items:
-                #warning("TODO: 核实 Ignore This Item 写入的规则格式，目前以 “/” 开头、只匹配仓库根目录下的这一项；只影响忽略与排除规则的写法")
-
                 // 以 “/” 开头只匹配仓库根目录下的这一项
                 pattern = "/" + escapedPattern(trimmed) + (directory ? "/" : "")
 

@@ -64,7 +64,8 @@ struct IdentityProfileMenu: View {
 
     /// 菜单的各项：档案在前；当前身份没有对应档案时列出它，并在分隔线后提供存为档案；前面有项目时才有分隔线，最后是管理档案。
     ///
-    /// 姓名、邮箱与签名密钥都相同的档案才对应当前身份；签名密钥转成小写后比较，两边都没有密钥也算相同。
+    /// 姓名、邮箱与签名密钥都相同的档案才对应当前身份；字面 SSH 公钥比较指纹，注释不同也是同一把，
+    /// 其它写法转成小写后比较，两边都没有密钥也算相同。
     ///
     /// - Parameters:
     ///   - profiles: 全部身份档案。
@@ -75,7 +76,7 @@ struct IdentityProfileMenu: View {
         let current = profiles.first {
             $0.name == name
                 && $0.email == email
-                && ($0.signingKey ?? "").lowercased() == (signingKey ?? "").lowercased()
+                && isSameKey($0.signingKey, signingKey)
         }
 
         let listsIdentity = current == nil && !name.isEmpty
@@ -152,5 +153,26 @@ extension IdentityProfileMenu {
         case .manage:
             Button(AppLocalization.text("profiles.manage")) { SettingsWindowController.show(.userProfiles) }
         }
+    }
+}
+
+// MARK: - Helpers
+
+extension IdentityProfileMenu {
+    /// 两种签名密钥的写法是否指向同一把：字面 SSH 公钥比较指纹，其它写法转成小写后比较；没有密钥与空字符串相同。
+    ///
+    /// - Parameters:
+    ///   - lhs: 一边的签名密钥。
+    ///   - rhs: 另一边的签名密钥。
+    private static func isSameKey(_ lhs: String?, _ rhs: String?) -> Bool {
+        let left = lhs ?? ""
+        let right = rhs ?? ""
+
+        // 选 SSH 密钥时连注释一起写入，同一把密钥在不同时候写下的注释可能不同
+        if let fingerprint = SigningKeys.fingerprint(ofLiteral: left) {
+            return fingerprint == SigningKeys.fingerprint(ofLiteral: right)
+        }
+
+        return left.lowercased() == right.lowercased()
     }
 }

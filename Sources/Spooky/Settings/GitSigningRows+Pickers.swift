@@ -79,25 +79,10 @@ extension GitSigningRows {
             }
         )
 
-        return Picker("", selection: selection) {
-            ForEach(model.keys, id: \.value) { key in
-                Text(UserProfiles.title(of: key))
-                    .tag(Optional(key.value))
-            }
-
-            if let unknown {
-                Text(UserProfiles.keyDescription(unknown))
-                    .tag(Optional(unknown))
-                    .disabled(true)
-            }
-
-            Text(AppLocalization.text("signing.none"))
-                .tag(String?.none)
-        }
-        .labelsHidden()
-        .settingsColumnWidth()
-        .disabled(model.keys.isEmpty && configured == nil)
-        .accessibilityLabel(AppLocalization.text("gitConfig.signingKey"))
+        return SigningKeyPopUp(keys: model.keys, unknown: unknown, selection: selection)
+            .settingsColumnWidth()
+            .disabled(model.keys.isEmpty && configured == nil)
+            .accessibilityLabel(AppLocalization.text("gitConfig.signingKey"))
     }
 
     /// allowed signers 文件：不使用、`~/.ssh/allowed_signers`、配置里的其它文件，最后是选择文件。

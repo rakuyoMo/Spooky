@@ -270,9 +270,6 @@ extension RepositorySession {
         amend = false
         originalDraft = nil
 
-        #warning(
-            "TODO: 提交成功后是否取消 Skip Hooks 未核实：当前随标题与正文一起清除，避免之后的提交意外跳过钩子。核实方式：勾选 Skip Hooks 提交一次，再写下一次提交时查看勾选状态；影响连续提交时钩子是否运行。"
-        )
         skipHooks = false
     }
 

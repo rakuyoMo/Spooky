@@ -97,8 +97,6 @@ public enum InlineDiff {
     /// - Parameter line: 不含换行符的一行文字。
     /// - Returns: 依次覆盖整行的各段。
     static func tokens(of line: String) -> [Token] {
-        #warning("TODO: 只改一行的缩进或词间空格，核实空白处是否应当高亮；目前连续空白作为一段参与比较，只影响空白改动的行内高亮")
-
         var tokens: [Token] = []
         var start = line.startIndex
         var offset = 0
