@@ -146,21 +146,7 @@ extension RepositoryGeneralSettings {
             }
         )
 
-        return Picker("", selection: selection) {
-            ForEach(keys, id: \.value) { key in
-                Text(UserProfiles.title(of: key))
-                    .tag(Optional(key.value))
-            }
-
-            if let unknown {
-                Text(UserProfiles.keyDescription(unknown))
-                    .tag(Optional(unknown))
-                    .disabled(true)
-            }
-
-            Text(AppLocalization.text("signing.none"))
-                .tag(String?.none)
-        }
+        return SigningKeyPopUp(keys: keys, unknown: unknown, selection: selection)
     }
 
     /// allowed signers 文件：不使用、找到的文件与配置里的其它文件，最后是选择文件。
@@ -323,7 +309,7 @@ private struct RepositorySettingToggle: View {
 
 // MARK: - RepositorySettingMenu
 
-/// 设置表格里的一个弹出菜单：标签列的标签与值列里按内容定宽的弹出菜单。
+/// 设置表格里的一个弹出菜单：标签列的标签与值列里按内容定宽的弹出菜单，最宽到行的右端，再宽时截短标题。
 private struct RepositorySettingMenu<Content: View>: View {
     /// 左侧标签，也是弹出菜单的辅助功能名称。
     let label: String
@@ -338,13 +324,49 @@ private struct RepositorySettingMenu<Content: View>: View {
     /// 标签与弹出菜单横向排列。
     var body: some View {
         SettingTableRow(label: label) {
-            menu()
-                .labelsHidden()
-                .fixedSize()
-                .disabled(!isEnabled)
-                .accessibilityLabel(label)
-
-            Spacer(minLength: 0)
+            ContentFittingWidth {
+                menu()
+                    .labelsHidden()
+                    .disabled(!isEnabled)
+                    .accessibilityLabel(label)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+// MARK: - ContentFittingWidth
+
+/// 弹出菜单按内容定宽的排布：宽度取最宽一项的宽度，比提议的宽度宽时收到提议的宽度。
+private struct ContentFittingWidth: Layout {
+    /// 弹出菜单在收窄后的提议下排出来的尺寸。
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) -> CGSize {
+        guard let menu = subviews.first else {
+            return .zero
+        }
+
+        let ideal = menu.sizeThatFits(.unspecified).width
+
+        return menu.sizeThatFits(
+            ProposedViewSize(width: min(ideal, proposal.width ?? ideal), height: proposal.height)
+        )
+    }
+
+    /// 弹出菜单靠左、纵向居中，宽度是排好的宽度。
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal _: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) {
+        subviews.first?.place(
+            at: CGPoint(x: bounds.minX, y: bounds.midY),
+            anchor: .leading,
+            proposal: ProposedViewSize(bounds.size)
+        )
     }
 }

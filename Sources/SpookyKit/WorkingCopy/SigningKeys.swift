@@ -8,7 +8,7 @@ public struct SigningKey: Sendable, Hashable {
     /// 签名格式，只会是 OpenPGP 或 SSH。
     public let format: SigningFormat
 
-    /// 写入 `user.signingkey` 的值：OpenPGP 为主密钥的完整指纹，SSH 为 `key::` 加类型与公钥。
+    /// 写入 `user.signingkey` 的值：OpenPGP 为主密钥的完整指纹，SSH 为 `key::` 加 `ssh-add -L` 列出的那一行，即类型、公钥与注释。
     public let value: String
 
     /// 指纹：OpenPGP 为大写十六进制的主密钥指纹，SSH 为 `SHA256:` 开头的公钥指纹。
@@ -19,6 +19,11 @@ public struct SigningKey: Sendable, Hashable {
 
     /// SSH 公钥的注释，ssh-add 加入的密钥通常是私钥路径；OpenPGP 密钥没有。
     public let comment: String?
+
+    /// SSH 密钥在 `ssh-add -L` 里的那一行：类型、Base64 公钥与注释，即写入的值去掉 `key::`；OpenPGP 密钥为 nil。
+    public var publicKeyLine: String? {
+        format == .ssh ? String(value.dropFirst(SigningKeys.literalPrefix.count)) : nil
+    }
 
     /// 创建一把签名密钥。
     public init(format: SigningFormat, value: String, fingerprint: String, signer: String?, comment: String?) {
@@ -38,8 +43,12 @@ public struct SigningKey: Sendable, Hashable {
     public func matches(_ configured: String) -> Bool {
         switch format {
         case .ssh:
-            guard let literal = SigningKeys.literal(configured) else { return false }
-            return literal.type + " " + literal.base64 == String(value.dropFirst(SigningKeys.literalPrefix.count))
+            guard
+                let literal = SigningKeys.literal(configured),
+                let own = SigningKeys.literal(value)
+            else { return false }
+
+            return literal.type == own.type && literal.base64 == own.base64
 
         case .openpgp, .x509:
             var identifier = configured.trimmingCharacters(in: .whitespaces).uppercased()
@@ -131,7 +140,8 @@ public enum SigningKeys {
         return keys
     }
 
-    /// 解析 `ssh-add -L` 的输出：每行是类型、Base64 公钥与可选的注释；公钥里的类型与行首不符的行跳过。
+    /// 解析 `ssh-add -L` 的输出：每行是类型、Base64 公钥与可选的注释，写入的值是 `key::` 加这一行；
+    /// 公钥里的类型与行首不符的行跳过。
     static func parseAgentKeys(_ data: Data) -> [SigningKey] {
         String(decoding: data, as: UTF8.self)
             .split(whereSeparator: \.isNewline)
@@ -140,12 +150,15 @@ public enum SigningKeys {
 
                 guard parts.count >= 2, let literal = literal(parts[0] + " " + parts[1]) else { return nil }
 
+                let comment = parts.count > 2 ? parts[2] : nil
+                let publicKey = literal.type + " " + literal.base64
+
                 return SigningKey(
                     format: .ssh,
-                    value: literalPrefix + literal.type + " " + literal.base64,
+                    value: literalPrefix + (comment.map { publicKey + " " + $0 } ?? publicKey),
                     fingerprint: fingerprint(of: literal.blob),
                     signer: nil,
-                    comment: parts.count > 2 ? parts[2] : nil
+                    comment: comment
                 )
             }
     }

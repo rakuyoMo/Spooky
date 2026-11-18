@@ -24,7 +24,7 @@ struct SigningKeysTests {
 
     /// 能签名的私钥按主密钥指纹写入，签名人取第一条未吊销的用户标识并还原转义，子密钥的指纹不会顶替主密钥；
     /// 截断的记录、出现在密钥之前的指纹与不是十六进制的指纹都不产生密钥，也不让解析中断。
-    /// agent 的每行公钥写成 `key::` 字面值，注释里的空格与中文原样保留，没有密钥的提示与损坏的行跳过。
+    /// agent 的每行写成 `key::` 加这一行，注释里的空格与中文原样保留；没有密钥的提示与损坏的行跳过。
     @Test("解析 gpg 私钥与 ssh-add 公钥")
     func parsing() throws {
         let keys = SigningKeys.parseSecretKeys(Data(Self.secretKeys.utf8))
@@ -59,15 +59,21 @@ struct SigningKeysTests {
         let first = try #require(agent.first)
 
         #expect(agent.count == 2)
-        #expect(agent.allSatisfy { $0.format == .ssh && $0.value == "key::" + literal })
+        #expect(agent.allSatisfy { $0.format == .ssh })
         #expect(first.comment == "/Users/测试/.ssh/签名 key")
         #expect(agent.last?.comment == nil)
+
+        // 写入的值是 key:: 加列出的那一行，有注释时带着注释；公钥行就是那一行，OpenPGP 密钥没有公钥行
+        #expect(first.value == "key::" + literal + " /Users/测试/.ssh/签名 key")
+        #expect(agent.last?.value == "key::" + literal)
+        #expect(first.publicKeyLine == literal + " /Users/测试/.ssh/签名 key")
+        #expect(keys.first?.publicKeyLine == nil)
 
         // 写入的值按 Git 的写法会被认成 SSH 格式
         #expect(SigningFormat(key: first.value) == .ssh)
     }
 
-    /// 配置里写的指纹、长短 ID、`0x` 前缀与 `!` 后缀都指向同一把 OpenPGP 密钥；SSH 只认类型与公钥。
+    /// 配置里写的指纹、长短 ID、`0x` 前缀与 `!` 后缀都指向同一把 OpenPGP 密钥；SSH 只认类型与公钥，注释不同或没有注释都是同一把。
     @Test("配置值与密钥的对应")
     func matchesConfiguredValues() throws {
         let openPGP = try #require(SigningKeys.parseSecretKeys(Data(Self.secretKeys.utf8)).first)
@@ -80,10 +86,12 @@ struct SigningKeysTests {
             #expect(!openPGP.matches(value))
         }
 
+        // agent 里的密钥带注释，写入的值随之带着注释；配置里没有注释或注释不同仍是这一把
         let literal = Self.publicKey()
-        let ssh = try #require(SigningKeys.parseAgentKeys(Data(literal.utf8)).first)
+        let ssh = try #require(SigningKeys.parseAgentKeys(Data((literal + " me@laptop").utf8)).first)
 
         #expect(ssh.matches("key::" + literal + " 别的注释"))
+        #expect(ssh.matches("key::" + literal))
         #expect(ssh.matches(literal))
         #expect(!ssh.matches("key::" + Self.publicKey(seed: 7)))
         #expect(!ssh.matches("~/.ssh/id_ed25519.pub"))
