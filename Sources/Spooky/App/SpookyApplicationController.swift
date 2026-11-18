@@ -300,6 +300,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
             task.cancel()
         }
 
+        // 排着的写操作不再轮到；执行中的随下面各窗口的收尾取消并等待
+        RepositoryWriteQueue.shared.cancelAllPending()
+
         Task {
             // 先取消并等待各窗口的读取、写入和子进程结束，再关闭专属主连接；超过宽限期也会退出。
             await withTaskGroup(of: Bool.self) { group in

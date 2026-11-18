@@ -916,8 +916,8 @@ extension RemoteConnection {
         wrapper = nil
     }
 
-    /// 广播连接状态供工具栏、横幅和测试观察。
-    private func updateState(_ state: RemoteConnectionState) {
+    /// 广播连接状态供工具栏、横幅和测试观察；测试也经它切换连接状态。
+    func updateState(_ state: RemoteConnectionState) {
         // 只记录真正发生的切换；进入不可用时附上失败类别，便于定位断线原因
         if state != self.state {
             let host = host

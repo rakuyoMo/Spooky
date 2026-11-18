@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@（已跳过）";
 "queue.notRun" = "没有执行：等待期间仓库已经变了。";
 "queue.cancelledAfterFailure" = "“%@” 失败，已取消。";
+"queue.cancelledDisconnected" = "与服务器的连接断开，已取消。";
 "dialog.options" = "选项";
 "dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";

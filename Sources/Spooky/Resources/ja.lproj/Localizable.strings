@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@（スキップ済み）";
 "queue.notRun" = "実行されませんでした：待機中にリポジトリが変更されました。";
 "queue.cancelledAfterFailure" = "「%@」が失敗したため、キャンセルしました。";
+"queue.cancelledDisconnected" = "サーバーとの接続が切れたため、キャンセルしました。";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";

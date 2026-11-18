@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@ übersprungen";
 "queue.notRun" = "Nicht ausgeführt: Das Repository hat sich während des Wartens geändert.";
 "queue.cancelledAfterFailure" = "Abgebrochen, weil „%@“ fehlgeschlagen ist.";
+"queue.cancelledDisconnected" = "Abgebrochen, weil die Verbindung zum Server getrennt wurde.";
 "dialog.options" = "Optionen";
 "dialog.doNotAskAgain" = "Nicht mehr fragen";
 "menu.repository" = "Repository";

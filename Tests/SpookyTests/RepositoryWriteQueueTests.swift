@@ -140,6 +140,129 @@ struct RepositoryWriteQueueTests {
     }
 }
 
+// MARK: - Ending
+
+/// 断线、换仓库与退出时，排着的写操作取消，不再轮到。
+extension RepositoryWriteQueueTests {
+    /// 服务器仓库断开：排着的两项都取消，记录写明连接断开；执行中的一项照常结束，重连后排过的都不执行。
+    @Test("服务器仓库断开时取消排着的写操作")
+    func cancelledOnDisconnect() async throws {
+        let location = RepositoryLocation.remote(host: "spooky-test", path: "/srv/queue-" + UUID().uuidString)
+        let remote = try #require(RemoteConnection.forLocation(location))
+        let activities = RepositoryActivities()
+        let status = try Self.snapshot("file.txt")
+        let session = RepositorySession(loadStatus: { _ in status }, activities: activities)
+
+        // 连接状态由测试切换，不连服务器；先连上再打开仓库，会话订阅时读到的就是已连上
+        await remote.updateState(.connected)
+        session.display(location)
+        defer { session.close() }
+
+        await until { session.canWrite }
+
+        let order = QueueRecorder()
+        let release = await startBlocking(in: session, title: "First", order: order)
+
+        for title in ["Again", "Other"] {
+            let accepted = session.performGit({ _, _ in await order.append(title) }, title: title)
+            #expect(accepted)
+        }
+
+        // 断开：排着的两项随连接状态的变化取消
+        await remote.updateState(.reconnecting)
+        await until { session.connectionState == .reconnecting }
+
+        let queued = activities.items.filter { ["Again", "Other"].contains($0.title) }
+        let reason = AppLocalization.text("queue.cancelledDisconnected")
+
+        #expect(queued.count == 2)
+        #expect(queued.allSatisfy { $0.state == "activity.cancelled" && $0.log.contains(reason) })
+
+        // 重连后执行中的一项结束，没有别的轮到
+        await remote.updateState(.connected)
+        await until { session.canWrite }
+
+        release.finish()
+        await until { RepositoryWriteQueue.shared.isIdle(location) }
+
+        #expect(await order.items == ["First"])
+    }
+
+    /// 同一仓库开在两个窗口里，各排一项；一个窗口换了仓库，只有它排着的一项取消，另一个窗口排着的照常执行。
+    @Test("换仓库只取消本窗口排着的写操作")
+    func cancelledOnClose() async throws {
+        let location = RepositoryLocation.local(path: "/temporary/queue-" + UUID().uuidString)
+        let activities = RepositoryActivities()
+        let status = try Self.snapshot("file.txt")
+        let first = RepositorySession(loadStatus: { _ in status }, activities: activities)
+        let second = RepositorySession(loadStatus: { _ in status }, activities: activities)
+
+        defer {
+            first.close()
+            second.close()
+        }
+
+        for session in [first, second] {
+            session.display(location)
+            session.refresh()
+            await session.waitForRefresh()
+        }
+
+        let order = QueueRecorder()
+        let release = await startBlocking(in: first, title: "First", order: order)
+
+        let again = first.performGit({ _, _ in await order.append("Again") }, title: "Again")
+        let other = second.performGit({ _, _ in await order.append("Other") }, title: "Other")
+
+        #expect(again && other)
+
+        // 换仓库与关窗走同一个收尾：第二个窗口排着的一项随即取消
+        second.display(.local(path: "/temporary/queue-" + UUID().uuidString))
+        #expect(activities.items.first { $0.title == "Other" }?.state == "activity.cancelled")
+
+        release.finish()
+        await until { RepositoryWriteQueue.shared.isIdle(location) }
+
+        #expect(await order.items == ["First", "Again"])
+    }
+
+    /// 退出时排着的写操作都取消，撤回先显示的目标状态；执行中的一项结束后不再轮到任何一项。
+    @Test("退出时排着的写操作不再执行")
+    func cancelledOnQuit() {
+        // 退出取消的是全部仓库排着的写操作，用单独的队列，不影响并行的其它测试
+        let queue = RepositoryWriteQueue()
+        let location = RepositoryLocation.local(path: "/temporary/queue-" + UUID().uuidString)
+        let activities = RepositoryActivities()
+        var withdrawn = false
+
+        let running = RepositoryWrite(location: location, session: nil, title: "Running")
+
+        let waiting = RepositoryWrite(
+            location: location,
+            session: nil,
+            title: "Waiting",
+            withdraw: { withdrawn = true }
+        ) { _ in
+            Issue.record("退出后不执行")
+        }
+
+        let record = RepositoryActivity(repository: location, title: "Waiting", target: nil)
+        record.state = "activity.waiting"
+        activities.insert(record)
+        waiting.waiting = (record, activities)
+
+        #expect(queue.begin(running))
+        queue.enqueue(waiting)
+        queue.cancelAllPending()
+
+        #expect(withdrawn)
+        #expect(record.state == "activity.cancelled")
+
+        queue.finish(running)
+        #expect(queue.isIdle(location))
+    }
+}
+
 // MARK: - Steps
 
 extension RepositoryWriteQueueTests {

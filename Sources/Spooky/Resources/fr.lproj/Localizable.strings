@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@ : ignoré";
 "queue.notRun" = "Non exécuté : le dépôt a changé pendant l’attente de cette opération.";
 "queue.cancelledAfterFailure" = "Annulé, car « %@ » a échoué.";
+"queue.cancelledDisconnected" = "Annulé, car la connexion au serveur a été perdue.";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";

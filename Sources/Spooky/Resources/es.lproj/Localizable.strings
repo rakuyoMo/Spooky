@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@: omitido";
 "queue.notRun" = "No se ejecutó: el repositorio cambió mientras esta operación esperaba.";
 "queue.cancelledAfterFailure" = "Cancelada porque “%@” falló.";
+"queue.cancelledDisconnected" = "Cancelada porque se perdió la conexión con el servidor.";
 "dialog.options" = "Opciones";
 "dialog.doNotAskAgain" = "No volver a preguntarme";
 "menu.repository" = "Repositorio";

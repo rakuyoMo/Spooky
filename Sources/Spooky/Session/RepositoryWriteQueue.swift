@@ -180,6 +180,27 @@ final class RepositoryWriteQueue {
     func cancel(_ write: RepositoryWrite) {
         remove(in: write.location, reason: .user) { $0 === write }
     }
+
+    /// 服务器仓库断开：排着的全部取消，不在重连后执行；执行中的由执行段按中断与核对处理。
+    func disconnected(_ location: RepositoryLocation) {
+        remove(in: location, reason: .disconnected) { _ in true }
+    }
+
+    /// 窗口关闭或换了仓库：取消这个会话排着的写操作，别的会话提交的照常。
+    ///
+    /// - Parameters:
+    ///   - session: 关闭的会话。
+    ///   - location: 会话关闭前显示的仓库。
+    func closed(_ session: RepositorySession, in location: RepositoryLocation) {
+        remove(in: location, reason: .closed) { $0.session === session }
+    }
+
+    /// App 退出：全部仓库排着的写操作取消；执行中的由各窗口照退出流程取消并等待。
+    func cancelAllPending() {
+        for location in Array(lanes.keys) {
+            remove(in: location, reason: .closed) { _ in true }
+        }
+    }
 }
 
 // MARK: - Private
@@ -300,8 +321,11 @@ extension RepositoryWriteQueue {
         /// 执行中的写操作失败，附它的名称。
         case failure(String)
 
-        /// 提交它的窗口已关闭或换了仓库。
+        /// 提交它的窗口已关闭或换了仓库，或 App 退出。
         case closed
+
+        /// 服务器仓库断开。
+        case disconnected
 
         /// 轮到时核对不通过。
         case changed
@@ -310,15 +334,16 @@ extension RepositoryWriteQueue {
         var state: String {
             switch self {
             case .changed: "activity.skipped"
-            case .user, .failure, .closed: "activity.cancelled"
+            case .user, .failure, .closed, .disconnected: "activity.cancelled"
             }
         }
 
-        /// 写进记录输出的说明；用户取消与关窗不写。
+        /// 写进记录输出的说明；用户取消、关窗与退出不写。
         var detail: String? {
             switch self {
             case .failure(let title): AppLocalization.text("queue.cancelledAfterFailure", title)
             case .changed: AppLocalization.text("queue.notRun")
+            case .disconnected: AppLocalization.text("queue.cancelledDisconnected")
             case .user, .closed: nil
             }
         }
@@ -329,6 +354,7 @@ extension RepositoryWriteQueue {
             case .user: "user"
             case .failure: "failure"
             case .closed: "closed"
+            case .disconnected: "disconnected"
             case .changed: "changed"
             }
         }

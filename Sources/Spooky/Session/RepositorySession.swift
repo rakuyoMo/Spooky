@@ -57,8 +57,12 @@ final class RepositorySession {
     /// 最近一次成功读取的状态。
     private(set) var status: WorkingCopyStatus? = nil
 
-    /// 服务器连接状态，本机仓库为 nil。
-    private(set) var connectionState: RemoteConnectionState? = nil
+    /// 服务器连接状态，本机仓库为 nil；从已连上变为没连上时，这个仓库排着的写操作全部取消。
+    private(set) var connectionState: RemoteConnectionState? = nil {
+        didSet {
+            connectionStateChanged(from: oldValue)
+        }
+    }
 
     /// 服务器上有可用的废纸篓，由连接体检找到；本机仓库不用这一项。
     private(set) var serverHasTrash = false
@@ -521,6 +525,9 @@ extension RepositorySession {
 
         if let repository {
             viewStates.store(captureViewState(), for: repository)
+
+            // 本窗口排着的写操作随窗口关闭或换仓库取消，别的窗口提交的照常
+            RepositoryWriteQueue.shared.closed(self, in: repository)
         }
 
         generation += 1
@@ -730,8 +737,14 @@ extension RepositorySession {
                 // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
                 if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
 
-                // 失败后排着的写操作不在失败后的状态上继续；停掉的只停这一个
-                if !cancelled { RepositoryWriteQueue.shared.failed(write) }
+                // 失败后排着的写操作不在失败后的状态上继续，断线中断的按断线取消；停掉的只停这一个
+                if !cancelled {
+                    if error is RemoteConnectionError {
+                        RepositoryWriteQueue.shared.disconnected(repository)
+                    } else {
+                        RepositoryWriteQueue.shared.failed(write)
+                    }
+                }
 
                 if let self, generation == request { reportFailure(error, cancelled) }
             }

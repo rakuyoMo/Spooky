@@ -560,6 +560,7 @@
 "activity.titleSkipped" = "%@（已略過）";
 "queue.notRun" = "沒有執行：等待期間儲存庫已經變了。";
 "queue.cancelledAfterFailure" = "“%@” 失敗，已取消。";
+"queue.cancelledDisconnected" = "與伺服器的連線中斷，已取消。";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
