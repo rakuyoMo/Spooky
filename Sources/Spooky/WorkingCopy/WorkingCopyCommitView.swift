@@ -334,7 +334,6 @@ extension WorkingCopyCommitView {
 
             Divider().frame(height: 14)
 
-            #warning("TODO: 正文动作栏的折行按钮用于切换软 / 硬折行是推断。核实方式：确认这个按钮应切换全局的折行偏好，还是只切换当前草稿的显示；只影响这个按钮的作用。")
             Button {
                 wrapping = (hardWrap ? CommitEditorSettings.Wrapping.soft : .hard).rawValue
             } label: {

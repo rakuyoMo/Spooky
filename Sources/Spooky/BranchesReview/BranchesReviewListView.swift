@@ -16,10 +16,6 @@ struct BranchesReviewListView: View {
     @AppStorage(BranchesReviewState.filterKey)
     private var filter = BranchesReviewFilter.all.rawValue
 
-    #warning(
-        "TODO: 排序默认按名称升序是选定的；核实方式：在全新的偏好里打开分支整理的视图设置菜单看勾选项；影响首次打开时列表的顺序"
-    )
-
     /// 排序属性。
     @AppStorage(BranchesReviewState.sortKey)
     private var sort = BranchesReviewSort.name.rawValue

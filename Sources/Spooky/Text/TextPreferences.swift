@@ -29,7 +29,6 @@ enum TextPreferences {
 
     /// Diff 着色要求总开关与 Diff 开关同时打开。
     static var colorsDiffSyntax: Bool {
-        #warning("TODO: 核实只开 “Syntax Coloring in Diffs” 时 Diff 是否着色；目前还要求总开关打开，只影响 Diff 着色与设置页子选项的禁用。")
-        return colorsSyntax && UserDefaults.standard.bool(forKey: diffSyntaxColoringKey)
+        colorsSyntax && UserDefaults.standard.bool(forKey: diffSyntaxColoringKey)
     }
 }
