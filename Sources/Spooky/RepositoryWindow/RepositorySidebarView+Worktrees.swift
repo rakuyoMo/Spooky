@@ -41,27 +41,22 @@ extension RepositorySidebarView {
     }
 
     /// 工作树行：单击显示详情，双击在本窗口打开，失效时响铃。
-    /// 失效时图标与名称一起变淡，行的右端多一个告警图标。
+    /// 失效时行的右端多一个告警图标。
     private func worktreeRow(_ worktree: Worktree) -> some View {
         HStack(spacing: 4) {
             Label {
                 Text(worktree.name)
                     .lineLimit(1)
-                    .foregroundStyle(
-                        worktree.isValid
-                            ? AnyShapeStyle(.primary)
-                            : AnyShapeStyle(Color(nsColor: .disabledControlTextColor))
-                    )
             } icon: {
                 Image(systemName: "rectangle.on.rectangle")
-                    .opacity(worktree.isValid ? 1 : 0.5)
             }
 
             if !worktree.isValid {
                 Spacer(minLength: 4)
 
-                // 按普通文字的颜色画、不随名称变淡，所在行被选中时随之反白
+                // 用次要文字的颜色画，所在行被选中时随之反白
                 Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.secondary)
                     .frame(width: 18, height: 18)
                     .accessibilityLabel(AppLocalization.text("worktree.warning"))
             }
