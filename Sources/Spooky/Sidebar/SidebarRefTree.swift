@@ -140,18 +140,12 @@ enum SidebarRefTree {
         return references.filter { keep.contains($0.id) }
     }
 
-    /// 标签按名称排序；名字里的数字按数值比较，v1.10 排在 v1.9 之后。
-    #warning("TODO: 标签名称按数值感知的本地化规则比较，未核实是否应按字典序；核实方式：建 v1.9 与 v1.10 两个标签比对顺序；只影响标签分组的顺序")
+    /// 标签按名称排序：名字按 ``ReferenceOrder/precedes(_:_:)`` 比较，不看分支的优先名。
     static func sortedTags(_ tags: [RepositoryReference], order: SidebarPreferences.TagOrder) -> [RepositoryReference] {
         tags.sorted { lhs, rhs in
-            let result = lhs.name.localizedStandardCompare(rhs.name)
-
-            // 名字比较相等时按引用名稳定排序
-            if result == .orderedSame {
-                return lhs.id < rhs.id
-            }
-
-            return order == .nameAscending ? result == .orderedAscending : result == .orderedDescending
+            order == .nameAscending
+                ? ReferenceOrder.precedes(lhs.name, rhs.name)
+                : ReferenceOrder.precedes(rhs.name, lhs.name)
         }
     }
 

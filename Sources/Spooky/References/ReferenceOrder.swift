@@ -10,7 +10,7 @@ enum ReferenceOrder {
     /// 排在最前的分支名，按先后排列；远端分支比较去掉远端名之后的部分。
     static let preferredBranches = ["main", "master", "trunk", "dev", "develop", "next"]
 
-    /// 两个分支名的先后：优先名按表中的先后排在最前，其余按名字逐段比较。
+    /// 两个分支名的先后：优先名按表中的先后排在最前，其余按 ``precedes(_:_:)`` 比较名字。
     ///
     /// - Parameters:
     ///   - lhs: 本地分支名，或去掉远端名的远端分支名。
@@ -26,30 +26,16 @@ enum ReferenceOrder {
         return precedes(lhs, rhs)
     }
 
-    /// 两个名字按 “/” 分段逐段比较的先后，不看优先名；前面各段都相同时段数少的在前。
+    /// 两个名字的先后，不看优先名：比较整个名字，不分大小写与全半角，数字按数值，标点等其余字符按 Unicode 码位；
+    /// 只差大小写的两个名字也分出先后，结果不随输入顺序变化。
     ///
-    /// 逐段比较让按 “/” 折叠出的文件夹按自己的名字插在同级的引用之间。
-    #warning(
-        "TODO: 名字的各段按 Finder 的规则比较（不分大小写，数字按数值），未核实是否应区分大小写或按字典序；核实方式：建 Alpha、beta、release/1.9 与 release/1.10 几个分支比对 Branches 分组的先后；只影响优先名以外的分支与标签的先后"
-    )
+    /// 按 “/” 折叠出的文件夹出现在它第一个子项的位置，如 “-” 的码位小于 “/”，`sub-x` 排在文件夹 `sub` 之前。
     static func precedes(_ lhs: String, _ rhs: String) -> Bool {
-        let left = lhs.split(separator: "/", omittingEmptySubsequences: false)
-        let right = rhs.split(separator: "/", omittingEmptySubsequences: false)
+        let options: String.CompareOptions = [.caseInsensitive, .numeric, .widthInsensitive, .forcedOrdering]
 
-        for (leftPart, rightPart) in zip(left, right) {
-            let result = leftPart.localizedStandardCompare(rightPart)
-
-            if result != .orderedSame {
-                return result == .orderedAscending
-            }
-        }
-
-        // 各段都相同时段数少的在前，段数也相同时按字节决定，结果不随输入顺序变化
-        guard left.count == right.count else {
-            return left.count < right.count
-        }
-
-        return lhs < rhs
+        // 经 NSString 比较会先做规范分解，é 排在 e 旁边；Swift 原生的 compare 会把 é 排到 z 之后
+        // swiftlint:disable:next legacy_objc_type
+        return (lhs as NSString).compare(rhs, options: options) == .orderedAscending
     }
 
     /// 一组引用按公共顺序排列。
