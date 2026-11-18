@@ -10,9 +10,15 @@ extension RepositorySession {
         return repository.host == nil || connectionState == .connected
     }
 
-    /// 文件列表的勾选框能否点：仓库可写且文件列表没有变灰，或本会话正在暂存、新的请求排在后面。
+    /// 文件列表的勾选与文件动作能否点：仓库能接受写入，改动工作区或索引的写操作又没有在执行（文件列表没有变灰），
+    /// 本会话的暂存执行期间只有勾选框可点；获取、推送这类写操作执行或排队时照样可点，点了排队。
+    var canWriteFiles: Bool {
+        canWrite && !isWorkingCopyLocked && !isStaging
+    }
+
+    /// 文件列表的勾选框能否点：文件动作可用，或本会话正在暂存、新的请求并进它。
     var canToggleStaging: Bool {
-        canWrite && !isWorkingCopyLocked || isStaging
+        canWriteFiles || isStaging
     }
 
     /// 这个仓库有用户发起的写操作在执行或排队，不论是哪个窗口提交的；只有后台自动获取在执行时为假。
@@ -156,21 +162,21 @@ extension RepositorySession {
 
     /// 所选文件中存在未暂存的改动。
     func canStage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasUnstagedChanges)
+        canWriteFiles && entries.contains(where: \.hasUnstagedChanges)
     }
 
     /// 所选文件中存在已暂存的改动。
     func canUnstage(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.hasStagedChanges)
+        canWriteFiles && entries.contains(where: \.hasStagedChanges)
     }
 
     /// 丢弃需要至少一个有改动的文件，未改动与被忽略的文件没有可丢弃的内容；执行前仍会确认。
     func canDiscard(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind != .unchanged && $0.kind != .ignored }
+        canWriteFiles && entries.contains { $0.kind != .unchanged && $0.kind != .ignored }
     }
 
     /// 采用一侧与标记已解决只作用于冲突文件。
     func canResolve(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains { $0.kind == .conflicted }
+        canWriteFiles && entries.contains { $0.kind == .conflicted }
     }
 }

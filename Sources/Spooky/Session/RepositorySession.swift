@@ -128,10 +128,10 @@ final class RepositorySession {
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     var stagingOverrides: [StatusRowID: Bool] = [:]
 
-    /// 暂存正在执行：只有受影响的行禁用，其它行的勾选框仍可点，新的请求排进 ``queuedStaging``。
-    var isStaging = false
+    /// 本会话的暂存排在队列里或正在执行；这时新点的请求并进它，排进 ``queuedStaging``。
+    var staging = StagingPhase.idle
 
-    /// 暂存执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
+    /// 暂存排队或执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
     var queuedStaging: [(entries: [StatusEntry], staged: Bool)] = []
 
     /// 列表多选使用的稳定标识。
@@ -567,7 +567,7 @@ extension RepositorySession {
         diffFailure = nil
         contentHash = nil
         stagingOverrides = [:]
-        isStaging = false
+        staging = .idle
         queuedStaging = []
         selectedIDs = []
         commitSubject = ""
@@ -872,7 +872,7 @@ extension RepositorySession {
             history.suggestions.prepareContributors(runner: runner, head: head)
         }
 
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         // 选区保留列表里仍有的条目，补充清单里的未改动与被忽略文件同样算数
         let visible = listing.entries(status: status.entries, files: workingTreeFiles)
@@ -930,7 +930,7 @@ extension RepositorySession {
     /// 刷新失败时撤回临时勾选并报告错误：取消不报告，断线交给重连，其余错误交给窗口呈现。
     private func reportRefreshFailure(_ error: Error, in repository: RepositoryLocation) {
         // 保留旧快照，错误反馈与数据展示互不覆盖。
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         guard (error as? GitError)?.isCancelled != true, !(error is CancellationError) else {
             return
@@ -977,7 +977,7 @@ extension RepositorySession {
         branch: BranchStatus?,
         in repository: RepositoryLocation
     ) {
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         let remoteFailure = error as? RemoteConnectionError
 
@@ -1021,7 +1021,7 @@ extension RepositorySession {
         in repository: RepositoryLocation,
         output: (GitOutputEvent) -> Void
     ) {
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         guard !cancelled else {
             return
@@ -1047,7 +1047,7 @@ extension RepositorySession {
 
         connectionState = .connected
         failure = nil
-        stagingOverrides = [:]
+        dropStagingOverrides()
         self.recovery = recovery
 
         // 之前没有挂载的目录在连上后可能已经挂上

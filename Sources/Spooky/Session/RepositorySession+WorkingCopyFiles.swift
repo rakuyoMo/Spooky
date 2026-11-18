@@ -331,17 +331,17 @@ extension RepositorySession {
 extension RepositorySession {
     /// 停止跟踪需要暂存区里的文件。
     func canUntrack(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.isInIndex)
+        canWriteFiles && entries.contains(where: \.isInIndex)
     }
 
     /// 删除需要工作区里实际存在的文件，冲突文件除外。
     func canDelete(_ entries: [StatusEntry]) -> Bool {
-        canWrite && entries.contains(where: \.isDeletable)
+        canWriteFiles && entries.contains(where: \.isDeletable)
     }
 
     /// 移动一次只处理一个工作区里存在的文件。
     func canMove(_ entries: [StatusEntry]) -> Bool {
-        guard canWrite, entries.count == 1, let entry = entries.first else { return false }
+        guard canWriteFiles, entries.count == 1, let entry = entries.first else { return false }
 
         return entry.isDeletable && !entry.path.hasSuffix("/")
     }
@@ -353,14 +353,14 @@ extension RepositorySession {
     ///   - entries: 作用的条目。
     ///   - marked: 列表里显示的 assume-unchanged 路径。
     func canRevert(_ entries: [StatusEntry], marked: Set<String> = []) -> Bool {
-        canWrite && !entries.isEmpty && entries.allSatisfy { entry in
+        canWriteFiles && !entries.isEmpty && entries.allSatisfy { entry in
             [.tracked, .conflicted].contains(entry.kind) || (entry.kind == .unchanged && !marked.contains(entry.path))
         }
     }
 
     /// 忽略与排除作用于任意条目：被忽略的文件可能只被本机的排除或全局规则忽略，仍可写进共享的规则。
     func canIgnore(_ entries: [StatusEntry]) -> Bool {
-        canWrite && !entries.isEmpty
+        canWriteFiles && !entries.isEmpty
     }
 
     /// Show in Finder 与终端要求作用对象在磁盘上：作用的条目全是工作区里已删除的文件时不可用。
@@ -377,7 +377,7 @@ extension RepositorySession {
     func canMarkAssumeUnchanged(_ entries: [StatusEntry], _ assumeUnchanged: Bool, marked: Set<String>) -> Bool {
         let markable = entries.filter(\.isInIndex)
 
-        guard canWrite, !markable.isEmpty else {
+        guard canWriteFiles, !markable.isEmpty else {
             return false
         }
 

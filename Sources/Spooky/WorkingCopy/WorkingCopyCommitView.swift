@@ -171,9 +171,9 @@ extension WorkingCopyCommitView {
         !session.collapsesCommitBody && (focusedField != nil || pinned || !session.commitBody.isEmpty)
     }
 
-    /// 写入、提交后等待清空和快速修补期间信息只读；继续序列前可以编辑这一步的信息。
+    /// 提交排队或执行、提交后等待清空和快速修补期间信息只读；别的写操作执行或排队时照样可以编辑，继续序列前可以编辑这一步的信息。
     private var isEditable: Bool {
-        let locked = session.isWriting
+        let locked = session.isCommitting
             || session.commitResetTask != nil
             || quickAmend
 
@@ -363,18 +363,22 @@ extension WorkingCopyCommitView {
         }
     }
 
-    /// Amend、Sign Off 与 Skip Hooks；Skip Hooks 只在仓库启用了提交钩子时出现。
+    /// Amend、Sign Off 与 Skip Hooks；Skip Hooks 只在仓库启用了提交钩子时出现。提交排队或执行期间都不能改。
     private var options: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle(amendTitle, isOn: Binding(get: { session.amend }, set: { session.setAmend($0) }))
-                .disabled(!session.canAmend || quickAmend)
+                .disabled(!session.canAmend || quickAmend || session.isCommitting)
 
             Toggle(AppLocalization.text("commit.signOff"), isOn: $signOff)
-                .disabled(!session.canWrite || quickAmend)
+                .disabled(!session.canWrite || quickAmend || session.isCommitting)
 
             if session.commitConfiguration?.hasCommitHooks ?? false {
                 Toggle(AppLocalization.text("commit.skipHooks"), isOn: $session.skipHooks)
-                    .disabled(!session.canWrite || session.continuesSequence)
+                    .disabled(
+                        !session.canWrite
+                            || session.continuesSequence
+                            || session.isCommitting
+                    )
             }
         }
         .toggleStyle(.checkbox)

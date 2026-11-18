@@ -48,7 +48,7 @@ extension RepositorySessionTests {
 // MARK: - Steps
 
 extension RepositorySessionTests {
-    /// 有远端、没有上游、只有一个未跟踪文件时的可用性；写入进行中写入口照样可用，点了排进队列。
+    /// 有远端、没有上游、只有一个未跟踪文件时的可用性；获取进行中写入口与文件动作照样可用，点了排进队列。
     private func checkAvailability(_ session: RepositorySession) async throws {
         let entries = session.status?.entries ?? []
 
@@ -60,7 +60,11 @@ extension RepositorySessionTests {
         let (gate, release) = AsyncStream<Void>.makeStream()
         defer { release.finish() }
 
-        session.performGit({ _, _ in for await _ in gate { } }, title: "Fetch")
+        session.performGit(
+            { _, _ in for await _ in gate { } },
+            title: "Fetch",
+            touchesWorkingCopy: false
+        )
 
         #expect(
             session.canFetch

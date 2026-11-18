@@ -4,15 +4,21 @@ import SpookyKit
 // MARK: - Working Copy
 
 extension RepositorySession {
-    /// 受影响的行先显示目标状态，再执行命令；暂存正在执行时排在它后面，在同一个写操作里接着执行。
-    /// 任何失败都会撤回临时状态，排在后面的请求一并丢弃。
+    /// 本会话的暂存正在执行：只有受影响的行禁用，其它行的勾选框仍可点，文件列表不因它变灰。
+    var isStaging: Bool {
+        staging == .running
+    }
+
+    /// 受影响的行先显示目标状态，再执行命令；仓库正有写操作时整个请求排进队列，轮到时才执行。
+    /// 本会话的暂存排着或正在执行时，新的请求并进它，在同一个写操作里接着执行。
+    /// 任何失败都会撤回临时状态，排在后面的请求一并丢弃；在队列里取消或轮到时没有执行同样撤回。
     func stage(_ entries: [StatusEntry], staged: Bool) {
         guard !entries.isEmpty else { return }
 
         let targets = entries.map { (StatusRowID(path: $0.path, kind: $0.kind), staged) }
 
-        // 暂存正在执行：这些行先显示目标状态，请求排在后面
-        if isStaging {
+        // 暂存排着或正在执行：这些行先显示目标状态，请求并进它
+        if staging != .idle {
             stagingOverrides.merge(targets) { $1 }
             queuedStaging.append((entries, staged))
             return
@@ -21,7 +27,7 @@ extension RepositorySession {
         guard canWrite else { return }
 
         stagingOverrides = Dictionary(uniqueKeysWithValues: targets)
-        isStaging = true
+        staging = .waiting
 
         let request = generation
 
@@ -44,8 +50,19 @@ extension RepositorySession {
             },
             title: AppLocalization.text(staged ? "working.stage" : "working.unstage"),
             recordsActivity: false,
-            undo: .reversible
+            undo: .reversible,
+            withdrawn: { [weak self] in self?.withdrawStaging(request) },
+            started: { [weak self] in self?.staging = .running }
         )
+    }
+
+    /// 撤回勾选框的临时状态；本会话的暂存还排在队列里时保留，它轮到时照样执行。
+    func dropStagingOverrides() {
+        guard staging != .waiting else {
+            return
+        }
+
+        stagingOverrides = [:]
     }
 
     /// 全部动作同时供主菜单、工具栏与提交区调用。
@@ -218,9 +235,12 @@ extension RepositorySession {
         let draft = amend ? (originalDraft ?? (commitSubject, commitBody)) : nil
 
         let action: (_ allowEmpty: Bool) -> Void = { [weak self] allowEmpty in
-            guard let self, generation == request else { return }
+            guard let self, generation == request, canWrite else { return }
 
-            let started = performGit(
+            // 提交被接受就进入提交中状态，排队期间同样锁住提交区；在队列里取消或轮到时没有执行时恢复，草稿不变
+            beginCommitProgress()
+
+            performGit(
                 { runner, _ in
                     try await WorkingCopyOperations(runner: runner)
                         .commit(
@@ -234,15 +254,11 @@ extension RepositorySession {
                 },
                 title: AppLocalization.text(amend ? "working.amend" : "working.commit"),
                 recordsActivity: false,
-                undo: .reversible
-            ) { [weak self] in
-                self?.finishSuccessfulCommit(restoring: draft)
-            }
-
-            // 只有真正开始的提交才进入提交中状态；仓库不可写时什么也不变
-            if started {
-                beginCommitProgress()
-            }
+                undo: .reversible,
+                success: { [weak self] in self?.finishSuccessfulCommit(restoring: draft) },
+                withdrawn: { [weak self] in self?.endCommitProgress() },
+                started: { [weak self] in self?.endCommitProgressAfterWriting() }
+            )
         }
 
         // 修补改写的是已有的提交，不是空提交
@@ -413,7 +429,7 @@ extension RepositorySession {
         guard generation == request else { return nil }
 
         guard !queuedStaging.isEmpty else {
-            isStaging = false
+            staging = .idle
             return nil
         }
 
@@ -426,7 +442,32 @@ extension RepositorySession {
     private func endStaging(_ request: Int) {
         guard generation == request else { return }
 
-        isStaging = false
+        staging = .idle
         queuedStaging = []
     }
+
+    /// 排着的暂存在队列里被取消或轮到时没有执行：撤回目标状态，并进它的请求一并丢弃。
+    ///
+    /// - Parameter request: 暂存提交时的仓库代数。
+    private func withdrawStaging(_ request: Int) {
+        guard generation == request else { return }
+
+        staging = .idle
+        stagingOverrides = [:]
+        queuedStaging = []
+    }
+}
+
+// MARK: - StagingPhase
+
+/// 本会话的暂存所处的阶段。
+enum StagingPhase {
+    /// 没有暂存。
+    case idle
+
+    /// 排在仓库的写队列里，还没开始执行。
+    case waiting
+
+    /// 正在执行。
+    case running
 }

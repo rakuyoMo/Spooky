@@ -26,6 +26,7 @@ extension RepositorySession {
     ///   - withdrawn: 在队列里取消或轮到时没有执行时调用，撤回先显示的目标状态。
     ///   - asksToStash: 排进队列的检出：轮到时按那时的状态，有已跟踪文件的修改就按设置先询问是否储藏，询问期间占着轮次。
     ///   - turn: 轮到时询问后接着执行的那一项：在它占着的轮次上执行，不另排队。
+    ///   - started: 开始执行后调用，`writeTask` 已是这个写操作：仓库空闲时在接受时，排队时在轮到时；询问后接着执行的不调用。
     /// - Returns: 是否已开始执行或已排进队列；仓库不能写入、后台写操作遇上仓库不空闲、询问期间那一项已被取消时为 false，
     ///   调用方据此保留未发送的参数。
     @discardableResult
@@ -45,7 +46,8 @@ extension RepositorySession {
         available: (@MainActor (RepositorySession) -> Bool)? = nil,
         withdrawn: (@MainActor () -> Void)? = nil,
         asksToStash: Bool = false,
-        turn: RepositoryWrite? = nil
+        turn: RepositoryWrite? = nil,
+        started: (@MainActor () -> Void)? = nil
     ) -> Bool {
         guard canWrite, let repository else {
             return false
@@ -91,12 +93,14 @@ extension RepositorySession {
             }
 
             self?.execute(operation, as: write)
+            started?()
             return true
         }
 
         // 仓库空闲时立即执行
         if queue.begin(write) {
             execute(operation, as: write)
+            started?()
             return true
         }
 

@@ -96,8 +96,11 @@ Spooky 由两个 target 组成：
   - 窗口关闭或换仓库时取消这个会话排着的写操作，别的窗口提交的照常；App 退出时先取消全部排着的，再取消并等待各窗口执行中的
   - 仓库管理详情区的写入不排队：仓库有执行中或排队的写操作时不可用，执行时同样占着队列
 - 入口的可用性分两层：`canWrite` 只看仓库能否接受写入（服务器仓库已连上），其上的 `can…` 规则只看各入口的前提，正在写入时入口照样可用，点了排队；`hasUserWrite` 表示有用户发起的写操作在执行或排队，撤销与重做据此禁用，只有自动获取在执行时照样可用；菜单、工具栏、右键菜单与拖放统一使用这些规则
-- 文件列表勾选框的暂存与取消暂存只锁住受影响的行：执行期间这些行按 `stagingOverrides` 显示目标状态并禁用，其它行仍可勾选（`canToggleStaging`），点下的请求排进 `queuedStaging`，在同一个写操作里依次执行，写入仍然串行
-  - 失败或取消时丢弃 `queuedStaging`，行按刷新后的真实索引恢复；改动工作区或索引的写操作执行期间（`isWorkingCopyLocked`，含别的窗口提交的）整个文件列表变灰，获取、推送这类写操作（`performGit(touchesWorkingCopy: false)`）执行期间不变灰
+- 文件列表勾选框的暂存与取消暂存只锁住受影响的行：排队与执行期间这些行按 `stagingOverrides` 显示目标状态并禁用，其它行仍可勾选（`canToggleStaging`），点下的请求排进 `queuedStaging`，在同一个写操作里依次执行，写入仍然串行
+  - 会话的 `staging` 分排队与执行两段：排队期间刷新不撤回 `stagingOverrides`，轮到时（`performGit(started:)`）才算执行；在队列里取消或轮到时没有执行，撤回目标状态并丢弃 `queuedStaging`
+  - 失败或取消时丢弃 `queuedStaging`，行按刷新后的真实索引恢复；改动工作区或索引的写操作执行期间（`isWorkingCopyLocked`，含别的窗口提交的）整个文件列表变灰，获取、推送这类写操作（`performGit(touchesWorkingCopy: false)`）执行或排队期间不变灰
+  - 文件动作（勾选、丢弃、删除、忽略等）按 `canWriteFiles`：文件列表没有变灰、本会话的暂存又不在执行时可用，点了排队
+- 提交被接受（立即执行或排队）就进入 `isCommitting`：信息与选项只读、不再接受提交，过了 `commitProgressDelay` 才转圈；开始执行后等写操作结束收起，在队列里取消或轮到时没有执行时恢复，草稿不变；别的写操作执行或排队时提交区照样可以编辑
 - 检出、合并、拉取、变基、重置这类改动当前工作区的写操作经 `performGit(progress:)` 带上标题，会话发布 `workspaceProgress`：工作区视图整块换成 `WorkspaceProgressView`（标题、进度条、停止按钮与 Git 的最后一行输出，行里有百分比时按比例），侧边栏 Working Copy 行转圈；停止按钮取消 `writeTask`，写操作结束时清空
   - 同步只在拉取那一步显示，获取与推送开始时撤下
 - 写操作经 `RepositorySession.performGit(target:)` 声明记在 Activity 的哪一页：传了连接的对象（`ActivityTarget`：传输方向、远端名与 refspec）就记在 Remote 页，记录的标题与图标由它写出；没传的记在 Repository 页
