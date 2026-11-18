@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Foundation
 import SpookyKit
 import SwiftUI
@@ -9,7 +10,7 @@ import TestSupport
 
 // MARK: - InvalidWorktreeTests
 
-/// 目录被删掉的工作树：右键菜单、快捷操作与详情只留下删除与修复，悬停提示照常写出位置。
+/// 目录被删掉的工作树：右键菜单、快捷操作与详情只留下删除与修复，悬停提示照常写出位置，修复对话框预选登记的路径。
 @MainActor
 struct InvalidWorktreeTests {
     /// 失效的工作树能删除、能修复、不能移动；修复只对它列出，详情的两个按钮与菜单的同名项一样可用；
@@ -72,6 +73,52 @@ struct InvalidWorktreeTests {
 
         #expect(tooltip.hasSuffix(AppLocalization.text("worktree.tooltip.path", "spooky-test:" + gone.path)))
     }
+
+    /// 修复对话框打开时，位置菜单选中工作树登记的路径；选的还是它时主按钮不可用，也不写错误说明。
+    @Test("修复对话框预选登记的路径", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
+    func relocateDialog() async throws {
+        let parent = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-worktree 工作树-" + UUID().uuidString)
+
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: parent) }
+
+        let session = try await Self.session(in: parent)
+        defer { session.close() }
+
+        let gone = try #require(session.worktrees.others.first { !$0.isValid })
+
+        let text = { (key: String) in AppLocalization.text(key) }
+
+        let elements = await AccessibilityProbe.elements(width: 520, until: Self.hasLocation) {
+            RelocateWorktreeDialog(session: session, worktree: gone, close: { })
+        }
+
+        let location = try #require(elements.first { $0.role == "AXPopUpButton" })
+        let relocate = try #require(
+            elements.first {
+                $0.role == "AXButton"
+                    && $0.name == text("worktree.relocate.submit")
+            }
+        )
+
+        #expect(location.value == HomePath.abbreviated(gone.path))
+        #expect(!relocate.isEnabled)
+
+        // 窗口标题之外的文字只有标题、说明与 “Location:”，没有错误说明
+        let texts = elements.filter {
+            $0.role == "AXStaticText"
+                && !$0.value.hasPrefix("spooky-accessibility-")
+        }
+
+        #expect(
+            Set(texts.map(\.value)) == [
+                text("worktree.relocate"),
+                AppLocalization.text("worktree.relocate.message", gone.name),
+                text("worktree.location"),
+            ]
+        )
+    }
 }
 
 // MARK: - Helpers
@@ -102,6 +149,11 @@ extension InvalidWorktreeTests {
         await until { session.worktrees.others.count == 2 }
 
         return session
+    }
+
+    /// 修复对话框的位置菜单已经读到。
+    private static func hasLocation(_ elements: [AccessibilityProbe.Element]) -> Bool {
+        elements.contains { $0.role == "AXPopUpButton" }
     }
 
     /// 视图层级里的全部按钮，按层级顺序。

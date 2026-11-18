@@ -49,7 +49,7 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 分支整理的列表与详情分栏，列表首次宽 420 pt，此后按分支整理单独保存宽度。
+    /// 分支整理的列表与详情分栏，宽度按分支整理单独保存。
     func makeBranchesReviewSplit() -> NSSplitViewController {
         let split = NSSplitViewController()
         split.splitView.isVertical = true
@@ -81,11 +81,6 @@ extension RepositoryWindowController {
 
         split.addSplitViewItem(listItem)
         split.addSplitViewItem(detailItem)
-
-        if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.BranchesReview") == nil {
-            split.splitView.setPosition(420, ofDividerAt: 0)
-        }
-
         return split
     }
 
