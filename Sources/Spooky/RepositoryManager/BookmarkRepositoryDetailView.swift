@@ -100,7 +100,9 @@ extension BookmarkRepositoryDetailView {
     private var repositoryActions: [RemoteSettingAction] {
         [
             RemoteSettingAction(title: AppLocalization.text("action.open"), isEnabled: true) {
-                manager.open(bookmark.id, inNewWindow: false)
+                if let location = bookmark.location {
+                    manager.open(location, inNewWindow: false)
+                }
             },
             RemoteSettingAction(title: AppLocalization.text("bookmarks.multiple.delete"), isEnabled: true) {
                 manager.confirmDelete([bookmark.id])

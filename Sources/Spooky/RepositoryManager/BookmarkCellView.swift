@@ -18,6 +18,32 @@ final class BookmarkOutlineItem: NSObject {
     }
 }
 
+// MARK: - BookmarkWorktreeItem
+
+/// 大纲视图里一个工作树的行对象：按所在书签与工作树路径复用，刷新后选中才能保留。
+final class BookmarkWorktreeItem: NSObject {
+    /// 工作树；每次列出子行时换成最近读到的。
+    var worktree: Worktree
+
+    /// 工作树所属仓库的位置。
+    var repository: RepositoryLocation
+
+    /// 工作树的位置，打开与菜单都用它；失效的工作树为 nil。
+    var location: RepositoryLocation? {
+        RepositorySession.location(of: worktree, in: repository)
+    }
+
+    /// 创建一个工作树的行对象。
+    ///
+    /// - Parameters:
+    ///   - worktree: 工作树。
+    ///   - repository: 工作树所属仓库的位置。
+    init(worktree: Worktree, repository: RepositoryLocation) {
+        self.worktree = worktree
+        self.repository = repository
+    }
+}
+
 // MARK: - BookmarkOutlineView
 
 /// 书签列表：回车打开选中的仓库，删除键删除选中的书签；书签只能在应用内拖动。
@@ -58,7 +84,7 @@ final class BookmarkOutlineView: NSOutlineView {
 
 // MARK: - BookmarkCellView
 
-/// 书签的一行：16 pt 图标、名称与警告图标或克隆进度；服务器仓库按设置在名称前带主机前缀，名称可以原地改。
+/// 书签或工作树的一行：16 pt 图标、名称与警告图标或克隆进度；服务器仓库按设置在名称前带主机前缀，书签的名称可以原地改。
 final class BookmarkCellView: NSTableCellView {
     /// 复用单元格的标识。
     static let identifier = NSUserInterfaceItemIdentifier("BookmarkCellView")
@@ -98,26 +124,51 @@ final class BookmarkCellView: NSTableCellView {
 
         imageView?.image = NSImage(systemSymbolName: bookmark.symbolName, accessibilityDescription: nil)
         textField?.stringValue = bookmark.name
+        textField?.isEditable = true
 
         let host = showsHost ? bookmark.location?.host : nil
         hostField.stringValue = host.map { $0 + ":" } ?? ""
         hostField.isHidden = host == nil
 
-        // 失效的仓库名称变灰，并带警告图标
-        let color: NSColor = isMissing ? .disabledControlTextColor : .controlTextColor
-        textField?.textColor = color
-        hostField.textColor = color
-        warningView.isHidden = !isMissing
+        showUnavailable(isMissing)
         showProgress(clone?.isRunning ?? false ? clone?.progress : nil, running: clone?.isRunning ?? false)
 
         toolTip = bookmark.location?.displayPath
         setAccessibilityLabel(bookmark.displayName)
+    }
+
+    /// 显示仓库的一个工作树：名称不能改，失效时与失效的书签一样。
+    ///
+    /// - Parameters:
+    ///   - worktree: 工作树。
+    ///   - repository: 工作树所属的仓库；服务器仓库的悬停提示里，路径带它的主机前缀。
+    func configure(_ worktree: Worktree, in repository: RepositoryLocation) {
+        imageView?.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: nil)
+        textField?.stringValue = worktree.name
+        textField?.isEditable = false
+
+        hostField.stringValue = ""
+        hostField.isHidden = true
+
+        showUnavailable(!worktree.isValid)
+        showProgress(nil, running: false)
+
+        toolTip = RepositorySidebarView.tooltip(of: worktree, in: repository)
+        setAccessibilityLabel(worktree.name)
     }
 }
 
 // MARK: - Layout
 
 extension BookmarkCellView {
+    /// 失效时名称与主机前缀变灰，右端显示警告图标。
+    private func showUnavailable(_ isUnavailable: Bool) {
+        let color: NSColor = isUnavailable ? .disabledControlTextColor : .controlTextColor
+        textField?.textColor = color
+        hostField.textColor = color
+        warningView.isHidden = !isUnavailable
+    }
+
     /// 克隆中显示进度：有百分比时是确定进度，没有时转圈；不在克隆时隐藏。
     private func showProgress(_ progress: CloneProgress?, running: Bool) {
         progressView.isHidden = !running

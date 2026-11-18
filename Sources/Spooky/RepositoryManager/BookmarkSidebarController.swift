@@ -20,8 +20,14 @@ final class BookmarkSidebarController: NSViewController {
     /// 书签行对应的对象，按身份复用。
     private var items: [Bookmark.ID: BookmarkOutlineItem] = [:]
 
+    /// 工作树行对应的对象，按所在书签与工作树路径复用。
+    private var worktreeRows: [Bookmark.ID: [String: BookmarkWorktreeItem]] = [:]
+
     /// 读取列表显示设置的偏好。
     let defaults: UserDefaults
+
+    /// 列表里各仓库读到的工作树。
+    let worktrees: BookmarkWorktrees
 
     /// 正在按模型设置选中行，期间不把选择写回模型。
     private(set) var isRestoringSelection = false
@@ -40,6 +46,7 @@ final class BookmarkSidebarController: NSViewController {
     init(manager: RepositoryManagerController, defaults: UserDefaults = .standard) {
         self.manager = manager
         self.defaults = defaults
+        worktrees = BookmarkWorktrees(defaults: defaults)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -97,16 +104,18 @@ final class BookmarkSidebarController: NSViewController {
         configureOutlineView()
     }
 
-    /// 首次载入后恢复展开状态，根分组始终展开，再接上模型的变化。
+    /// 首次载入后恢复展开状态，根分组始终展开，再读取展开后看得到的仓库的工作树并接上模型的变化。
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        configureWorktrees()
         reload()
 
         outlineView.autosaveName = "Spooky.BookmarksSidebar"
         outlineView.autosaveExpandedItems = true
         outlineView.expandItem(header)
         restoreSelection()
+        loadWorktrees()
         observeModel()
         observeSelection()
         observeClones()
@@ -124,7 +133,7 @@ final class BookmarkSidebarController: NSViewController {
 // MARK: - Loading
 
 extension BookmarkSidebarController {
-    /// 列表里选中的书签，按行的顺序排列。
+    /// 列表里选中的书签，按行的顺序排列；工作树行不算。
     var selectedIDs: [Bookmark.ID] {
         outlineView.selectedRowIndexes.compactMap { (outlineView.item(atRow: $0) as? BookmarkOutlineItem)?.id }
     }
@@ -153,6 +162,35 @@ extension BookmarkSidebarController {
         return item
     }
 
+    /// 一个仓库书签下的工作树行；不列工作树、还没读完或读取失败时没有。
+    func worktreeItems(of bookmark: Bookmark) -> [BookmarkWorktreeItem] {
+        guard let location = bookmark.location, let list = worktrees.lists[location] else {
+            return []
+        }
+
+        return list.map { worktree in
+            // 行对象按路径复用，工作树换成最近读到的
+            if let existing = worktreeRows[bookmark.id]?[worktree.path] {
+                existing.worktree = worktree
+                existing.repository = location
+                return existing
+            }
+
+            let item = BookmarkWorktreeItem(worktree: worktree, repository: location)
+            worktreeRows[bookmark.id, default: [:]][worktree.path] = item
+            return item
+        }
+    }
+
+    /// 一行对象的子行：根分组标题与文件夹下是书签，仓库下是它的工作树。
+    func childItems(of item: Any?) -> [NSObject] {
+        if let bookmark = bookmark(for: item), !bookmark.isFolder {
+            return worktreeItems(of: bookmark)
+        }
+
+        return children(of: item).map { self.item(for: $0.id) }
+    }
+
     /// 一行对象的子项：根分组标题下是最外层书签，文件夹下是它的子项。
     func children(of item: Any?) -> [Bookmark] {
         guard let item = item as? BookmarkOutlineItem else {
@@ -167,24 +205,43 @@ extension BookmarkSidebarController {
     }
 
     /// 书签、失效标记或列表的显示设置变化后重新载入，展开与选中按身份保留；删掉的书签不再保留行对象。
+    ///
+    /// 不列工作树时停止读取、丢掉读到的工作树；列出时读取新看得到的仓库。
     func reload() {
         let existing = Set(manager.bookmarks.items.flattened.map(\.id))
         items = items.filter { existing.contains($0.key) }
+        worktreeRows = worktreeRows.filter { existing.contains($0.key) }
         displayOptions = currentDisplayOptions
+
+        if !displayOptions.worktrees {
+            worktrees.reset()
+            worktreeRows = [:]
+        }
+
+        // 选中的工作树行不在模型的选择里，重新载入后另外选回
+        let selectedWorktrees = outlineView.selectedRowIndexes.compactMap {
+            outlineView.item(atRow: $0) as? BookmarkWorktreeItem
+        }
 
         outlineView.reloadData()
         outlineView.expandItem(header)
-        restoreSelection()
+        expandRememberedWorktrees(of: manager.bookmarks.items.repositories)
+        restoreSelection(keeping: selectedWorktrees)
         beginRequestedRename()
+        loadWorktrees()
     }
 
     /// 按模型里的选择选中行；文件夹里的书签先展开它的上级。
-    func restoreSelection() {
-        let rows = IndexSet(manager.selection.compactMap { id -> Int? in
+    ///
+    /// - Parameter selectedWorktrees: 一并选中的工作树行；已不在列表里的跳过。
+    func restoreSelection(keeping selectedWorktrees: [BookmarkWorktreeItem] = []) {
+        var rows = IndexSet(manager.selection.compactMap { id -> Int? in
             expandAncestors(of: id)
             let row = outlineView.row(forItem: item(for: id))
             return row >= 0 ? row : nil
         })
+
+        rows.formUnion(IndexSet(selectedWorktrees.map(outlineView.row(forItem:)).filter { $0 >= 0 }))
 
         isRestoringSelection = true
         outlineView.selectRowIndexes(rows, byExtendingSelection: false)

@@ -243,6 +243,9 @@ Spooky 由两个 target 组成：
   - 本机仓库进这台 Mac 的废纸篓（`FileManager.trashItem`）；服务器仓库经它的连接在服务器上移进那台服务器的废纸篓，程序与 Discard 的相同
   - 家目录、它的上级目录与卷或挂载点的顶层不移走：本机按解析后的路径与卷信息判断，服务器在服务器上按它的 `$HOME` 与 `df` 判断
   - 克隆中的仓库先停止克隆、等它结束，再移走还在的目录；没能移走的全部处理完后在一个错误框里列出
+- General 页打开列出工作树时，`BookmarkWorktrees` 在后台读取列表里看得到的仓库的工作树，列出的与仓库窗口侧边栏的 Worktrees 分组同一规则（`RepositoryWorktreeState.others(of:)`）
+  - 本机仓库直接读；服务器仓库经它的主连接不交互地读，读完交还连接；连不上或读取失败时那一行不能展开，不弹框
+  - 展开了工作树的仓库记在偏好 `repositoryListExpandedWorktrees` 里，下次读到后照样展开
 - 仓库设置只写仓库本地配置（`GitRunner.setLocalConfig`）
 - 本地分支的置顶、归档、父分支与分支整理标记由 `BranchMetadata` 写在 `branch.<名称>.spooky-*`，改名时随段移动，删除分支时随段清除
 - 引用的公共顺序由 `ReferenceOrder` 定义：侧边栏、恢复版本的候选、Reflog 的引用菜单、合并与拉取的下拉共用，当前分支不提前
