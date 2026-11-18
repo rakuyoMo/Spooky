@@ -14,7 +14,7 @@ final class RepositoryWrite {
     /// 已本地化的操作名称，写进日志与后面排着的写操作被取消的原因。
     let title: String
 
-    /// 不由用户直接发起的写操作（自动获取）：不排队，失败时不取消后面排着的写操作。
+    /// 不由用户直接发起的写操作（自动获取）：不排队，用户发起的写操作排进来时停下让路，失败时不取消后面排着的写操作。
     let isBackground: Bool
 
     /// 改动工作区或索引；执行期间文件列表变灰。
@@ -22,6 +22,10 @@ final class RepositoryWrite {
 
     /// 等待中的 Activity 记录与它所在的列表；立即执行的写操作没有。
     var waiting: (record: RepositoryActivity, activities: RepositoryActivities)? = nil
+
+    /// 后台写操作执行期间给用户发起的写操作让路：在记录里写明让给了谁，再停下；参数是那个操作的名称。
+    /// 由执行段设置，队列只调用一次。
+    var giveWay: ((String) -> Void)? = nil
 
     /// 提交它的会话；仓库管理详情区的写入没有会话。
     private(set) weak var session: RepositorySession? = nil
@@ -130,11 +134,24 @@ final class RepositoryWriteQueue {
         return true
     }
 
-    /// 把写操作排在仓库队列的最后。
+    /// 把写操作排在仓库队列的最后；正在执行的是后台写操作时让它停下，这一项接着轮到。
     func enqueue(_ write: RepositoryWrite) {
         var lane = lanes[write.location] ?? Lane()
         lane.pending.append(write)
         lanes[write.location] = lane
+
+        // 自动获取不挡用户发起的写操作；停下不算失败，排着的照常轮到
+        guard
+            !write.isBackground,
+            lane.isExecuting,
+            let current = lane.current,
+            let giveWay = current.giveWay
+        else {
+            return
+        }
+
+        current.giveWay = nil
+        giveWay(write.title)
     }
 
     /// 执行中的写操作结束：轮到队列里的下一项。

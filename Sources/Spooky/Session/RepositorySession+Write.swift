@@ -16,7 +16,8 @@ extension RepositorySession {
     ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
     ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
     ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
-    ///   - background: 不由用户直接发起的写操作（自动获取）：仓库不空闲时不执行也不排队，失败只记进 Activity。
+    ///   - background: 不由用户直接发起的写操作（自动获取）：仓库不空闲时不执行也不排队，用户发起的写操作排进来时停下让路，
+    ///     失败只记进 Activity。
     ///   - touchesWorkingCopy: 是否改动工作区或索引；执行期间文件列表据此变灰。
     ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
     ///   - success: 成功后调用；期间关闭或换了仓库时不调用。

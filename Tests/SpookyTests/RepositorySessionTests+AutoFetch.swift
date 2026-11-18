@@ -5,17 +5,19 @@ import TestSupport
 @testable import Spooky
 @testable import SpookyKit
 
-/// 自动获取的调度：逐个远端判断是否到期，跨重启保留的获取时刻，跳过的远端与暂停、重新计时。
+/// 自动获取的调度：逐个远端判断是否到期，跨重启保留的获取时刻，跳过的远端、让路与暂停、重新计时。
 extension RepositorySessionTests {
     /// 远端 origin 与 second 的地址带主机，经测试用的 ssh 在本机取；nearby 是本机路径，file 是 `file://`，自动获取都跳过。
-    /// 每个到期的远端各记一条记录，second 失败只记进 Activity；手动获取、失败的获取同样更新时刻，重建调度后仍按保存的时刻判断。
-    @Test("自动获取：逐远端到期、记录、跳过的远端与保存的时刻")
+    /// 每个到期的远端各记一条记录，second 失败只记进 Activity；手动获取、失败的获取同样更新时刻，重建调度后仍按保存的时刻判断；
+    /// 获取中途有用户发起的写操作时停下让路。
+    @Test("自动获取：逐远端到期、记录、跳过的远端、让路与保存的时刻")
     func autoFetch() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
 
+        let gate = try ProcessGate(in: directory)
         let (runner, other) = try await makeSyncRepository(in: directory)
-        try await useHostAddresses(runner, in: directory)
+        try await useHostAddresses(runner, in: directory, gate: gate)
 
         let session = try await openSession(runner)
         defer { session.close() }
@@ -35,6 +37,7 @@ extension RepositorySessionTests {
 
         try await perRemoteTimes(scheduler, conditions: conditions, session: session, defaults: defaults)
         try await skippedChecks(conditions: conditions, session: session, runner: runner, defaults: defaults)
+        try await yielding(scheduler, conditions: conditions, session: session, gate: gate, defaults: defaults)
         await rescheduling(scheduler, conditions: conditions, session: session, defaults: defaults)
     }
 }
@@ -147,6 +150,49 @@ extension RepositorySessionTests {
         await session.writeTask?.value
     }
 
+    /// origin 与 second 都到期，origin 获取到一半时手动获取 nearby：自动获取停下让路，记录写明让给了哪个操作、记为取消，
+    /// 这次检查里 second 不再获取；origin 的时刻保留开始获取时记下的值，手动获取随后照常完成。
+    private func yielding(
+        _ scheduler: RepositoryAutoFetch,
+        conditions: AutoFetchConditions,
+        session: RepositorySession,
+        gate: ProcessGate,
+        defaults: UserDefaults
+    ) async throws {
+        let runner = try #require(session.runner)
+        let repository = runner.location
+        let old = conditions.now.addingTimeInterval(-1000)
+        let later = conditions.now.addingTimeInterval(100)
+
+        RemoteFetchTimes.record("origin", in: repository, at: old, defaults: defaults)
+        RemoteFetchTimes.record("second", in: repository, at: old, defaults: defaults)
+
+        // origin 的获取停在测试用的 ssh 里，开始时记下的时刻在主线程上补记
+        try gate.arm()
+        defer { gate.release() }
+
+        let checking = Task { await scheduler.check(now: later) }
+        await gate.arrival()
+        await until { RemoteFetchTimes.lastFetch(of: "origin", in: repository, defaults: defaults) != old }
+
+        let started = RemoteFetchTimes.lastFetch(of: "origin", in: repository, defaults: defaults)
+        session.quickFetch(remote: "nearby", defaults: defaults)
+
+        #expect(await checking.value == ["origin"])
+        await until { RepositoryWriteQueue.shared.isIdle(repository) }
+
+        // 新的在前：手动获取 nearby 完成，origin 的自动获取写明让给了它
+        let records = Array(remoteRecords(runner).prefix(2))
+        let quickFetch = AppLocalization.text("sync.quickFetch")
+
+        #expect(records.map(\.target) == [.fetch("nearby"), .fetch("origin")])
+        #expect(records.map(\.state) == ["activity.finished", "activity.cancelled"])
+        #expect(records.last?.log.contains(AppLocalization.text("sync.autoFetch.yielded", quickFetch)) ?? false)
+
+        #expect(RemoteFetchTimes.lastFetch(of: "origin", in: repository, defaults: defaults) == started)
+        #expect(RemoteFetchTimes.lastFetch(of: "second", in: repository, defaults: defaults) == old)
+    }
+
     /// 暂停后不排检查，重新计时排在 10 s 后；开始计时后改了间隔重新计时，改成 Never 停止。
     private func rescheduling(
         _ scheduler: RepositoryAutoFetch,
@@ -215,12 +261,27 @@ extension RepositorySessionTests {
     }
 
     /// origin 与 second 改用带主机的地址，经测试用的 ssh 在本机执行服务端命令；另加本机路径与 `file://` 两个远端。
-    private func useHostAddresses(_ runner: GitRunner, in directory: URL) async throws {
+    ///
+    /// - Parameters:
+    ///   - runner: 本地仓库的执行器。
+    ///   - directory: 放远端仓库与测试用 ssh 的目录。
+    ///   - gate: 武装后，第一次经测试用的 ssh 连接认领武装并停在闸门上。
+    private func useHostAddresses(_ runner: GitRunner, in directory: URL, gate: ProcessGate) async throws {
         let bare = directory.appending(path: "remote.git").path
         let ssh = directory.appending(path: "fake-ssh")
 
         // 最后一个参数是 “git-upload-pack '<路径>'”，换成 git 子命令在本机执行
-        try Data("#!/bin/sh\nfor last; do :; done\nexec sh -c \"git ${last#git-}\"\n".utf8).write(to: ssh)
+        let source = """
+            #!/bin/sh
+            for last; do :; done
+            if \(gate.claim); then
+                \(gate.hold)
+            fi
+            exec sh -c "git ${last#git-}"
+
+            """
+
+        try Data(source.utf8).write(to: ssh)
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: ssh.path)
 
         _ = try await runner.run(["config", "--local", "core.sshCommand", ssh.path])

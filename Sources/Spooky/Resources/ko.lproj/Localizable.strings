@@ -1323,6 +1323,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "동기화";
 "sync.autoFetch" = "자동 가져오기";
+"sync.autoFetch.yielded" = "“%@” 작업을 먼저 실행하기 위해 중지했습니다.";
 "sync.quickFetch" = "빠른 가져오기";
 "sync.quickPull" = "빠른 풀";
 "sync.quickPush" = "빠른 푸시";

@@ -1323,6 +1323,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "同步";
 "sync.autoFetch" = "自動擷取";
+"sync.autoFetch.yielded" = "已停下，先執行 “%@”。";
 "sync.quickFetch" = "快速擷取";
 "sync.quickPull" = "快速拉取";
 "sync.quickPush" = "快速推送";

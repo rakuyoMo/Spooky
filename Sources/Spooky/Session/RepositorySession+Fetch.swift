@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Fetch
 
 extension RepositorySession {
-    /// 自动获取一个到期的远端：只在仓库空闲时开始，不询问凭据，失败只记进 Activity。
+    /// 自动获取一个到期的远端：只在仓库空闲时开始，用户发起的写操作排进来时停下让路；不询问凭据，失败只记进 Activity。
     ///
     /// - Parameters:
     ///   - remote: 要获取的远端。

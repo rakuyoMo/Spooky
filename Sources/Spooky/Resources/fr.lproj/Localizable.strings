@@ -1323,6 +1323,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Synchroniser";
 "sync.autoFetch" = "Récupération automatique";
+"sync.autoFetch.yielded" = "Arrêté pour que « %@ » s’exécute d’abord.";
 "sync.quickFetch" = "Récupération rapide";
 "sync.quickPull" = "Tirage rapide";
 "sync.quickPush" = "Poussée rapide";

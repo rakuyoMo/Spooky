@@ -749,6 +749,15 @@ extension RepositorySession {
 
         let task = writeTask
         record?.cancel = { task?.cancel() }
+
+        // 后台写操作给用户发起的写操作让路：说明经流写进当前的记录，停下后记为取消
+        if operation.background {
+            write.giveWay = { title in
+                let note = AppLocalization.text("sync.autoFetch.yielded", title) + "\n"
+                continuation.yield(.output(.standardError(Data(note.utf8))))
+                task?.cancel()
+            }
+        }
     }
 
     /// 写入前取消刷新与各视图的读取，旧结果不会在写入之后覆盖新状态。

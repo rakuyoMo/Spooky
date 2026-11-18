@@ -159,7 +159,7 @@ final class RepositoryAutoFetch {
         let targets = await targets(dueAt: now, in: session, repository: repository)
         var fetched: [String] = []
 
-        // 前一个远端的写操作结束后再开始下一个；期间换了仓库、挂上 sheet 或仓库变得不可写就停下
+        // 前一个远端的写操作结束后再开始下一个；期间换了仓库、挂上 sheet、仓库变得不可写，或给用户的写操作让了路就停下
         for remote in targets {
             guard
                 !Task.isCancelled,
