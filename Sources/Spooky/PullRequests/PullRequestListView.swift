@@ -78,7 +78,7 @@ extension PullRequestListView {
             EmptyStateView(
                 title: AppLocalization.text("pullRequests.noRemotes.title"),
                 message: AppLocalization.text("pullRequests.noRemotes.message"),
-                symbol: "arrow.triangle.pull"
+                symbol: AppSymbol.pullRequest
             )
         } else if let target = state.target {
             switch target {
@@ -162,7 +162,7 @@ extension PullRequestListView {
             EmptyStateView(
                 title: session.pullRequestText("empty.title"),
                 message: session.pullRequestText("empty.message"),
-                symbol: "arrow.triangle.pull"
+                symbol: AppSymbol.pullRequest
             )
         } else {
             list
@@ -187,7 +187,7 @@ extension PullRequestListView {
 
     /// 标题、说明与一个按钮的空状态。
     private func notice(title: String, message: String, action: String, perform: @escaping () -> Void) -> some View {
-        EmptyStateView(title: title, message: message, symbol: "arrow.triangle.pull") {
+        EmptyStateView(title: title, message: message, symbol: AppSymbol.pullRequest) {
             EmptyStateButton(action, action: perform)
         }
     }

@@ -107,7 +107,7 @@ extension BookmarkSidebarController: NSMenuDelegate {
         }
     }
 
-    /// 一项书签的菜单：打开、在新窗口打开；Finder 或复制路径、终端；改名、删除；两种按名称排序。
+    /// 一项书签的菜单：打开、在新窗口打开；Finder、复制路径、终端；改名、删除；两种按名称排序。
     func singleItems(for bookmark: Bookmark) -> [NSMenuItem] {
         let isRepository = !bookmark.isFolder
         let name = bookmark.displayName
@@ -119,19 +119,17 @@ extension BookmarkSidebarController: NSMenuDelegate {
             ? menuItem("bookmarks.openNewWindow", action: #selector(openInNewWindow), id: bookmark.id, arguments: [name])
             : menuItem("bookmarks.openRepositoryNewWindow", action: #selector(openInNewWindow), id: bookmark.id)
 
-        // 服务器仓库不能在 Finder 中显示，换成复制带主机前缀的路径
-        let locate = bookmark.location?.host == nil
-            ? menuItem("action.revealFinder", action: #selector(revealInFinder), id: bookmark.id)
-            : menuItem("action.copyPath", action: #selector(copyPath), id: bookmark.id)
+        let reveal = menuItem("action.revealFinder", action: #selector(revealInFinder), id: bookmark.id)
+        let copy = menuItem("action.copyPath", action: #selector(copyPath), id: bookmark.id)
         let terminal = menuItem("action.openTerminal", action: #selector(openInTerminal), id: bookmark.id)
 
-        for item in [open, openNew, locate, terminal] {
+        for item in [open, openNew, reveal, copy, terminal] {
             item.isEnabled = isRepository
         }
 
-        // 本机仓库的目录已不存在时，没有可以在 Finder 或终端里打开的目录
+        // 本机仓库的目录已不存在时，没有可以在 Finder 或终端里打开的目录；路径照样可以复制
         if bookmark.isLocalDirectoryGone {
-            locate.isEnabled = false
+            reveal.isEnabled = false
             terminal.isEnabled = false
         }
 
@@ -143,7 +141,7 @@ extension BookmarkSidebarController: NSMenuDelegate {
 
         return [
             open, openNew, .separator(),
-            locate, terminal, .separator(),
+            reveal, copy, terminal, .separator(),
             menuItem("bookmarks.rename", action: #selector(renameBookmark), id: bookmark.id), delete, .separator(),
             sortChildren, menuItem("bookmarks.sortParent", action: #selector(sortParentFolder), id: bookmark.id),
         ]
@@ -176,7 +174,7 @@ extension BookmarkSidebarController {
         target(of: sender).map(manager.revealInFinder)
     }
 
-    /// 复制带主机前缀的路径。
+    /// 复制路径：本机仓库是绝对路径，服务器仓库带主机前缀。
     @objc
     private func copyPath(_ sender: NSMenuItem) {
         target(of: sender).map(manager.copyPath)

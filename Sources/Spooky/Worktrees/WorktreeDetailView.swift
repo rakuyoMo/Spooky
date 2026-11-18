@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - WorktreeDetailView
 
 /// 工作树视图：头部是图标与工作树名，下面是名称、路径、当前版本与分支；
-/// 工作树失效时整页换成空状态，写出失效的原因。
+/// 工作树失效时整页换成空状态，写出失效的原因，下面是修复与删除两个按钮。
 struct WorktreeDetailView: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -20,11 +20,7 @@ struct WorktreeDetailView: View {
                 if worktree.isValid {
                     settings(of: worktree)
                 } else {
-                    EmptyStateView(
-                        title: AppLocalization.text("worktree.invalid"),
-                        message: invalidMessage(worktree),
-                        symbol: "exclamationmark.triangle"
-                    )
+                    invalidState(worktree)
                 }
             } else if session.worktrees.isLoaded {
                 EmptyStateView(
@@ -88,6 +84,25 @@ extension WorktreeDetailView {
             }
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 失效的工作树：空状态与修复、删除两个按钮，可用条件与右键菜单的同名项相同。
+    private func invalidState(_ worktree: Worktree) -> some View {
+        EmptyStateView(
+            title: AppLocalization.text("worktree.invalid"),
+            message: invalidMessage(worktree),
+            symbol: "exclamationmark.triangle"
+        ) {
+            EmptyStateButton(AppLocalization.text("worktree.invalid.repair")) {
+                session.requestWorktree(.repair(worktree))
+            }
+            .disabled(!session.canRepair(worktree))
+
+            EmptyStateButton(AppLocalization.text("worktree.invalid.remove")) {
+                session.requestWorktree(.remove(worktree))
+            }
+            .disabled(!session.canRemove(worktree))
         }
     }
 

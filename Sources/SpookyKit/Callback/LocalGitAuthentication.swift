@@ -14,64 +14,23 @@ enum LocalGitAuthentication {
         handler: @escaping RemoteCallbackHandler,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
     ) async throws -> GitCommandResult {
-        let directory = URL(fileURLWithPath: "/tmp/spooky-local-" + UUID().uuidString.lowercased())
+        let session = try LocalCallbackSession(host: location.displayPath, handler: handler)
+        defer { session.close() }
 
-        try FileManager.default.createDirectory(
-            at: directory,
-            withIntermediateDirectories: false,
-            attributes: [.posixPermissions: 0o700]
-        )
-        defer { try? FileManager.default.removeItem(at: directory) }
+        let relay = session.relay
+        let operation = session.operation
+        let gitAskpass = session.gitAskpass
 
-        let relay = try CallbackRelay(
-            path: directory.appendingPathComponent("relay.sock").path,
-            host: location.displayPath,
-            handler: handler
-        )
-        try relay.start()
-        defer { relay.stop() }
-
-        let operation = UUID().uuidString.lowercased()
-        relay.register(operation)
-        defer { relay.unregister(operation) }
-
-        // 与远端使用相同的一次性协议，脚本内容来自项目自身资源。
-        guard let source = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl") else {
-            throw RemoteConnectionError(.deployment)
-        }
-
-        let wrapper = directory.appendingPathComponent("callback")
-        try FileManager.default.copyItem(at: source, to: wrapper)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: wrapper.path)
-
-        let askpass = wrapper.path + "-askpass"
-        let gitAskpass = wrapper.path + "-git-askpass"
-        let sshKeygen = wrapper.path + "-ssh-keygen"
-
-        // 包装器按调用名区分模式：ssh-keygen 入口把签名私钥的口令请求标成签名口令，再交给本机的 ssh-keygen。
-        for link in [askpass, gitAskpass, sshKeygen] {
-            try FileManager.default.createSymbolicLink(atPath: link, withDestinationPath: wrapper.path)
-        }
-
-        let info = try JSONSerialization.data(withJSONObject: ["token": relay.token])
-        try info.write(to: directory.appendingPathComponent("session.json"))
-        try FileManager.default.setAttributes(
-            [.posixPermissions: 0o600],
-            ofItemAtPath: directory.appendingPathComponent("session.json").path
-        )
-
-        let overrides: [Environment.Key: String?] = [
-            "SPOOKY_SESSION": directory.path, "SPOOKY_OPERATION": operation,
-            "GIT_ASKPASS": gitAskpass, "SSH_ASKPASS": askpass, "SSH_ASKPASS_REQUIRE": "force",
-            "DISPLAY": "spooky:0", "GIT_SSH": nil, "GIT_SSH_COMMAND": nil, "SPOOKY_SIGNING": nil,
-        ]
+        let overrides = session.sshOverrides.merging([
+            "GIT_ASKPASS": gitAskpass, "GIT_SSH": nil, "GIT_SSH_COMMAND": nil, "SPOOKY_SIGNING": nil,
+        ]) { $1 }
 
         // 账号实例与手动关联的 HTTPS 地址只问包装器的凭据入口，其余地址仍先问用户自己的凭据助手。
-        let callbackOptions = GitCredentialScopes.options(callback: GitRunner.shellQuoted(wrapper.path)) + [
+        let callbackOptions = GitCredentialScopes.options(callback: GitRunner.shellQuoted(session.wrapper.path)) + [
             "-c", "core.askPass=" + GitRunner.shellQuoted(gitAskpass),
             "-c",
             "core.sshCommand=/usr/bin/ssh -o BatchMode=no -o ForwardAgent=no -o StrictHostKeyChecking=yes -o AddKeysToAgent=yes",
-            "-c", "gpg.ssh.program=" + sshKeygen,
+            "-c", "gpg.ssh.program=" + session.sshKeygen,
         ]
 
         let redactor = RemoteOutputRedactor(

@@ -205,10 +205,10 @@ extension WorkingCopyFileList.Coordinator {
         let revealItem = add(
             title: AppLocalization.text("action.revealFinder"),
             action: #selector(reveal),
-            enabled: session.canShowInFinder && (menuTargets.isEmpty || session.isOnDisk(menuEntries)),
+            enabled: menuTargets.isEmpty || session.isOnDisk(menuEntries),
             to: menu
         )
-        revealItem.toolTip = session.finderUnavailableTip
+        revealItem.toolTip = session.mounts.unavailableReason
 
         add("action.openTerminal", action: #selector(terminal), enabled: terminalLocation != nil, to: menu)
     }
@@ -538,17 +538,16 @@ extension WorkingCopyFileList.Coordinator {
     @objc
     private func copyRelative() { session.copyPaths(menuEntries.map(\.path), relative: true) }
 
-    /// 交给 Finder 的是条目在这台 Mac 上的路径；服务器仓库按挂载位置换算，没有作用对象时显示仓库根目录。
+    /// 在 Finder 中选中作用对象里还在磁盘上的条目，没有作用对象时是仓库根目录；服务器仓库不能直接打开时由窗口挂 sheet 处理。
     @objc
     private func reveal() {
-        let urls =
-            menuTargets.isEmpty
-                ? [session.finderURL()].compactMap { $0 }
-                : menuEntries.filter { !$0.isMissingFromWorkingTree }.compactMap { session.finderURL($0.path) }
+        let paths = menuEntries.filter { !$0.isMissingFromWorkingTree }.map(\.path)
 
-        guard !urls.isEmpty else { return }
+        guard menuTargets.isEmpty || !paths.isEmpty else { return }
 
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
+        let controller = outline?.window?.windowController as? RepositoryWindowController
+
+        controller?.showInFinder(menuTargets.isEmpty ? [] : paths)
     }
 
     /// 在作用对象的目录里打开终端，沿用设置里选择的终端程序；错误显示在列表所在的窗口。

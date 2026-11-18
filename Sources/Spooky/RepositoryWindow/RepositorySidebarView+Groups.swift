@@ -188,7 +188,13 @@ extension RepositorySidebarView {
                     session: session,
                     destination: destination,
                     request: request,
-                    hovering: { springLoading.hover(node.id, hovering: $0, expanded: isExpanded(node.id)) }
+                    hovering: {
+                        springLoading.hover(
+                            node.id,
+                            hovering: $0,
+                            expanded: expansion.springBinding(for: node.id, filtering: isFiltering)
+                        )
+                    }
                 )
             )
 
@@ -238,7 +244,7 @@ extension RepositorySidebarView {
         return segments
     }
 
-    /// 按视图设置筛过的陈旧与跟踪错误。
+    /// 按视图设置筛过的陈旧。
     func branchStatus(_ ref: RepositoryReference) -> SidebarBranchStatus {
         let months =
             SidebarPreferences.isValid(staleInterval, for: SidebarPreferences.staleIntervalKey)
@@ -322,36 +328,14 @@ extension RepositorySidebarView {
         return name
     }
 
-    /// 分组的展开状态；过滤时固定展开，清空后回到原来的状态。
+    /// 分组的展开状态；过滤时固定展开，清空后回到记下的状态。
     func isExpanded(_ group: SidebarGroup) -> Binding<Bool> {
-        Binding(
-            get: { isFiltering || !collapsedGroups.contains(group) },
-            set: { expanded in
-                guard !isFiltering else { return }
-
-                if expanded {
-                    collapsedGroups.remove(group)
-                } else {
-                    collapsedGroups.insert(group)
-                }
-            }
-        )
+        expansion.binding(for: group, filtering: isFiltering)
     }
 
-    /// 远端与文件夹的展开状态；过滤时固定展开，清空后回到原来的状态。
+    /// 远端与文件夹的展开状态；过滤时固定展开，清空后回到记下的状态。
     func isExpanded(_ node: SidebarNodeID) -> Binding<Bool> {
-        Binding(
-            get: { isFiltering || expandedNodes.contains(node) },
-            set: { expanded in
-                guard !isFiltering else { return }
-
-                if expanded {
-                    expandedNodes.insert(node)
-                } else {
-                    expandedNodes.remove(node)
-                }
-            }
-        )
+        expansion.binding(for: node, filtering: isFiltering)
     }
 
     /// 本地分支的附加信息；没有记录时是默认值。
@@ -409,10 +393,9 @@ extension RepositorySidebarView {
         selection.wrappedValue = ["settings"]
     }
 
-    /// 换仓库时回到默认的展开状态，清空过滤文字。
+    /// 换仓库时换成它记下的展开状态，没有记录时用默认；清空过滤文字。
     func resetViewState() {
-        collapsedGroups = [.tags]
-        expandedNodes = [.remote("origin")]
+        expansion.load(session.repository, defaults: defaults)
         filterText = ""
     }
 

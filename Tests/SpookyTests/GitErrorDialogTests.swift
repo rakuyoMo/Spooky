@@ -9,7 +9,7 @@ import Testing
 // MARK: - GitErrorDialogTests
 
 /// Git 错误框与几处提示版：错误框的原文区默认展开、随窗口变大，底栏只有 Close，打开失败时另有 Choose Another Folder…；
-/// 断线后的恢复说明、无效链接与 Local Folder 的提示只有 Close。
+/// 断线后的恢复说明与无效链接的提示只有 Close。
 @MainActor
 struct GitErrorDialogTests {
     /// 原文区写出 Git 原文；对话框拉高、拉宽时，多出的高度与宽度都交给原文区。
@@ -80,22 +80,14 @@ struct GitErrorDialogTests {
         )
     }
 
-    /// 断线后的恢复说明以核对结果开头；仓库设置里 Local Folder 核对没通过时，说明写出选的目录；
-    /// 无效的 `spooky://` 链接的说明写出链接原文；三者都是只有 Close 的提示版。
-    @Test("恢复说明、Local Folder 与无效链接的提示只有 Close")
+    /// 断线后的恢复说明以核对结果开头；无效的 `spooky://` 链接的说明写出链接原文；两者都是只有 Close 的提示版。
+    @Test("恢复说明与无效链接的提示只有 Close")
     func notices() throws {
         let write = InterruptedWrite(title: "Push", branch: nil, time: Date())
         let recovery = RepositoryWindowController.recoveryNotice(write, snapshot: nil, in: nil) { }
 
         #expect(recovery.message.hasPrefix(AppLocalization.text("recovery.notStarted", "Push")))
         Self.expectCloseOnly(recovery)
-
-        // Local Folder
-        let folder = FileManager.default.temporaryDirectory.appending(path: "elsewhere")
-        let rejection = RepositoryLocalFolderRow(session: RepositorySession()).rejectionNotice(of: folder) { }
-
-        #expect(rejection.message.contains(HomePath.abbreviated(folder.path)))
-        Self.expectCloseOnly(rejection)
 
         // 无效链接
         let url = try #require(URL(string: "spooky://delete?x=1"))

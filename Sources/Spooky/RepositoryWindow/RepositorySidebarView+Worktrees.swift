@@ -28,32 +28,48 @@ extension RepositorySidebarView {
         session.worktrees.others.filter { !isFiltering || SidebarRefTree.matches($0.path, filter: filterText) }
     }
 
+    /// 悬停提示：工作树名与它所在的位置；失效的工作树同样写出，服务器仓库的路径带主机前缀。
+    ///
+    /// - Parameters:
+    ///   - worktree: 工作树。
+    ///   - repository: 窗口显示的仓库。
+    static func tooltip(of worktree: Worktree, in repository: RepositoryLocation?) -> String {
+        let path = repository?.host.map { $0 + ":" + worktree.path } ?? worktree.path
+
+        return AppLocalization.text("worktree.tooltip", worktree.name) + "\n"
+            + AppLocalization.text("worktree.tooltip.path", path)
+    }
+
     /// 工作树行：单击显示详情，双击在本窗口打开，失效时响铃。
+    /// 失效时图标与名称一起变淡，行的右端多一个告警图标。
     private func worktreeRow(_ worktree: Worktree) -> some View {
-        Label {
-            Text(worktree.name)
-                .lineLimit(1)
-        } icon: {
-            // 平时与其它行一样用强调色，失效时换成黄色的告警图标
-            if worktree.isValid {
+        HStack(spacing: 4) {
+            Label {
+                Text(worktree.name)
+                    .lineLimit(1)
+                    .foregroundStyle(
+                        worktree.isValid
+                            ? AnyShapeStyle(.primary)
+                            : AnyShapeStyle(Color(nsColor: .disabledControlTextColor))
+                    )
+            } icon: {
                 Image(systemName: "rectangle.on.rectangle")
-            } else {
+                    .opacity(worktree.isValid ? 1 : 0.5)
+            }
+
+            if !worktree.isValid {
+                Spacer(minLength: 4)
+
+                // 按普通文字的颜色画、不随名称变淡，所在行被选中时随之反白
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Color.yellow)
+                    .frame(width: 18, height: 18)
+                    .accessibilityLabel(AppLocalization.text("worktree.warning"))
             }
         }
-        .help(tooltip(of: worktree))
+        .help(Self.tooltip(of: worktree, in: session.repository))
         .tag(Self.worktreeRowPrefix + worktree.path)
         .onTapGesture(count: 2) { session.open(worktree, in: .currentWindow) }
         .contextMenu { WorktreeMenu(session: session, worktree: worktree, branch: nil) }
-    }
-
-    /// 悬停提示：工作树名与它所在的位置。
-    private func tooltip(of worktree: Worktree) -> String {
-        let location = session.location(of: worktree)?.displayPath ?? worktree.path
-
-        return AppLocalization.text("worktree.tooltip", worktree.name) + "\n"
-            + AppLocalization.text("worktree.tooltip.path", location)
     }
 }
 
@@ -84,8 +100,8 @@ struct BranchWorktreeMenuItems: View {
 
 // MARK: - WorktreeMenu
 
-/// 工作树的右键菜单：在本窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开；
-/// 从分支菜单打开时各项写出分支名，且不列修复与移动。
+/// 工作树的右键菜单：在本窗口、新标签或新窗口打开，删除、移动与修复，在 Finder 或终端中打开；
+/// 从分支菜单打开时各项写出分支名，且不列移动与修复。
 struct WorktreeMenu: View {
     /// 所在窗口的会话。
     let session: RepositorySession
@@ -114,14 +130,17 @@ struct WorktreeMenu: View {
         }
 
         Button(title("worktree.remove.menu", "worktree.branch.remove")) { session.requestWorktree(.remove(worktree)) }
-            .disabled(!session.canModify(worktree))
+            .disabled(!session.canRemove(worktree))
 
         if branch == nil {
-            Button(AppLocalization.text("worktree.repair.menu")) { session.requestWorktree(.repair(worktree)) }
-                .disabled(!session.canRepair(worktree))
-
             Button(AppLocalization.text("worktree.move.menu")) { session.requestWorktree(.move(worktree)) }
-                .disabled(!session.canModify(worktree))
+                .disabled(!session.canMove(worktree))
+
+            // 修复只在工作树失效时列出
+            if !worktree.isValid {
+                Button(AppLocalization.text("worktree.repair.menu")) { session.requestWorktree(.repair(worktree)) }
+                    .disabled(!session.canRepair(worktree))
+            }
         }
 
         Divider()
@@ -129,7 +148,7 @@ struct WorktreeMenu: View {
         systemItems
     }
 
-    /// 工作树在 Finder 中显示，服务器上的按挂载位置打开，另有复制带主机前缀的路径；都可以在终端中打开。
+    /// 工作树在 Finder 中显示，服务器上的按挂载位置打开；复制路径，服务器上的带主机前缀；都可以在终端中打开。
     @ViewBuilder
     private var systemItems: some View {
         let location = session.location(of: worktree)
@@ -142,13 +161,11 @@ struct WorktreeMenu: View {
         .disabled(!session.canShowInFinder(worktree))
         .help(session.finderUnavailableTip(of: worktree) ?? "")
 
-        if session.repository?.host != nil {
-            Button(AppLocalization.text("action.copyPath")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(location?.displayPath ?? worktree.path, forType: .string)
-            }
-            .disabled(location == nil)
+        Button(AppLocalization.text("action.copyPath")) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(location?.displayPath ?? worktree.path, forType: .string)
         }
+        .disabled(location == nil)
 
         Button(title("action.openTerminal", "worktree.branch.terminal")) {
             if let location { session.onOpenInTerminal?(location) }

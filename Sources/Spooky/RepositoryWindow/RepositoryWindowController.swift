@@ -398,12 +398,17 @@ extension RepositoryWindowController {
     func addRemoteRepository() {
         presentDialog { close in
             AddRemoteRepositoryView(
-                opened: { [weak self] repository in
+                opened: { [weak self] repository, mount in
                     close()
 
                     guard let self else { return }
 
-                    coordinator?.displayRepository(repository, from: self, inNewWindow: false)
+                    let destination = coordinator?.displayRepository(repository, from: self, inNewWindow: false)
+
+                    // 选了挂载方式时，仓库打开后记下并挂载
+                    if let mount {
+                        destination?.session.mountAddedRepository(mount)
+                    }
                 },
                 cancelled: close
             )
@@ -529,6 +534,7 @@ extension RepositoryWindowController {
                 #selector(merge), #selector(rebase), #selector(refreshRepository),
                 #selector(applyStash), #selector(saveStash), #selector(createBranch),
                 #selector(forcePushWithLease), #selector(pushRevision),
+                #selector(revealInFinder),
             ] {
                 _ = validateUserInterfaceItem(NSMenuItem(title: "", action: action, keyEquivalent: ""))
             }

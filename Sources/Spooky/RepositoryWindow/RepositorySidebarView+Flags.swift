@@ -11,6 +11,6 @@ extension RepositorySidebarView {
                 ? [.pinned]
                 : branches.map { metadata(for: $0).isArchived ? .archived : .branches }
 
-        collapsedGroups.subtract(destinations)
+        expansion.expand(groups: destinations, nodes: [])
     }
 }

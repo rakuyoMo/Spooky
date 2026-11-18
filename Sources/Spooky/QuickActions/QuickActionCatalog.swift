@@ -175,14 +175,12 @@ extension QuickActionCatalog {
 
         case .submodule: [.openSubmodule, .showSubmoduleSettings]
 
-        // 服务器上的工作树另有复制带主机前缀的路径，与侧边栏的工作树菜单相同
+        // 与侧边栏的工作树菜单相同
         case .worktree:
             [
                 .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .removeWorktree, .repairWorktree,
-                .moveWorktree, .revealInFinder,
+                .moveWorktree, .revealInFinder, .copyPath, .openInTerminal,
             ]
-                + (isRemote ? [.copyPath] : [])
-                + [.openInTerminal]
 
         case .remote: [.showRemoteSettings, .fetch, .editConnection]
 
@@ -198,11 +196,6 @@ extension QuickActionCatalog {
 // MARK: - Availability
 
 extension QuickActionCatalog {
-    /// 服务器仓库的路径在另一台机器上，复制时带主机前缀。
-    private var isRemote: Bool {
-        session.repository?.host != nil
-    }
-
     /// 当前分支的完整引用名；分离 HEAD 或未出生时为 nil。
     private var headBranch: String? {
         session.status?.branch.head.map { "refs/heads/" + $0 }
@@ -302,8 +295,11 @@ extension QuickActionCatalog {
         case .openWorktree, .openWorktreeInNewTab, .openWorktreeInNewWindow, .openInTerminal, .copyPath:
             worktree.isValid && isAvailable(locationAction: action)
 
-        case .removeWorktree, .moveWorktree:
-            session.canModify(worktree)
+        case .removeWorktree:
+            session.canRemove(worktree)
+
+        case .moveWorktree:
+            session.canMove(worktree)
 
         case .repairWorktree:
             session.canRepair(worktree)
@@ -315,7 +311,6 @@ extension QuickActionCatalog {
 
     private func isAvailable(locationAction action: QuickAction) -> Bool {
         switch action {
-        case .revealInFinder: session.canShowInFinder
         case .createSnapshot: session.canSaveStash
         case .showFile, .showFileHistory, .showBlame, .openInEditor: session.runner != nil
         default: true

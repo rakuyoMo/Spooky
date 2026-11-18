@@ -59,7 +59,7 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 
 - **Commit details**: browse the full file tree of a commit and check GPG and SSH signatures. Merge commits can be shown against their first parent, as only the files that were actually merged, or without a diff. Compare any two revisions, export the files of a revision as a folder or a zip archive, and save commits as patch files
 
-- **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are stale or tracking a branch that no longer exists. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
+- **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are stale. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
 
 - **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
 
@@ -82,6 +82,8 @@ Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSS
 - **Drag and drop**: drag branches, commits, and tags in the sidebar to create branches and tags, merge, rebase, cherry-pick, revert, pull, publish, push, pin, archive, or rename. Drag commits within the history to squash, fixup, or move them
 
 - **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
+
+- **Server repositories in the Finder**: Show in Finder finds a server repository among the network volumes mounted on your Mac, or Spooky mounts it over SMB or with sshfs, or uses a folder you choose. Pick the method when adding the repository or later in the repository settings. If the server isn't connected, Spooky connects first, and asks where the repository is on your Mac when it can't find it
 
 - **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code, VS Code Insiders, and Cursor open server files directly when their Remote SSH extension is installed
 
@@ -194,7 +196,8 @@ If you declined, you can turn them on again in **System Settings › Notificatio
 
 On your Mac:
 
-- Settings, user profiles, repository bookmarks, and the local folders chosen for server repositories in the repository settings are stored in the preferences domain `com.rakuyo.spooky`
+- Settings, user profiles, repository bookmarks, and the locations on this Mac set for server repositories are stored in the preferences domain `com.rakuyo.spooky`
+- Spooky mounts network volumes over SMB or with sshfs to show server repositories in the Finder, and never unmounts them; eject them in the Finder. sshfs and the macFUSE or FUSE-T it needs aren't included and must be installed by you. SMB user names and passwords are entered in the system's sign-in dialog, which saves them in your Keychain; Spooky doesn't read or store them
 - Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
 - Opened repositories are added to the system's recent documents so the Dock icon menu can list them: a local repository is added as its folder; a server repository is added as a `.spookyrepo` folder under `~/Library/Application Support/Spooky/Locations`, whose `.spookylocation` file records only the host alias and the remote path. There is one per server repository, reused when it is opened again; Clear Menu clears the recent documents and keeps these folders
 - Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running

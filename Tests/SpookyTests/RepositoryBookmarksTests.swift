@@ -195,8 +195,9 @@ struct RepositoryBookmarksTests {
         #expect(remote.message == AppLocalization.text("missing.message", "spooky-test:" + home + "/repo"))
     }
 
-    /// 右键菜单的标题带书签的显示名；本机仓库的目录不存在时 Finder 与终端两项不可用，删除不询问、直接去掉书签。
-    @Test("目录不存在的书签：右键菜单与删除")
+    /// 右键菜单的标题带书签的显示名；本机与服务器仓库都有 Show in Finder 与 Copy Path 两项，文件夹书签不可用；
+    /// 本机仓库的目录不存在时 Finder 与终端两项不可用、复制路径照样可用，删除不询问、直接去掉书签。
+    @Test("书签的右键菜单，目录不存在时的删除")
     func goneDirectory() throws {
         let (defaults, directory) = try Self.defaults()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -236,6 +237,25 @@ struct RepositoryBookmarksTests {
         manager.confirmDelete([gone])
         #expect(bookmarks.bookmark(gone) == nil)
         #expect(bookmarks.bookmark(present) != nil)
+
+        // Show in Finder、Copy Path 与 Open in Terminal 依次排在一组，服务器仓库同样都有、都可用
+        let locate = [
+            AppLocalization.text("action.revealFinder"),
+            AppLocalization.text("action.copyPath"),
+            AppLocalization.text("action.openTerminal"),
+        ]
+
+        let server = bookmarks.add(.remote(host: "spooky-test", path: "/srv/repo"))
+        let serverItems = sidebar.singleItems(for: try #require(bookmarks.bookmark(server)))
+
+        #expect(Array(presentItems.map(\.title)[3 ..< 6]) == locate)
+        #expect(Array(serverItems.map(\.title)[3 ..< 6]) == locate)
+        #expect(Self.disabledTitles(serverItems) == [sortChildren])
+
+        // 文件夹书签的这三项都不可用
+        let folder = bookmarks.addFolder(named: "Work")
+        let folderItems = sidebar.singleItems(for: try #require(bookmarks.bookmark(folder)))
+        #expect(Set(locate).isSubset(of: Self.disabledTitles(folderItems)))
     }
 
     /// 扫描结果按机器分组、本机在前；没点过表头时保持找到的顺序，点了表头只在每台主机的组内排序。

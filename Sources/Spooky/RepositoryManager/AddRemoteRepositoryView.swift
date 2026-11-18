@@ -6,9 +6,10 @@ import SwiftUI
 /// 添加服务器仓库的体检表单；失败时保留输入，错误区写出修复方向与原始输出。
 ///
 /// 路径可以手填，也可以浏览 B 上的目录；路径不存在或还不是 Git 工作区时换成备选底栏，可以在那里新建仓库再打开。
+/// 可以选挂载到本机的方式，仓库打开后记下并挂载。
 struct AddRemoteRepositoryView: View {
-    /// 验证成功后由窗口协调器保存记录并打开仓库。
-    let opened: (RepositoryLocation) -> Void
+    /// 验证成功后由窗口协调器保存记录并打开仓库；选了挂载方式时带上要记下并挂载的本机位置。
+    let opened: (RepositoryLocation, ServerLocalLocation?) -> Void
 
     /// 关闭表单而不添加记录。
     let cancelled: () -> Void
@@ -45,22 +46,34 @@ struct AddRemoteRepositoryView: View {
     @State
     private var checkedRepository: RepositoryLocation?
 
-    /// 对话框骨架：主机别名与路径两行；体检中底栏左侧写出进度，主按钮与表单不可用，取消照常可用。
+    /// 挂载到本机的选择。
+    @State
+    private var mount = AddRemoteMountChoice()
+
+    /// 对话框骨架：主机别名、路径与挂载到本机几行；体检中底栏左侧写出进度，主按钮与表单不可用，取消照常可用。
+    ///
+    /// 选 sshfs 时没选能用的文件夹，主按钮不可用。
     var body: some View {
         DialogLayout(
             title: AppLocalization.text("remote.form.title"),
             message: AppLocalization.text("remote.form.help"),
             submitTitle: AppLocalization.text("action.open"),
             alternate: createAlternate,
-            error: Self.notice(for: failure),
+            error: errorNotice,
             progress: task == nil ? nil : AppLocalization.text("remote.checking"),
-            canSubmit: !host.isEmpty && path.hasPrefix("/") && task == nil,
+            canSubmit: !host.isEmpty
+                && path.hasPrefix("/")
+                && task == nil
+                && mount.isReady,
             cancel: cancel,
             submit: submit
         ) {
             form
         }
         .onDisappear { task?.cancel() }
+        .onChange(of: host) {
+            mount.setHost(host)
+        }
         .sheet(isPresented: $isBrowsing) {
             ServerDirectoryBrowser(host: host, path: path) { chosen in
                 isBrowsing = false
@@ -77,7 +90,7 @@ struct AddRemoteRepositoryView: View {
         }
     }
 
-    /// 主机别名与路径两行；路径可以浏览 B 上的目录。体检进行中禁用。
+    /// 主机别名、路径与挂载到本机几行；路径可以浏览 B 上的目录，选 sshfs 时多出挂载到的文件夹一行。体检进行中禁用。
     private var form: some View {
         DialogForm {
             DialogFormRow(label: AppLocalization.text("remote.host")) {
@@ -94,8 +107,36 @@ struct AddRemoteRepositoryView: View {
                         .disabled(host.isEmpty)
                 }
             }
+
+            DialogFormRow(label: AppLocalization.text("remote.mount")) {
+                AddRemoteMountPopUp(
+                    items: mount.items,
+                    selected: .method(mount.method),
+                    open: mount.detect,
+                    select: selectMount
+                )
+                .fixedSize()
+                .disabled(host.isEmpty)
+            }
+
+            if mount.method == .sshfsMount {
+                LocalLocationDialog.folderRow("localLocation.mountAt", folder: mount.mountFolder) {
+                    LocalLocationDialog.chooseDirectory(from: mount.mountFolder, canCreate: true) {
+                        mount.selectMountFolder($0)
+                    }
+                }
+            }
         }
         .disabled(task != nil)
+    }
+
+    /// 错误区的文字：选 sshfs 时挂载到的文件夹不空的说明在先，其次是体检失败的说明。
+    private var errorNotice: String? {
+        if mount.method == .sshfsMount, let problem = mount.mountFolderProblem {
+            return problem
+        }
+
+        return Self.notice(for: failure)
     }
 
     /// 路径不存在或还不是工作区时的备选按钮：在那里新建仓库；其余时候为 nil。
@@ -150,7 +191,7 @@ struct AddRemoteRepositoryView: View {
                     return
                 }
 
-                opened(repository.location)
+                opened(repository.location, mount.location)
             } catch {
                 await remote.close()
                 guard !Task.isCancelled else { return }
@@ -168,7 +209,14 @@ struct AddRemoteRepositoryView: View {
         }
 
         self.checkedRepository = nil
-        opened(checkedRepository)
+        opened(checkedRepository, mount.location)
+    }
+
+    /// 换挂载方式时挂载到的文件夹一行随对话框高度一起动画。
+    private func selectMount(_ item: AddRemoteMountChoice.Item) {
+        DialogAnimation.perform {
+            mount.select(item)
+        }
     }
 
     /// 在 B 上的这个路径执行 `git init`，目录不存在时一并建出，成功后照常体检并打开。

@@ -47,10 +47,14 @@ extension RepositorySidebarView {
                 .modifier(StashesDropTarget(session: session))
 
             // 选中远端对应 GitLab 时叫 Merge Requests
-            Label(session.pullRequestText("title"), systemImage: "arrow.triangle.merge")
-                .tag("pullRequests")
+            Label {
+                Text(session.pullRequestText("title"))
+            } icon: {
+                AppSymbolImage(name: AppSymbol.pullRequest)
+            }
+            .tag("pullRequests")
 
-            Label(AppLocalization.text("review.title"), systemImage: "arrow.triangle.pull")
+            Label(AppLocalization.text("review.title"), systemImage: "arrow.left.arrow.right.circle")
                 .tag("branchesReview")
 
             // 视图设置打开 Show Reflog 时才显示
@@ -102,11 +106,11 @@ extension RepositorySidebarView {
         } else {
             switch WorkingCopyMarker.current(progress: session.context?.progress, status: session.status) {
             case .operation(let symbol):
-                // 图标是模板图，随行的选中状态变色；可访问性名称与操作横幅的标题相同
-                Image(systemName: symbol)
-                    .resizable()
-                    .scaledToFit()
+                // 自绘的图形按前景样式填色，随行的选中状态变色；可访问性名称与操作横幅的标题相同
+                AppSymbolShape(name: symbol)
                     .frame(width: 18, height: 18)
+                    .accessibilityElement()
+                    .accessibilityAddTraits(.isImage)
                     .accessibilityLabel(session.operationBannerTitle ?? "")
 
             case .changes(let count):

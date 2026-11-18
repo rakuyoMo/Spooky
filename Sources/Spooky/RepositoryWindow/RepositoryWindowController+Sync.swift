@@ -144,9 +144,9 @@ extension RepositoryWindowController {
 
     /// 工具栏的同步项：Fetch | Pull | Push 分组、Sync 按钮、Merge | Rebase 分组；其它标识返回 nil。
     func makeSyncToolbarItem(_ identifier: NSToolbarItem.Identifier) -> NSToolbarItem? {
-        // 取不到符号时以空图占位，分段数与标签保持一致；辅助功能读段名
+        // 自绘的合并与变基图形与 Fetch | Pull | Push 的模板图一样画成 18 pt；辅助功能读段名
         let symbol = { (name: String, label: String) in
-            NSImage(systemSymbolName: name, accessibilityDescription: AppLocalization.text(label)) ?? NSImage()
+            AppSymbol.image(name, side: 18, accessibilityDescription: AppLocalization.text(label)) ?? NSImage()
         }
 
         switch identifier.rawValue {
@@ -164,8 +164,8 @@ extension RepositoryWindowController {
             return makeSegmentedGroup(
                 identifier,
                 segments: [
-                    ("sync.merge", symbol("arrow.triangle.merge", "sync.merge"), #selector(merge)),
-                    ("sync.rebaseHead", symbol("arrow.triangle.branch", "sync.rebaseHead"), #selector(rebase)),
+                    ("sync.merge", symbol(AppSymbol.merge, "sync.merge"), #selector(merge)),
+                    ("sync.rebaseHead", symbol(AppSymbol.rebase, "sync.rebaseHead"), #selector(rebase)),
                 ]
             )
 
@@ -227,7 +227,7 @@ extension RepositoryWindowController {
         return group
     }
 
-    /// 按 ⌥ 的状态设置一个按钮的动作与提示，按钮由它当前的常态或快速动作认出；服务器仓库的提示带主机前缀。
+    /// 按 ⌥ 的状态设置一个按钮的动作与提示，按钮由它当前的常态或快速动作认出。
     private func updateQuickAction(of item: NSToolbarItem, option: Bool) {
         let actions = Self.quickActions.first { entry in
             [entry.action, entry.quick].contains(item.action)
@@ -244,8 +244,7 @@ extension RepositoryWindowController {
 
         item.toolTip = toolbarTip(
             AppLocalization.text(option ? actions.quickTip : actions.tip),
-            label: label.map { AppLocalization.text($0) },
-            showsHost: true
+            label: label.map { AppLocalization.text($0) }
         )
     }
 }

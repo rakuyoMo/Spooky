@@ -100,7 +100,7 @@ extension RepositoryWindowController {
             "action.refresh", "action.refresh", .symbol("arrow.clockwise"), #selector(refreshRepository)
         ),
         RepositoryToolbar.createBranch: (
-            "toolbar.createBranch", "toolbar.createBranch", .symbol("arrow.branch"), #selector(createBranch)
+            "toolbar.createBranch", "toolbar.createBranch", .symbol(AppSymbol.createBranch), #selector(createBranch)
         ),
         RepositoryToolbar.forcePush: (
             "toolbar.forcePush", "toolbar.forcePush", .image(TransferIcon.forcePush), #selector(forcePushWithLease)
@@ -116,22 +116,22 @@ extension RepositoryWindowController {
         ),
     ]
 
-    /// 按钮与分段的提示，按动作查找：提示键，只显示图标时加在提示前面的标签键，以及服务器仓库里是否加主机前缀。
+    /// 按钮与分段的提示，按动作查找：提示键，以及只显示图标时加在提示前面的标签键。
     ///
     /// 同步一组的提示随 ⌥ 切换，由同步一组自己设置，不在表里。
-    private static let tips: [Selector: (tip: String, label: String?, showsHost: Bool)] = [
-        #selector(showRepositories): ("toolbar.bookmarks.tip", "toolbar.bookmarks", false),
-        #selector(navigateBack): ("navigation.back.tip", "toolbar.previous", false),
-        #selector(navigateForward): ("navigation.forward.tip", "toolbar.next", false),
-        #selector(applyStash): ("toolbar.applyStash.tip", "stash.apply", false),
-        #selector(saveStash): ("toolbar.saveStash.tip", "stash.save", false),
-        #selector(showQuickActions): ("toolbar.quickActions.tip", "toolbar.quickActions", true),
-        #selector(refreshRepository): ("action.refresh", nil, true),
-        #selector(createBranch): ("toolbar.createBranch.tip", nil, true),
-        #selector(forcePushWithLease): ("toolbar.forcePush.tip", nil, true),
-        #selector(pushRevision): ("toolbar.pushTo", nil, true),
-        #selector(revealInFinder): ("action.revealFinder", "toolbar.finder", true),
-        #selector(openInTerminal): ("action.openTerminal", "toolbar.terminal", true),
+    private static let tips: [Selector: (tip: String, label: String?)] = [
+        #selector(showRepositories): ("toolbar.bookmarks.tip", "toolbar.bookmarks"),
+        #selector(navigateBack): ("navigation.back.tip", "toolbar.previous"),
+        #selector(navigateForward): ("navigation.forward.tip", "toolbar.next"),
+        #selector(applyStash): ("toolbar.applyStash.tip", "stash.apply"),
+        #selector(saveStash): ("toolbar.saveStash.tip", "stash.save"),
+        #selector(showQuickActions): ("toolbar.quickActions.tip", "toolbar.quickActions"),
+        #selector(refreshRepository): ("action.refresh", nil),
+        #selector(createBranch): ("toolbar.createBranch.tip", nil),
+        #selector(forcePushWithLease): ("toolbar.forcePush.tip", nil),
+        #selector(pushRevision): ("toolbar.pushTo", nil),
+        #selector(revealInFinder): ("action.revealFinder", "toolbar.finder"),
+        #selector(openInTerminal): ("action.openTerminal", "toolbar.terminal"),
     ]
 
     /// 建立窗口唯一的工具栏：默认只显示图标，可以自定义，排布与显示方式自动保存并在同一标识的仓库窗口间同步。
@@ -190,7 +190,14 @@ extension RepositoryWindowController {
 
                 coordinator.openRepository(at: location, from: self, inNewWindow: false)
             },
-            openInTerminal: { [weak self] in self?.openLocationInTerminal($0) }
+            openInTerminal: { [weak self] in self?.openLocationInTerminal($0) },
+            showInFinder: { [weak self] location in
+                guard let self else {
+                    return
+                }
+
+                coordinator.showInFinder(location, from: self)
+            }
         ))
 
         clonePopover = popover
@@ -317,27 +324,21 @@ extension RepositoryWindowController {
 
         item.toolTip = toolbarTip(
             AppLocalization.text(entry.tip),
-            label: entry.label.map { AppLocalization.text($0) },
-            showsHost: entry.showsHost
+            label: entry.label.map { AppLocalization.text($0) }
         )
     }
 
-    /// 工具栏项的提示：只显示图标时在前面加上 “<标签>: ”，`label` 为 nil 的项不加；
-    /// `showsHost` 的项在服务器仓库里再在最前面加主机前缀，分不清是哪台机器上的仓库时不至于点错。
+    /// 工具栏项的提示：只显示图标时在前面加上 “<标签>: ”，`label` 为 nil 的项不加。
     ///
     /// - Parameters:
     ///   - tip: 提示正文。
     ///   - label: 只显示图标时加在提示前面的标签。
-    ///   - showsHost: 服务器仓库里是否加主机前缀。
-    func toolbarTip(_ tip: String, label: String?, showsHost: Bool) -> String {
-        var text = tip
-
-        if let label, window?.toolbar?.displayMode == .iconOnly {
-            text = AppLocalization.text("toolbar.labeledTip", label, tip)
+    func toolbarTip(_ tip: String, label: String?) -> String {
+        guard let label, window?.toolbar?.displayMode == .iconOnly else {
+            return tip
         }
 
-        let host = showsHost && !showsManager ? session.repository?.host : nil
-        return host.map { $0 + ": " + text } ?? text
+        return AppLocalization.text("toolbar.labeledTip", label, tip)
     }
 }
 
@@ -507,7 +508,7 @@ extension RepositoryWindowController {
 
         switch button.icon {
         case .symbol(let name):
-            item.image = NSImage(systemSymbolName: name, accessibilityDescription: item.paletteLabel)
+            item.image = AppSymbol.image(name, side: 18, accessibilityDescription: item.paletteLabel)
 
         case .image(let image):
             item.image = image
@@ -621,9 +622,9 @@ extension RepositoryWindowController {
 
 // MARK: - ToolbarButtonIcon
 
-/// 仓库动作按钮的图标：SF 符号，或随 App 打包的模板图。
+/// 仓库动作按钮的图标：按名字取用的符号，或随 App 打包的模板图。
 private enum ToolbarButtonIcon {
-    /// SF 符号的名字。
+    /// 系统符号或自绘图形的名字，见 `AppSymbol`；自绘的图形画成 18 pt 的模板图。
     case symbol(String)
 
     /// 随 App 打包的模板图。

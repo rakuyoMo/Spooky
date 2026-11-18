@@ -55,10 +55,10 @@ extension RepositoryWindowController {
                 AddWorktreeDialog(session: session, revision: revision, close: close)
 
             case .move(let worktree):
-                WorktreePathDialog(session: session, worktree: worktree, target: .move, close: close)
+                WorktreePathDialog(session: session, worktree: worktree, close: close)
 
             case .repair(let worktree):
-                WorktreePathDialog(session: session, worktree: worktree, target: .repair, close: close)
+                RelocateWorktreeDialog(session: session, worktree: worktree, close: close)
 
             case .remove(let worktree):
                 RemoveWorktreeDialog(session: session, worktree: worktree, close: close)

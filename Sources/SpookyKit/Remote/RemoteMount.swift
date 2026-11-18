@@ -114,6 +114,37 @@ public struct RemoteMountLocator: Sendable {
             .flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    /// 主机别名所指的机器在这台 Mac 上的主机名：`ssh -G` 输出的 `hostname`；读不到时为 nil。
+    ///
+    /// - Parameter host: `~/.ssh/config` 里的主机别名。
+    static func serverName(of host: String) async -> String? {
+        guard
+            let result = try? await CommandExecutor.execute(
+                executable: "/usr/bin/ssh",
+                processArguments: ["-G", "--", host],
+                arguments: ["ssh", "-G"]
+            )
+        else { return nil }
+
+        return hostname(fromConfiguration: String(decoding: result.standardOutput, as: UTF8.self))
+    }
+
+    /// 本机路径所在卷的重新挂载地址，去掉密码、保留用户名；不在网络卷上时为 nil。
+    ///
+    /// Spooky 经 SMB 挂上并找到仓库后，把它记作 “记下的共享”，之后的挂载直接用它，不再弹共享列表。
+    ///
+    /// - Parameter url: 卷里的本机路径。
+    public static func remountURL(of url: URL) -> URL? {
+        guard
+            let remount = try? url.resourceValues(forKeys: [.volumeURLForRemountingKey]).volumeURLForRemounting,
+            var components = URLComponents(url: remount, resolvingAgainstBaseURL: false)
+        else { return nil }
+
+        components.password = nil
+
+        return components.url
+    }
+
     /// 在这台 Mac 上找 B 上的目录：从最长的后缀试起，在每个卷的根下找带 `.git` 的目录，核对通过的第一个就是。
     ///
     /// - Parameters:
@@ -184,14 +215,9 @@ extension RemoteMountLocator {
 
     /// 与主机别名同一台机器挂载到这台 Mac 上的网络卷：按 `ssh -G` 得到的主机与卷的重新挂载地址里的主机，比较解析出的地址。
     private static func networkVolumes(of host: String) async -> [URL] {
-        guard
-            let result = try? await CommandExecutor.execute(
-                executable: "/usr/bin/ssh",
-                processArguments: ["-G", "--", host],
-                arguments: ["ssh", "-G"]
-            ),
-            let name = hostname(fromConfiguration: String(decoding: result.standardOutput, as: UTF8.self))
-        else { return [] }
+        guard let name = await serverName(of: host) else {
+            return []
+        }
 
         let server = addresses(of: name)
 
@@ -216,7 +242,7 @@ extension RemoteMountLocator {
     }
 
     /// 主机名解析出的全部地址，写成数字形式；解析不了时为空。
-    private static func addresses(of name: String) -> Set<String> {
+    static func addresses(of name: String) -> Set<String> {
         var hints = addrinfo()
         hints.ai_socktype = SOCK_STREAM
 

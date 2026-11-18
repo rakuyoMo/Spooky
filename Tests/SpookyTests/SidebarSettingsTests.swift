@@ -117,8 +117,8 @@ struct SidebarSettingsTests {
         #expect(sidebar.delegate === SidebarViewSettingsMenu.shared)
     }
 
-    /// 陈旧的分支名称变灰，关闭陈旧信息后既不显示也不变灰；跟踪错误总是显示。
-    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档、陈旧与跟踪错误，服务器仓库带主机前缀。
+    /// 陈旧的分支名称变灰，关闭陈旧信息后既不显示也不变灰。
+    /// 悬停提示逐行写出分支名、跟踪关系、计数、归档与陈旧，服务器仓库带主机前缀；上游已不存在时不另写一行。
     @Test("分支行的标记与悬停提示")
     func branchStatus() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
@@ -133,12 +133,10 @@ struct SidebarSettingsTests {
         let shown = SidebarBranchStatus(condition: condition, staleMonths: 6, now: now)
         #expect(shown.isDimmed)
         #expect(shown.staleDuration == SidebarTooltip.duration(since: old, now: now))
-        #expect(shown.missingUpstream == "refs/remotes/origin/topic")
 
         let hidden = SidebarBranchStatus(condition: condition, staleMonths: nil, now: now)
         #expect(!hidden.isDimmed)
         #expect(hidden.staleDuration == nil)
-        #expect(hidden.missingUpstream != nil)
 
         let fresher = SidebarBranchStatus(condition: condition, staleMonths: 9, now: now)
         #expect(fresher.staleDuration == nil)
@@ -173,18 +171,20 @@ struct SidebarSettingsTests {
             ]
         )
 
-        // 计数为零时不写计数行；跟踪错误单独一行
-        status = SidebarBranchStatus(condition: nil, staleMonths: nil)
-        status.missingUpstream = "refs/remotes/origin/feature/登录"
+        // 上游已不存在时只写分支名与跟踪关系，没有计数行，也不另写一行
         let gone = SidebarTooltip.branch(
             branch,
             host: nil,
-            divergence: ReferenceDivergence(ahead: 0, behind: 0),
+            divergence: nil,
             metadata: BranchMetadata(),
-            status: status
+            status: SidebarBranchStatus(condition: condition, staleMonths: nil, now: now)
         )
-        #expect(gone.components(separatedBy: "\n").count == 3)
-        #expect(gone.hasSuffix(AppLocalization.text("branch.tooltip.missingUpstream", "origin/feature/登录")))
+        #expect(
+            gone.components(separatedBy: "\n") == [
+                AppLocalization.text("branch.tooltip.local", "feature/登录"),
+                AppLocalization.text("branch.tooltip.tracksRemote", "origin/feature/登录"),
+            ]
+        )
 
         let detached = SidebarTooltip.head(
             branch: BranchStatus(head: nil, oid: String(repeating: "d", count: 64)),
@@ -250,7 +250,7 @@ struct SidebarSettingsTests {
 
         #expect(symbols.count == 4)
         #expect(symbols[0] == symbols[1] && symbols[2] == symbols[3] && symbols[0] != symbols[2])
-        #expect(symbols.allSatisfy { NSImage(systemSymbolName: $0, accessibilityDescription: nil) != nil })
+        #expect(symbols.allSatisfy { AppSymbol.outline($0, in: CGRect(x: 0, y: 0, width: 18, height: 18)) != nil })
 
         // Working Copy 的提示：分支名或分离时的短哈希，服务器仓库带主机前缀
         let oid = String(repeating: "d", count: 40)

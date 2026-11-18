@@ -239,7 +239,7 @@ extension AccountDialog {
         }
     }
 
-    /// 浏览器授权时的验证码与复制它、打开 GitHub 的按钮；等待中的步骤写在底栏。
+    /// 浏览器授权时的验证码与复制它的按钮；等待中的步骤写在底栏。
     @ViewBuilder
     private var codeRow: some View {
         if case .authorizing(let authorization?) = progress {
@@ -249,7 +249,7 @@ extension AccountDialog {
                         .font(.system(size: 20, weight: .semibold, design: .monospaced))
                         .textSelection(.enabled)
 
-                    Button(AppLocalization.text("accounts.openGitHub")) { openVerificationPage(authorization) }
+                    Button(AppLocalization.text("accounts.copyCode")) { copyCode(authorization) }
                 }
             }
         }
@@ -478,9 +478,14 @@ extension AccountDialog {
 
     /// 把验证码放进剪贴板并打开验证页。
     private func openVerificationPage(_ authorization: GitHubDeviceFlow.Authorization) {
+        copyCode(authorization)
+        NSWorkspace.shared.open(authorization.verificationURL)
+    }
+
+    /// 把验证码放进剪贴板。
+    private func copyCode(_ authorization: GitHubDeviceFlow.Authorization) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(authorization.userCode, forType: .string)
-        NSWorkspace.shared.open(authorization.verificationURL)
     }
 }
 

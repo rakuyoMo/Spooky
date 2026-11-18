@@ -50,6 +50,9 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
     /// 仓库管理的拖入验证任务，以及从 Finder 或 Dock 打开文件夹时的仓库检查。
     var addingTasks: [UUID: Task<Void, Never>] = [:]
 
+    /// 仓库管理与最近克隆里进行中的 Show in Finder 流程：按服务器仓库计数，交还连接时跳过它们。
+    var finderFlows: [RepositoryLocation: Int] = [:]
+
     /// 当前响应菜单动作的仓库窗口。
     var activeWindow: RepositoryWindowController? {
         (NSApp.keyWindow?.windowController as? RepositoryWindowController)
@@ -373,11 +376,12 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
         }
     }
 
-    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录。
+    /// 最后一个持有仓库的窗口关闭后，回收专属主连接和会话临时目录；Show in Finder 的流程还在用时不回收。
     func releaseConnection(_ location: RepositoryLocation) {
         guard
             location.host != nil,
             !windows.contains(where: { $0.session.repository == location }),
+            finderFlows[location] == nil,
             let remote = GitRunner(location: location).remote
         else { return }
 
@@ -467,13 +471,15 @@ extension SpookyApplicationController {
     /// - Parameters:
     ///   - view: 显示后切到的视图；nil 时显示仓库保存的视图状态。
     ///   - staysInSource: 在发起窗口里显示，不改用已显示这个仓库的其它窗口。
+    /// - Returns: 显示这个仓库的窗口。
+    @discardableResult
     func displayRepository(
         _ repository: RepositoryLocation,
         from source: RepositoryWindowController?,
         inNewWindow: Bool,
         showing view: RepositoryDestination? = nil,
         staysInSource: Bool = false
-    ) {
+    ) -> RepositoryWindowController {
         let sourceIsOpen = source.map { source in windows.contains { $0 === source } } ?? false
 
         let destination: RepositoryWindowController =
@@ -506,6 +512,8 @@ extension SpookyApplicationController {
 
         if let previous, previous != repository { releaseConnection(previous) }
         NSApp.activate(ignoringOtherApps: true)
+
+        return destination
     }
 
     /// 拖入或选择的文件夹只添加已验证的本机仓库，多个目录依次检查；只加了一个不是仓库的目录时询问是否在那里新建仓库。

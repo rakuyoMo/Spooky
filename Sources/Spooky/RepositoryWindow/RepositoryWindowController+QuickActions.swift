@@ -158,10 +158,7 @@ extension RepositoryWindowController {
 
         case .openInEditor: session.edit(path)
 
-        case .revealInFinder:
-            if let url = session.finderURL(path) {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-            }
+        case .revealInFinder: showInFinder([path])
 
         case .copyPath:
             if let repository = session.repository {
@@ -172,7 +169,8 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作树：在当前窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开；服务器上的工作树按挂载位置在 Finder 中显示，另可复制带主机前缀的路径。
+    /// 工作树：在当前窗口、新标签或新窗口打开，删除、修复与移动，在 Finder 或终端中打开，复制路径；
+    /// 服务器上的工作树按挂载位置在 Finder 中显示，复制的路径带主机前缀。
     private func perform(_ action: QuickAction, worktree: Worktree) {
         switch action {
         case .openWorktree: session.open(worktree, in: .currentWindow)

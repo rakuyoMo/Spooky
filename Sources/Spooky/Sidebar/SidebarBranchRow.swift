@@ -3,37 +3,31 @@ import SwiftUI
 
 // MARK: - SidebarBranchStatus
 
-/// 按视图设置筛过的分支状态：侧边栏实际显示的陈旧与跟踪错误。
+/// 按视图设置筛过的分支状态：侧边栏实际显示的陈旧。
 struct SidebarBranchStatus: Equatable {
     /// 陈旧时距上次更新的时长。
     var staleDuration: String? = nil
 
-    /// 已不存在的上游的完整引用名。
-    var missingUpstream: String? = nil
-
     /// 陈旧的分支名称变灰。
     var isDimmed: Bool { staleDuration != nil }
 
-    /// 由整理状态与视图设置得出；基准分支不显示陈旧，跟踪错误总是显示。
+    /// 由整理状态与视图设置得出；基准分支不显示陈旧。
     ///
     /// - Parameters:
     ///   - condition: 分支的整理状态；还没读到时为 nil。
     ///   - staleMonths: 陈旧阈值的月数；视图设置不显示陈旧信息时为 nil。
     ///   - now: 判断陈旧的时刻。
     init(condition: BranchCondition?, staleMonths: Int?, now: Date = Date()) {
-        guard let condition else {
-            return
-        }
-
-        missingUpstream = condition.missingUpstream
-
-        if
+        guard
+            let condition,
             let staleMonths,
             let lastUpdated = condition.lastUpdated,
             condition.isStale(months: staleMonths, now: now)
-        {
-            staleDuration = SidebarTooltip.duration(since: lastUpdated, now: now)
+        else {
+            return
         }
+
+        staleDuration = SidebarTooltip.duration(since: lastUpdated, now: now)
     }
 }
 
@@ -185,36 +179,26 @@ struct SidebarBranchRow: View {
         .help(help)
     }
 
-    /// 名称后的注记：陈旧的时长与跟踪错误标记，11 pt；陈旧时长放不下时依次只留时钟图标、整段不显示。
+    /// 名称后的注记：陈旧的时长，11 pt；放不下时依次只留时钟图标、整段不显示。
     @ViewBuilder
     private var annotations: some View {
-        if status.staleDuration != nil || status.missingUpstream != nil {
-            HStack(spacing: 4) {
-                if let staleDuration = status.staleDuration {
-                    // 取第一个放得下的样式，最后一档不占宽度，名称不必为注记让位
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "clock")
-                            Text(staleDuration)
-                        }
-
-                        Image(systemName: "clock")
-
-                        Color.clear.frame(width: 0, height: 0)
-                    }
-                    .foregroundStyle(.secondary)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(AppLocalization.text("branch.staleFor", staleDuration))
+        if let staleDuration = status.staleDuration {
+            // 取第一个放得下的样式，最后一档不占宽度，名称不必为注记让位
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 2) {
+                    Image(systemName: "clock")
+                    Text(staleDuration)
                 }
 
-                if status.missingUpstream != nil {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundStyle(Color(nsColor: .systemRed))
-                        .accessibilityLabel(AppLocalization.text("branch.trackingError"))
-                }
+                Image(systemName: "clock")
+
+                Color.clear.frame(width: 0, height: 0)
             }
+            .foregroundStyle(.secondary)
             .font(.system(size: 11))
             .lineLimit(1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(AppLocalization.text("branch.staleFor", staleDuration))
         }
     }
 }

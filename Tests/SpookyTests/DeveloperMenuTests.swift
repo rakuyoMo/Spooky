@@ -52,7 +52,7 @@ struct DeveloperMenuTests {
         #expect(items[index].isHidden)
     }
 
-    /// Reset 之后只剩书签、身份档案、托管账号、账号关联与服务器仓库的本机目录，设置都回到默认；Clear 之后整个域都空了。
+    /// Reset 之后只剩书签、身份档案、托管账号、账号关联与服务器仓库的本机位置，设置都回到默认；Clear 之后整个域都空了。
     @Test("Reset 保留数据，Clear 全部删掉")
     func resetAndClear() throws {
         let directory = FileManager.default.temporaryDirectory
