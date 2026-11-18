@@ -9,8 +9,9 @@ import TestSupport
 
 extension SidebarSessionTests {
     /// 双击 HEAD 分支什么都不做；仓库正在写入时双击其它分支与标签不响铃，检出排进队列；在别的工作树检出的本地分支打开那个工作树；
-    /// 远端分支有不跟踪它的同名本地分支时先询问，Continue 后只改上游并检出，本地提交不被重置，失败时按真实结果说明。
-    @Test("双击 HEAD、不能检出、别的工作树与同名的远端分支")
+    /// 远端分支有不跟踪它的同名本地分支时先询问，Continue 后只改上游并检出，本地提交不被重置，失败时按真实结果说明；
+    /// 仓库正被占用时排进队列的检出，轮到时的储藏询问与核对。
+    @Test("双击 HEAD、不能检出、别的工作树、同名的远端分支与排队的检出")
     func doubleClickRules() async throws {
         let parent = FileManager.default.temporaryDirectory
             .appending(path: "spooky-double-click-" + UUID().uuidString)
@@ -52,6 +53,7 @@ extension SidebarSessionTests {
         try checkQueued(in: session, location: location)
         try await checkWorktreeRouting(in: session, worktree: parked)
         try await checkTrackingCheckout(in: session, runner: runner, parent: parent)
+        try await checkQueuedCheckout(in: session, runner: runner, directory: directory)
     }
 }
 

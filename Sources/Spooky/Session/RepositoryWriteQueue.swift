@@ -33,14 +33,14 @@ final class RepositoryWrite {
     /// 提交时会话的代次；会话关闭或换了仓库后，这一项不再属于它。
     private let generation: Int
 
-    /// 轮到时的核对，与入口所用的 `can…` 规则相同；为 nil 时只核对仓库能否写入。
-    private let available: (@MainActor () -> Bool)?
+    /// 轮到时的核对，与入口所用的 `can…` 规则相同，参数是提交它的会话；为 nil 时只核对仓库能否写入。
+    private let available: (@MainActor (RepositorySession) -> Bool)?
 
     /// 在队列里取消或轮到时没有执行时，撤回先显示的目标状态。
     private let withdraw: (@MainActor () -> Void)?
 
-    /// 轮到时开始执行。
-    private let start: (@MainActor (RepositoryWrite) -> Void)?
+    /// 轮到时开始执行；返回是否已开始执行，为假时这一项正在询问用户，占着轮次等答复。
+    private let start: (@MainActor (RepositoryWrite) -> Bool)?
 
     /// 提交它的会话仍显示着这个仓库时为这个会话；会话已关闭或换了仓库时为 nil。
     var owner: RepositorySession? {
@@ -61,16 +61,16 @@ final class RepositoryWrite {
     ///   - touchesWorkingCopy: 是否改动工作区或索引。
     ///   - available: 轮到时的核对；nil 时只核对仓库能否写入。
     ///   - withdraw: 没有执行就结束时撤回先显示的目标状态。
-    ///   - start: 轮到时开始执行；只在仓库空闲时执行、从不排队的写入不传。
+    ///   - start: 轮到时开始执行，返回是否已开始执行；只在仓库空闲时执行、从不排队的写入不传。
     init(
         location: RepositoryLocation,
         session: RepositorySession?,
         title: String,
         isBackground: Bool = false,
         touchesWorkingCopy: Bool = true,
-        available: (@MainActor () -> Bool)? = nil,
+        available: (@MainActor (RepositorySession) -> Bool)? = nil,
         withdraw: (@MainActor () -> Void)? = nil,
-        start: (@MainActor (RepositoryWrite) -> Void)? = nil
+        start: (@MainActor (RepositoryWrite) -> Bool)? = nil
     ) {
         self.location = location
         self.session = session
@@ -115,7 +115,7 @@ final class RepositoryWriteQueue {
         return !lane.pending.isEmpty || lane.current.map { !$0.isBackground } ?? false
     }
 
-    /// 仓库里正在执行的写操作；轮到时还在核对的不算。
+    /// 仓库里正在执行的写操作；轮到时还在核对或在询问用户的不算。
     func executing(in location: RepositoryLocation) -> RepositoryWrite? {
         guard let lane = lanes[location], lane.isExecuting else {
             return nil
@@ -152,6 +152,16 @@ final class RepositoryWriteQueue {
 
         current.giveWay = nil
         giveWay(write.title)
+    }
+
+    /// 轮到时在询问用户的写操作得到答复后开始执行：它仍占着轮次时登记为执行中并返回真；已被取消时返回假。
+    func resume(_ write: RepositoryWrite) -> Bool {
+        guard let lane = lanes[write.location], lane.current === write, !lane.isExecuting else {
+            return false
+        }
+
+        lanes[write.location]?.isExecuting = true
+        return true
     }
 
     /// 执行中的写操作结束：轮到队列里的下一项。
@@ -208,10 +218,10 @@ final class RepositoryWriteQueue {
 extension RepositoryWriteQueue {
     /// 一个仓库的队列。
     private struct Lane {
-        /// 正在执行，或轮到时正在等刷新与核对的一项。
+        /// 正在执行，或轮到时正在等刷新、核对与询问用户的一项。
         var current: RepositoryWrite? = nil
 
-        /// `current` 已开始执行；还在等刷新与核对时为假。
+        /// `current` 已开始执行；还在等刷新、核对与询问用户时为假。
         var isExecuting = false
 
         /// 等待的项，按提交的先后。
@@ -263,16 +273,20 @@ extension RepositoryWriteQueue {
             return
         }
 
-        guard session.canWrite, write.isAvailable else {
+        guard session.canWrite, write.isAvailable(for: session) else {
             remove(in: write.location, reason: .changed) { $0 === write }
             return
         }
 
         lanes[write.location]?.isExecuting = true
-        write.begin()
+
+        // 先询问用户的项占着轮次，答复前不算执行中，取消、关窗与断线照等待中的项移出
+        if !write.begin() {
+            lanes[write.location]?.isExecuting = false
+        }
     }
 
-    /// 把还没开始执行的项移出队列：等待中的，以及轮到时还在核对的；记录按原因结束，再轮到下一项。
+    /// 把还没开始执行的项移出队列：等待中的，以及轮到时还在核对或询问用户的；记录按原因结束，再轮到下一项。
     ///
     /// - Parameters:
     ///   - location: 仓库。
@@ -365,13 +379,13 @@ extension RepositoryWriteQueue {
 
 extension RepositoryWrite {
     /// 轮到时的核对是否通过。
-    fileprivate var isAvailable: Bool {
-        available?() ?? true
+    fileprivate func isAvailable(for session: RepositorySession) -> Bool {
+        available?(session) ?? true
     }
 
-    /// 轮到时开始执行。
-    fileprivate func begin() {
-        start?(self)
+    /// 轮到时开始执行；返回是否已开始执行。
+    fileprivate func begin() -> Bool {
+        start?(self) ?? true
     }
 
     /// 没有执行就结束：等待中的记录写上状态与原因后结束，撤回先显示的目标状态。

@@ -161,7 +161,8 @@ extension RepositorySession {
             { runner, _ in try await WorkingCopyOperations(runner: runner).untrack(paths) },
             title: AppLocalization.text("files.untrack"),
             recordsActivity: false,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canUntrack(entries) }
         )
     }
 
@@ -180,7 +181,8 @@ extension RepositorySession {
                 { runner, _ in try await WorkingCopyOperations(runner: runner).delete(paths, removal: removal) },
                 title: title,
                 recordsActivity: false,
-                undo: .deletingFiles(paths, removal: removal)
+                undo: .deletingFiles(paths, removal: removal),
+                available: { $0.canDelete(entries) }
             )
         }
 
@@ -216,7 +218,8 @@ extension RepositorySession {
             },
             title: AppLocalization.text("files.move"),
             recordsActivity: false,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canMove([entry]) }
         )
     }
 
@@ -229,7 +232,8 @@ extension RepositorySession {
             { runner, _ in try await WorkingCopyOperations(runner: runner).restore(paths, to: revision) },
             title: AppLocalization.text("files.revert"),
             recordsActivity: false,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRevert(entries) }
         )
     }
 

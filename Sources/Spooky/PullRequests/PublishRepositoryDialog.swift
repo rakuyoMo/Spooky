@@ -273,7 +273,7 @@ extension PublishRepositoryDialog {
         return url + "\n" + AppLocalization.text("publish.push", remote)
     }
 
-    /// 错误区依次取第一条：仓库暂不可写、同名仓库已在托管服务上、与已有远端同名、读取所有者或检查同名的失败。
+    /// 错误区依次取第一条：服务器已断开、同名仓库已在托管服务上、与已有远端同名、读取所有者或检查同名的失败。
     private var error: String? {
         let failures = accounts.compactMap { ownerFailures[$0.id] } + [checkFailure]
         let remoteNames = session.history.snapshot?.remotes.map(\.name) ?? []

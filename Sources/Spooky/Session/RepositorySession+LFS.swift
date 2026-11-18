@@ -149,7 +149,8 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil)
+            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil),
+            touchesWorkingCopy: false
         )
     }
 }

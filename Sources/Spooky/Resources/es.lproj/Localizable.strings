@@ -586,7 +586,7 @@
 "recovery.unchanged" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD sigue en %@. Comprobar la copia de trabajo antes de volver a intentarlo.";
 "recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
 "recovery.unborn" = "ningún commit";
-"dialog.blocked" = "Hay otra operación en curso en este repositorio o el servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo cuando el repositorio esté disponible.";
+"dialog.blocked" = "El servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo después de reconectar.";
 "history.loadingChanges" = "Cargando cambios…";
 "repositories.unavailableShort" = "No disponible";
 

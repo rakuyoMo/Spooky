@@ -95,6 +95,7 @@ extension RepositorySession {
                 try await RepositoryRemotes(runner: runner).add(name: name, url: url, onOutput: output)
             },
             title: AppLocalization.text("remote.add.submit"),
+            touchesWorkingCopy: false,
             undo: .addingRemote(name),
             success: { [weak self] in
                 added?()
@@ -116,7 +117,7 @@ extension RepositorySession {
         }
 
         Task { [weak self] in
-            // 添加的写锁在它的任务结束时才释放
+            // 添加在它的任务结束时才离开写队列
             await adding.value
 
             guard let self, self.repository == repository else {
@@ -170,7 +171,8 @@ extension RepositorySession {
             target: .fetch(remote),
             background: background,
             touchesWorkingCopy: false,
-            undo: undo
+            undo: undo,
+            available: { $0.canFetch }
         )
     }
 }

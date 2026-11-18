@@ -45,6 +45,9 @@ struct AutoStashRequest {
 
     /// 选择储藏时由操作自己储藏并执行，代替先储藏、再执行 `action`；参数是储藏说明，返回是否已开始执行。撤销重置使用。
     var stashing: ((_ message: String) -> Bool)? = nil
+
+    /// 排进队列的检出轮到时才询问，询问期间占着的轮次；答复后在它上面执行，中止时连同它一起取消。点的时候询问的为 nil。
+    var turn: RepositoryWrite? = nil
 }
 
 // MARK: - Availability
@@ -126,7 +129,9 @@ extension RepositorySession {
             performGit(
                 { runner, _ in try await RepositoryStashes(runner: runner).drop(selected) },
                 title: title,
-                undo: .reversible
+                touchesWorkingCopy: false,
+                undo: .reversible,
+                available: { $0.canDelete(selected) }
             )
         })
     }
@@ -138,7 +143,8 @@ extension RepositorySession {
         performGit(
             { runner, _ in try await RepositoryStashes(runner: runner).apply(change, from: stash) },
             title: AppLocalization.text("stash.applyFile"),
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canApply(stash) }
         )
     }
 
@@ -162,7 +168,8 @@ extension RepositorySession {
                 }
             },
             title: title,
-            undo: .reversible
+            undo: .reversible,
+            available: { session in entries.isEmpty ? session.canSaveStash : session.canStash(entries) }
         )
     }
 
@@ -176,7 +183,8 @@ extension RepositorySession {
                 try await RepositoryStashes(runner: runner).apply(stash, restoreIndex: restoreIndex, drop: drop)
             },
             title: AppLocalization.text("stash.apply"),
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canApply(stash) }
         )
     }
 }
@@ -220,7 +228,8 @@ extension RepositorySession {
     /// 检出别的分支或版本：工作区有已跟踪文件的修改时按设置先询问是否储藏，修改不妨碍检出时也问；
     /// 询问的内容与选项和 Git 拒绝检出后的相同，不储藏时照常检出。其余情况直接检出，被本地改动挡住后再询问。
     ///
-    /// 询问在下一轮主线程呈现：从对话框发起时，对话框在这一轮关闭。
+    /// 询问在下一轮主线程呈现：从对话框发起时，对话框在这一轮关闭。仓库正有写操作时不在点的时候询问，
+    /// 检出排进队列，轮到时按那时的状态再判断。
     ///
     /// - Parameters:
     ///   - action: 检出的执行闭包。
@@ -230,7 +239,8 @@ extension RepositorySession {
     ///   - offersAutoStash: 没有先询问、执行时被本地改动挡住后是否再询问；先建分支再检出的写入重新执行会因分支已存在而失败，
     ///     不再询问。
     ///   - undo: 这次检出能否撤销。
-    /// - Returns: 是否已开始执行或已转为询问；仓库不可写时为 false。
+    ///   - available: 排队后轮到时的核对，以本会话调用入口所用的同一条 `can…` 规则。
+    /// - Returns: 是否已开始执行、已排进队列或已转为询问；仓库不可写时为 false。
     @discardableResult
     func performCheckout(
         _ action:
@@ -239,18 +249,22 @@ extension RepositorySession {
         progress: String,
         target: ActivityTarget? = nil,
         offersAutoStash: Bool = true,
-        undo: UndoRecording = .reversible
+        undo: UndoRecording = .reversible,
+        available: (@MainActor (RepositorySession) -> Bool)? = nil
     ) -> Bool {
         let modified = status?.entries.contains { $0.kind == .tracked } ?? false
+        let idle = repository.map(RepositoryWriteQueue.shared.isIdle) ?? true
 
-        guard canWrite, modified, Self.offersAutoStash, onStashRequest != nil else {
+        guard canWrite, idle, modified, Self.offersAutoStash, onStashRequest != nil else {
             return performGit(
                 action,
                 title: title,
                 progress: progress,
                 target: target,
                 offersAutoStash: offersAutoStash,
-                undo: undo
+                undo: undo,
+                available: available,
+                asksToStash: true
             )
         }
 
@@ -296,7 +310,8 @@ extension RepositorySession {
             progress: request.progress,
             target: request.target,
             undo: request.undo,
-            failureNote: request.failureNote
+            failureNote: request.failureNote,
+            turn: request.turn
         )
     }
 
@@ -309,12 +324,41 @@ extension RepositorySession {
                 progress: request.progress,
                 target: request.target,
                 undo: request.undo,
-                failureNote: request.failureNote
+                failureNote: request.failureNote,
+                turn: request.turn
             )
             return
         }
 
         onFailure?(AppFailure(error: error, opening: false, location: repository, writing: true))
+    }
+
+    /// 排进队列的检出轮到时，按刷新后的状态判断要不要先询问储藏：有已跟踪文件的修改且设置要求询问时，带着轮次呈现询问。
+    ///
+    /// - Parameters:
+    ///   - operation: 轮到的检出。
+    ///   - turn: 检出占着的轮次，答复后在它上面执行。
+    /// - Returns: 是否已呈现询问；为 false 时调用方直接执行。
+    func askToStash(before operation: GitWriteOperation, holding turn: RepositoryWrite) -> Bool {
+        let modified = status?.entries.contains { $0.kind == .tracked } ?? false
+
+        guard modified, Self.offersAutoStash, let onStashRequest else {
+            return false
+        }
+
+        let request = AutoStashRequest(
+            title: operation.title,
+            progress: operation.progress,
+            target: operation.target,
+            error: nil,
+            action: operation.action,
+            failureNote: operation.failureNote,
+            undo: operation.undo,
+            turn: turn
+        )
+
+        onStashRequest(.autoStash(request))
+        return true
     }
 }
 

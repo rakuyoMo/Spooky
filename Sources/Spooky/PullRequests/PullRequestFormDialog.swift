@@ -185,7 +185,7 @@ extension PullRequestFormDialog {
         )
     }
 
-    /// 错误区：没有可用的远端、两侧是同一个分支，以及仓库暂不可写；都没有时为 nil。
+    /// 错误区：没有可用的远端、两侧是同一个分支，以及服务器已断开；都没有时为 nil。
     private var error: String? {
         let messages = [
             candidates.isEmpty ? AppLocalization.text("pullRequests.noProjects") : nil,

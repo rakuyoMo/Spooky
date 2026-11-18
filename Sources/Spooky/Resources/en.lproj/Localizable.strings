@@ -586,7 +586,7 @@
 "recovery.unchanged" = "“%@” was interrupted by the disconnection and was not retried. HEAD is still %@. Check the working copy before trying again.";
 "recovery.notStarted" = "“%@” did not start because the server connection was unavailable. Nothing was changed on the server.";
 "recovery.unborn" = "no commits";
-"dialog.blocked" = "Another operation is running on this repository, or the server is disconnected. Your settings are kept; try again when the repository is available.";
+"dialog.blocked" = "The server is disconnected. Your settings are kept; try again after reconnecting.";
 "history.loadingChanges" = "Loading Changeset…";
 "repositories.unavailableShort" = "Unavailable";
 

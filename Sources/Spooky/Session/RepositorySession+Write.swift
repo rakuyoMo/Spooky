@@ -22,9 +22,12 @@ extension RepositorySession {
     ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
     ///   - success: 成功后调用；期间关闭或换了仓库时不调用。
     ///   - failureNote: 失败时补在错误说明前面的一段话，如同步停在了哪一步。
-    ///   - available: 排队后轮到时的核对，传入口所用的同一条 `can…` 规则；为 nil 时只核对仓库能否写入。
+    ///   - available: 排队后轮到时的核对，以本会话调用入口所用的同一条 `can…` 规则；为 nil 时只核对仓库能否写入。
     ///   - withdrawn: 在队列里取消或轮到时没有执行时调用，撤回先显示的目标状态。
-    /// - Returns: 是否已开始执行或已排进队列；仓库不能写入、后台写操作遇上仓库不空闲时为 false，调用方据此保留未发送的参数。
+    ///   - asksToStash: 排进队列的检出：轮到时按那时的状态，有已跟踪文件的修改就按设置先询问是否储藏，询问期间占着轮次。
+    ///   - turn: 轮到时询问后接着执行的那一项：在它占着的轮次上执行，不另排队。
+    /// - Returns: 是否已开始执行或已排进队列；仓库不能写入、后台写操作遇上仓库不空闲、询问期间那一项已被取消时为 false，
+    ///   调用方据此保留未发送的参数。
     @discardableResult
     func performGit(
         _ action:
@@ -39,8 +42,10 @@ extension RepositorySession {
         undo: UndoRecording = .irreversible,
         success: (() -> Void)? = nil,
         failureNote: (() -> String?)? = nil,
-        available: (@MainActor () -> Bool)? = nil,
-        withdrawn: (@MainActor () -> Void)? = nil
+        available: (@MainActor (RepositorySession) -> Bool)? = nil,
+        withdrawn: (@MainActor () -> Void)? = nil,
+        asksToStash: Bool = false,
+        turn: RepositoryWrite? = nil
     ) -> Bool {
         guard canWrite, let repository else {
             return false
@@ -59,6 +64,18 @@ extension RepositorySession {
             failureNote: failureNote
         )
 
+        let queue = RepositoryWriteQueue.shared
+
+        // 询问得到答复：仍占着轮次时在这个轮次上执行
+        if let turn {
+            guard queue.resume(turn) else {
+                return false
+            }
+
+            execute(operation, as: turn)
+            return true
+        }
+
         let write = RepositoryWrite(
             location: repository,
             session: self,
@@ -67,11 +84,15 @@ extension RepositorySession {
             touchesWorkingCopy: touchesWorkingCopy,
             available: available,
             withdraw: withdrawn
-        ) { [weak self] in
-            self?.execute(operation, as: $0)
-        }
+        ) { [weak self] write in
+            // 排进队列的检出轮到时先看要不要询问储藏，询问期间占着轮次
+            if asksToStash, self?.askToStash(before: operation, holding: write) ?? false {
+                return false
+            }
 
-        let queue = RepositoryWriteQueue.shared
+            self?.execute(operation, as: write)
+            return true
+        }
 
         // 仓库空闲时立即执行
         if queue.begin(write) {

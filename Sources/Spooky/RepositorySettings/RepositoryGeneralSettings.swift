@@ -271,7 +271,8 @@ extension RepositoryGeneralSettings {
     private func write(_ operation: @escaping @Sendable (GitRunner) async throws -> Void) {
         _ = session.performGit(
             { runner, _ in try await operation(runner) },
-            title: AppLocalization.text("repositorySettings.write")
+            title: AppLocalization.text("repositorySettings.write"),
+            touchesWorkingCopy: false
         )
     }
 }

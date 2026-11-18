@@ -586,7 +586,7 @@
 "recovery.unchanged" = "L’opération « %@ » a été interrompue par la déconnexion et n’a pas été relancée. HEAD pointe toujours sur %@. Vérifiez la copie de travail avant de réessayer.";
 "recovery.notStarted" = "L’opération « %@ » n’a pas démarré, car la connexion au serveur était indisponible. Rien n’a été modifié sur le serveur.";
 "recovery.unborn" = "aucun commit";
-"dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
+"dialog.blocked" = "Le serveur est déconnecté. Vos paramètres sont conservés ; réessayez après la reconnexion.";
 "history.loadingChanges" = "Chargement des modifications…";
 "repositories.unavailableShort" = "Indisponible";
 

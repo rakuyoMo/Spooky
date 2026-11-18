@@ -586,7 +586,7 @@
 "recovery.unchanged" = "“%@” 因断线中断，没有重试。HEAD 仍是 %@。请先检查工作区，再决定是否重试。";
 "recovery.notStarted" = "服务器连接不可用，“%@” 没有开始执行，服务器上没有任何改动。";
 "recovery.unborn" = "尚无提交";
-"dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
+"dialog.blocked" = "服务器已断开。已填写的设置会保留，请在重新连上后重试。";
 "history.loadingChanges" = "正在读取变更集…";
 "repositories.unavailableShort" = "不可用";
 

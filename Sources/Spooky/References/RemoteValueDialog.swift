@@ -170,7 +170,7 @@ extension RemoteValueDialog {
         }
     }
 
-    /// 捕获表单值后开始写入；仓库忙碌或已切换时表单保持打开。修改 refspec 开始后即关闭，修改地址见 ``submitURL(remote:push:)``。
+    /// 捕获表单值后开始写入；服务器已断开或仓库已切换时表单保持打开。修改 refspec 开始后即关闭，修改地址见 ``submitURL(remote:push:)``。
     private func submit() {
         let value = value
         let title = AppLocalization.text(keys.title)
@@ -195,6 +195,7 @@ extension RemoteValueDialog {
                     }
                 },
                 title: title,
+                touchesWorkingCopy: false,
                 undo: .changingRemote(remote)
             )
 
@@ -204,9 +205,11 @@ extension RemoteValueDialog {
         }
     }
 
-    /// 开始修改地址，表单留到写操作结束：成功时关闭，失败时错误框已叠在表单上，表单留着；仓库忙碌时什么都不做。
+    /// 开始修改地址，表单留到写操作结束：成功时关闭，失败时错误框已叠在表单上，表单留着；
+    /// 仓库正有写操作时排进队列，表单随即关闭；服务器已断开时什么都不做。
     private func submitURL(remote: String, push: Bool) {
         let value = value
+        let queued = session.repository.map { !RepositoryWriteQueue.shared.isIdle($0) } ?? false
         succeeded = false
 
         let started = session.performGit(
@@ -214,11 +217,18 @@ extension RemoteValueDialog {
                 try await RepositoryRemotes(runner: runner).setURL(value, of: remote, push: push, onOutput: output)
             },
             title: AppLocalization.text(keys.title),
+            touchesWorkingCopy: false,
             undo: .changingRemote(remote),
             success: { succeeded = true }
         )
 
         guard started else {
+            return
+        }
+
+        // 排进队列的修改由活动区与 Activity 窗口接着显示
+        guard !queued else {
+            close()
             return
         }
 

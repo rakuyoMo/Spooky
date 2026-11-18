@@ -81,7 +81,8 @@ extension RepositorySession {
                 },
                 title: activityTitle,
                 recordsActivity: false,
-                undo: .reversible
+                undo: .reversible,
+                available: { $0.canDiscard(entries) }
             )
         }
 
@@ -280,7 +281,8 @@ extension RepositorySession {
                 try await WorkingCopyOperations(runner: runner).resolve(entries, theirs: theirs)
             },
             title: AppLocalization.text("conflict.resolveUsingVersion", theirs ? theirsName : oursName),
-            recordsActivity: false
+            recordsActivity: false,
+            available: { $0.canResolve(entries) }
         )
     }
 
@@ -318,7 +320,8 @@ extension RepositorySession {
                             .continueSequence(operation, subject: subject, body: body, allowEmpty: allowEmpty)
                     },
                     title: AppLocalization.text("working.continue"),
-                    recordsActivity: false
+                    recordsActivity: false,
+                    available: { $0.context?.operation != nil }
                 )
             }
 

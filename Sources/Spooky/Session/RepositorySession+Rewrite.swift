@@ -166,7 +166,8 @@ extension RepositorySession {
             },
             title: AppLocalization.text("rewrite.revert.title"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRewrite }
         )
     }
 
@@ -181,7 +182,8 @@ extension RepositorySession {
             },
             title: AppLocalization.text("rewrite.cherryPick"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRewrite }
         )
     }
 
@@ -192,7 +194,8 @@ extension RepositorySession {
             { runner, _ in try await RepositoryRewrite(runner: runner).reset(to: revision, mode: mode) },
             title: AppLocalization.text("rewrite.reset"),
             progress: AppLocalization.text("workspaceProgress.reset"),
-            undo: .reversibleAskingToStash
+            undo: .reversibleAskingToStash,
+            available: { $0.canReset(to: revision) }
         )
     }
 
@@ -202,7 +205,8 @@ extension RepositorySession {
         performCheckout(
             { runner, _ in try await RepositoryRewrite(runner: runner).checkout(revision: revision) },
             title: AppLocalization.text("rewrite.checkout"),
-            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision)
+            progress: AppLocalization.text("workspaceProgress.checkoutRevision", revision),
+            available: { $0.canCheckoutRevision }
         )
     }
 
@@ -217,7 +221,8 @@ extension RepositorySession {
             title: AppLocalization.text("rewrite.rebaseOnto"),
             progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRewrite }
         )
     }
 
@@ -243,7 +248,8 @@ extension RepositorySession {
             title: AppLocalization.text(Self.titleKey(of: plan.action)),
             progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: !amends,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRewrite }
         )
     }
 

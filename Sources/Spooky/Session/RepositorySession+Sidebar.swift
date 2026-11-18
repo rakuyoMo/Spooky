@@ -27,7 +27,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setPinned(pinned, branches: ids)
             },
             title: AppLocalization.text(pinned ? "branch.pin" : "branch.unpin"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canSetPinned(branches) }
         )
     }
 
@@ -44,7 +46,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setArchived(archived, branches: ids)
             },
             title: AppLocalization.text(archived ? "branch.archive" : "branch.unarchive"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canSetArchived(branches) }
         )
     }
 
@@ -75,6 +79,7 @@ extension RepositorySession {
     }
 
     /// 侧边栏双击引用：HEAD 分支什么都不做；不能检出时响铃；标签检出成分离 HEAD，分支交给 ``checkoutBranch(_:in:)``。
+    /// 仓库正有写操作时检出排进队列，不响铃。
     ///
     /// - Parameters:
     ///   - reference: 被双击的本地分支、远端分支或标签。
@@ -130,7 +135,8 @@ extension RepositorySession {
                     try await RepositoryReferences(runner: runner).checkout(reference.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", reference.name),
-                progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name)
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
+                available: { $0.canCheckout(reference) }
             )
             return
         }
@@ -163,7 +169,8 @@ extension RepositorySession {
                     )
             },
             title: AppLocalization.text("branch.checkoutNamed", reference.name),
-            progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name)
+            progress: AppLocalization.text("workspaceProgress.checkoutBranch", reference.name),
+            available: { $0.canCheckout(reference) }
         )
     }
 }
@@ -203,7 +210,8 @@ extension RepositorySession {
                     try await RepositoryReferences(runner: runner).checkout(branch.id, tracking: upstream.id)
                 },
                 title: AppLocalization.text("branch.checkoutNamed", branch.name),
-                progress: AppLocalization.text("workspaceProgress.checkoutBranch", branch.name)
+                progress: AppLocalization.text("workspaceProgress.checkoutBranch", branch.name),
+                available: { $0.canCheckout(upstream) }
             )
         })
     }

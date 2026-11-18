@@ -586,7 +586,7 @@
 "recovery.unchanged" = "“%@”은(는) 연결이 끊겨 중단되었으며 재시도하지 않았습니다. HEAD는 여전히 %@입니다. 작업 사본을 확인한 후 다시 시도하세요.";
 "recovery.notStarted" = "서버 연결을 사용할 수 없어 “%@”이(가) 시작되지 않았습니다. 서버에서 변경된 내용은 없습니다.";
 "recovery.unborn" = "커밋 없음";
-"dialog.blocked" = "이 저장소에서 다른 작업이 진행 중이거나 서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 저장소를 사용할 수 있게 되면 다시 시도하세요.";
+"dialog.blocked" = "서버 연결이 끊겼습니다. 입력한 설정은 유지되며, 다시 연결된 후 다시 시도하세요.";
 "history.loadingChanges" = "변경 세트 불러오는 중…";
 "repositories.unavailableShort" = "사용 불가";
 

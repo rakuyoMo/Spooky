@@ -77,7 +77,8 @@ extension RepositorySession {
                 try await RepositoryWorktrees(runner: runner)
                     .add(at: path, revision: revision, detach: detach, force: force, onOutput: output)
             },
-            title: AppLocalization.text("worktree.add")
+            title: AppLocalization.text("worktree.add"),
+            touchesWorkingCopy: false
         )
     }
 
@@ -86,7 +87,9 @@ extension RepositorySession {
     func moveWorktree(_ worktree: Worktree, to destination: String) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).move(worktree, to: destination) },
-            title: AppLocalization.text("worktree.move")
+            title: AppLocalization.text("worktree.move"),
+            touchesWorkingCopy: false,
+            available: { $0.canMove(worktree) }
         )
     }
 
@@ -95,7 +98,9 @@ extension RepositorySession {
     func removeWorktree(_ worktree: Worktree, force: Bool) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).remove(worktree, force: force) },
-            title: AppLocalization.text("worktree.remove")
+            title: AppLocalization.text("worktree.remove"),
+            touchesWorkingCopy: false,
+            available: { $0.canRemove(worktree) }
         )
     }
 
@@ -130,7 +135,8 @@ extension RepositorySession {
     func repairWorktree(at location: String) -> Bool {
         performGit(
             { runner, _ in try await RepositoryWorktrees(runner: runner).repair(at: location) },
-            title: AppLocalization.text("worktree.repair")
+            title: AppLocalization.text("worktree.repair"),
+            touchesWorkingCopy: false
         )
     }
 }

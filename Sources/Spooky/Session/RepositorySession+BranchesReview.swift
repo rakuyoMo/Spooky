@@ -78,6 +78,7 @@ extension RepositorySession {
                     .setArchived(true, branches: ids, review: automatic)
             },
             title: AppLocalization.text(automatic ? "review.autoArchive" : "branch.archive"),
+            touchesWorkingCopy: false,
             undo: .reversible,
             success: {
                 review.archivedBranches = ids
@@ -85,7 +86,8 @@ extension RepositorySession {
                 if automatic {
                     SystemNotifications.shared.postBranchesArchived(count: ids.count)
                 }
-            }
+            },
+            available: { $0.canSetArchived(branches) }
         )
     }
 
@@ -126,6 +128,7 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setArchived(false, branches: ids)
             },
             title: AppLocalization.text("branch.unarchive"),
+            touchesWorkingCopy: false,
             undo: .reversible
         )
     }
@@ -143,7 +146,9 @@ extension RepositorySession {
                 try await RepositoryReferences(runner: runner).setSkipsAutoArchive(skips, branches: ids)
             },
             title: AppLocalization.text("review.skipAutoArchive"),
-            undo: .reversible
+            touchesWorkingCopy: false,
+            undo: .reversible,
+            available: { $0.canSetArchived(branches) }
         )
     }
 
@@ -161,6 +166,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text("review.markReviewed"),
             recordsActivity: false,
+            touchesWorkingCopy: false,
             undo: .reversible
         )
     }
@@ -194,7 +200,8 @@ extension RepositorySession {
             title: AppLocalization.text("review.updateBranch"),
             progress: AppLocalization.text(rebase ? "workspaceProgress.rebase" : "workspaceProgress.merge"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canUpdateBranch(reference) }
         )
     }
 
@@ -220,7 +227,8 @@ extension RepositorySession {
             title: AppLocalization.text("review.resolveConflicts"),
             progress: AppLocalization.text("workspaceProgress.merge"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.context?.operation == nil }
         )
     }
 }

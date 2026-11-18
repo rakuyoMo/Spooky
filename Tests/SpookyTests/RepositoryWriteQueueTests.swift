@@ -63,7 +63,7 @@ struct RepositoryWriteQueueTests {
             { _, _ in await order.append("again") },
             title: "Again",
             available: {
-                seen.append(first.status?.entries)
+                seen.append($0.status?.entries)
                 return true
             }
         )
@@ -72,7 +72,7 @@ struct RepositoryWriteQueueTests {
             { _, _ in await order.append("other") },
             title: "Other",
             available: {
-                seen.append(second.status?.entries)
+                seen.append($0.status?.entries)
                 return true
             }
         )
@@ -244,6 +244,7 @@ extension RepositoryWriteQueueTests {
             withdraw: { withdrawn = true }
         ) { _ in
             Issue.record("退出后不执行")
+            return true
         }
 
         let record = RepositoryActivity(repository: location, title: "Waiting", target: nil)
@@ -279,7 +280,7 @@ extension RepositoryWriteQueueTests {
         session.performGit(
             { _, _ in await order.append("skipped") },
             title: "Skipped",
-            available: { false },
+            available: { _ in false },
             withdrawn: { withdrawn.append("Skipped") }
         )
 

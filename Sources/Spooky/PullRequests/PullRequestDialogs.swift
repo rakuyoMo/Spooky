@@ -74,7 +74,7 @@ struct MergePullRequestDialog: View {
 // MARK: - Merge
 
 extension MergePullRequestDialog {
-    /// 错误区：读取失败或不能合并的原因，以及仓库暂不可写；都没有时为 nil。
+    /// 错误区：读取失败或不能合并的原因，以及服务器已断开；都没有时为 nil。
     private var error: String? {
         let messages = [
             failure.isEmpty ? nil : failure,
@@ -302,7 +302,7 @@ struct AssociateRemoteDialog: View {
         }
     }
 
-    /// 错误区：还没有账号，以及仓库暂不可写；都没有时为 nil。
+    /// 错误区：还没有账号，以及服务器已断开；都没有时为 nil。
     private var error: String? {
         let messages = [
             session.pullRequests.accounts.items.isEmpty

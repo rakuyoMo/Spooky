@@ -227,7 +227,8 @@ extension RepositorySession {
                         .applyIdentity(name: profile.name, email: profile.email, signingKey: profile.signingKey)
                 },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                touchesWorkingCopy: false
             )
         })
     }
@@ -255,7 +256,8 @@ extension RepositorySession {
                         .applyGlobalIdentity(name: profile.name, email: profile.email)
                 },
                 title: title,
-                recordsActivity: false
+                recordsActivity: false,
+                touchesWorkingCopy: false
             )
         })
     }

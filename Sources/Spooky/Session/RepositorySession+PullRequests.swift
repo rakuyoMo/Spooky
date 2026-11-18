@@ -204,6 +204,7 @@ extension RepositorySession {
             },
             title: pullRequestText("fetchHead.title", request.id.reference),
             target: .fetch(remote),
+            touchesWorkingCopy: false,
             success: { [weak self] in
                 guard let self, let runner else { return }
                 pullRequests.reloadDetail(runner: runner)
@@ -222,7 +223,8 @@ extension RepositorySession {
             },
             title: pullRequestText("checkout.title"),
             progress: AppLocalization.text("workspaceProgress.checkoutBranch", name),
-            target: .pull(remote)
+            target: .pull(remote),
+            available: { $0.canCheckOutPullRequest(request) }
         )
     }
 }
