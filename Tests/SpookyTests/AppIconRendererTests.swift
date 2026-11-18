@@ -112,8 +112,8 @@ struct AppIconRendererTests {
         }
     }
 
-    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：满怀的三组是眼睛，栖枝是枝头的果子，
-    /// 采撷是枝上的节点与眼睛，服务器幽灵是机架上的四盏灯，午夜是眼睛与光晕；
+    /// 各组的默认图标与深色图标，亮灯版与灭灯版都只在指示灯处不同：满怀的三组、栖枝、采撷与午夜是眼睛，
+    /// 服务器幽灵是机架上的四盏灯；
     /// 运行时图标叠上的是两者的差别，别处不同就会把别的改动也带上去。
     @Test("亮灯版与灭灯版只差指示灯", arguments: AppIconGroup.allCases, [false, true])
     func litIconDiffersOnlyAtLights(group: AppIconGroup, isDark: Bool) throws {
@@ -146,31 +146,13 @@ extension AppIconRendererTests {
     /// 高动态范围替身的亮度余量，与系统给出的 App 图标相同。
     private static let headroom: Float = 1.2
 
-    /// 午夜光晕的椭圆，在幽灵的直立坐标里：中心是眼睛的中心，与 `scripts/make-icon/midnight.js` 的 `MIDNIGHT_EYE`、`MIDNIGHT_GLOW` 一致。
-    private static let glow = (x: -125.0, y: -167.5, radiusX: 145.0, radiusY: 238.0)
-
-    /// 光晕椭圆向外放宽的距离，在直立坐标里约合 1024 px 图标的 2 px 抗锯齿边。
-    private static let glowReach = 3.0
-
-    /// 满怀的三组、栖枝与采撷亮起来的范围，1024 px 图标里的矩形（含两端），y 自上而下，四周各留 2 px 抗锯齿的边。
+    /// 满怀的三组、栖枝、采撷与午夜亮起来的范围，1024 px 图标里的矩形（含两端），y 自上而下。
     ///
-    /// 满怀的三组亮的是眼睛，范围却是整块底板（(100, 100) 起、边长 824）：画面先拼成 SVG 再画进 Canvas，
+    /// 亮的是眼睛，范围却是整块底板（(100, 100) 起、边长 824）：画面先拼成 SVG 再画进 Canvas，
     /// 滤镜的舍入不固定，两版在眼睛之外可能有几个像素差一个色阶；底板之外的投影不变。
-    /// 栖枝是枝头那颗果子的光晕；采撷是枝上四处节点的光晕，幽灵的眼睛落在第二处里。
-    private static let lightRects: [AppIconGroup: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]] = [
-        .armful: [(100 ... 923, 100 ... 923)],
-        .armfulPlain: [(100 ... 923, 100 ... 923)],
-        .armfulPurple: [(100 ... 923, 100 ... 923)],
-        .perch: [(740 ... 879, 418 ... 557)],
-        .cherryPick: [
-            (372 ... 447, 218 ... 293),
-            (479 ... 685, 206 ... 327),
-            (715 ... 814, 246 ... 345),
-            (826 ... 923, 216 ... 323),
-        ],
-    ]
+    private static let plateRect = (x: 100 ... 923, y: 100 ... 923)
 
-    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，午夜是光晕的椭圆，眼睛在它以内，其余几组见 `lightRects`。
+    /// 像素是否落在这一组的指示灯上：服务器幽灵是四盏灯，其余几组见 `plateRect`。
     /// - Parameters:
     ///   - x: 1024 px 图标的列
     ///   - y: 1024 px 图标的行，自上而下
@@ -180,25 +162,11 @@ extension AppIconRendererTests {
         y: Int,
         of group: AppIconGroup
     ) -> Bool {
-        if let rects = lightRects[group] {
-            return rects.contains { $0.x.contains(x) && $0.y.contains(y) }
+        guard group == .serverGhost else {
+            return plateRect.x.contains(x) && plateRect.y.contains(y)
         }
 
-        guard group == .midnight else {
-            return lightCenters.contains { abs($0.0 - x) <= lightReach && abs($0.1 - y) <= lightReach }
-        }
-
-        // 先退出底板：满幅画面以 (100, 100) 为原点缩进 824 边长；再退出幽灵的姿态：原点 (700, 560)、向左倾斜 18°、缩到 0.95 倍。
-        let frameX = (Double(x) + 0.5 - 100) * 1024 / 824 - 700
-        let frameY = (Double(y) + 0.5 - 100) * 1024 / 824 - 560
-        let angle = 18 * Double.pi / 180
-        let uprightX = (frameX * cos(angle) - frameY * sin(angle)) / 0.95
-        let uprightY = (frameX * sin(angle) + frameY * cos(angle)) / 0.95
-
-        let dx = (uprightX - glow.x) / (glow.radiusX + glowReach)
-        let dy = (uprightY - glow.y) / (glow.radiusY + glowReach)
-
-        return dx * dx + dy * dy <= 1
+        return lightCenters.contains { abs($0.0 - x) <= lightReach && abs($0.1 - y) <= lightReach }
     }
 
     /// 一张 `side` 边长的 8 位 sRGB 图：整张不透明的底色，可以在中间画一个不透明的方块。

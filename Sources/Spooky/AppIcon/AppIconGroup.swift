@@ -16,16 +16,16 @@ enum AppIconGroup: String, CaseIterable, Identifiable {
     /// 抱着一对樱桃的幽灵，身后是紫色的底板。
     case armfulPurple
 
-    /// 落在树枝上的幽灵。
+    /// 坐在树枝上的幽灵，眼前垂着一对樱桃。
     case perch
 
-    /// 伸手从枝上采撷的幽灵。
+    /// 伸手去摘枝上樱桃的幽灵。
     case cherryPick
 
     /// 幽灵与机架。
     case serverGhost
 
-    /// 紫色夜空里探身进来的幽灵。
+    /// 满月前探身进来的幽灵。
     case midnight
 
     /// 默认的一组：没选过时用它，它的默认图标就是包里的默认图标，不需要壳 App 与自定义图标。

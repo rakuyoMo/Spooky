@@ -5,7 +5,7 @@
  * 为每组的默认图标与深色图标各画指示灯灭着、亮着两版，逐个尺寸调用 renderIcon 取回 PNG。
  *
  * 每组一个文件：配色与几何常量、入口 paint…Icon、绘制函数，以及只有这一组用到的工具；两组以上用到的工具放在本文件。
- * 满怀的三组只差背景，共用 armful.js。
+ * 满怀的三组只差背景，共用 armful.js；满怀、午夜、栖枝与采撷同一种贴纸画法，共用的部分在 sticker.js。
  * 加一组图标时新建一个文件，在 renderIcon 与 make-icon.swift 的表里各加一行。
  */
 
@@ -175,39 +175,6 @@ function lensData(from, to, reach) {
 }
 
 /**
- * 平滑穿过各点的曲线上的采样点（Catmull-Rom）。
- *
- * @param {number[][]} points 曲线经过的点
- * @param {number} steps 相邻两点之间采样的段数
- * @returns {number[][]} 每相邻两点之间 steps 个点，最后加上终点
- */
-function catmullRom(points, steps) {
-    const last = points.length - 1;
-    const result = [];
-
-    for (let index = 0; index < last; index += 1) {
-        const before = points[Math.max(index - 1, 0)];
-        const from = points[index];
-        const to = points[index + 1];
-        const after = points[Math.min(index + 2, last)];
-
-        for (let step = 0; step < steps; step += 1) {
-            const t = step / steps;
-
-            result.push([0, 1].map((axis) => 0.5 * (
-                2 * from[axis]
-                + (to[axis] - before[axis]) * t
-                + (2 * before[axis] - 5 * from[axis] + 4 * to[axis] - after[axis]) * t ** 2
-                + (3 * from[axis] - before[axis] - 3 * to[axis] + after[axis]) * t ** 3
-            )));
-        }
-    }
-
-    result.push(points[last]);
-    return result;
-}
-
-/**
  * 三次贝塞尔曲线上按参数均分的采样点。
  *
  * @param {number[]} from 起点
@@ -353,16 +320,4 @@ function circle(x, y, radius) {
     const path = new Path2D();
     path.arc(x, y, radius, 0, Math.PI * 2);
     return path;
-}
-
-/**
- * 带不透明度的颜色。
- *
- * @param {string} hex 颜色，形如 #RRGGBB
- * @param {number} opacity 不透明度
- * @returns {string}
- */
-function translucent(hex, opacity) {
-    const [red, green, blue] = [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
-    return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
 }

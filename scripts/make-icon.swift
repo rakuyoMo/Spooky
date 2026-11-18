@@ -45,13 +45,13 @@ guard CommandLine.arguments.count == 2 else {
 
 let outputDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 
-/// 与本文件同目录的 make-icon/ 目录，放着各组的绘制脚本与它们共用的 kit.js。
+/// 与本文件同目录的 make-icon/ 目录，放着各组的绘制脚本与它们共用的 kit.js、sticker.js。
 let scriptDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .appending(path: "make-icon", directoryHint: .isDirectory)
 
-/// 绘制脚本的文件名：kit.js 在前，各组的脚本依次接在后面，几组共用的只接一次。
-let scripts = groups.reduce(into: ["kit.js"]) { scripts, group in
+/// 绘制脚本的文件名：kit.js 与 sticker.js 在前，各组的脚本依次接在后面，几组共用的只接一次。
+let scripts = groups.reduce(into: ["kit.js", "sticker.js"]) { scripts, group in
     if !scripts.contains(group.script) {
         scripts.append(group.script)
     }
