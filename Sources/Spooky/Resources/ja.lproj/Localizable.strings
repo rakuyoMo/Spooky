@@ -515,6 +515,7 @@
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
 "activity.waiting" = "待機中";
+"activity.waitingDetail" = "待機中…";
 "activity.skipped" = "スキップ済み";
 "activity.remote" = "リモート";
 "activity.remote.help" = "リモートのアクティビティを表示";

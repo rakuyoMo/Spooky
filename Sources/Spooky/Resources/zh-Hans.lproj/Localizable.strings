@@ -515,6 +515,7 @@
 "activity.cancelled" = "已取消";
 "activity.failed" = "失败";
 "activity.waiting" = "等待中";
+"activity.waitingDetail" = "等待中…";
 "activity.skipped" = "已跳过";
 "activity.remote" = "远端";
 "activity.remote.help" = "显示远端活动";

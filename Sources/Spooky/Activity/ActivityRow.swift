@@ -3,12 +3,12 @@ import SwiftUI
 
 // MARK: - ActivityRow
 
-/// 活动列表的一行：行首图标，仓库名与右上角的时间，标题，日志的最后一行；Remote 页进行中的行另有进度条、停止按钮与进度摘要。
+/// 活动列表的一行：行首图标，仓库名与右上角的时间，标题，日志的最后一行；Remote 页进行中的行与各页等待中的行另有进度条与停止按钮。
 struct ActivityRow: View {
     /// 三页共同的行高。
     static let height: CGFloat = 67
 
-    /// Remote 页进行中的行高，比共同的行高多出进度条一行。
+    /// 有进度条的行高，比共同的行高多出进度条一行。
     static let runningRemoteHeight: CGFloat = 89
 
     /// 这一行的记录。
@@ -22,13 +22,13 @@ struct ActivityRow: View {
         activity.lastLine ?? AppLocalization.text(activity.state)
     }
 
-    /// 行首的图标：Remote 页按传输方向，失败或取消的用警告图标；其余两页是文件夹与账号，失败的用警告图标。
+    /// 行首的图标：Remote 页按传输方向，失败、取消或已跳过的用警告图标；其余两页是文件夹与账号，失败的用警告图标。
     var leadingIcon: ActivityIcon {
         let warning = ActivityIcon.symbol("exclamationmark.triangle.fill")
 
         switch activity.kind {
         case .remote:
-            return isFailedOrCancelled ? warning : activity.transferIcon
+            return isUnsuccessful ? warning : activity.transferIcon
 
         case .repository:
             return activity.state == "activity.failed" ? warning : .symbol("folder")
@@ -38,9 +38,9 @@ struct ActivityRow: View {
         }
     }
 
-    /// 行高固定，行内边距四周 8 pt，内容靠上；Remote 页失败或取消的行换用灰底。
+    /// 行高固定，行内边距四周 8 pt，内容靠上；Remote 页失败、取消或已跳过的行换用灰底。
     var body: some View {
-        let height = isRunningRemote ? Self.runningRemoteHeight : Self.height
+        let height = showsProgress ? Self.runningRemoteHeight : Self.height
 
         Group {
             if activity.kind == .remote {
@@ -60,10 +60,14 @@ struct ActivityRow: View {
     }
 
     /// 右上角的文字：Remote 页进行中写 In Progress…，已结束写开始的日期，今天与昨天写作 Today、Yesterday；
-    /// 其余两页写耗时，两位小数、按系统地区的数字格式，进行中的算到 `now`。
+    /// 其余两页写耗时，两位小数、按系统地区的数字格式，进行中的算到 `now`。等待中的不计时，空着。
     ///
     /// - Parameter now: 当前时间。
     func corner(now: Date) -> String {
+        guard !isWaiting else {
+            return ""
+        }
+
         if activity.kind == .remote {
             guard activity.isEnded else {
                 return AppLocalization.text("activity.inProgress")
@@ -92,14 +96,24 @@ extension ActivityRow {
         activity.kind == .remote && !activity.isEnded
     }
 
-    /// 失败或取消的记录。
-    private var isFailedOrCancelled: Bool {
-        ["activity.failed", "activity.cancelled"].contains(activity.state)
+    /// 排在写队列里等待的记录。
+    private var isWaiting: Bool {
+        activity.state == "activity.waiting"
     }
 
-    /// Remote 页失败或取消、没有选中的行换用灰底；其余的行用列表的背景。
+    /// 行里有进度条与停止按钮：Remote 页进行中的，以及各页等待中的。
+    private var showsProgress: Bool {
+        isRunningRemote || isWaiting
+    }
+
+    /// 失败、取消或已跳过的记录。
+    private var isUnsuccessful: Bool {
+        ["activity.failed", "activity.cancelled", "activity.skipped"].contains(activity.state)
+    }
+
+    /// Remote 页失败、取消或已跳过、没有选中的行换用灰底；其余的行用列表的背景。
     private var errorBackground: Color? {
-        guard activity.kind == .remote, isFailedOrCancelled, !isSelected else {
+        guard activity.kind == .remote, isUnsuccessful, !isSelected else {
             return nil
         }
 
@@ -129,22 +143,26 @@ extension ActivityRow {
 
     /// Repository 与 Service 页的行：图标 17 × 17，标题的中心比图标中心低 1.5，文字从图标右边 5 pt 起。
     ///
-    /// 进行中的行把图标换成在行内垂直居中的转圈，距左 9。
+    /// 进行中的行把图标换成在行内垂直居中的转圈，距左 9；等待中的行照常显示图标，标题下面多一行空的进度条与停止按钮。
     private var localRow: some View {
         HStack(alignment: .titleCenter, spacing: 5) {
             icon(size: 17)
-                .opacity(activity.isEnded ? 1 : 0)
+                .opacity(activity.isEnded || isWaiting ? 1 : 0)
 
             VStack(alignment: .leading, spacing: 4) {
                 header(size: 11)
 
                 titleLine(offset: 1.5)
 
+                if isWaiting {
+                    progressLine
+                }
+
                 statusLine
             }
         }
         .overlay(alignment: .leading) {
-            if !activity.isEnded {
+            if !activity.isEnded, !isWaiting {
                 ProgressView()
                     .controlSize(.small)
                     .frame(width: 16, height: 16)
@@ -153,7 +171,7 @@ extension ActivityRow {
         }
     }
 
-    /// Remote 页进行中的进度条与右边的停止按钮，两者垂直居中。
+    /// 进度条与右边的停止按钮，两者垂直居中；等待中的进度条是空的。
     private var progressLine: some View {
         HStack(spacing: 8) {
             ProgressView(value: activity.progress ?? 0)
@@ -170,7 +188,7 @@ extension ActivityRow {
         }
     }
 
-    /// 最后一行：11 pt 的日志末行或状态，超长时截断尾部；Remote 页进行中的进度摘要超长时直接截掉。
+    /// 最后一行：11 pt 的日志末行或状态，等待中写 Waiting，超长时截断尾部；Remote 页进行中的进度摘要超长时直接截掉。
     @ViewBuilder
     private var statusLine: some View {
         let text = Text(status)

@@ -515,6 +515,7 @@
 "activity.cancelled" = "취소됨";
 "activity.failed" = "실패";
 "activity.waiting" = "대기 중";
+"activity.waitingDetail" = "대기 중…";
 "activity.skipped" = "건너뜀";
 "activity.remote" = "원격";
 "activity.remote.help" = "원격 활동 보기";

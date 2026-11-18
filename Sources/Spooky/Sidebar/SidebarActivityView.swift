@@ -3,7 +3,8 @@ import SwiftUI
 
 // MARK: - SidebarActivityView
 
-/// 侧边栏底部的活动区：本仓库本次运行里进行中与刚结束的远程操作，最新的在上；从本机读回的记录不列。
+/// 侧边栏底部的活动区：本仓库本次运行里进行中与刚结束的远程操作，最新的在上；下面接着排队等待的写操作，先轮到的在上。
+/// 从本机读回的记录不列。
 ///
 /// 有行时上方一条分隔线，区高随行数变化，超过三行时在区内滚动；没有底色，与侧边栏同色。
 struct SidebarActivityView: View {
@@ -74,7 +75,9 @@ struct SidebarActivityView: View {
             }
     }
 
-    /// 区里列出的记录：本仓库、本次运行里的 Remote 页记录，进行中的与结束不到 `lingering` 秒的；顺序同 `activities`。
+    /// 区里列出的记录：本仓库、本次运行里的 Remote 页记录，进行中的与结束不到 `lingering` 秒的，顺序同 `activities`；
+    /// 下面接着任何一页里等待中的记录，按排队的先后，先轮到的在上。在队列里取消或已跳过的记录同样再列 `lingering` 秒，
+    /// 其余页的记录开始执行后离开活动区。
     ///
     /// 没有结束时间的都算进行中，状态已换成结束、输出还没收完的也留着。
     ///
@@ -87,12 +90,17 @@ struct SidebarActivityView: View {
         in repository: RepositoryLocation?,
         now: Date
     ) -> [RepositoryActivity] {
-        activities.filter { activity in
-            guard
-                activity.kind == .remote,
-                !activity.isRestored,
-                activity.repository == repository
-            else {
+        let listed = activities.filter { activity in
+            guard !activity.isRestored, activity.repository == repository else {
+                return false
+            }
+
+            // 等待中的不论哪一页都列；其余页只列在队列里就结束的
+            guard activity.state != "activity.waiting" else {
+                return true
+            }
+
+            guard activity.kind == .remote || activity.endedWhileWaiting else {
                 return false
             }
 
@@ -102,6 +110,11 @@ struct SidebarActivityView: View {
 
             return now < ended.addingTimeInterval(lingering)
         }
+
+        // 记录按插入的先后最新的在前，等待中的倒过来就是排队的先后
+        let waiting = listed.filter { $0.state == "activity.waiting" }
+
+        return listed.filter { $0.state != "activity.waiting" } + waiting.reversed()
     }
 
     /// 区高：每行 `rowHeight`，最多露出 `visibleRows` 行；没有行时为 0。
@@ -142,6 +155,8 @@ struct SidebarActivityView: View {
 // MARK: - SidebarActivityRow
 
 /// 活动区的一行：图标与标题，进度条与停止按钮，进度摘要；进度条与摘要随记录实时更新，点停止按钮以外的地方打开 Activity 窗口。
+///
+/// 等待中的行进度条是空的，第三行写 Waiting…。
 struct SidebarActivityRow: View {
     /// 这一行的记录。
     let activity: RepositoryActivity
@@ -160,9 +175,31 @@ struct SidebarActivityRow: View {
         }
     }
 
-    /// 停止按钮可用：记录还在进行且有取消入口；结束后按钮仍在、不可用。
+    /// 停止按钮可用：记录还在进行或等待且有取消入口；结束后按钮仍在、不可用。
     var canCancel: Bool {
         !activity.isEnded && activity.cancel != nil
+    }
+
+    /// 第一行的标题：等待中与在队列里就结束的行写这次写操作的标题，取消与跳过的后接 cancelled、skipped；其余照 Activity 窗口。
+    var title: String {
+        guard activity.state == "activity.waiting" || activity.endedWhileWaiting else {
+            return activity.displayTitle
+        }
+
+        switch activity.state {
+        case "activity.cancelled": return AppLocalization.text("activity.titleCancelled", activity.title)
+        case "activity.skipped": return AppLocalization.text("activity.titleSkipped", activity.title)
+        default: return activity.title
+        }
+    }
+
+    /// 第三行：等待中写 Waiting…；其余是 git 输出的最后一行，还没有输出时空着。
+    var summary: String {
+        guard activity.state != "activity.waiting" else {
+            return AppLocalization.text("activity.waitingDetail")
+        }
+
+        return activity.lastLine ?? ""
     }
 
     /// 行高固定，内容距上 8、左右 14；分隔线左右各缩进 14，不另占高度。
@@ -192,25 +229,27 @@ struct SidebarActivityRow: View {
         .onTapGesture(perform: showActivity)
     }
 
-    /// 第一行：18 pt 宽的格子里按传输方向的图标，右边 6 pt 起是 11 pt 的标题，两者垂直居中。
+    /// 第一行：18 pt 宽的格子里的图标，右边 6 pt 起是 11 pt 的标题，两者垂直居中。
     private var titleLine: some View {
         HStack(spacing: 6) {
-            transferIcon
+            icon
                 .frame(width: 18)
                 .accessibilityHidden(true)
 
-            Text(activity.displayTitle)
+            Text(title)
                 .font(.system(size: 11))
                 .lineLimit(1)
-                .help(activity.displayTitle)
+                .help(title)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { showActivity() }
         }
     }
 
-    /// 传输方向的自绘图标，缩放到 14 × 14，与 Activity 窗口里已结束的行一样大。
-    private var transferIcon: some View {
-        activity.transferIcon.image
+    /// 远程操作用传输方向的自绘图标，其余用文件夹，缩放到 14 × 14，与 Activity 窗口里已结束的行一样大。
+    private var icon: some View {
+        let icon = activity.kind == .remote ? activity.transferIcon : .symbol("folder")
+
+        return icon.image
             .resizable()
             .scaledToFit()
             .frame(width: 14, height: 14)
@@ -233,11 +272,9 @@ struct SidebarActivityRow: View {
         .frame(height: 20)
     }
 
-    /// 第三行：11 pt 次级色的进度摘要，是 git 输出的最后一行；还没有输出时空着。
+    /// 第三行：11 pt 次级色的 `summary`。
     private var summaryLine: some View {
-        let summary = activity.lastLine ?? ""
-
-        return Text(summary)
+        Text(summary)
             .font(.system(size: 11))
             .foregroundStyle(.secondary)
             .lineLimit(1)

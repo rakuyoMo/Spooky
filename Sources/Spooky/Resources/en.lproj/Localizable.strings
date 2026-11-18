@@ -515,6 +515,7 @@
 "activity.cancelled" = "Cancelled";
 "activity.failed" = "Failed";
 "activity.waiting" = "Waiting";
+"activity.waitingDetail" = "Waiting…";
 "activity.skipped" = "Skipped";
 "activity.remote" = "Remote";
 "activity.remote.help" = "Shows Remote Activities";

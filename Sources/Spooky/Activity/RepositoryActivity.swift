@@ -95,6 +95,9 @@ final class RepositoryActivity: Identifiable {
     /// 进行中、等待中、完成、失败、取消或已跳过的本地化状态键。
     var state = "activity.running"
 
+    /// 在写队列里等待时就结束了（取消或已跳过），没有执行；侧边栏的活动区据此再列它 4 s。
+    var endedWhileWaiting = false
+
     /// 整体的完成比例，0–1：按传输方向取几个阶段，各阶段最新的百分比求平均，没出现过的阶段算 0；还没出现任何阶段时为 nil。
     private(set) var progress: Double? = nil
 

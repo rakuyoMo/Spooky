@@ -396,6 +396,7 @@ extension RepositoryWrite {
             }
 
             waiting.record.state = reason.state
+            waiting.record.endedWhileWaiting = true
             waiting.activities.finish(waiting.record)
         }
 
