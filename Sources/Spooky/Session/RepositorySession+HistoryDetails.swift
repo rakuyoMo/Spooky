@@ -260,7 +260,7 @@ extension RepositorySession {
         }
     }
 
-    /// 导出不改动 Git 的引用与暂存区，不占用应用内的写锁；整次导出记一条进 Activity 的 Repository 页并提供取消，失败显示错误详情。
+    /// 导出不改动 Git 的引用与暂存区，不进仓库的写队列；整次导出记一条进 Activity 的 Repository 页并提供取消，失败显示错误详情。
     private func runExport(_ title: String, operation: @escaping @Sendable (GitRunner) async throws -> Void) {
         guard let runner, let repository else {
             return
@@ -289,7 +289,7 @@ extension RepositorySession {
         activity.cancel = { task.cancel() }
     }
 
-    /// 保存补丁不改动 Git 的引用与暂存区，不占用应用内的写锁；每个提交那一次 `format-patch` 在 Activity 的 Repository 页记一条，
+    /// 保存补丁不改动 Git 的引用与暂存区，不进仓库的写队列；每个提交那一次 `format-patch` 在 Activity 的 Repository 页记一条，
     /// 记录的取消按钮取消整次保存，后面的提交不再执行。失败显示错误详情，取消不提示。
     ///
     /// - Parameter operation: 保存本身；收到的闭包原样交给 `RevisionExport`，由它包住每个提交那一次执行。

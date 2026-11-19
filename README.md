@@ -6,129 +6,76 @@ English | [简体中文](README-ZH.md)
 
 A native Git client for macOS that works with repositories on your Mac and on your servers.
 
+[![CI](https://github.com/rakuyoMo/Spooky/actions/workflows/ci.yml/badge.svg)](https://github.com/rakuyoMo/Spooky/actions/workflows/ci.yml)
+![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white)
+![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+
 </div>
 
 > [!NOTE]
-> Spooky is still in development and hasn't been released yet. For now, you can only build it from source, and features and interface may still change.
+> Spooky is still in development and hasn't been released yet. Its features and interface may still change.
 
 ## About
 
 Spooky opens Git repositories on your Mac, and works directly with repositories on another machine over SSH.
 
-A server repository's working tree stays on the server: Git runs there and files are read and written over SFTP, so you don't need to clone the repository to your Mac.
+A server repository's working tree stays on the server: Git runs there and files are read and written over SFTP, so the repository never has to be cloned to your Mac.
 
 Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSSH handles authentication, host keys, and connection sharing.
 
-## Features
-
-- **Local and server repositories**: both kinds share the same interface. Server repositories show the host in their title, bookmark, and copied path
-
-- **Repository bookmarks**: organize local and server repositories in folders, sort them by hand or by name, and rename them. See each repository's location, current branch, last commit, committer identity, description, and remotes, and edit the description and identity. Repositories that can't be found are marked instead of removed
-
-- **Create, clone, and find repositories**: create repositories on your Mac or on a server, and clone in the background with LFS and submodule options while the bookmark shows the progress. Search a folder on your Mac or on a server for existing repositories; server searches run on the server, and server folders can be typed in or browsed
-
-- **Windows and navigation**: tabs, window restoration, a quick start window, New Window in the Dock menu, folders dropped on the Dock icon opened as repositories, back and forward between views, Quick Actions to find views, branches, tags, commits, files, stashes, and more and act on them, and a customizable toolbar
-
-- **Connection checks and recovery**: before adding a server repository, Spooky checks the connection, the Git version, and the server environment. If the connection drops, the last snapshot stays on screen while Spooky reconnects in the background. Writes are disabled until the connection recovers
-
-- **Automatic refresh**: local repositories refresh when files change. Server repositories refresh every 2 seconds in the foreground and every 10 seconds in the background. You can also refresh at any time
-
-- **Per-repository view state**: each window remembers the view, selection, and commit message draft of up to 15 repositories, and restores them when you switch back
-
-- **Clear errors**: errors show their category, the repository, and the original Git or SSH output, which you can select and copy
-
-- **Working copy**: view changes as a list or a tree, or browse every file in the repository. Show ignored and assume-unchanged files, and filter by path. Untrack, delete, move, ignore, or exclude files, restore them to a revision, and apply patch files. Deleted files and discarded untracked files go to the Trash, also on a server that has one. Preview files with Quick Look, drag them out, or open them in their default app
-
-- **Stage files, hunks, or lines**: multiple selection and three-state checkboxes. Select lines in a diff to stage or discard just those lines. Unchanged hunks keep their line selections when the diff reloads
-
-- **Diff text**: select and copy text across lines within a hunk, without line numbers or diff prefixes. Copying preserves the original whitespace even when invisible characters are shown. File summaries describe renames, mode changes, and binary changes
-
-- **Diff options**: change the number of context lines, show the entire file, ignore whitespace, show invisible characters, and set the tab width. Changed words within modified lines are highlighted. Syntax coloring uses highlight.js and covers its 192 languages; files whose language can't be identified are shown as plain text. Images are compared side by side or one at a time
-
-- **Commit messages**: a subject length counter, soft or hard wrapping for the body, handling of comment lines, and completion for recent commits, changed files, `fixup!` or `squash!` subjects, and issue numbers from GitHub or GitLab after “#”. Amend the most recent commit, sign off, or skip hooks
-
-- **Identities and signing**: switch the committer identity of a repository with user profiles, and pick a profile's signing key from the GPG and SSH keys on your Mac. Sign commits with GPG or SSH; for a server repository, signing happens on the server and passphrase prompts come back to your Mac
-
-- **Conflict wizard**: during a merge, rebase, cherry-pick, or revert, see how many conflicts are left, and the current step of a rebase. Compare both versions of each file and use one of them, combine both in your merge tool, or fix the file in another editor and use that version, then continue, skip, or abort
-
-- **Stashes**: save all or only selected changes, take snapshots that leave the working copy as it is, and apply a stash with its staged state or apply a single file from it. When local changes block a checkout, pull, or merge, Spooky offers to stash them first and reapply them afterward
-
-- **File history and blame**: follow a file through history, filtered by author, committer, or revision, with author names suggested as you type. See who last changed each line, view any committed version of a file, and export versions from its history. Directory history shows all changed files within the directory
-
-- **History**: commits load page by page, with a commit graph, ref badges, and markers for unpushed and unpulled commits. Search by message, author, committer, file, commit hash, and date, and combine several conditions. Sort by date or topology, group commits by day, week, or month, or follow only first parents. Dates can be shown in full or relative to now, and authors appear with their Gravatar picture or their initials
-
-- **Commit details**: browse the full file tree of a commit and check GPG and SSH signatures. Merge commits can be shown against their first parent, as only the files that were actually merged, or without a diff. Compare any two revisions, export the files of a revision as a folder or a zip archive, and save commits as patch files
-
-- **Branches, tags, and remotes**: the sidebar groups refs into folders by “/” and can be filtered. Pin and archive branches, and see which ones are stale. Fast-forward, rename, and delete local and remote branches, set upstream and parent branches, create lightweight, annotated, or signed tags, and manage remotes with their URLs and refspecs. Branch names are converted into valid ref names as you type
-
-- **Sync and merge**: fetch, pull, push, and sync, with options for pruning, all tags, submodules, and hooks. Force pushes only overwrite the version you last saw, and any revision can be pushed to any ref. Remotes can be fetched automatically whenever a window shows the repository, even while Spooky is in the background, without asking for credentials. Merges are previewed for conflicts first. Every operation is logged in the **Activity** window, on separate pages for remote operations, repository operations, and hosting service requests, and running operations can be cancelled
-
-- **Rewriting history**: revert, cherry-pick, reset with a soft, mixed, or hard mode, check out any revision, and rebase onto a new base. Rebase interactively to squash, fixup, edit, reword, delete, or reorder commits, stop at an older commit to amend it, or autosquash. Before rewriting, Spooky lists the affected commits and warns about those that were already pushed or merged
-
-- **Branches review**: compare local branches with a base branch to see whether they can be merged cleanly or would conflict. See each branch's pull request or merge request, including branches merged with squash or rebase, and filter by it. Update a branch from its parent branch by merging or rebasing, and archive obsolete branches in bulk or automatically, after you confirm the list; the Activity window records why each branch was archived
-
-- **Hosting accounts**: sign in to github.com in the browser or with a personal access token, to GitLab.com with a personal access token, and to self-managed GitLab instances with a personal access token or a username and password. Several accounts can be used per service, and tokens are stored only in your Keychain
-
-- **Pull requests and merge requests**: list the pull requests of a GitHub repository or the merge requests of a GitLab project for each remote, and read the conversation, commits, and changes. Create them from branches of the same project or a fork, edit them, comment on them, close them, merge them with the methods the project allows, and check them out. Edit and delete your own comments, and reply to comments on GitLab. Remotes behind SSH aliases can be associated with an account and project by hand, and a repository can be published to GitHub or GitLab
-
-- **Submodules**: add, initialize, update, synchronize, fetch, move, rename, and delete submodules, keeping their files if you want, change their URLs and options, and check out other revisions. Incomplete submodules can be repaired, and a submodule opens in Spooky with a button to go back to its parent repository
-
-- **Worktrees**: create, open, move, repair, and delete worktrees. Branches checked out in another worktree are marked, and worktrees on a server are created by browsing the server's folders
-
-- **Git LFS**: enable Git LFS, track files and patterns, and fetch, pull, and push LFS objects with their progress. Spooky checks that Git LFS is installed on the machine of the repository and explains how to make it available
-
-- **Reflog and undo**: browse and search the reflog of HEAD or any branch, and restore a branch or create a new one from any entry. Undo and redo Git operations in each repository; Spooky checks the repository before restoring it, and tells you when an operation can't be undone
-
-- **Drag and drop**: drag branches, commits, and tags in the sidebar to create branches and tags, merge, rebase, cherry-pick, revert, pull, publish, push, pin, archive, or rename. Drag commits within the history to squash, fixup, or move them
-
-- **Open in Terminal**: supports Terminal, iTerm, Warp, Ghostty, WezTerm, and Otty. For a server repository, the terminal connects over SSH and opens the remote path
-
-- **Server repositories in the Finder**: Show in Finder finds a server repository among the network volumes mounted on your Mac, or Spooky mounts it over SMB or with sshfs, or uses a folder you choose. Pick the method when adding the repository or later in the repository settings. If the server isn't connected, Spooky connects first, and asks where the repository is on your Mac when it can't find it
-
-- **External tools**: compare and merge with external diff and merge tools, and open files with other apps. Server files are copied to your Mac for these tools, and merge results and edited files are written back only after Spooky checks that the server's version hasn't changed. VS Code, VS Code Insiders, and Cursor open server files directly when their Remote SSH extension is installed
-
-- **Links**: `spooky://` links open a repository, a view, a branch, or a commit, or start a clone, for local and server repositories alike. The “Open with Desktop” links on github.com can open in Spooky
-
-- **Settings**: appearance, global Git identity and signing, the Git program, external tools, hosting accounts, the SSH agent, and environment variables. Repository settings cover the description, committer identity, line wrapping, signing, Git LFS, ignores, and excludes
-
-- **Updates and diagnostics**: Spooky checks for signed updates on the stable, beta, or development channel. Help can export a diagnostic report with personal details removed, and after a crash Spooky can open a pre-filled GitHub issue that you submit yourself
-
-- **Themes**: Default and Default (Dark) are saved as regular themes that you can edit but not rename or delete, and are restored the next time Spooky starts if they're missing or damaged. Create your own themes for diffs and file contents, change the color of each syntax category, import and export them by drag and drop, import theme files opened in the Finder or dropped on the Dock icon, and choose one for the light appearance and one for the dark appearance
-
-- **App icon**: choose among the eight icons of the Hide and Seek and cherry-pick series in the Appearance settings. The chosen icon is used in the Dock, the app switcher, and the Finder
-
-- **Eight languages**: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. The app uses your system language, or English if that language isn't supported
+This README is for developers. It covers the tools you need, how to build, run, test, and debug Spooky, and how to contribute.
 
 ## Requirements
 
+### Development
+
 - macOS 26 or later
-- Git `2.41.0` or later on both your Mac and your servers, as Spooky uses `git fetch --porcelain`
-  - Local repositories use `/usr/bin/git` unless you choose another Git program in Settings. If it's too old, Spooky asks you to update Xcode or the Command Line Tools
+
+- Xcode with Swift 6.2 or later. CI and releases build with the Xcode set by `DEVELOPER_DIR` in [`ci.yml`](.github/workflows/ci.yml); use the same version to get the same results
+
+- [mise](https://mise.jdx.dev), which runs the build, test, code style, and release tasks defined in `mise.toml`
+
+### Git and servers
+
+Spooky runs Git on the machine where each repository is, so the machines you test with need:
+
+- Git `2.41.0` or later on your Mac and on servers, as Spooky uses `git fetch --porcelain`
+  - Local repositories use `/usr/bin/git` unless another Git program is chosen in Settings
   - Server repositories use the Git on that host
-- Servers also need:
+
+- On servers:
   - OpenSSH with reverse Unix socket forwarding
-  - `/usr/bin/perl` with the core modules `IO::Socket::UNIX`, `JSON::PP`, and `POSIX`
   - OpenSSH `8.4` or later, to enter SSH private key passphrases for Git on the server
   - `MaxSessions` of 10 or more in the sshd configuration (the OpenSSH default)
-  - No root access or background services are needed
-- Pull requests and merge requests need an account on github.com, GitLab.com, or a self-managed GitLab `9.0` or later that your Mac can reach
-- Repositories that use Git LFS need Git LFS `2.9.0` or later on the machine where the repository is, in the `PATH` that Git uses there
+  - `/usr/bin/perl` with the core modules `IO::Socket::UNIX`, `JSON::PP`, and `POSIX`
+  - No root access or background services
 
-## Building from source
+- Git LFS `2.9.0` or later for repositories that use it, on the machine where the repository is and in the `PATH` that Git uses there
 
-Spooky isn't available for download yet, so you need to build it from source. Building requires Swift 6.2 or later.
+- sshfs with macFUSE or FUSE-T on your Mac, to mount server repositories with sshfs
 
-The project uses Swift Package Manager. Run these commands from the repository root:
+- An account on github.com, GitLab.com, or a self-managed GitLab `9.0` or later, for pull requests and merge requests
+
+## Building and running
+
+Run commands from the repository root:
 
 ```sh
+# Get the source code
+git clone https://github.com/rakuyoMo/Spooky.git
+cd Spooky
+
 # Build the core library and the app
-swift build
+mise run build
 
 # Launch the app
 swift run Spooky
 ```
 
-You can also build a development app that opens from Finder:
+`swift run` starts the bare executable, without the app icons, release notes, licenses, and localized permission prompts that come with an app bundle. Updates and system notifications are turned off as well.
+
+Build a development app when you need any of these, or when you want to open Spooky from the Finder or set its language separately in System Settings:
 
 ```sh
 # Build .build/Spooky.app
@@ -138,109 +85,167 @@ You can also build a development app that opens from Finder:
 open .build/Spooky.app
 ```
 
-The release app uses a release build, includes the app icon and the update framework, and is ad-hoc signed:
+The release app uses a release build and is ad-hoc signed and verified:
 
 ```sh
 # Build build/Spooky.app
-./scripts/bundle.sh
+mise run bundle
 ```
 
-## Permissions
+## Architecture
 
-### Automation
+Spooky is a Swift package with two main targets, each organized into folders by feature:
 
-When your terminal application is Terminal or iTerm, Spooky uses AppleScript to have it open the repository. When BBEdit or Araxis Merge is your diff or merge tool, its command-line tool controls the application through Apple events. The first time, macOS asks whether to allow Spooky to control that application.
+- `SpookyKit`, in `Sources/SpookyKit/`: the core library. It runs Git on your Mac or on a server, reads and writes repository files, and parses Git's output
 
-If you declined, you can turn it on again in **System Settings › Privacy & Security › Automation**.
+- `Spooky`, in `Sources/Spooky/`: the app. AppKit manages its windows, split views, toolbars, and menus, and SwiftUI provides the content
 
-### Notifications
+A few designs run through the whole codebase:
 
-Spooky posts a notification when a clone finishes and after branches are archived automatically. The first time, macOS asks whether to allow Spooky to send notifications.
+- **One way to run Git**: every Git call goes through `GitRunner`, which works the same way for local and server repositories. Local repositories run the Git program chosen in Settings, and server repositories run Git on the server through `/usr/bin/ssh`
 
-If you declined, you can turn them on again in **System Settings › Notifications › Spooky**.
+- **One write at a time**: each repository has one write queue shared by all its windows. Writes run one at a time in the order they were started, and a write started while another is running waits its turn. Read-only Git commands are registered in `RepositoryOperationQueue.isReadOnly`, and every other command is treated as a write
 
-## How it works
+- **Server connections**: each server working tree gets its own SSH master connection (ControlMaster), which exits after 10 idle minutes. After the first connection check, the Perl helper `spooky-remote.pl` is installed in `~/.spooky/bin/` on the server, named after a digest of its contents, to manage remote processes and callbacks. Files are read and written over SFTP on the same master connection
 
-### Server connections
+- **Callbacks**: when Git asks for a password, a passphrase, or an editor, `CallbackRelay` brings the request back to the Mac, through a reverse Unix socket for server repositories and a private Unix socket for local ones
 
-- Each server working tree uses its own SSH master connection (ControlMaster), which exits after 10 minutes of inactivity. Spooky never uses or closes your other SSH master connections
-- SSH agent forwarding is off by default. If a host key is unknown or has changed, verify it in a trusted terminal first
-- After the first successful connection check, Spooky installs a small helper program, named after a digest of its contents, in `~/.spooky/bin/` on the server with your user permissions. It manages remote processes and callbacks, relies on the server's Perl, and doesn't keep running in the background
-- Files are read and written with the system's SFTP over the same master connection
-- Quick Look, other apps, and files you drag out never receive a server path. They get a copy of the file in a private temporary directory on your Mac, which is removed when the repository closes
+- **Refreshing**: local repositories refresh when FSEvents reports a change. Server repositories are polled every 2 seconds in the foreground and every 10 seconds in the background
 
-### Hosting services
+- **Files for other apps**: Quick Look, external tools, and dragged-out files get their files through `RepositoryFileCache`, so server paths never reach local file APIs
 
-- Requests to GitHub and GitLab are made from your Mac. Tokens are sent only in request headers, never in URLs, logs, or error messages
-- Git steps that belong to a pull request or merge request, such as checking it out, fetching after a merge, and pushing a published repository, run where the repository is: on the server for a server repository
+- **Hosting services**: requests to GitHub and GitLab are made from the Mac through `HostingClient`
 
-### Writes and disconnections
+[Architecture](docs/architecture.md) describes what each folder is for and the designs that span modules, and [AGENTS.md](AGENTS.md) lists the rules that code must follow. Both are in Chinese.
 
-- Writes to the same repository run one at a time. Only one window can start a write to a repository at a time, and every window showing the repository refreshes when the write finishes
-- If the connection drops during a write, Spooky doesn't retry it. After reconnecting, it checks the branch, working copy, index lock, remote-tracking branches, and any merge or rebase in progress, tells you whether HEAD and the remote-tracking branches changed, and only then allows writes again
-- Undo records HEAD, branches, tags, branch settings, the stash list, the index, and the content of tracked files before and after each operation. The snapshots are written to the object database of the repository, on your Mac or on the server, and Spooky checks that the repository still matches the record before restoring it. Changes to remote settings, assume-unchanged flags, enabling Git LFS, publishing a branch or tag, renaming a remote branch, and adding, deleting, moving, or renaming a submodule, changing its local settings, or checking out another revision in it aren't in the snapshots; Spooky undoes them by running the reverse operation
-- Cancelling an operation on a server ends its processes there. If Spooky can't confirm that they've exited, it says so and blocks writes until a reconnection check
+## Testing
 
-### Credentials
+```sh
+# Run the tests that are on by default
+mise run test
 
-- When Git on the server needs a password, an SSH private key passphrase, a signing key passphrase, or an editor, the request comes back to your Mac through a reverse Unix socket on the current master connection, and Spooky shows a dialog
-- Network operations in local repositories also ask for credentials through a private Unix socket callback. After an SSH private key is unlocked, OpenSSH adds it to the current SSH agent
-- When an HTTPS remote belongs to a signed-in hosting account, Git authenticates with the account's token without asking, in local repositories and on servers alike. The account is found the same way as for pull requests, including remotes you associated by hand. On a server, the token comes back through the reverse Unix socket and isn't written to the server. These addresses don't use your own Git credential helpers. If Git rejects the token, Spooky asks for a username and password and says that the account's token wasn't accepted
-- Local commits, merges, rebases, cherry-picks, and reverts ask for SSH signing key passphrases the same way. GPG passphrases are handled by your Mac's own pinentry
-- Credentials stay in memory by default. They're written to your Mac's Keychain only when you select **Save in this Mac’s Keychain**
-- Credentials are never written to temporary files, activity logs, or error messages, and credentials echoed in output are hidden
-- Automatic fetches never show a dialog. They only use account tokens and credentials saved in the Keychain, and if none are available, the failure is only recorded in the **Activity** window
-- Signature checks never download keys from key servers or update the GPG trust database, on your Mac or on the server
+# Run a single suite
+swift test --filter LocalizationTests
+```
 
-### Data and system changes
+- Tests use Swift Testing. Tests that use Git run in temporary repositories and ignore the system and user Git configuration
+
+- App tests make their windows transparent and turn off sheet animations, so nothing shows up on screen while they run
+
+- Tests that read windows through the Accessibility API only run when the process running them has Accessibility access. In a terminal, that's the terminal app
+
+- Git LFS tests only run when `git-lfs` is in `PATH` or in Homebrew's folders
+
+- Tests have no time limits. If a run seems stuck, the test that started but never finished is the stuck one; CI stops the test job after 30 minutes
+
+Tests that need a server, github.com, or a large repository are skipped unless you turn them on:
+
+| Variable | Turns on |
+|---|---|
+| `SPOOKY_REMOTE_TESTS=1` | Server tests, run against the SSH host alias `spooky-test` |
+| `SPOOKY_GITHUB_TESTS=1` | Pull request tests on a github.com test repository, together with `SPOOKY_GITHUB_TOKEN` and `SPOOKY_GITHUB_REPOSITORY` |
+| `SPOOKY_PERFORMANCE_TESTS=1` | Performance tests on a generated repository with 100,000 files and 60,000 commits |
+
+[Testing](docs/testing/README.md) (in Chinese) explains how to set them up, and has manual acceptance steps for each milestone.
+
+## Debugging
+
+### Logs
+
+Spooky logs under the `com.rakuyo.spooky` subsystem, with each type as its own category:
+
+```sh
+# Stream the logs live
+/usr/bin/log stream --predicate 'subsystem == "com.rakuyo.spooky"' --level info
+
+# Show the logs from the last 5 minutes
+/usr/bin/log show --last 5m --predicate 'subsystem == "com.rakuyo.spooky"' --info
+```
+
+The logs record connection state changes, remote sessions, failed and cancelled Git commands, writes, and callback requests. They never contain command arguments or output, commit messages, or credentials.
+
+Repository paths, host aliases, and other user data are marked private, so the logs show them as `<private>`. In zsh, `log` is a built-in command, so use the full path.
+
+### Developer menu
+
+Turn on **Show Developer menu** in **Settings › General** to add the **Developer** menu:
+
+- **User Defaults**: log all preferences to standard output, reset settings while keeping bookmarks, user profiles, accounts, and the locations of server repositories on this Mac, or clear the whole preferences domain without asking
+
+- **Test Crash Reporting**: crash with a fake exception or a bad access, to test crash reports
+
+- **Auto-Archive Branches**: run auto-archive now, or reset the times each repository was last checked
+
+- **Show What’s New Card**: show the What’s New card in the sidebar again
+
+- **Auto-Reload Repository**: turn refreshing on file changes and polling on or off
+
+### Where data is stored
 
 On your Mac:
 
-- Settings, user profiles, repository bookmarks, and the locations on this Mac set for server repositories are stored in the preferences domain `com.rakuyo.spooky`
-- Spooky mounts network volumes over SMB or with sshfs to show server repositories in the Finder, and never unmounts them; eject them in the Finder. sshfs and the macFUSE or FUSE-T it needs aren't included and must be installed by you. SMB user names and passwords are entered in the system's sign-in dialog, which saves them in your Keychain; Spooky doesn't read or store them
-- Themes, including Default and Default (Dark), are stored in `~/Library/Application Support/Spooky/Themes`, one `.spookytheme` file per theme
-- Opened repositories are added to the system's recent documents so the Dock icon menu can list them: a local repository is added as its folder; a server repository is added as a `.spookyrepo` folder under `~/Library/Application Support/Spooky/Locations`, whose `.spookylocation` file records only the host alias and the remote path. There is one per server repository, reused when it is opened again; Clear Menu clears the recent documents and keeps these folders
-- Remote operations recorded in the **Activity** window, such as fetches, pulls, and pushes, are stored in `~/Library/Application Support/Spooky/Activity`, one file per record, and deleted after 7 days. Other Activity records are kept in memory only while Spooky is running
-- The previous lists of branches, remotes, stashes, and submodules that the **Activity** window compares against to count updated, added, and deleted items are stored in `~/Library/Application Support/Spooky/Baselines`, one file per repository
-- Credentials saved to the Keychain use the service name `com.rakuyo.spooky.remote.<host alias>`
-- Hosting account tokens are stored in the Keychain with the service name `com.rakuyo.spooky.hosting.<instance address>`. For a self-managed GitLab account that signs in with a username and password, the access token, the refresh token, and the expiry time are stored there; the password isn't stored. The account list and the remotes you associated with an account are stored in the preferences, without tokens
-- Connections and callbacks use private `/tmp/spooky-*` temporary directories, which are removed when the session closes. Signature checks in local repositories use one of these directories as well, removed as soon as the check finishes
-- Author pictures are requested from Gravatar with a SHA-256 hash of each author's email address. Pictures of the authors, assignees, and commenters of pull requests and merge requests are requested from the addresses the hosting service gives. Pictures are kept in memory only while Spooky is running
-- File copies for Quick Look and other apps are kept in private `spooky-files-*` temporary directories, which are removed when the repository closes
-- Opening a server repository in Warp writes `Spooky-*.yaml` to `~/.warp/launch_configurations/`. When Spooky quits, it removes only the files it created
-- At launch, Spooky reads its own crash reports in `~/Library/Logs/DiagnosticReports/` to offer a GitHub issue. Nothing is uploaded automatically
-- Updates are checked against `appcast.xml` on GitHub Releases, and downloaded updates are verified with an EdDSA signature before they're installed
-- When an app icon other than the default one is chosen, Spooky writes it as the custom icon of its own app bundle, which adds an `Icon\r` file and Finder information at the root of `Spooky.app`. Spooky writes it again at each launch and when the icon style changes, and removes it when you switch back to the default icon
+| Data | Location |
+|---|---|
+| Settings, bookmarks, user profiles, the account list, and the locations of server repositories on this Mac | Preferences domain `com.rakuyo.spooky` |
+| Themes, one `.spookytheme` file each | `~/Library/Application Support/Spooky/Themes/` |
+| The `.spookyrepo` folders that list server repositories in recent documents | `~/Library/Application Support/Spooky/Locations/` |
+| Remote operations in the Activity window, kept for 7 days | `~/Library/Application Support/Spooky/Activity/` |
+| The previous lists that the Activity window compares against | `~/Library/Application Support/Spooky/Baselines/` |
+| Credentials saved to the Keychain | Keychain service `com.rakuyo.spooky.remote.<host alias>` |
+| Hosting account tokens | Keychain service `com.rakuyo.spooky.hosting.<instance address>` |
+| Connections and callbacks | Private `/tmp/spooky-*` directories, removed when the session closes |
+| File copies for Quick Look and other apps | Private `spooky-files-*` temporary directories, removed when the repository closes |
 
-On the server:
+On servers:
 
-- `~/.spooky/bin/`: the remote helper and its askpass, GPG, and ssh-keygen entry points, with `0700` permissions. They stay after the session ends so later connections can use them
-- `/tmp/spooky-*`: a private runtime directory for the session, removed when the session closes
-- To match a server repository with a folder mounted on your Mac for **Show in Finder**, Spooky briefly writes an empty, randomly named file into the repository's Git directory and removes it right after the check
+| Data | Location |
+|---|---|
+| The remote helper and its askpass, GPG, and ssh-keygen entry points | `~/.spooky/bin/`, kept for later connections |
+| Session runtime files | `/tmp/spooky-*`, removed when the session closes |
 
-In your repositories:
+In repositories, pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration as `branch.<name>.spooky-*`. Repository settings are written to the same configuration.
 
-- Pins, archives, parent branches, and branch review marks are stored in the repository's own Git configuration, as `branch.<name>.spooky-*`. They move with a branch when it's renamed and are removed when it's deleted
-- Repository settings are written to the repository's own Git configuration
-- Enabling Git LFS registers its filter and hooks only in the repository's own configuration, and tracking patterns are written to `.gitattributes` at the repository root
+## Localization
 
-## Development
+Spooky is localized into English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. It follows the system language and falls back to English. Strings are in `Sources/Spooky/Resources/<language>.lproj/`.
+
+When you add a string, add it to every language with the same format arguments. `LocalizationTests` fails when a language is missing a key, a translation is empty, format arguments don't match, or a key isn't used anywhere. Keys built at run time are registered in `LocalizationTests.dynamicKeys`.
+
+## Code style
+
+The code style follows [RakuyoKit/swift](https://github.com/RakuyoKit/swift):
 
 ```sh
-swift test
+# Format the code and fix what can be fixed automatically
+mise run swift:format
+
+# Check the code style
+mise run swift:lint
 ```
 
-- Tests use Swift Testing
-- Tests that use Git run in temporary repositories and ignore the system and user Git configuration
-- Tests that need a test server, a GitHub test repository, or a large generated repository are skipped by default. See [Testing](docs/testing/README.md) (in Chinese) for how to enable them
+SwiftLint runs in strict mode, so warnings fail the check too. The other coding conventions are in [AGENTS.md](AGENTS.md) (in Chinese).
 
-See [Architecture](docs/architecture.md) for the module layout and design, and [Releasing](docs/releasing.md) for versions and releases. Both are in Chinese.
+## Releasing
+
+Maintainers release new versions from `main`:
+
+```sh
+# Open a release PR for version X.Y.Z; the channel defaults to stable
+mise run release X.Y.Z [stable|beta|development]
+```
+
+The script checks the version, the release notes in `docs/release-notes/X.Y.Z/`, and the state of the repository, then opens a release PR. Once it's merged, GitHub Actions bundles the app, signs the update, tags the merge commit, and creates the GitHub Release.
+
+[Releasing](docs/releasing.md) (in Chinese) has the details.
 
 ## Contributing
 
-- Before opening a pull request, use [mise](https://mise.jdx.dev) to run `mise run swift:lint`, `mise run build`, and `mise run test`, and make sure they all pass. CI runs the same checks on every pull request
-- If you change the app, also launch it and check that your change works
-- See [AGENTS.md](AGENTS.md) for branch names, commit messages, and other contribution guidelines (in Chinese)
+- Before opening a pull request, run `mise run swift:lint`, `mise run build`, and `mise run test`, and make sure they all pass. CI runs the same checks on every pull request and push to `main`, and bundles the app as well
+
+- If you change the app, launch it and check that your change works. [M1](docs/testing/M1.md) has the basic steps
+
+- [AGENTS.md](AGENTS.md) has the conventions for code, comments, logs, tests, branch names, commit messages, and pull requests. Coding agents such as Claude Code and Codex follow it too. It's in Chinese
+
 - Before bringing in outside code, make sure its license is compatible with GPL-3.0
 
 ## License

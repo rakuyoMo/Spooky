@@ -514,6 +514,9 @@
 "activity.finished" = "Terminé";
 "activity.cancelled" = "Annulé";
 "activity.failed" = "Échec";
+"activity.waiting" = "En attente";
+"activity.waitingDetail" = "En attente…";
+"activity.skipped" = "Ignoré";
 "activity.remote" = "Distant";
 "activity.remote.help" = "Afficher les activités distantes";
 "activity.repository" = "Dépôt";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "Poussé vers %@";
 "activity.titleFailed" = "%@ : échec";
 "activity.titleCancelled" = "%@ : annulé";
+"activity.titleSkipped" = "%@ : ignoré";
+"queue.notRun" = "Non exécuté : le dépôt a changé pendant l’attente de cette opération.";
+"queue.cancelledAfterFailure" = "Annulé, car « %@ » a échoué.";
+"queue.cancelledDisconnected" = "Annulé, car la connexion au serveur a été perdue.";
 "dialog.options" = "Options";
 "dialog.doNotAskAgain" = "Ne plus me demander";
 "menu.repository" = "Dépôt";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "L’opération « %@ » a été interrompue par la déconnexion et n’a pas été relancée. HEAD pointe toujours sur %@. Vérifiez la copie de travail avant de réessayer.";
 "recovery.notStarted" = "L’opération « %@ » n’a pas démarré, car la connexion au serveur était indisponible. Rien n’a été modifié sur le serveur.";
 "recovery.unborn" = "aucun commit";
-"dialog.blocked" = "Une autre opération est en cours sur ce dépôt, ou le serveur est déconnecté. Vos paramètres sont conservés ; réessayez lorsque le dépôt sera disponible.";
+"dialog.blocked" = "Le serveur est déconnecté. Vos paramètres sont conservés ; réessayez après la reconnexion.";
 "history.loadingChanges" = "Chargement des modifications…";
 "repositories.unavailableShort" = "Indisponible";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Synchroniser";
 "sync.autoFetch" = "Récupération automatique";
+"sync.autoFetch.yielded" = "Arrêté pour que « %@ » s’exécute d’abord.";
 "sync.quickFetch" = "Récupération rapide";
 "sync.quickPull" = "Tirage rapide";
 "sync.quickPush" = "Poussée rapide";
@@ -1982,8 +1990,14 @@
 "bookmarks.sortParent" = "Trier le dossier parent par nom";
 "bookmarks.delete.title" = "Supprimer « %@ » ?";
 "bookmarks.delete.titleMultiple" = "Supprimer %ld éléments ?";
-"bookmarks.delete.message" = "Seuls les signets sont supprimés. Les dépôts restent sur le disque ou sur le serveur.";
+"bookmarks.delete.note" = "Les signets sont supprimés. Les dossiers des dépôts restent sur le disque, sauf si vous les placez aussi dans la Corbeille.";
+"bookmarks.delete.noteServer" = "Les signets sont supprimés. Les dépôts restent à leur emplacement, sauf si vous les placez aussi dans la Corbeille ; les dépôts d’un serveur vont dans la Corbeille de ce serveur.";
+"bookmarks.delete.trash" = "Placer aussi le dossier du dépôt dans la Corbeille, modifications non validées comprises";
+"bookmarks.delete.trashMultiple" = "Placer aussi %ld dossiers de dépôts dans la Corbeille, modifications non validées comprises";
 "bookmarks.delete.submit" = "Supprimer";
+"bookmarks.trashFailed.title" = "Impossible de placer dans la Corbeille";
+"bookmarks.trashFailed.message" = "Les signets sont supprimés, mais ces dossiers restent à leur emplacement :";
+"bookmarks.trashFailed.protected" = "Non déplacé : il s’agit d’un dossier de départ, d’un dossier qui en contient un ou du niveau supérieur d’un volume.";
 "bookmarks.dropZone.title" = "Déposez un dossier ou une URL";
 "bookmarks.dropZone.subtitle" = "pour ajouter un dépôt Git";
 "bookmarks.dropZone.add" = "Ajouter";
@@ -2228,6 +2242,8 @@
 "settings.crashReports.help" = "Les rapports de plantage aident à diagnostiquer et à corriger les problèmes de Spooky.";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "Afficher les worktrees dans la liste des dépôts";
+"settings.showHostAliasesInRepositoryList" = "Afficher les alias d’hôte SSH dans la liste des dépôts";
 "settings.showDeveloperMenu" = "Afficher le menu Developer";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
@@ -2464,7 +2480,6 @@
 "worktree.remove.message" = "Supprime définitivement le worktree « %@ » et son dossier.";
 "worktree.remove.submit" = "Supprimer le worktree";
 "worktree.repair" = "Réparer le worktree";
-"worktree.repair.alreadyUsed" = "Le dossier sélectionné est déjà utilisé par un autre worktree.";
 "worktree.repair.invalid" = "Le chemin sélectionné ne contient aucun dossier de worktree valide pour ce dépôt.";
 "worktree.repair.menu" = "Réparer le worktree…";
 "worktree.repair.missingFolder" = "Le dossier sélectionné n’existe pas.";

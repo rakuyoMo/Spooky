@@ -226,7 +226,8 @@ extension SyncDialog {
             title: AppLocalization.text("sync.rebaseHead"),
             progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRebase }
         )
     }
 
@@ -263,7 +264,9 @@ extension SyncDialog {
             },
             title: AppLocalization.text("sync.pushRevision"),
             target: .push(remote),
-            undo: .unrecorded
+            touchesWorkingCopy: false,
+            undo: .unrecorded,
+            available: { $0.canPushRevision }
         )
     }
 }

@@ -48,7 +48,7 @@ extension RepositorySessionTests {
 // MARK: - Steps
 
 extension RepositorySessionTests {
-    /// 有远端、没有上游、只有一个未跟踪文件时的可用性；写入进行中所有写入口一起禁用，结束后恢复。
+    /// 有远端、没有上游、只有一个未跟踪文件时的可用性；获取进行中写入口与文件动作照样可用，点了排进队列。
     private func checkAvailability(_ session: RepositorySession) async throws {
         let entries = session.status?.entries ?? []
 
@@ -60,20 +60,22 @@ extension RepositorySessionTests {
         let (gate, release) = AsyncStream<Void>.makeStream()
         defer { release.finish() }
 
-        session.performGit({ _, _ in for await _ in gate { } }, title: "Fetch")
+        session.performGit(
+            { _, _ in for await _ in gate { } },
+            title: "Fetch",
+            touchesWorkingCopy: false
+        )
 
         #expect(
-            !session.canFetch
-                && !session.canPush
-                && !session.canCreateBranch
-                && !session.canStage(entries)
+            session.canFetch
+                && session.canPush
+                && session.canCreateBranch
+                && session.canStage(entries)
         )
 
         release.finish()
         await session.writeTask?.value
         await session.waitForRefresh()
-
-        #expect(session.canFetch)
     }
 
     /// 索引被锁时暂存失败，勾选框回滚；解锁后暂存成功，选区从未跟踪的条目跟到已暂存的同一路径。

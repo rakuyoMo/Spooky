@@ -58,7 +58,9 @@ extension RepositorySession {
                         .restore(branch.id, to: entry.commit.id, expected: branch.objectID)
                 },
                 title: title,
-                undo: .reversible
+                touchesWorkingCopy: false,
+                undo: .reversible,
+                available: { $0.canRestoreReflogBranch(to: entry) }
             )
         })
     }

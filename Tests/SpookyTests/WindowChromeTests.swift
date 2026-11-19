@@ -91,6 +91,34 @@ struct WindowChromeTests {
         await until { LaunchWindowController.shown == nil }
         #expect(!launch.isVisible)
     }
+
+    /// 没有保存过宽度时，Branches Review 的列表宽 420 pt、Pull Requests 的列表宽 320 pt，不被压到分栏项的最小宽。
+    @Test("列表分栏的首次宽度")
+    func listFirstWidths() async throws {
+        let fixture = try await NavigationTests.makeWindow()
+        let controller = fixture.controller
+        let keys = ["Spooky.BranchesReview", "Spooky.PullRequests"].map { "NSSplitView Subview Frames " + $0 }
+
+        // 分栏宽度记在所有仓库窗口共用的标准偏好里，测前清掉，测完恢复
+        let saved = keys.map { UserDefaults.standard.object(forKey: $0) }
+        for key in keys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        defer {
+            zip(keys, saved).forEach { UserDefaults.standard.set($1, forKey: $0) }
+            fixture.close()
+        }
+
+        // 窗口放宽到能同时容下侧边栏、列表与详情，宽度不受上次保存的窗口尺寸影响
+        controller.window?.setContentSize(NSSize(width: 1400, height: 800))
+
+        controller.showBranchesReview()
+        #expect(Self.listWidth(in: controller) == 420)
+
+        controller.session.showPullRequests()
+        #expect(Self.listWidth(in: controller) == 320)
+    }
 }
 
 // MARK: - Steps
@@ -309,5 +337,11 @@ extension WindowChromeTests {
         // 五个按钮与 Clone 的图按像素比较，六张都不一样
         let images = sync.subitems.map(\.image) + [pushTo.image, forcePush.image, clone.image]
         #expect(Set(images.compactMap { $0?.tiffRepresentation }).count == 6)
+    }
+
+    /// 窗口排版后，当前主视图内层分栏第一栏的宽度。
+    private static func listWidth(in controller: RepositoryWindowController) -> CGFloat? {
+        controller.window?.layoutIfNeeded()
+        return controller.innerSplit?.splitViewItems.first?.viewController.view.frame.width
     }
 }

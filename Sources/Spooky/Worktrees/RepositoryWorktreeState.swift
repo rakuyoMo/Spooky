@@ -40,9 +40,7 @@ final class RepositoryWorktreeState {
 
     /// 除本窗口仓库之外的工作树，按名称排序；侧边栏与快捷操作列出这些。
     var others: [Worktree] {
-        items
-            .filter { !$0.isCurrent && !$0.isBare }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        Self.others(of: items)
     }
 
     /// 详情里显示的工作树；已不存在时为 nil。
@@ -56,6 +54,15 @@ final class RepositoryWorktreeState {
             others.compactMap { worktree in worktree.branch.map { ($0, worktree) } },
             uniquingKeysWith: { first, _ in first }
         )
+    }
+
+    /// 一个仓库之外的工作树，按名称排序：去掉这个仓库自己与裸仓库；仓库窗口的侧边栏与仓库管理的列表都按它列出。
+    ///
+    /// - Parameter items: 在这个仓库里读到的全部工作树。
+    static func others(of items: [Worktree]) -> [Worktree] {
+        items
+            .filter { !$0.isCurrent && !$0.isBare }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     /// 读取工作树清单；正在读取时不重复发起。

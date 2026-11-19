@@ -27,7 +27,7 @@ struct ActivityLogView: View {
     @State
     private var interacting = false
 
-    /// 显示的文字：有输出时是整段日志，没有输出时按状态写 Loading…、Finished、Error 或 Cancelled。
+    /// 显示的文字：有输出时是整段日志，没有输出时按状态写 Loading…、Waiting、Finished、Error 或 Cancelled。
     var content: String {
         let log = activity.log
 
@@ -39,6 +39,7 @@ struct ActivityLogView: View {
         case "activity.finished": return AppLocalization.text("activity.finished")
         case "activity.failed": return AppLocalization.text("activity.log.error")
         case "activity.cancelled": return AppLocalization.text("activity.cancelled")
+        case "activity.waiting": return AppLocalization.text("activity.waiting")
         default: return AppLocalization.text("activity.log.loading")
         }
     }

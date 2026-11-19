@@ -514,6 +514,9 @@
 "activity.finished" = "完了";
 "activity.cancelled" = "キャンセル済み";
 "activity.failed" = "失敗";
+"activity.waiting" = "待機中";
+"activity.waitingDetail" = "待機中…";
+"activity.skipped" = "スキップ済み";
 "activity.remote" = "リモート";
 "activity.remote.help" = "リモートのアクティビティを表示";
 "activity.repository" = "リポジトリ";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "%@ にプッシュ完了";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（キャンセル済み）";
+"activity.titleSkipped" = "%@（スキップ済み）";
+"queue.notRun" = "実行されませんでした：待機中にリポジトリが変更されました。";
+"queue.cancelledAfterFailure" = "「%@」が失敗したため、キャンセルしました。";
+"queue.cancelledDisconnected" = "サーバーとの接続が切れたため、キャンセルしました。";
 "dialog.options" = "オプション";
 "dialog.doNotAskAgain" = "今後確認しない";
 "menu.repository" = "リポジトリ";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "「%@」は接続の切断で中断し、再実行していません。HEAD は %@ のままです。作業コピーを確認してから再試行してください。";
 "recovery.notStarted" = "サーバーに接続できなかったため、「%@」は開始されていません。サーバー上は何も変更されていません。";
 "recovery.unborn" = "コミットなし";
-"dialog.blocked" = "このリポジトリで別の操作が実行中か、サーバーとの接続が切れています。入力した設定は保持されます。リポジトリが利用可能になってから再試行してください。";
+"dialog.blocked" = "サーバーとの接続が切れています。入力した設定は保持されます。再接続してから再試行してください。";
 "history.loadingChanges" = "変更セットを読み込み中…";
 "repositories.unavailableShort" = "利用不可";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "同期";
 "sync.autoFetch" = "自動フェッチ";
+"sync.autoFetch.yielded" = "「%@」を先に実行するため停止しました。";
 "sync.quickFetch" = "クイックフェッチ";
 "sync.quickPull" = "クイックプル";
 "sync.quickPush" = "クイックプッシュ";
@@ -1982,8 +1990,14 @@
 "bookmarks.sortParent" = "親フォルダを名前で並べ替え";
 "bookmarks.delete.title" = "「%@」を削除しますか？";
 "bookmarks.delete.titleMultiple" = "%ld 項目を削除しますか？";
-"bookmarks.delete.message" = "削除されるのはブックマークだけです。リポジトリはディスクやサーバ上に残ります。";
+"bookmarks.delete.note" = "ブックマークは削除されます。ゴミ箱にも移動しない限り、リポジトリのフォルダはディスク上に残ります。";
+"bookmarks.delete.noteServer" = "ブックマークは削除されます。ゴミ箱にも移動しない限り、リポジトリは元の場所に残ります。サーバ上のリポジトリはそのサーバのゴミ箱に移動します。";
+"bookmarks.delete.trash" = "リポジトリのフォルダもゴミ箱に移動（未コミットの変更を含む）";
+"bookmarks.delete.trashMultiple" = "%ld 個のリポジトリのフォルダもゴミ箱に移動（未コミットの変更を含む）";
 "bookmarks.delete.submit" = "削除";
+"bookmarks.trashFailed.title" = "ゴミ箱に移動できませんでした";
+"bookmarks.trashFailed.message" = "ブックマークは削除されましたが、次のフォルダは元の場所に残っています：";
+"bookmarks.trashFailed.protected" = "移動していません：ホームフォルダ、ホームフォルダを含むフォルダ、またはボリュームの最上位です。";
 "bookmarks.dropZone.title" = "フォルダや URL をドロップして";
 "bookmarks.dropZone.subtitle" = "Git リポジトリを追加";
 "bookmarks.dropZone.add" = "追加";
@@ -2228,6 +2242,8 @@
 "settings.crashReports.help" = "クラッシュレポートは Spooky の問題の診断と修正に役立ちます。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "リポジトリ一覧にワークツリーを表示";
+"settings.showHostAliasesInRepositoryList" = "リポジトリ一覧に SSH ホストエイリアスを表示";
 "settings.showDeveloperMenu" = "Developer メニューを表示";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
@@ -2464,7 +2480,6 @@
 "worktree.remove.message" = "ワークツリー「%@」とそのディレクトリを完全に削除します。";
 "worktree.remove.submit" = "ワークツリーを削除";
 "worktree.repair" = "ワークツリーを修復";
-"worktree.repair.alreadyUsed" = "選択したフォルダはすでに別のワークツリーで使われています。";
 "worktree.repair.invalid" = "選択したパスにこのリポジトリの有効なワークツリーディレクトリがありません。";
 "worktree.repair.menu" = "ワークツリーを修復…";
 "worktree.repair.missingFolder" = "選択したフォルダは存在しません。";

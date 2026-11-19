@@ -185,7 +185,7 @@ extension RepositoryWindowController {
                 request: request,
                 cancel: close,
                 submit: { [weak self] title, progress, target, undo, action in
-                    // 只有写操作真正开始或转为询问才关闭表单；仓库忙碌或断线时保留未发送的参数
+                    // 只有写操作真正开始或转为询问才关闭表单；服务器已断开时保留未发送的参数
                     guard
                         let self,
                         session.repository == repository,
@@ -385,6 +385,18 @@ extension RepositoryWindowController {
         undo: UndoRecording,
         action: @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void
     ) -> Bool {
+        // 轮到时按打开对话框的入口规则再核对
+        let available: @MainActor (RepositorySession) -> Bool = { session in
+            switch kind {
+            case .create, .track: session.canCreateBranchFromReference
+            case .fetch: session.canFetch
+            case .pull: session.canPull
+            case .push: session.canPush
+            case .publish: session.canPublish
+            case .merge: session.canMerge
+            }
+        }
+
         if let progress, [.create, .track].contains(kind) {
             return session.performCheckout(
                 action,
@@ -392,17 +404,23 @@ extension RepositoryWindowController {
                 progress: progress,
                 target: target,
                 offersAutoStash: false,
-                undo: undo
+                undo: undo,
+                available: available
             )
         }
+
+        // 不检出的新建与跟踪分支、获取、推送与发布只改动引用
+        let touchesWorkingCopy = [.pull, .merge].contains(kind)
 
         return session.performGit(
             action,
             title: title,
             progress: progress,
             target: target,
-            offersAutoStash: [.pull, .merge].contains(kind),
-            undo: undo
+            offersAutoStash: touchesWorkingCopy,
+            touchesWorkingCopy: touchesWorkingCopy,
+            undo: undo,
+            available: available
         )
     }
 }

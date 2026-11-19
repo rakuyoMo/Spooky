@@ -128,15 +128,23 @@ extension AddRemoteDialog {
         }
     }
 
-    /// 开始添加，添加成功后关闭表单并随即获取这个远端；仓库忙碌、已切换或添加失败时表单保持打开。
+    /// 开始添加，添加成功后关闭表单并随即获取这个远端；仓库正有写操作时排进队列，表单随即关闭；
+    /// 服务器已断开、仓库已切换或添加失败时表单保持打开。
     private func submit() {
-        guard session.repository == repository else {
+        guard let repository, session.repository == repository else {
             return
         }
 
         succeeded = false
+        let queued = !RepositoryWriteQueue.shared.isIdle(repository)
 
         guard session.addRemote(name: name, url: url, added: { succeeded = true }) else {
+            return
+        }
+
+        // 排进队列的添加由活动区与 Activity 窗口接着显示
+        guard !queued else {
+            close()
             return
         }
 

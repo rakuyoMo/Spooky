@@ -12,7 +12,7 @@ import TestSupport
 @MainActor
 struct PullRequestActionRulesTests {
     /// 没有跟踪分支、跟踪分支在别的提交上或来自 Fork 时能检出；跟踪分支有未推送的提交、
-    /// 或它是当前分支且已在请求的提交上时不能；仓库不可写时都不能。
+    /// 或它是当前分支且已在请求的提交上时不能；另一个写操作进行中照样能检出。
     @Test("检出请求的可用条件")
     func checkoutAvailability() async throws {
         // 远端分支 origin/feature 在第一个提交上，本地的 feature 跟踪它
@@ -53,11 +53,12 @@ struct PullRequestActionRulesTests {
         #expect(!session.canCheckOutPullRequest(Self.request(branch: "feature", sha: second)))
         #expect(session.canCheckOutPullRequest(Self.request(branch: "feature", sha: second, fork: true)))
 
-        // 另一个写操作进行中
+        // 另一个写操作进行中照样可以检出，点了排队
         let location = try #require(session.repository)
-        #expect(RepositoryWriteLocks.shared.acquire(location))
-        #expect(!session.canCheckOutPullRequest(Self.request(branch: "untracked", sha: first)))
-        RepositoryWriteLocks.shared.release(location)
+        let holder = RepositoryWrite(location: location, session: nil, title: "Hold")
+        #expect(RepositoryWriteQueue.shared.begin(holder))
+        #expect(session.canCheckOutPullRequest(Self.request(branch: "untracked", sha: first)))
+        RepositoryWriteQueue.shared.finish(holder)
     }
 }
 

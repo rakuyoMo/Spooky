@@ -514,6 +514,9 @@
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失败";
+"activity.waiting" = "等待中";
+"activity.waitingDetail" = "等待中…";
+"activity.skipped" = "已跳过";
 "activity.remote" = "远端";
 "activity.remote.help" = "显示远端活动";
 "activity.repository" = "仓库";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "已推送 %@";
 "activity.titleFailed" = "%@（失败）";
 "activity.titleCancelled" = "%@（已取消）";
+"activity.titleSkipped" = "%@（已跳过）";
+"queue.notRun" = "没有执行：等待期间仓库已经变了。";
+"queue.cancelledAfterFailure" = "“%@” 失败，已取消。";
+"queue.cancelledDisconnected" = "与服务器的连接断开，已取消。";
 "dialog.options" = "选项";
 "dialog.doNotAskAgain" = "不再询问";
 "menu.repository" = "仓库";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "“%@” 因断线中断，没有重试。HEAD 仍是 %@。请先检查工作区，再决定是否重试。";
 "recovery.notStarted" = "服务器连接不可用，“%@” 没有开始执行，服务器上没有任何改动。";
 "recovery.unborn" = "尚无提交";
-"dialog.blocked" = "此仓库有其它操作正在进行，或服务器已断开。已填写的设置会保留，请在仓库可用后重试。";
+"dialog.blocked" = "服务器已断开。已填写的设置会保留，请在重新连上后重试。";
 "history.loadingChanges" = "正在读取变更集…";
 "repositories.unavailableShort" = "不可用";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "同步";
 "sync.autoFetch" = "自动获取";
+"sync.autoFetch.yielded" = "已停下，先执行 “%@”。";
 "sync.quickFetch" = "快速获取";
 "sync.quickPull" = "快速拉取";
 "sync.quickPush" = "快速推送";
@@ -1982,8 +1990,14 @@
 "bookmarks.sortParent" = "按名称排序所在分组";
 "bookmarks.delete.title" = "删除 “%@”？";
 "bookmarks.delete.titleMultiple" = "删除 %ld 项？";
-"bookmarks.delete.message" = "只移除书签，仓库仍保留在磁盘或服务器上。";
+"bookmarks.delete.note" = "书签会被移除。仓库文件夹仍留在磁盘上，除非同时移到废纸篓。";
+"bookmarks.delete.noteServer" = "书签会被移除。仓库仍留在原处，除非同时移到废纸篓；服务器上的仓库移进那台服务器的废纸篓。";
+"bookmarks.delete.trash" = "同时把仓库文件夹移到废纸篓，包括未提交的改动";
+"bookmarks.delete.trashMultiple" = "同时把 %ld 个仓库文件夹移到废纸篓，包括未提交的改动";
 "bookmarks.delete.submit" = "删除";
+"bookmarks.trashFailed.title" = "没能移到废纸篓";
+"bookmarks.trashFailed.message" = "书签已移除，但下面的文件夹仍在原处：";
+"bookmarks.trashFailed.protected" = "没有移走：这是家目录、包含家目录的文件夹或卷的顶层。";
 "bookmarks.dropZone.title" = "拖入文件夹或地址";
 "bookmarks.dropZone.subtitle" = "以添加 Git 仓库";
 "bookmarks.dropZone.add" = "添加";
@@ -2228,6 +2242,8 @@
 "settings.crashReports.help" = "崩溃报告用于诊断和修复 Spooky 的问题。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "在仓库管理中列出工作树";
+"settings.showHostAliasesInRepositoryList" = "在仓库管理中显示 SSH 主机别名";
 "settings.showDeveloperMenu" = "显示 Developer 菜单";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
@@ -2464,7 +2480,6 @@
 "worktree.remove.message" = "永久删除工作树 “%@” 及它的目录。";
 "worktree.remove.submit" = "删除工作树";
 "worktree.repair" = "修复工作树";
-"worktree.repair.alreadyUsed" = "选中的文件夹已被另一个工作树使用。";
 "worktree.repair.invalid" = "选中的路径里没有这个仓库的有效工作树目录。";
 "worktree.repair.menu" = "修复工作树…";
 "worktree.repair.missingFolder" = "选中的文件夹不存在。";

@@ -42,7 +42,7 @@ extension RepositorySession {
     ///   - entries: 作用的条目。
     ///   - lfsEnabled: 仓库是否启用了 Git LFS，由 ``isLFSEnabled()`` 读出。
     func canTrackLFS(_ entries: [StatusEntry], lfsEnabled: Bool) -> Bool {
-        lfsEnabled && canWrite && !entries.isEmpty && !entries.contains { $0.path.hasSuffix("/") }
+        lfsEnabled && canWriteFiles && !entries.isEmpty && !entries.contains { $0.path.hasSuffix("/") }
     }
 
     /// 仓库是否启用了 Git LFS，判断与仓库设置的 Git LFS 段相同；不在轮询里读取，打开 LFS 菜单时读一次。
@@ -149,7 +149,8 @@ extension RepositorySession {
                 }
             },
             title: transfer.title,
-            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil)
+            target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil),
+            touchesWorkingCopy: false
         )
     }
 }

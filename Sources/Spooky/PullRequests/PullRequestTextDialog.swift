@@ -162,7 +162,7 @@ extension PullRequestTextDialog {
 // MARK: - Availability
 
 extension PullRequestTextDialog {
-    /// 仓库暂不可写而挡住提交；关闭请求不看仓库是否可写。
+    /// 服务器已断开而挡住提交；关闭请求不看仓库能否写入。
     var isBlocked: Bool {
         if case .close = kind {
             return false
@@ -255,7 +255,7 @@ extension PullRequestTextDialog {
         }
     }
 
-    /// 内容有效、没有因仓库暂不可写而挡住，且分支名没有不合法时才能提交；同名分支指向别的提交只是提醒，不挡提交。
+    /// 内容有效、没有因服务器已断开而挡住，且分支名没有不合法时才能提交；同名分支指向别的提交只是提醒，不挡提交。
     private var canSubmit: Bool {
         guard isValid, !isBlocked else {
             return false

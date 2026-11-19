@@ -179,7 +179,7 @@ extension AddWorktreeDialog {
         }
     }
 
-    /// 捕获表单值后开始创建；仓库忙碌时表单保持打开。
+    /// 捕获表单值后开始创建；服务器已断开时表单保持打开。
     private func submit() {
         if session.addWorktree(at: destination, revision: revision, detach: detach, force: force) {
             close()
@@ -275,7 +275,7 @@ extension WorktreePathDialog {
         if panel.runModal() == .OK, let url = panel.url { path = url.path }
     }
 
-    /// 开始移动；仓库忙碌时表单保持打开。
+    /// 开始移动；服务器已断开时表单保持打开。
     private func submit() {
         if session.moveWorktree(worktree, to: path) {
             close()
@@ -299,9 +299,9 @@ struct RelocateWorktreeDialog: View {
     /// 关闭 sheet。
     let close: () -> Void
 
-    /// 选中的目录，仓库所在机器上的绝对路径；还没有选时为空。
+    /// 选中的目录，仓库所在机器上的绝对路径；打开时是工作树登记的路径。
     @State
-    private var path = ""
+    private var path: String
 
     /// 选中目录的核对结果：还在核对时为 nil，可以修复时为空，否则是错误区的说明。
     @State
@@ -319,7 +319,7 @@ struct RelocateWorktreeDialog: View {
             message: AppLocalization.text("worktree.relocate.message", worktree.name),
             submitTitle: AppLocalization.text("worktree.relocate.submit"),
             error: isRegisteredPath ? "" : problem ?? "",
-            isValid: !path.isEmpty && !isRegisteredPath && (problem?.isEmpty ?? false),
+            isValid: !isRegisteredPath && (problem?.isEmpty ?? false),
             cancel: close,
             submit: submit
         ) {
@@ -340,7 +340,7 @@ struct RelocateWorktreeDialog: View {
         }
     }
 
-    /// 填满输入列的位置弹出菜单：选中的目录（没有时是灰掉的 “None Selected”）、分隔线与 “Select Destination…”；
+    /// 填满输入列的位置弹出菜单：选中的目录、分隔线与 “Select Destination…”；
     /// 选最后一项时打开目录选择，菜单仍停在原来的项上。
     private var locationPicker: some View {
         Picker(
@@ -350,18 +350,12 @@ struct RelocateWorktreeDialog: View {
                 set: { $0 == Self.chooseTag ? selectDestination() : () }
             )
         ) {
-            if path.isEmpty {
-                Text(AppLocalization.text("submodule.path.none"))
-                    .tag("")
-                    .disabled(true)
-            } else {
-                Label {
-                    Text(session.repository?.host == nil ? HomePath.abbreviated(path) : path)
-                } icon: {
-                    Image(nsImage: Self.folderIcon)
-                }
-                .tag(path)
+            Label {
+                Text(session.repository?.host == nil ? HomePath.abbreviated(path) : path)
+            } icon: {
+                Image(nsImage: Self.folderIcon)
             }
+            .tag(path)
 
             Divider()
 
@@ -372,6 +366,14 @@ struct RelocateWorktreeDialog: View {
         .buttonSizing(.flexible)
         .accessibilityLabel(AppLocalization.text("worktree.location"))
         .accessibilityIdentifier("worktree-path")
+    }
+
+    /// 创建对话框，位置菜单选中工作树登记的路径。
+    init(session: RepositorySession, worktree: Worktree, close: @escaping () -> Void) {
+        self.session = session
+        self.worktree = worktree
+        self.close = close
+        _path = State(initialValue: worktree.path)
     }
 }
 
@@ -394,7 +396,7 @@ extension RelocateWorktreeDialog {
     private func check() async {
         problem = nil
 
-        guard !path.isEmpty, !isRegisteredPath else {
+        guard !isRegisteredPath else {
             return
         }
 
@@ -433,7 +435,7 @@ extension RelocateWorktreeDialog {
         panel.beginSheetModal(for: window, completionHandler: finish)
     }
 
-    /// 开始修复；仓库忙碌时表单保持打开。
+    /// 开始修复；服务器已断开时表单保持打开。
     private func submit() {
         if session.repairWorktree(at: path) {
             close()
@@ -479,7 +481,7 @@ struct RemoveWorktreeDialog: View {
         }
     }
 
-    /// 开始删除；仓库忙碌时表单保持打开。
+    /// 开始删除；服务器已断开时表单保持打开。
     private func submit() {
         if session.removeWorktree(worktree, force: force) {
             close()

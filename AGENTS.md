@@ -8,7 +8,6 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 - `Spooky` 是可运行的桌面 App；`SpookyKit` 核心库负责在本机或远端执行 Git、读取工作区状态并解析输出
 - 远端仓库的工作区留在远端机器，客户端经系统 SSH、用 `~/.ssh/config` 中的主机别名访问
-- 已有的功能见 [README](README.md)
 - 纯开源的个人工具，只在 GitHub 分发
 - 许可证为 [GPL-3.0](LICENSE)
   - 引入外部代码前先确认许可证与 GPL-3.0 兼容，并保留所需的版权与许可声明
@@ -17,7 +16,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 | 文档 | 内容 |
 |---|---|
-| [README.md](README.md)、[README-ZH.md](README-ZH.md) | 写给用户：介绍、功能、系统要求、构建、权限与数据说明 |
+| [README.md](README.md)、[README-ZH.md](README-ZH.md) | 写给开发者：简介、环境要求、构建与运行、架构概览、测试、调试、本地化、代码规范、发布与贡献 |
 | [docs/architecture.md](docs/architecture.md) | 模块划分与跨模块的设计 |
 | [docs/testing/](docs/testing/README.md) | 自动测试的开启方式，各里程碑的手动验收步骤 |
 | [docs/releasing.md](docs/releasing.md) | 版本号、发布流程与更新说明的写法 |
@@ -26,9 +25,9 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 - 内容按归属写：
   - 本文件：协作与编码的规范，以及写代码时必须遵守的约束
   - `docs/`：模块与设计的变化写进 `architecture.md`，测试方式的变化写进 `testing/`，发布方式的变化写进 `releasing.md`
-  - README：只在用户能感知的功能、系统要求、构建方式、权限或数据存放变化时修改，`README.md` 与 `README-ZH.md` 同步修改
+  - README：开发与运行环境，构建、测试、调试与发布的方式，贯穿全局的设计，Developer 菜单，数据存放的位置，支持的语言或第三方软件变化时修改，`README.md` 与 `README-ZH.md` 同步修改
   - 代码注释：Git 或其它工具在某处实现里的特殊行为与绕开的办法，写在处理它的代码旁，不写进文档
-- README 不写使用方法：快速上手、操作步骤和快捷键说明都不放进 README，使用方法由项目的专门网站介绍
+- README 写给开发者，不写功能介绍与使用方法：功能列表、快速上手、操作步骤、快捷键与权限说明都由项目的专门网站介绍
 - 逐个文件的清单与说明这类读代码就能得到的内容，不抄进文档
 - 仓库里不放 `CLAUDE.md`：Claude Code 默认只在项目没有 `CLAUDE.md` 时读取本文件
   - 发现仓库里出现了 `CLAUDE.md`，把其中的规范搬进本文件，再删掉它

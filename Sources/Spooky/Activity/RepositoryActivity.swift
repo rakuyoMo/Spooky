@@ -81,8 +81,8 @@ final class RepositoryActivity: Identifiable {
     /// 已本地化的操作名称。
     let title: String
 
-    /// 开始时间。
-    let started: Date
+    /// 开始时间；排队的写操作开始执行时改成开始执行的时刻。
+    var started: Date
 
     /// Remote 页记录连接的对象；其余两页的记录与较早保存的 Remote 记录为 nil。
     ///
@@ -92,8 +92,11 @@ final class RepositoryActivity: Identifiable {
     /// 结束时间，由 `RepositoryActivities.finish` 写入；进行中与从本机读回的记录为 nil。
     var ended: Date? = nil
 
-    /// 完成、失败或取消的本地化状态键。
+    /// 进行中、等待中、完成、失败、取消或已跳过的本地化状态键。
     var state = "activity.running"
+
+    /// 在写队列里等待时就结束了（取消或已跳过），没有执行；侧边栏的活动区据此再列它 4 s。
+    var endedWhileWaiting = false
 
     /// 整体的完成比例，0–1：按传输方向取几个阶段，各阶段最新的百分比求平均，没出现过的阶段算 0；还没出现任何阶段时为 nil。
     private(set) var progress: Double? = nil
@@ -110,9 +113,9 @@ final class RepositoryActivity: Identifiable {
     /// 原始 stderr 进度。
     private var stderr = ActivityOutput()
 
-    /// 已完成、失败或取消；进行中的同步把状态换成了步骤名，仍算进行中。
+    /// 已完成、失败、取消或已跳过；进行中的同步把状态换成了步骤名，仍算进行中，排队等待的也不算结束。
     var isEnded: Bool {
-        ["activity.finished", "activity.failed", "activity.cancelled"].contains(state)
+        ["activity.finished", "activity.failed", "activity.cancelled", "activity.skipped"].contains(state)
     }
 
     /// 从开始到结束的秒数；还没结束或从本机读回的记录为 nil。
@@ -441,34 +444,6 @@ final class RepositoryActivities {
         for activity in removed where activity.kind == .remote {
             archive?.delete(activity.id)
         }
-    }
-}
-
-// MARK: - RepositoryWriteLocks
-
-/// 应用内每个仓库同一时间只允许一个明确的写操作；所有窗口的写入口都据此禁用。
-@MainActor
-@Observable
-final class RepositoryWriteLocks {
-    /// 应用内唯一的写操作登记。
-    static let shared = RepositoryWriteLocks()
-
-    /// 正在写入的仓库。
-    private(set) var active: Set<RepositoryLocation> = []
-
-    /// 登记写操作；同一仓库已有写操作时拒绝。
-    func acquire(_ location: RepositoryLocation) -> Bool {
-        active.insert(location).inserted
-    }
-
-    /// 写操作结束后释放登记。
-    func release(_ location: RepositoryLocation) {
-        active.remove(location)
-    }
-
-    /// 仓库是否正在写入。
-    func contains(_ location: RepositoryLocation) -> Bool {
-        active.contains(location)
     }
 }
 

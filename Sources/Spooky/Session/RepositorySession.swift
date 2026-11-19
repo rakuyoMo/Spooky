@@ -57,8 +57,12 @@ final class RepositorySession {
     /// 最近一次成功读取的状态。
     private(set) var status: WorkingCopyStatus? = nil
 
-    /// 服务器连接状态，本机仓库为 nil。
-    private(set) var connectionState: RemoteConnectionState? = nil
+    /// 服务器连接状态，本机仓库为 nil；从已连上变为没连上时，这个仓库排着的写操作全部取消。
+    private(set) var connectionState: RemoteConnectionState? = nil {
+        didSet {
+            connectionStateChanged(from: oldValue)
+        }
+    }
 
     /// 服务器上有可用的废纸篓，由连接体检找到；本机仓库不用这一项。
     private(set) var serverHasTrash = false
@@ -124,10 +128,10 @@ final class RepositorySession {
     /// 点击勾选框后的临时状态，刷新成功或失败后撤回。
     var stagingOverrides: [StatusRowID: Bool] = [:]
 
-    /// 暂存正在执行：只有受影响的行禁用，其它行的勾选框仍可点，新的请求排进 ``queuedStaging``。
-    var isStaging = false
+    /// 本会话的暂存排在队列里或正在执行；这时新点的请求并进它，排进 ``queuedStaging``。
+    var staging = StagingPhase.idle
 
-    /// 暂存执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
+    /// 暂存排队或执行期间收到的请求，在同一个写操作里依次执行；失败或取消时一并丢弃。
     var queuedStaging: [(entries: [StatusEntry], staged: Bool)] = []
 
     /// 列表多选使用的稳定标识。
@@ -521,6 +525,9 @@ extension RepositorySession {
 
         if let repository {
             viewStates.store(captureViewState(), for: repository)
+
+            // 本窗口排着的写操作随窗口关闭或换仓库取消，别的窗口提交的照常
+            RepositoryWriteQueue.shared.closed(self, in: repository)
         }
 
         generation += 1
@@ -560,7 +567,7 @@ extension RepositorySession {
         diffFailure = nil
         contentHash = nil
         stagingOverrides = [:]
-        isStaging = false
+        staging = .idle
         queuedStaging = []
         selectedIDs = []
         commitSubject = ""
@@ -651,134 +658,12 @@ extension RepositorySession {
 // MARK: - Write Operations
 
 extension RepositorySession {
-    /// 新建、检出、同步和工作区写入共用任务生命周期，取消后仍刷新真实状态。
-    ///
-    /// - Parameters:
-    ///   - title: 已本地化的操作名称，用于 Activity 与断线后的核对报告。
-    ///   - progress: 检出、合并、拉取、变基与重置这类占用工作区的操作传入整页进度的标题，执行期间工作区换成进度；
-    ///     其它写操作不传。
-    ///   - recordsActivity: 网络与引用操作记入 Activity；工作区的高频写入只用于核对报告。
-    ///   - target: 要连接远端传输对象或引用的操作传入连接的对象，记在 Activity 的 Remote 页，写进记录的图标与标题；
-    ///     不传时记在 Repository 页。动作里经 `ActivityRecording` 另起的记录接在后面。
-    ///   - offersAutoStash: 被本地改动挡住时是否按设置询问先储藏，检出、拉取与合并使用。
-    ///   - reportsFailure: 失败时是否弹出错误 sheet；自动获取只把失败记进 Activity。
-    ///   - undo: 这次写操作能否撤销；没有声明的写操作按不能撤销处理。
-    ///   - failureNote: 失败时补在错误说明前面的一段话，如同步停在了哪一步。
-    /// - Returns: 是否已开始执行；仓库不可写时不启动，调用方据此保留未发送的参数。
-    @discardableResult
-    func performGit(
-        _ action:
-        @escaping @Sendable (GitRunner, @escaping @Sendable (GitOutputEvent) -> Void) async throws -> Void,
-        title: String,
-        progress: String? = nil,
-        recordsActivity: Bool = true,
-        target: ActivityTarget? = nil,
-        offersAutoStash: Bool = false,
-        reportsFailure: Bool = true,
-        undo: UndoRecording = .irreversible,
-        success: (() -> Void)? = nil,
-        failureNote: (() -> String?)? = nil
-    ) -> Bool {
-        guard canWrite, let repository, RepositoryWriteLocks.shared.acquire(repository) else {
-            return false
+    /// 等刷新全部结束，连同它带起的身份与引用读取：本机仓库的文件监听会在写入后另起刷新，其间要求的完整刷新排在它之后。
+    /// 排队的写操作轮到时据此看到写入之后的状态。
+    func waitForRefresh() async {
+        while let task = refreshTask ?? contextTask ?? history.referenceTask {
+            await task.value
         }
-
-        refreshTask?.cancel()
-        refreshTask = nil
-        refreshID = UUID()
-        contextTask?.cancel()
-        contextTask = nil
-        diffTask?.cancel()
-        history.suspend()
-        stashes.suspend()
-        submodules.suspend()
-        worktrees.suspend()
-        isRefreshing = false
-        pendingFullRefresh = false
-        isWriting = true
-        workspaceProgress = progress.map { WorkspaceProgress(title: $0) }
-        let request = generation
-        let runner = makeRunner(repository)
-        let branch = status?.branch
-        let finished = onWriteFinished
-        let activities = activities
-        let record = recordsActivity
-            ? WriteActivity(activities: activities, repository: repository, title: title, target: target)
-            : nil
-        let (events, continuation) = AsyncStream<ActivityEvent>.makeStream()
-        Self.logger.info("写操作开始：\(title, privacy: .public)")
-
-        // 后台写入只记进 Activity；被本地改动挡住的检出、拉取与合并改为询问是否先储藏，用户不储藏时再报告失败
-        let reportFailure: (Error, Bool) -> Void = { [weak self] error, cancelled in
-            guard let self else { return }
-
-            guard reportsFailure else {
-                recordQuietFailure(error, cancelled: cancelled, in: repository) { continuation.yield(.output($0)) }
-                return
-            }
-
-            let stashing = offersAutoStash && !cancelled
-                && offerAutoStash(after: error, title: title, action: action, failureNote: failureNote, undo: undo)
-
-            if !stashing {
-                reportWriteFailure(
-                    error,
-                    cancelled: cancelled,
-                    title: title,
-                    note: failureNote?(),
-                    branch: branch,
-                    in: repository
-                )
-            }
-        }
-
-        // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
-        let checked = updatingSubmodules(after: action, tracked: submodules.initialized)
-        let recorded = recordingUndo(checked, title: title, target: target, recording: undo)
-        let collector = collect(events, into: record, request: request)
-
-        writeTask = Task { [weak self] in
-            // 状态与失败说明同样经流送出，落在最后一条记录上
-            do {
-                try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
-                    try await recorded(runner) { continuation.yield(.output($0)) }
-                }
-                continuation.yield(.state(Task.isCancelled ? "activity.cancelled" : "activity.finished"))
-                Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
-
-                if let self, generation == request, !Task.isCancelled { success?() }
-            } catch {
-                let cancelled =
-                    Task.isCancelled || error is CancellationError
-                        || ((error as? GitError)?.isCancelled ?? false)
-                continuation.yield(.state(cancelled ? "activity.cancelled" : "activity.failed"))
-
-                // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
-                if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
-
-                if let self, generation == request { reportFailure(error, cancelled) }
-            }
-
-            continuation.finish()
-            await collector.value
-
-            // 输出收完才结束记录，Remote 记录这时写进本机
-            record?.finish()
-
-            RepositoryWriteLocks.shared.release(repository)
-            finished?(repository)
-
-            guard let self, generation == request else { return }
-            isWriting = false
-            workspaceProgress = nil
-            writeTask = nil
-            refresh(full: true)
-            offerSubmoduleUpdate()
-        }
-
-        let task = writeTask
-        record?.cancel = { task?.cancel() }
-        return true
     }
 
     /// 写操作走到占用工作区的一步时换上整页进度，离开这一步时撤下，如同步只在拉取那一步显示；
@@ -793,6 +678,156 @@ extension RepositorySession {
         }
 
         workspaceProgress = title.map { WorkspaceProgress(title: $0) }
+    }
+}
+
+// MARK: - Write Execution
+
+extension RepositorySession {
+    /// 开始执行一个写操作：取消刷新、挂起各视图的读取，执行动作并记进 Activity；结束后刷新，再轮到队列里的下一项。
+    ///
+    /// - Parameters:
+    ///   - operation: 写操作的动作与执行选项。
+    ///   - write: 写操作在队列里的登记，已登记为执行中。
+    func execute(_ operation: GitWriteOperation, as write: RepositoryWrite) {
+        let repository = write.location
+        let branch = status?.branch
+
+        suspendReadsForWriting()
+        isWriting = true
+        workspaceProgress = operation.progress.map { WorkspaceProgress(title: $0) }
+
+        let request = generation
+        let runner = makeRunner(repository)
+        let finished = onWriteFinished
+        let record = activityRecord(for: operation, write: write)
+        let (events, continuation) = AsyncStream<ActivityEvent>.makeStream()
+        let title = operation.title
+        let success = operation.success
+
+        Self.logger.info("写操作开始：\(title, privacy: .public)")
+
+        let reportFailure = failureReport(for: operation, branch: branch, in: repository) {
+            continuation.yield(.output($0))
+        }
+
+        // 已初始化子模块的指针被改动时随后更新或询问；按声明在操作前后记下仓库状态，供撤销与重做使用
+        let checked = updatingSubmodules(after: operation.action, tracked: submodules.initialized)
+        let recorded = recordingUndo(checked, title: title, target: operation.target, recording: operation.undo)
+        let collector = collect(events, into: record, request: request)
+
+        writeTask = Task { [weak self] in
+            // 状态与失败说明同样经流送出，落在最后一条记录上
+            do {
+                try await ActivityRecording.$send.withValue({ continuation.yield($0) }) {
+                    try await recorded(runner) { continuation.yield(.output($0)) }
+                }
+
+                continuation.yield(.state(Task.isCancelled ? "activity.cancelled" : "activity.finished"))
+                Self.logger.info("写操作\(Task.isCancelled ? "已取消" : "完成", privacy: .public)：\(title, privacy: .public)")
+
+                if let self, generation == request, !Task.isCancelled { success?() }
+            } catch {
+                let cancelled =
+                    Task.isCancelled || error is CancellationError
+                        || ((error as? GitError)?.isCancelled ?? false)
+
+                continuation.yield(.state(cancelled ? "activity.cancelled" : "activity.failed"))
+
+                // 失败的类别在 reportWriteFailure 归类后记录，这里只记取消
+                if cancelled { Self.logger.info("写操作已取消：\(title, privacy: .public)") }
+
+                // 失败后排着的写操作不在失败后的状态上继续，断线中断的按断线取消；停掉的只停这一个
+                if !cancelled {
+                    if error is RemoteConnectionError {
+                        RepositoryWriteQueue.shared.disconnected(repository)
+                    } else {
+                        RepositoryWriteQueue.shared.failed(write)
+                    }
+                }
+
+                if let self, generation == request { reportFailure(error, cancelled) }
+            }
+
+            continuation.finish()
+            await collector.value
+
+            // 输出收完才结束记录，Remote 记录这时写进本机
+            record?.finish()
+
+            finished?(repository)
+            self?.endWriting(request: request)
+            RepositoryWriteQueue.shared.finish(write)
+        }
+
+        let task = writeTask
+        record?.cancel = { task?.cancel() }
+
+        // 后台写操作给用户发起的写操作让路：说明经流写进当前的记录，停下后记为取消
+        if operation.background {
+            write.giveWay = { title in
+                let note = AppLocalization.text("sync.autoFetch.yielded", title) + "\n"
+                continuation.yield(.output(.standardError(Data(note.utf8))))
+                task?.cancel()
+            }
+        }
+    }
+
+    /// 写入前取消刷新与各视图的读取，旧结果不会在写入之后覆盖新状态。
+    private func suspendReadsForWriting() {
+        refreshTask?.cancel()
+        refreshTask = nil
+        refreshID = UUID()
+
+        contextTask?.cancel()
+        contextTask = nil
+        diffTask?.cancel()
+
+        history.suspend()
+        stashes.suspend()
+        submodules.suspend()
+        worktrees.suspend()
+
+        isRefreshing = false
+        pendingFullRefresh = false
+    }
+
+    /// 写操作结束：解除写入状态并完整刷新；期间关闭或换了仓库时不动。
+    ///
+    /// - Parameter request: 发起写操作时的仓库代次。
+    private func endWriting(request: Int) {
+        guard generation == request else {
+            return
+        }
+
+        isWriting = false
+        workspaceProgress = nil
+        writeTask = nil
+
+        refresh(full: true)
+        offerSubmoduleUpdate()
+    }
+
+    /// 写操作的 Activity 记录：排过队的接着用等待中的记录；不记 Activity 的写操作开始时移除等待中的记录。
+    private func activityRecord(for operation: GitWriteOperation, write: RepositoryWrite) -> WriteActivity? {
+        let waiting = write.waiting?.record
+        write.waiting = nil
+
+        guard operation.recordsActivity else {
+            if let waiting {
+                activities.items.removeAll { $0 === waiting }
+            }
+
+            return nil
+        }
+
+        return WriteActivity(
+            activities: activities,
+            repository: write.location,
+            title: operation.title,
+            target: operation.target,
+            waiting: waiting
+        )
     }
 }
 
@@ -837,7 +872,7 @@ extension RepositorySession {
             history.suggestions.prepareContributors(runner: runner, head: head)
         }
 
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         // 选区保留列表里仍有的条目，补充清单里的未改动与被忽略文件同样算数
         let visible = listing.entries(status: status.entries, files: workingTreeFiles)
@@ -895,7 +930,7 @@ extension RepositorySession {
     /// 刷新失败时撤回临时勾选并报告错误：取消不报告，断线交给重连，其余错误交给窗口呈现。
     private func reportRefreshFailure(_ error: Error, in repository: RepositoryLocation) {
         // 保留旧快照，错误反馈与数据展示互不覆盖。
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         guard (error as? GitError)?.isCancelled != true, !(error is CancellationError) else {
             return
@@ -934,7 +969,7 @@ extension RepositorySession {
     ///   - title: 已本地化的操作名称，用于断线后的核对报告。
     ///   - note: 补在恢复说明前面的一段话。
     ///   - branch: 写入前状态快照中的分支与 HEAD。
-    private func reportWriteFailure(
+    func reportWriteFailure(
         _ error: Error,
         cancelled: Bool,
         title: String,
@@ -942,7 +977,7 @@ extension RepositorySession {
         branch: BranchStatus?,
         in repository: RepositoryLocation
     ) {
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         let remoteFailure = error as? RemoteConnectionError
 
@@ -980,13 +1015,13 @@ extension RepositorySession {
     }
 
     /// 不弹错误 sheet 的写入失败：错误标题与原因经 `output` 追加到 Activity 的记录；断线照常重连，结果由重连后的完整刷新核对。
-    private func recordQuietFailure(
+    func recordQuietFailure(
         _ error: Error,
         cancelled: Bool,
         in repository: RepositoryLocation,
         output: (GitOutputEvent) -> Void
     ) {
-        stagingOverrides = [:]
+        dropStagingOverrides()
 
         guard !cancelled else {
             return
@@ -1012,7 +1047,7 @@ extension RepositorySession {
 
         connectionState = .connected
         failure = nil
-        stagingOverrides = [:]
+        dropStagingOverrides()
         self.recovery = recovery
 
         // 之前没有挂载的目录在连上后可能已经挂上

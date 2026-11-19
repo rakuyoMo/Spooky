@@ -187,7 +187,8 @@ extension RepositorySession {
             target: .pull(remote, refspec: branch),
             offersAutoStash: true,
             undo: .unrecorded,
-            failureNote: { progress.failureNote }
+            failureNote: { progress.failureNote },
+            available: { $0.canSync }
         )
     }
 
@@ -232,7 +233,9 @@ extension RepositorySession {
             },
             title: AppLocalization.text("sync.forcePush"),
             target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name),
-            undo: .unrecorded
+            touchesWorkingCopy: false,
+            undo: .unrecorded,
+            available: { $0.canForcePush(branch) }
         )
     }
 
@@ -267,7 +270,9 @@ extension RepositorySession {
             },
             title: AppLocalization.text("sync.push"),
             target: .push(remote, refspec: "refs/heads/" + local + ":refs/heads/" + name),
-            undo: .unrecorded
+            touchesWorkingCopy: false,
+            undo: .unrecorded,
+            available: { $0.canPush(branch) }
         )
     }
 
@@ -311,7 +316,8 @@ extension RepositorySession {
             progress: AppLocalization.text("sync.step.pull"),
             target: .pull(source, refspec: refspec),
             offersAutoStash: true,
-            undo: .unrecorded
+            undo: .unrecorded,
+            available: { session in reference.map { session.canPull(from: $0) } ?? session.canPull }
         )
     }
 
@@ -344,7 +350,9 @@ extension RepositorySession {
             },
             title: AppLocalization.text("sync.quickPush"),
             target: .push(remote, refspec: "refs/heads/" + local.name + ":" + upstream),
-            undo: .unrecorded
+            touchesWorkingCopy: false,
+            undo: .unrecorded,
+            available: { $0.canPush(local) }
         )
     }
 
@@ -380,7 +388,8 @@ extension RepositorySession {
             title: AppLocalization.text("sync.quickMerge"),
             progress: AppLocalization.text("workspaceProgress.merge"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { session in reference.map { session.canMerge($0) } ?? session.canMerge }
         )
     }
 
@@ -398,7 +407,8 @@ extension RepositorySession {
             title: AppLocalization.text("sync.quickRebase"),
             progress: AppLocalization.text("workspaceProgress.rebase"),
             offersAutoStash: true,
-            undo: .reversible
+            undo: .reversible,
+            available: { $0.canRebase }
         )
     }
 

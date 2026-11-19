@@ -77,6 +77,21 @@ extension RepositorySession {
         }
     }
 
+    /// 连接状态变化：从已连上变为没连上时，这个仓库排着的写操作全部取消，不在重连后执行。
+    ///
+    /// - Parameter previous: 变化前的连接状态。
+    func connectionStateChanged(from previous: RemoteConnectionState?) {
+        // 关闭会话时置为 nil，不算断开
+        guard
+            previous == .connected,
+            let connectionState,
+            connectionState != .connected,
+            let repository
+        else { return }
+
+        RepositoryWriteQueue.shared.disconnected(repository)
+    }
+
     /// 轮询只读状态，任何失败都不重放写操作。
     func startPolling() {
         pollingTask?.cancel()

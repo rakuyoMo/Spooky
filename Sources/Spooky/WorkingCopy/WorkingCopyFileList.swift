@@ -140,7 +140,7 @@ extension WorkingCopyFileList {
         /// 勾选框能否点。
         var canToggleStaging: Bool
 
-        /// 整个仓库被写操作占用，图标与文件名变灰。
+        /// 改动工作区或索引的写操作正在执行，图标与文件名变灰。
         var locked: Bool
 
         /// 表头排序。
@@ -316,7 +316,7 @@ extension WorkingCopyFileList {
                 listing: listing,
                 marked: session.workingTreeFiles.assumeUnchanged,
                 canToggleStaging: session.canToggleStaging,
-                locked: session.isRepositoryLocked,
+                locked: session.isWorkingCopyLocked,
                 sort: outline.sortDescriptors,
                 style: style
             )

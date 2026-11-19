@@ -204,8 +204,8 @@ final class RepositoryHistoryState {
     /// 当前窗口的执行器，测试可以注入隔离环境。
     private(set) var runner: GitRunner? = nil
 
-    /// 引用读取任务，轮询期间合并重复请求。
-    private var referenceTask: Task<Void, Never>? = nil
+    /// 引用读取任务，轮询期间合并重复请求；排队的写操作轮到时等它读完。
+    private(set) var referenceTask: Task<Void, Never>? = nil
 
     /// 引用读取进行中时收到的最近一次刷新，读完后补上，读取开始之后的改动不会漏掉。
     private var pendingRefresh: (

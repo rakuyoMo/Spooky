@@ -5,22 +5,18 @@ import SwiftUI
 // MARK: - Opening
 
 extension RepositoryManagerController {
-    /// 打开仓库书签；失效的同样经打开流程重试。
+    /// 打开书签或工作树行指向的仓库；失效的书签同样经打开流程重试。
     ///
     /// - Parameters:
-    ///   - id: 仓库书签。
+    ///   - location: 仓库的位置。
     ///   - inNewWindow: 是否显式在新窗口打开。
-    func open(_ id: Bookmark.ID, inNewWindow: Bool) {
-        guard let location = bookmarks.bookmark(id)?.location else {
-            return
-        }
-
+    func open(_ location: RepositoryLocation, inNewWindow: Bool) {
         coordinator?.openRepository(at: location, from: window, inNewWindow: inNewWindow)
     }
 
     /// 在 Finder 中显示仓库；服务器仓库不能直接打开时，sheet 挂在仓库管理所在的窗口上。
-    func revealInFinder(_ id: Bookmark.ID) {
-        guard let location = bookmarks.bookmark(id)?.location, let window else {
+    func revealInFinder(_ location: RepositoryLocation) {
+        guard let window else {
             return
         }
 
@@ -28,21 +24,13 @@ extension RepositoryManagerController {
     }
 
     /// 复制路径：本机仓库是绝对路径，服务器仓库带主机前缀，避免与本机目录混淆。
-    func copyPath(_ id: Bookmark.ID) {
-        guard let location = bookmarks.bookmark(id)?.location else {
-            return
-        }
-
+    func copyPath(_ location: RepositoryLocation) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(location.displayPath, forType: .string)
     }
 
     /// 在所选终端程序中打开；服务器仓库经 SSH 进入远端路径。
-    func openInTerminal(_ id: Bookmark.ID) {
-        guard let location = bookmarks.bookmark(id)?.location else {
-            return
-        }
-
+    func openInTerminal(_ location: RepositoryLocation) {
         window?.openLocationInTerminal(location)
     }
 }
@@ -151,44 +139,6 @@ extension RepositoryManagerController {
 // MARK: - Editing
 
 extension RepositoryManagerController {
-    /// 确认后删除书签；只移除记录，不动磁盘或服务器上的仓库。
-    ///
-    /// 要删的都是目录已不存在的本机仓库时不询问，直接删除书签。
-    func confirmDelete(_ ids: [Bookmark.ID]) {
-        let targets = ids.compactMap(bookmarks.bookmark)
-
-        guard !targets.isEmpty else {
-            return
-        }
-
-        guard !targets.allSatisfy(\.isLocalDirectoryGone) else {
-            delete(targets)
-            return
-        }
-
-        window?.presentDialog { close in
-            deleteBookmarksPrompt(targets, close: close)
-        }
-    }
-
-    /// 删除书签的询问：标题按个数取写法，主按钮是 Delete；确认后删除，并从选中里去掉。
-    ///
-    /// - Parameters:
-    ///   - targets: 要删除的书签。
-    ///   - close: 关闭询问。
-    func deleteBookmarksPrompt(_ targets: [Bookmark], close: @escaping () -> Void) -> ConfirmationDialog {
-        ConfirmationDialog(
-            title: targets.count == 1
-                ? AppLocalization.text("bookmarks.delete.title", targets[0].displayName)
-                : AppLocalization.text("bookmarks.delete.titleMultiple", targets.count),
-            message: AppLocalization.text("bookmarks.delete.message"),
-            submitTitle: AppLocalization.text("bookmarks.delete.submit"),
-            close: close
-        ) { [weak self] _ in
-            self?.delete(targets)
-        }
-    }
-
     /// 文件夹的子项按名称排序。
     func sortChildren(of id: Bookmark.ID) {
         bookmarks.sortChildren(of: id)
@@ -197,15 +147,5 @@ extension RepositoryManagerController {
     /// 书签所在的文件夹按名称排序；在最外层时排最外层。
     func sortParentFolder(of id: Bookmark.ID) {
         bookmarks.sortChildren(of: bookmarks.parent(of: id))
-    }
-}
-
-// MARK: - Private
-
-extension RepositoryManagerController {
-    /// 删除书签，并从选中里去掉。
-    private func delete(_ targets: [Bookmark]) {
-        bookmarks.delete(targets.map(\.id))
-        selection.removeAll { bookmarks.bookmark($0) == nil }
     }
 }

@@ -155,7 +155,7 @@ extension AddSubmoduleDialog {
         return String(absolute.dropFirst(root.count + 1))
     }
 
-    /// 捕获表单值后开始添加；仓库忙碌时表单保持打开。
+    /// 捕获表单值后开始添加；服务器已断开时表单保持打开。
     private func submit() {
         if session.addSubmodule(url: url, path: trimmedPath) {
             close()
@@ -375,7 +375,7 @@ extension SubmoduleOperationDialog {
         }
     }
 
-    /// 捕获选项后开始执行；仓库忙碌时表单保持打开。
+    /// 捕获选项后开始执行；服务器已断开时表单保持打开。
     private func submit() {
         let targets = all ? candidates : selected.map { [$0] } ?? []
 
@@ -557,7 +557,7 @@ extension SubmoduleValueDialog {
         }
     }
 
-    /// 值没变时直接关闭，否则开始执行；仓库忙碌时表单保持打开。
+    /// 值没变时直接关闭，否则开始执行；服务器已断开时表单保持打开。
     private func submit() {
         let started: Bool =
             switch target {

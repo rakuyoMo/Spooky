@@ -6,10 +6,15 @@
 
 macOS 原生 Git 客户端，本机仓库和服务器上的仓库都能直接操作。
 
+[![CI](https://github.com/rakuyoMo/Spooky/actions/workflows/ci.yml/badge.svg)](https://github.com/rakuyoMo/Spooky/actions/workflows/ci.yml)
+![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white)
+![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+
 </div>
 
 > [!NOTE]
-> Spooky 仍在开发中，尚未发布正式版本，目前只能从源码构建，功能和界面都可能调整。
+> Spooky 仍在开发中，尚未发布正式版本，功能和界面都可能调整。
 
 ## 简介
 
@@ -19,116 +24,58 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 连接使用系统自带的 SSH 和 `~/.ssh/config` 里的主机别名，认证、主机指纹和连接复用都交给 OpenSSH 处理。
 
-## 功能
+本文写给开发者：需要哪些工具，怎样构建、运行、测试与调试 Spooky，以及怎样参与贡献。
 
-- **本机与服务器仓库**：两种仓库共用同一套界面。服务器仓库的标题、书签和复制的路径都带主机前缀
+## 环境要求
 
-- **仓库书签**：用文件夹整理本机与服务器仓库，可以手动或按名称排序、改名。查看每个仓库的位置、当前分支、最后一次提交、提交人身份、描述和远端，并修改描述与身份。找不到的仓库只做标记，不会被移除
-
-- **新建、克隆与查找仓库**：在本机或服务器上新建仓库；在后台克隆，可以选择 LFS 与子模块，书签上显示进度。在本机或服务器的文件夹里查找已有的仓库，服务器上的查找在服务器上进行；服务器上的文件夹可以手填，也可以浏览选择
-
-- **窗口与导航**：标签页、窗口恢复、快速启动窗口、Dock 菜单里的新建窗口、把拖到 Dock 图标上的文件夹作为仓库打开、在视图之间后退与前进，用快捷操作查找视图、分支、标签、提交、文件、储藏等并直接执行动作，工具栏可以自定义
-
-- **连接检查与断线恢复**：添加服务器仓库时，先检查连接、Git 版本和运行环境。断线后保留上次读取的状态并在后台重连，恢复前禁止写入
-
-- **自动刷新**：本机仓库随文件变化刷新；服务器仓库在前台每 2 秒、后台每 10 秒刷新一次。也可以随时手动刷新
-
-- **按仓库记住视图**：每个窗口最多记住 15 个仓库的视图、选中项和提交信息草稿，切回仓库时恢复
-
-- **错误说明**：错误会写明类别、所在仓库和 Git / SSH 的原始输出，原文可以选择复制
-
-- **工作区**：改动可以平铺或按树形显示，也可以浏览仓库里的全部文件；可以显示被忽略和 assume-unchanged 的文件，并按路径筛选。支持停止跟踪、删除、移动、忽略或排除文件，把文件恢复到指定版本，以及应用补丁文件；删除的文件与丢弃的未跟踪文件放进废纸篓，服务器有废纸篓时同样如此；文件可以用 Quick Look 预览、拖出，或用默认程序打开
-
-- **按文件、块、行暂存**：支持多选与三态勾选框。Diff 中可以按行选择，只暂存或丢弃选中的行；Diff 重新加载时，未改变的块保留行选择
-
-- **Diff 文本**：可以在块内跨行选择和复制文字，不带行号与 Diff 前缀；显示不可见字符时，复制仍保留原始空白字符。文件摘要显示重命名、模式变化与二进制变化
-
-- **Diff 选项**：可以调整上下文行数、显示整个文件、忽略空白、显示不可见字符和设置 Tab 宽度。修改行中改动的单词会高亮显示。语法着色基于 highlight.js，支持它的 192 种语言，识别不了语言的文件显示为纯文本。图片可以并排对照，也可以逐张切换
-
-- **提交信息**：标题字数提示、正文软折行或硬折行、注释行处理，以及最近提交、改动文件、`fixup!` / `squash!` 标题和 “#” 之后 GitHub / GitLab Issue 编号的自动补全。支持修补最近一次提交、Sign Off 和跳过钩子
-
-- **身份与签名**：用身份档案切换仓库的提交人身份，档案的签名密钥可以从本机的 GPG / SSH 密钥中选择。支持 GPG / SSH 提交签名；服务器仓库在服务器上签名，口令询问回到本机
-
-- **冲突向导**：合并、变基、摘取或反转进行中时，显示剩余的冲突数量，变基还显示当前步骤。逐个文件对照两侧版本，采用其中一方，在合并工具里合并两侧，或在其它编辑器里改好后采用当前版本，再继续、跳过或中止
-
-- **储藏**：可以储藏全部或选中的改动，也可以创建不改动工作区的快照；应用储藏时可以恢复暂存状态，或只应用其中的一个文件。本地改动挡住检出、拉取或合并时，Spooky 会询问是否先储藏，完成后再恢复
-
-- **文件历史与 Blame**：查看一个文件的历史，可按作者、提交人或版本筛选，输入时自动补全作者姓名；查看每一行最后由谁修改，查看文件任意一次提交的版本，并从文件历史中导出。目录历史显示目录内全部变更文件
-
-- **历史**：分页加载，显示提交图、引用标记和未推送 / 未拉取的标记。可以按提交信息、作者、提交人、文件、提交哈希和日期搜索，并组合多个条件；可以按日期或拓扑顺序排列，按天、周或月分组，或只沿第一父提交查看。日期可以显示完整时间或相对现在的时间，作者显示 Gravatar 头像或姓名首字母
-
-- **提交详情**：浏览一次提交的完整文件树，校验 GPG 与 SSH 签名。合并提交可以显示与第一父提交之间的 Diff、只显示真正合并过的文件，或不显示 Diff。可以比较任意两个版本，把某个版本的文件导出为文件夹或 zip 归档，把提交存成补丁文件
-
-- **分支、标签与远端**：侧边栏按 “/” 把引用折叠成文件夹，并可以过滤。分支可以置顶和归档，并标出陈旧的分支。支持快进、重命名和删除本地与远端分支，设置上游和父分支，新建轻量、附注或签名标签，管理远端及其地址与 refspec。输入分支名时自动规范成有效的引用名
-
-- **同步与合并**：获取、拉取、推送和同步，可以选择清理已删除的分支、获取全部标签、处理子模块和跳过钩子。强推只覆盖你上次看到的版本，任意版本都可以推到任意引用。窗口显示仓库时可以自动获取远端，Spooky 在后台也照常进行，不会询问凭据。合并前先预览是否会冲突。所有操作的日志集中在 “活动” 窗口里，按远程操作、仓库操作与托管服务请求分页，进行中的操作可以取消
-
-- **改写历史**：反转、摘取、以 soft、mixed 或 hard 方式重置、检出任意版本，以及变基到新的基点。交互式变基可以压缩、fixup、编辑、改信息、删除或调整提交顺序，停在较早的提交上修补它，或自动压缩。改写之前，Spooky 会列出受影响的提交，并提示其中已经推送或已并入其它分支的提交
-
-- **分支整理**：把本地分支与基准分支比较，看它能否干净合并或会不会冲突。显示每个分支的 Pull Request 或 Merge Request，压缩或变基合并的分支同样认得出，并可以按它筛选。可以用合并或变基把父分支的新提交并入分支，批量或自动归档过时的分支，自动归档前先由你确认列表；“活动” 窗口记下每个分支被归档的原因
-
-- **托管账号**：github.com 可以在浏览器里登录或填个人访问令牌，GitLab.com 填个人访问令牌，私有部署的 GitLab 可以填个人访问令牌或用户名与密码。同一服务可以有多个账号，令牌只保存在钥匙串里
-
-- **Pull Request 与 Merge Request**：按远端列出 GitHub 仓库的 Pull Request 或 GitLab 项目的 Merge Request，查看讨论、提交与改动。可以从同一项目或 Fork 的分支新建，修改、评论、关闭，按项目允许的方式合并，以及检出。自己的评论可以修改与删除，GitLab 上还可以回复评论。经 SSH 别名的远端可以手动关联到账号与项目，仓库也可以发布到 GitHub 或 GitLab
-
-- **子模块**：添加、初始化、更新、同步、获取、移动、改名和删除子模块，删除时可以保留文件；修改地址与选项，检出其它版本。配置不完整的子模块可以修复；子模块可以在 Spooky 里打开，并一键回到父仓库
-
-- **工作树**：新建、打开、移动、修复和删除工作树。已在其它工作树检出的分支会标出来，服务器上的工作树可以浏览服务器上的文件夹来新建
-
-- **Git LFS**：启用 Git LFS，跟踪文件与路径规则，获取、拉取和推送 LFS 对象并显示进度。Spooky 会检查仓库所在的机器上有没有装 Git LFS，并说明怎样让它可用
-
-- **Reflog 与撤销**：浏览并搜索 HEAD 或任一分支的 Reflog，从任一记录恢复分支或新建分支。每个仓库的 Git 操作都可以撤销与重做；恢复前 Spooky 会先核对仓库，不能撤销时说明原因
-
-- **拖放操作**：把分支、提交和标签拖到侧边栏，就能新建分支与标签、合并、变基、摘取、反转、拉取、发布、推送、置顶、归档或改名；在历史里拖动提交，可以压缩、fixup 或移动它们
-
-- **在终端中打开**：支持 Terminal、iTerm、Warp、Ghostty、WezTerm 和 Otty。服务器仓库会在终端里经 SSH 进入远端路径
-
-- **在访达中显示服务器仓库**：Show in Finder 在这台 Mac 已挂载的网络卷里找到服务器仓库，也可以由 Spooky 经 SMB 或 sshfs 挂载，或者使用你指定的文件夹。挂载方式可以在添加仓库时选择，之后在仓库设置里更改。没连上服务器时先连接，找不到仓库在本机的位置时请你设置
-
-- **外部工具**：用外部的比较与合并工具查看改动、解决冲突，用其它程序打开文件。服务器上的文件先复制到本机交给这些工具，合并结果与编辑过的文件要先核对服务器上的版本没有变化才会写回。装了 Remote SSH 扩展的 VS Code、VS Code Insiders 与 Cursor 直接打开服务器上的文件
-
-- **链接**：`spooky://` 链接可以打开仓库、视图、分支或提交，或发起克隆，本机与服务器仓库都适用。github.com 上 “Open with Desktop” 的链接可以交给 Spooky 打开
-
-- **设置**：外观、全局的 Git 身份与签名、Git 程序、外部工具、托管账号、SSH agent 与环境变量。仓库设置包括描述、提交人身份、折行、签名、Git LFS、忽略与排除规则
-
-- **更新与诊断**：Spooky 按稳定、测试或开发通道检查签名的更新。帮助菜单可以导出去掉了个人信息的诊断报告；崩溃之后，Spooky 可以打开预填好的 GitHub 问题页，由你自己决定是否提交
-
-- **主题**：Default 与 Default (Dark) 存为普通的主题文件，可以编辑，不能改名或删除；文件缺少或损坏时，下次启动 Spooky 会重新写入。可以新建自己的 Diff 与文件内容主题，逐类修改语法颜色，经拖放导入和导出，在 Finder 里打开或拖到 Dock 图标上的主题文件同样导入，并为浅色、深色外观各选一套
-
-- **应用图标**：在外观设置里从 “躲猫猫” 与 “cherry-pick” 两个系列共八组图标中选择，Dock、App 切换器和 Finder 都显示所选的一组
-
-- **支持八种语言**：英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，自动跟随系统语言。其它语言环境下显示英文
-
-## 系统要求
+### 开发环境
 
 - macOS 26 或更高版本
+
+- 带 Swift 6.2 或更高版本的 Xcode。CI 与发布使用 [`ci.yml`](.github/workflows/ci.yml) 里 `DEVELOPER_DIR` 指定的 Xcode，想得到与 CI 相同的结果时用同一版
+
+- [mise](https://mise.jdx.dev)，用来执行 `mise.toml` 里定义的构建、测试、代码规范与发布任务
+
+### Git 与服务器
+
+Spooky 在仓库所在的机器上执行 Git，用来测试的机器需要：
+
 - 本机和服务器上的 Git 都需要 `2.41.0` 或更高版本，这个要求来自 Spooky 使用的 `git fetch --porcelain`
-  - 本机仓库使用 `/usr/bin/git`，也可以在设置里换成别的 Git 程序；版本不足时，Spooky 会提示更新 Xcode 或命令行工具
+  - 本机仓库使用 `/usr/bin/git`，也可以在设置里换成别的 Git 程序
   - 服务器仓库使用该主机上的 Git
-- 服务器还需要：
+
+- 服务器上：
   - 支持反向 Unix socket 转发的 OpenSSH
-  - `/usr/bin/perl`，以及核心模块 `IO::Socket::UNIX`、`JSON::PP`、`POSIX`
-  - 在服务器上输入 SSH 私钥口令时，OpenSSH 需要 `8.4` 或更高版本
+  - 在服务器上为 Git 输入 SSH 私钥口令时，OpenSSH 需要 `8.4` 或更高版本
   - sshd 的 `MaxSessions` 不小于 10（OpenSSH 的默认值）
+  - `/usr/bin/perl`，以及核心模块 `IO::Socket::UNIX`、`JSON::PP`、`POSIX`
   - 不需要 root 权限，也不安装常驻服务
-- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `9.0` 及以上版本的账号，本机要能访问到它
+
 - 使用 Git LFS 的仓库，需要仓库所在的机器上有 Git LFS `2.9.0` 或更高版本，并在那里 Git 使用的 `PATH` 里
 
-## 从源码构建
+- 经 sshfs 挂载服务器仓库时，本机需要 sshfs 及 macFUSE 或 FUSE-T
 
-Spooky 尚未提供下载，需要从源码构建。构建需要 Swift 6.2 或更高版本。
+- Pull Request 与 Merge Request 需要 github.com、GitLab.com 或私有部署 GitLab `9.0` 及以上版本的账号
 
-项目使用 Swift Package Manager 管理，命令都在仓库根目录执行：
+## 构建与运行
+
+命令都在仓库根目录执行：
 
 ```sh
-# 编译核心库与 App
-swift build
+# 获取源码
+git clone https://github.com/rakuyoMo/Spooky.git
+cd Spooky
 
-# 直接启动 App
+# 编译核心库与 App
+mise run build
+
+# 启动 App
 swift run Spooky
 ```
 
-也可以生成能在 Finder 中打开的开发版 App：
+`swift run` 直接启动可执行文件，没有 App 包才带的应用图标、更新说明、许可证与本地化的权限说明，更新与系统通知也不启用。
+
+需要这些，或者要从访达打开 Spooky、在系统设置里单独设置它的语言时，生成开发版 App：
 
 ```sh
 # 生成 .build/Spooky.app
@@ -138,109 +85,167 @@ swift run Spooky
 open .build/Spooky.app
 ```
 
-发布版 App 使用 release 构建，带应用图标与更新框架，并做 ad-hoc 签名：
+发布版 App 使用 release 构建，并做 ad-hoc 签名与校验：
 
 ```sh
 # 生成 build/Spooky.app
-./scripts/bundle.sh
+mise run bundle
 ```
 
-## 权限说明
+## 架构
 
-### 自动化
+Spooky 是一个 Swift Package，主要有两个 target，都按功能分目录：
 
-终端程序选的是 Terminal 或 iTerm 时，Spooky 会通过 AppleScript 让它打开仓库；比较或合并工具选的是 BBEdit 或 Araxis Merge 时，它们的命令行会经 Apple 事件控制各自的程序。第一次使用时，macOS 会询问是否允许 Spooky 控制这个程序。
+- `SpookyKit`（`Sources/SpookyKit/`）：核心库，在本机或服务器上执行 Git、读写仓库文件并解析输出
 
-如果当时拒绝了，可以在 “系统设置 › 隐私与安全性 › 自动化” 里重新开启。
+- `Spooky`（`Sources/Spooky/`）：App，AppKit 管理窗口、分栏、工具栏和菜单，SwiftUI 承载内容
 
-### 通知
+贯穿整个代码库的几项设计：
 
-克隆完成与自动归档分支之后，Spooky 会发出系统通知。第一次发通知时，macOS 会询问是否允许 Spooky 发送通知。
+- **Git 一律经 `GitRunner` 执行**：本机与服务器仓库共用一套接口。本机仓库执行设置里选的 Git 程序，服务器仓库经 `/usr/bin/ssh` 在服务器上执行
 
-如果当时拒绝了，可以在 “系统设置 › 通知 › Spooky” 里重新开启。
+- **一次一个写操作**：每个仓库一条写队列，打开它的窗口共用；写操作按发起的先后一次执行一个，正有写操作时发起的排队等着轮到。纯读取的 Git 命令登记在 `RepositoryOperationQueue.isReadOnly`，其余命令都按写操作处理
 
-## 工作原理
+- **服务器连接**：每个服务器工作区使用专属的 SSH 主连接（ControlMaster），空闲 10 分钟后退出。首次连接检查通过后，Perl 写的远端包装器 `spooky-remote.pl` 按内容摘要命名，安装到服务器的 `~/.spooky/bin/`，负责远端进程与回调。文件经 SFTP 读写，复用同一个主连接
 
-### 服务器连接
+- **回调**：Git 需要密码、口令或编辑器时，请求经 `CallbackRelay` 回到本机：服务器仓库经主连接上的反向 Unix socket，本机仓库经私有的 Unix socket
 
-- 每个服务器工作区使用 Spooky 专属的 SSH 主连接（ControlMaster），空闲 10 分钟后退出。Spooky 不会使用或关闭用户自己的其它 SSH 主连接
-- 默认不转发 SSH agent。主机指纹未知或发生变化时，需要先在可信的终端里核实
-- 首次连接检查通过后，Spooky 以当前用户的权限，在服务器的 `~/.spooky/bin/` 里安装一个按内容摘要命名的小程序，用来管理远端进程和回调。它依赖服务器自带的 Perl，不常驻运行
-- 文件读写使用系统 SFTP，复用同一个主连接
-- Quick Look、其它程序和拖出的文件都拿不到服务器上的路径，拿到的是本机私有临时目录里的文件副本；关闭仓库后这个目录会被删除
+- **刷新**：本机仓库在 FSEvents 报告文件变化时刷新；服务器仓库在前台每 2 秒、后台每 10 秒轮询一次
 
-### 托管服务
+- **交给其它程序的文件**：Quick Look、外部工具与拖出的文件一律经 `RepositoryFileCache` 取得，服务器上的路径不会交给本机的文件 API
 
-- 对 GitHub 与 GitLab 的请求都从本机发出。令牌只放在请求头里，不进地址、日志与错误信息
-- 属于 Pull Request 或 Merge Request 的 Git 步骤，如检出、合并后的获取与发布仓库时的推送，都在仓库所在的机器上执行：服务器仓库就在服务器上执行
+- **托管服务**：对 GitHub 与 GitLab 的请求都经 `HostingClient` 从本机发出
 
-### 写操作与断线
+各目录的职责与跨模块的设计见 [架构](docs/architecture.md)，写代码时必须遵守的约束见 [AGENTS.md](AGENTS.md)。
 
-- 同一仓库的写操作排队依次执行；同一时间只有一个窗口能对它发起写操作，完成后显示这个仓库的窗口都会刷新
-- 写操作中途断线时不会自动重试。重新连接后，Spooky 会先核对分支、工作区、暂存区锁、远端跟踪分支，以及是否有进行中的合并或变基，说明 HEAD 与远端跟踪分支是否已经变化，再允许写入
-- 撤销会在每次操作前后记下 HEAD、分支、标签、分支设置、储藏列表、暂存区和已跟踪文件的内容。快照写进仓库自己的对象库，本机或服务器都一样；恢复前 Spooky 会先核对仓库是否仍与记录一致。远端设置、assume-unchanged 标记、Git LFS 的启用、发布的分支与标签、重命名的远端分支，以及子模块的增删、移动、改名、本地设置与子模块里检出的版本不在快照里，撤销时执行反向操作
-- 取消服务器上的操作时，Spooky 会结束它在服务器上的进程；无法确认进程已退出时会明确提示，重新连接核对之前不能继续写入
+## 测试
 
-### 凭据
+```sh
+# 运行默认开启的测试
+mise run test
 
-- 服务器上的 Git 需要密码、SSH 私钥口令、签名密钥口令或编辑器时，请求经当前主连接上的反向 Unix socket 回到本机，由 Spooky 弹窗处理
-- 本机仓库的网络操作同样通过私有的 Unix socket 回调输入凭据；SSH 私钥解锁后，由 OpenSSH 加入当前的 SSH agent
-- HTTPS 远端属于已登录的托管账号时，Git 用账号的令牌认证，不弹窗询问，本机仓库和服务器仓库都一样。远端属于哪个账号与 Pull Request 的对应相同，包括手动关联的远端。服务器仓库的令牌经反向 Unix socket 取回，不写入服务器。这些地址不使用你自己配置的 Git 凭据助手。Git 拒绝了令牌时，Spooky 弹窗询问用户名与密码，并说明账号的令牌没能通过认证
-- 本机的提交、合并、变基、摘取和反转也以同样的方式询问 SSH 签名密钥的口令；GPG 的口令交给本机自己的 pinentry 处理
-- 凭据默认只保存在内存中，勾选 “存入这台 Mac 的钥匙串” 后才写入本机钥匙串
-- 凭据不会写入临时文件、活动日志或错误信息，输出中回显的凭据会被隐去
-- 自动获取不会弹出任何输入框，只使用账号的令牌与钥匙串里已存的凭据；取不到时，失败只记在 “活动” 窗口里
-- 校验签名时不会去密钥服务器取钥，也不会更新 GPG 信任库，本机和服务器都一样
+# 只运行一个测试套件
+swift test --filter LocalizationTests
+```
 
-### 数据与对系统的改动
+- 测试使用 Swift Testing；涉及 Git 的测试在临时仓库中运行，不读取系统和用户的全局 Git 配置
+
+- App 测试里的窗口一律透明、sheet 不播动画，运行期间屏幕上不出现窗口
+
+- 经辅助功能接口读取窗口的测试，只在运行测试的进程有辅助功能权限时运行；在终端里运行时，权限跟随终端程序
+
+- Git LFS 的测试只在 `PATH` 或 Homebrew 的目录里找得到 `git-lfs` 时运行
+
+- 测试不设时间上限。运行卡住时，输出里只有开始、没有结束的那一项就是卡住的测试；CI 的测试 job 在 30 分钟后结束
+
+需要服务器、github.com 或大仓库的测试默认跳过，用环境变量开启：
+
+| 环境变量 | 开启的测试 |
+|---|---|
+| `SPOOKY_REMOTE_TESTS=1` | 服务器测试，连接 SSH 主机别名 `spooky-test` |
+| `SPOOKY_GITHUB_TESTS=1` | 在 github.com 测试仓库上进行的 Pull Request 测试，另需 `SPOOKY_GITHUB_TOKEN` 与 `SPOOKY_GITHUB_REPOSITORY` |
+| `SPOOKY_PERFORMANCE_TESTS=1` | 在生成的 10 万个文件、6 万个提交的仓库上进行的性能测试 |
+
+准备方法见 [测试](docs/testing/README.md)，那里还有各里程碑的手动验收步骤。
+
+## 调试
+
+### 日志
+
+Spooky 的日志写在 `com.rakuyo.spooky` 子系统下，category 是所在的类型名：
+
+```sh
+# 实时查看日志
+/usr/bin/log stream --predicate 'subsystem == "com.rakuyo.spooky"' --level info
+
+# 查看最近 5 分钟的日志
+/usr/bin/log show --last 5m --predicate 'subsystem == "com.rakuyo.spooky"' --info
+```
+
+日志记录连接状态的切换、远端会话、Git 命令的失败与取消、写操作与回调请求，不记命令参数、命令输出、提交信息与凭据。
+
+仓库路径、主机别名等用户数据标为私有，在日志里显示为 `<private>`。zsh 里的 `log` 是内建命令，所以要写完整路径。
+
+### Developer 菜单
+
+在设置的 “通用” 页勾选 “显示 Developer 菜单” 后，菜单栏多出 Developer 菜单：
+
+- **User Defaults**：把全部偏好打印到标准输出；重置设置，保留书签、身份档案、账号与服务器仓库的本机位置；或者不经询问清空整个偏好域
+
+- **Test Crash Reporting**：用伪造的异常或非法内存访问让 App 崩溃，检查崩溃报告
+
+- **Auto-Archive Branches**：立即运行自动归档，或清掉各仓库上次检查自动归档的时刻
+
+- **Show What’s New Card**：在侧边栏重新显示新功能卡片
+
+- **Auto-Reload Repository**：打开或关闭文件监听与轮询触发的刷新
+
+### 数据存放的位置
 
 本机：
 
-- 设置、身份档案、仓库书签和服务器仓库的本机位置保存在偏好设置域 `com.rakuyo.spooky`
-- 为了在访达中显示服务器仓库，Spooky 会经 SMB 或 sshfs 挂载网络卷，但不会卸载，需要时请在访达里推出。sshfs 及其依赖的 macFUSE 或 FUSE-T 不随 Spooky 提供，由你自己安装。SMB 的账号与密码在系统的登录框里输入，由系统存进钥匙串，Spooky 不读取、不保存
-- 主题（包括 Default 与 Default (Dark)）保存在 `~/Library/Application Support/Spooky/Themes`，一个主题一个 `.spookytheme` 文件
-- 打开的仓库登记进系统的最近文稿，供 Dock 图标的右键菜单列出：本机仓库登记仓库文件夹；服务器仓库登记 `~/Library/Application Support/Spooky/Locations` 下的一个 `.spookyrepo` 文件夹，里面的 `.spookylocation` 文件只记主机别名与远端路径，每个服务器仓库一份，再次打开时沿用；Clear Menu 清空最近文稿，不删除这些文件夹
-- “活动” 窗口里获取、拉取、推送等远程操作的记录保存在 `~/Library/Application Support/Spooky/Activity`，一条记录一个文件，7 天后删除；其余记录只在 Spooky 运行期间保存在内存里
-- “活动” 窗口用来计算分支、远端、储藏与子模块增减的上一次清单保存在 `~/Library/Application Support/Spooky/Baselines`，每个仓库一个文件
-- 存入钥匙串的凭据，服务名为 `com.rakuyo.spooky.remote.<主机别名>`
-- 托管账号的令牌存在钥匙串里，服务名为 `com.rakuyo.spooky.hosting.<实例地址>`；私有部署 GitLab 用用户名与密码登录的账号，这里存访问令牌、刷新令牌与到期时间，不存密码。账号列表与手动关联到账号的远端存在偏好里，不含令牌
-- 连接和回调使用私有的 `/tmp/spooky-*` 临时目录，关闭会话后清理。本机仓库校验签名时同样使用这样一个目录，校验结束即删除
-- 作者头像以作者邮箱的 SHA-256 哈希向 Gravatar 请求；Pull Request 与 Merge Request 的作者、指派人与评论者的头像按托管服务给出的地址请求。头像只在 Spooky 运行期间保存在内存里
-- 交给 Quick Look 和其它程序的文件副本放在私有的 `spooky-files-*` 临时目录，关闭仓库后清理
-- 用 Warp 打开服务器仓库时，会在 `~/.warp/launch_configurations/` 写入 `Spooky-*.yaml`；退出 Spooky 时只清理它自己创建的这些文件
-- 启动时读取 `~/Library/Logs/DiagnosticReports/` 里 Spooky 自己的崩溃报告，用来询问是否在 GitHub 上报告；不会自动上传任何内容
-- 更新从 GitHub Releases 上的 `appcast.xml` 检查，下载的更新先校验 EdDSA 签名再安装
-- 选中默认图标以外的应用图标时，Spooky 把它写成自己 App 包的自定义图标，即在 `Spooky.app` 的根目录加上 `Icon\r` 文件与 Finder 信息；每次启动与图标样式变化时重新写入，选回默认图标时清除
+| 数据 | 位置 |
+|---|---|
+| 设置、书签、身份档案、账号列表与服务器仓库的本机位置 | 偏好设置域 `com.rakuyo.spooky` |
+| 主题，一个主题一个 `.spookytheme` 文件 | `~/Library/Application Support/Spooky/Themes/` |
+| 把服务器仓库登记进最近文稿的 `.spookyrepo` 文件夹 | `~/Library/Application Support/Spooky/Locations/` |
+| “活动” 窗口里的远程操作记录，保留 7 天 | `~/Library/Application Support/Spooky/Activity/` |
+| “活动” 窗口用来计算增减的上一次清单 | `~/Library/Application Support/Spooky/Baselines/` |
+| 存入钥匙串的凭据 | 钥匙串，服务名 `com.rakuyo.spooky.remote.<主机别名>` |
+| 托管账号的令牌 | 钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例地址>` |
+| 连接与回调 | 私有的 `/tmp/spooky-*` 目录，关闭会话后清理 |
+| 交给 Quick Look 和其它程序的文件副本 | 私有的 `spooky-files-*` 临时目录，关闭仓库后清理 |
 
 服务器：
 
-- `~/.spooky/bin/`：远端程序及其 askpass、GPG 与 ssh-keygen 入口，权限为 `0700`，会话结束后保留，供下次连接使用
-- `/tmp/spooky-*`：会话期间的私有运行时目录，关闭会话后清理
-- 为 “在 Finder 中显示” 核对服务器仓库与这台 Mac 上挂载的文件夹时，在仓库的 Git 目录里临时写一个随机命名的空文件，核对完立即删除
+| 数据 | 位置 |
+|---|---|
+| 远端包装器及其 askpass、GPG 与 ssh-keygen 入口 | `~/.spooky/bin/`，会话结束后保留，供下次连接使用 |
+| 会话期间的运行时文件 | `/tmp/spooky-*`，关闭会话后清理 |
 
-仓库里：
+仓库里，分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；仓库设置同样写进这份配置。
 
-- 分支的置顶、归档、父分支与分支整理标记保存在仓库自己的 Git 配置里，键为 `branch.<名称>.spooky-*`；分支改名时随之移动，删除分支时一并清除
-- 仓库设置写进仓库自己的 Git 配置
-- 启用 Git LFS 只在仓库自己的配置里登记它的过滤器与钩子，跟踪规则写进仓库根目录的 `.gitattributes`
+## 本地化
 
-## 开发
+Spooky 支持英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，跟随系统语言，其它语言环境下显示英文。文案在 `Sources/Spooky/Resources/<语言>.lproj/`。
+
+新增文案时，所有语言一起加上，格式参数保持一致。任一语言缺少资源键、译文为空、格式参数对不上，或者资源键没有被界面用到时，`LocalizationTests` 都会失败；运行时拼出的资源键登记在 `LocalizationTests.dynamicKeys`。
+
+## 代码规范
+
+代码风格以 [RakuyoKit/swift](https://github.com/RakuyoKit/swift) 为准：
 
 ```sh
-swift test
+# 按代码规范格式化，并自动修复可修复的问题
+mise run swift:format
+
+# 检查代码规范
+mise run swift:lint
 ```
 
-- 测试使用 Swift Testing
-- 涉及 Git 的测试在临时仓库中运行，不读取系统和用户的全局 Git 配置
-- 需要测试服务器、GitHub 测试仓库或生成大仓库的测试默认跳过，开启方式见 [测试](docs/testing/README.md)
+SwiftLint 以严格模式运行，警告同样算不通过。其余编码约定见 [AGENTS.md](AGENTS.md)。
 
-模块划分与设计见 [架构](docs/architecture.md)，版本号与发布流程见 [发布](docs/releasing.md)。
+## 发布
+
+维护者在 `main` 上发布新版本：
+
+```sh
+# 为 X.Y.Z 开 release PR，通道默认为 stable
+mise run release X.Y.Z [stable|beta|development]
+```
+
+脚本先检查版本号、`docs/release-notes/X.Y.Z/` 下的更新说明与仓库状态，再开 release PR。合并后由 GitHub Actions 打包、为更新签名、在合并提交上打标签，并创建 GitHub Release。
+
+详见 [发布](docs/releasing.md)。
 
 ## 参与贡献
 
-- 提交 PR 前，请用 [mise](https://mise.jdx.dev) 运行 `mise run swift:lint`、`mise run build` 和 `mise run test`，确认都能通过；CI 会在每个 PR 上运行同样的检查
-- 改动 App 时，还要实际启动 App，确认改动的效果
-- 分支命名和提交信息等约定见 [AGENTS.md](AGENTS.md)
+- 提交 PR 前，请运行 `mise run swift:lint`、`mise run build` 和 `mise run test`，确认都能通过；CI 会在每个 PR 与推送到 `main` 时运行同样的检查，并打包 App
+
+- 改动 App 时，还要实际启动 App，确认改动的效果，基本步骤见 [M1](docs/testing/M1.md)
+
+- 代码、注释、日志、测试、分支命名、提交信息与 PR 的约定见 [AGENTS.md](AGENTS.md)，Claude Code、Codex 等编程 Agent 同样遵循它
+
 - 引入外部代码前，请先确认它的许可证与 GPL-3.0 兼容
 
 ## 许可证

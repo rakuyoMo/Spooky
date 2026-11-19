@@ -514,6 +514,9 @@
 "activity.finished" = "已完成";
 "activity.cancelled" = "已取消";
 "activity.failed" = "失敗";
+"activity.waiting" = "等待中";
+"activity.waitingDetail" = "等待中…";
+"activity.skipped" = "已略過";
 "activity.remote" = "遠端";
 "activity.remote.help" = "顯示遠端活動";
 "activity.repository" = "儲存庫";
@@ -555,6 +558,10 @@
 "activity.pushedNamed" = "已推送 %@";
 "activity.titleFailed" = "%@（失敗）";
 "activity.titleCancelled" = "%@（已取消）";
+"activity.titleSkipped" = "%@（已略過）";
+"queue.notRun" = "沒有執行：等待期間儲存庫已經變了。";
+"queue.cancelledAfterFailure" = "“%@” 失敗，已取消。";
+"queue.cancelledDisconnected" = "與伺服器的連線中斷，已取消。";
 "dialog.options" = "選項";
 "dialog.doNotAskAgain" = "不再詢問";
 "menu.repository" = "儲存庫";
@@ -580,7 +587,7 @@
 "recovery.unchanged" = "“%@” 因連線中斷而停止，沒有重試。HEAD 仍是 %@。請先檢查工作區，再決定是否重試。";
 "recovery.notStarted" = "伺服器連線無法使用，“%@” 沒有開始執行，伺服器上沒有任何變更。";
 "recovery.unborn" = "尚無提交";
-"dialog.blocked" = "此儲存庫有其他操作正在進行，或伺服器已中斷連線。已填寫的設定會保留，請在儲存庫可用後重試。";
+"dialog.blocked" = "伺服器已中斷連線。已填寫的設定會保留，請在重新連線後重試。";
 "history.loadingChanges" = "正在讀取變更集…";
 "repositories.unavailableShort" = "無法使用";
 
@@ -1318,6 +1325,7 @@
 /* 同步、自动获取与变基。 */
 "sync.sync" = "同步";
 "sync.autoFetch" = "自動擷取";
+"sync.autoFetch.yielded" = "已停下，先執行 “%@”。";
 "sync.quickFetch" = "快速擷取";
 "sync.quickPull" = "快速拉取";
 "sync.quickPush" = "快速推送";
@@ -1982,8 +1990,14 @@
 "bookmarks.sortParent" = "依名稱排序所在群組";
 "bookmarks.delete.title" = "刪除 “%@”？";
 "bookmarks.delete.titleMultiple" = "刪除 %ld 項？";
-"bookmarks.delete.message" = "只會移除書籤，倉庫仍保留在磁碟或伺服器上。";
+"bookmarks.delete.note" = "書籤會被移除。倉庫資料夾仍留在磁碟上，除非同時移到垃圾桶。";
+"bookmarks.delete.noteServer" = "書籤會被移除。倉庫仍留在原處，除非同時移到垃圾桶；伺服器上的倉庫會移進那台伺服器的垃圾桶。";
+"bookmarks.delete.trash" = "同時將倉庫資料夾移到垃圾桶，包括未提交的變更";
+"bookmarks.delete.trashMultiple" = "同時將 %ld 個倉庫資料夾移到垃圾桶，包括未提交的變更";
 "bookmarks.delete.submit" = "刪除";
+"bookmarks.trashFailed.title" = "無法移到垃圾桶";
+"bookmarks.trashFailed.message" = "書籤已移除，但下列資料夾仍在原處：";
+"bookmarks.trashFailed.protected" = "未移動：這是家目錄、包含家目錄的資料夾或卷宗的最上層。";
 "bookmarks.dropZone.title" = "拖入資料夾或網址";
 "bookmarks.dropZone.subtitle" = "以加入 Git 倉庫";
 "bookmarks.dropZone.add" = "加入";
@@ -2228,6 +2242,8 @@
 "settings.crashReports.help" = "當機報告用於診斷和修正 Spooky 的問題。";
 
 /* Developer 菜单、General 页显示它的勾选框与 Reset User Defaults 的确认；菜单是开发者用的，各语言都用英文。 */
+"settings.showWorktreesInRepositoryList" = "在儲存庫管理中列出工作樹";
+"settings.showHostAliasesInRepositoryList" = "在儲存庫管理中顯示 SSH 主機別名";
 "settings.showDeveloperMenu" = "顯示 Developer 選單";
 "menu.developer" = "Developer";
 "developer.userDefaults" = "User Defaults";
@@ -2464,7 +2480,6 @@
 "worktree.remove.message" = "永久刪除工作樹 “%@” 及它的目錄。";
 "worktree.remove.submit" = "刪除工作樹";
 "worktree.repair" = "修復工作樹";
-"worktree.repair.alreadyUsed" = "選取的資料夾已被另一個工作樹使用。";
 "worktree.repair.invalid" = "選取的路徑裡沒有這個儲存庫的有效工作樹目錄。";
 "worktree.repair.menu" = "修復工作樹…";
 "worktree.repair.missingFolder" = "選取的資料夾不存在。";

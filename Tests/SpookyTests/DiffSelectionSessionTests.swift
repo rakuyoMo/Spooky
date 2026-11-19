@@ -102,8 +102,8 @@ struct DiffSelectionSessionTests {
         }
     }
 
-    /// 延迟确认期间取消、写锁拒绝或切走再切回，都不能清掉当前范围。
-    @Test("确认取消与拒绝保留选择且旧确认不误清新范围")
+    /// 延迟确认期间，或切走再切回之后，都不能清掉当前范围。
+    @Test("确认前保留选择且旧确认不误清新范围")
     func confirmations() async throws {
         // 丢弃确认只读标准偏好，本测试打开它，结束时还原
         let defaults = UserDefaults.standard
@@ -129,12 +129,6 @@ struct DiffSelectionSessionTests {
 
         let confirmation = try #require(request)
         #expect(selection.selected == selected && !session.isWriting)
-
-        // 写锁被占用时确认被拒绝
-        #expect(RepositoryWriteLocks.shared.acquire(fixture.location))
-        confirmation.action()
-        #expect(selection.selected == selected && !session.isWriting)
-        RepositoryWriteLocks.shared.release(fixture.location)
 
         // 切走再切回后，旧确认不能清掉新范围
         let row = session.selectedID

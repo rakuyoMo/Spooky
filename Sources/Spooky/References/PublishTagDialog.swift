@@ -106,7 +106,7 @@ extension PublishTagDialog {
         remote = preselectedRemote.flatMap { remotes.contains($0) ? $0 : nil } ?? upstream ?? remotes.first ?? ""
     }
 
-    /// 捕获表单值后开始推送；仓库忙碌或已切换时表单保持打开。
+    /// 捕获表单值后开始推送；服务器已断开或仓库已切换时表单保持打开。
     private func submit() {
         let tag = selectedTag
         let remote = remote
@@ -122,7 +122,9 @@ extension PublishTagDialog {
             },
             title: AppLocalization.text("tag.publish"),
             target: .push(remote),
-            undo: .publishingTag(tag, to: remote)
+            touchesWorkingCopy: false,
+            undo: .publishingTag(tag, to: remote),
+            available: { $0.canPublishTag }
         )
 
         if started {

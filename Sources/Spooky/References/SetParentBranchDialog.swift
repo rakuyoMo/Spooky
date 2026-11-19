@@ -106,7 +106,7 @@ extension SetParentBranchDialog {
         }
     }
 
-    /// 写入父分支；仓库忙碌或已切换时表单保持打开。
+    /// 写入父分支；服务器已断开或仓库已切换时表单保持打开。
     private func submit() {
         guard session.repository == repository else {
             return

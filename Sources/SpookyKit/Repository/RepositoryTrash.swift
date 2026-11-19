@@ -22,6 +22,20 @@ public struct TrashedItem: Sendable, Equatable {
     }
 }
 
+// MARK: - RepositoryTrashResult
+
+/// 把整个仓库目录移进废纸篓的结果。
+public enum RepositoryTrashResult: Sendable, Equatable {
+    /// 已移进废纸篓。
+    case moved
+
+    /// 目录已不存在，跳过。
+    case missing
+
+    /// 是家目录、它的上级目录，或是卷、挂载点的顶层，没有移动。
+    case protected
+}
+
 // MARK: - FileRemoval
 
 /// 从工作区删除文件的方式。

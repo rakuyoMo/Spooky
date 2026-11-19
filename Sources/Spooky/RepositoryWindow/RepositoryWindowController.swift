@@ -675,13 +675,21 @@ extension RepositoryWindowController {
             historySplit.splitView.setPosition(320, ofDividerAt: 0)
         }
 
-        // 首次使用或恢复失败后储藏与 Reflog 的列表同样宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
+        // 首次使用或恢复失败后储藏、Reflog 与 Pull Requests 的列表宽 320 pt，Branches Review 的列表宽 420 pt，
+        // 此后交给 NSSplitView 的 autosave 恢复；分栏放进窗口之后才定位，否则列表会被压到分栏项的最小宽
+        let firstListWidth: CGFloat? =
+            switch session.activeView {
+            case .stashes, .reflog, .pullRequests: 320
+            case .branchesReview: 420
+            default: nil
+            }
+
         if
-            [.stashes, .reflog].contains(session.activeView), let split = detail as? NSSplitViewController,
+            let firstListWidth, let split = detail as? NSSplitViewController,
             let name = split.splitView.autosaveName,
             UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
         {
-            split.splitView.setPosition(320, ofDividerAt: 0)
+            split.splitView.setPosition(firstListWidth, ofDividerAt: 0)
         }
 
         didChangeView()
