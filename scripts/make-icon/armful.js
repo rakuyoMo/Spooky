@@ -1,13 +1,12 @@
 /**
- * 满怀的三组：白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边；三组只差身后的背景。
- * 满怀是炭黑底板上的一轮紫色满月与三颗小星，满怀 · 素底只有炭黑底板，满怀 · 紫底是上浅下深的紫色底板。
+ * 满怀：炭黑底板上一轮紫色满月与三颗小星，白色幽灵侧身站着，把一对樱桃红的樱桃抱在怀里，幽灵与樱桃共用一圈奶油白的贴纸边。
  * App 连着服务器时，两只眼睛变成一对亮着深橙的四角星。
- * 柔边、暗部与投影靠模糊与蒙版画出，WebKit 的 Canvas 2D 没有滤镜，所以这三组先拼成 SVG、再画进 Canvas。
- * 深色图标的幽灵换成浅米色，樱桃与叶子压暗一档；炭黑的底板换成纯黑，紫色的底板压深一档。
+ * 柔边、暗部与投影靠模糊与蒙版画出，画面先拼成 SVG、再画进 Canvas，见 sticker.js。
+ * 深色图标的底板是纯黑，幽灵换成浅米色，樱桃与叶子压暗一档。
  */
 
 /**
- * 满怀两种图标的配色，三组共用。
+ * 满怀两种图标的配色，各组的贴纸共用。
  *
  * plate 是炭黑底板自上而下的三个色标，cast 是贴纸落在底板上的影子，edge 是贴纸边；
  * ghost 是幽灵从受光处到背光处的四个色标，rim 是轮廓内侧的一道淡色，fold 是褶，shadow 是樱桃落在幽灵身上的影子，
@@ -54,9 +53,9 @@ const ARMFUL_PALETTES = {
 };
 
 /**
- * 满怀连着服务器时亮起来的颜色，三组、两种图标相同。
+ * 连着服务器时眼睛亮起来的颜色，眼睛会亮的各组、两种图标相同。
  *
- * eye 是四角星自上而下的三个色标，与午夜的琥珀光同一个色相、压深一档，在浅色的幽灵上才看得清；eyeGlow 是四角星四周的光。
+ * eye 是四角星自上而下的三个色标，由浅琥珀到深橙，在浅色的幽灵上才看得清；eyeGlow 是四角星四周的光。
  */
 const ARMFUL_LIT = {
     eye: ['#FFC453', '#FF9F2E', '#F27A1A'],
@@ -77,15 +76,6 @@ const ARMFUL_MOON = {
         { x: 905, y: 860, size: 24, color: ARMFUL_PALETTES.default.cherry },
         { x: 900, y: 150, size: 18, color: ARMFUL_PURPLES[1] },
     ],
-};
-
-/**
- * 满怀 · 紫底两种图标的底板：plate 是底板自上而下的三个色标，sheen 是左上那团柔光的颜色与不透明度，
- * eye 是眼睛，cast 是贴纸落在底板上的影子，两者都换成深紫。
- */
-const ARMFUL_PURPLE_PLATES = {
-    default: { plate: ['#A593FF', '#7A63F6', '#4B3CCB'], sheen: ['#E2DAFF', 0.55], eye: '#221A55', cast: '#1A1250' },
-    dark: { plate: ['#6A58D8', '#4B3CCB', '#2A2090'], sheen: ['#B9AEF0', 0.35], eye: '#150F3A', cast: '#0D0830' },
 };
 
 /** 满怀的幽灵身体，满幅坐标下：轮廓从头顶起顺时针经过的锚点，曲线平滑地穿过它们，头往樱桃那边歪。 */
@@ -180,72 +170,10 @@ const ARMFUL_POSE = {
  */
 async function paintArmfulIcon(context, scale, pixels, style, lit) {
     const palette = ARMFUL_PALETTES[style];
+    const markup = armfulCharcoalMarkup(palette) + armfulMoonMarkup() + armfulClusterMarkup(palette, lit);
 
-    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette) + armfulMoonMarkup(), lit);
-}
-
-/**
- * 满怀 · 素底的入口：只有炭黑底板。参数见 paintArmfulIcon。
- */
-async function paintArmfulPlainIcon(context, scale, pixels, style, lit) {
-    const palette = ARMFUL_PALETTES[style];
-
-    await paintArmfulScene(context, scale, pixels, palette, armfulCharcoalMarkup(palette), lit);
-}
-
-/**
- * 满怀 · 紫底的入口：紫色底板，眼睛与贴纸的影子换成深紫。参数见 paintArmfulIcon。
- */
-async function paintArmfulPurpleIcon(context, scale, pixels, style, lit) {
-    const { eye, cast } = ARMFUL_PURPLE_PLATES[style];
-    const palette = { ...ARMFUL_PALETTES[style], eye, cast };
-
-    await paintArmfulScene(context, scale, pixels, palette, armfulPurpleMarkup(ARMFUL_PURPLE_PLATES[style]), lit);
-}
-
-/**
- * 画出一组满怀：画面先铺满一张画布，再整张填进底板。
- *
- * @param {CanvasRenderingContext2D} context 已缩放到 1024 网格的上下文
- * @param {number} scale 导出像素与 1024 网格的比例
- * @param {number} pixels 导出图片的边长
- * @param {object} palette 所画图标的配色
- * @param {string} backdrop 幽灵身后的背景，满幅坐标下的 SVG 片段
- * @param {boolean} lit 眼睛是否亮着
- */
-async function paintArmfulScene(context, scale, pixels, palette, backdrop, lit) {
-    drawPlateScene(context, scale, await armfulScene(pixels, backdrop + armfulClusterMarkup(palette, lit)), palette.plate[2]);
-}
-
-/**
- * 满怀的画面，铺满整张画布：满幅的画面整体缩进底板的范围。
- *
- * 画面先按 1024 px 画出，再逐级减半缩到导出尺寸：修圆轮廓的滤镜按这一尺寸收出约一个像素宽的边，直接按小尺寸画会出锯齿。
- * WebKit 画 SVG 滤镜时的舍入不固定：同一份 SVG 每次画出的 1024 px 画面可能有几个像素差一个色阶（macOS 27 实测）。
- *
- * @param {number} pixels 导出图片的边长
- * @param {string} markup 满幅坐标下的 SVG 片段：背景与抱着樱桃的幽灵
- * @returns {Promise<HTMLCanvasElement>}
- */
-async function armfulScene(pixels, markup) {
-    const inset = `translate(${PLATE_ORIGIN} ${PLATE_ORIGIN}) scale(${PLATE_SIZE / GRID})`;
-
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}">`
-        + `<g transform="${inset}">${markup}</g></svg>`;
-
-    const image = new Image();
-    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    await image.decode();
-
-    let scene = paintScene(GRID, (context) => context.drawImage(image, 0, 0, GRID, GRID));
-
-    while (scene.width > pixels) {
-        const larger = scene;
-        const size = Math.max(pixels, larger.width / 2);
-        scene = paintScene(size, (context) => context.drawImage(larger, 0, 0, GRID, GRID));
-    }
-
-    return scene;
+    // 画面先铺满一张画布，再整张填进底板。
+    drawPlateScene(context, scale, await stickerScene(pixels, markup), palette.plate[2]);
 }
 
 /**
@@ -276,26 +204,6 @@ function armfulMoonMarkup() {
         + svgBlurred('moon-glow', disc(ARMFUL_PURPLES[0]), { blur: 40, opacity: 0.5 })
         + disc('url(#moon)')
         + stars.map(star).join('');
-}
-
-/**
- * 紫色的底板：自上而下由浅到深，左上一团柔光，边缘内侧一圈宽的柔边。
- *
- * @param {{plate: string[], sheen: [string, number]}} plate 所画图标的底板，见 ARMFUL_PURPLE_PLATES
- * @returns {string} 满幅坐标下的 SVG 片段
- */
-function armfulPurpleMarkup({ plate, sheen: [sheenColor, sheenOpacity] }) {
-    // 底板的轮廓放大到满幅坐标，柔边才贴着底板的边。
-    const contour = continuousSquareData(0, 0, GRID, (PLATE_RADIUS * GRID) / PLATE_SIZE);
-
-    return svgLinear('plate', [0, 0, 0, GRID], plate)
-        + `<rect ${SVG_WIDE} fill="url(#plate)"/>`
-        + svgBlurred('sheen', `<circle cx="250" cy="130" r="300" fill="${sheenColor}"/>`, { blur: 120, opacity: sheenOpacity })
-        + svgMasked(
-            'contour',
-            `<path d="${contour}" fill="#fff"/>`,
-            svgInnerBand('rim', `<path d="${contour}" fill="#000"/>`, { color: '#fff', blur: 24, gain: 1.2, opacity: 0.3 }),
-        );
 }
 
 /**
@@ -442,221 +350,4 @@ function armfulClusterMarkup(palette, lit) {
         + stem('url(#stem)')
         + handMarkup
         + '</g>';
-}
-
-/** SVG 里蒙版与滤镜的作用范围：比画面大一圈，容纳画面之外的底色与模糊。 */
-const SVG_WIDE = 'x="-200" y="-200" width="1424" height="1424"';
-
-/**
- * SVG 渐变的色标。
- *
- * @param {(string | [number, string, number?])[]} stops 颜色，均匀分布；或 [位置, 颜色, 不透明度]，不透明度省略为 1
- * @returns {string}
- */
-function svgStops(stops) {
-    return stops
-        .map((stop, index) => {
-            const [offset, color, opacity = 1] = Array.isArray(stop) ? stop : [index / (stops.length - 1), stop];
-            return `<stop offset="${offset}" stop-color="${color}" stop-opacity="${opacity}"/>`;
-        })
-        .join('');
-}
-
-/**
- * SVG 的线性渐变，坐标按所在的坐标系给出。
- *
- * @param {string} id 渐变的 id
- * @param {number[]} line 起点与终点 [x1, y1, x2, y2]
- * @param {(string | [number, string, number?])[]} stops 色标，见 svgStops
- * @returns {string}
- */
-function svgLinear(id, [x1, y1, x2, y2], stops) {
-    return `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">`
-        + `${svgStops(stops)}</linearGradient>`;
-}
-
-/**
- * SVG 的同心径向渐变，坐标按所在的坐标系给出。
- *
- * @param {string} id 渐变的 id
- * @param {number} x 圆心的 x
- * @param {number} y 圆心的 y
- * @param {number} radius 外圈的半径
- * @param {(string | [number, string, number?])[]} stops 色标，见 svgStops
- * @returns {string}
- */
-function svgRadial(id, x, y, radius, stops) {
-    return `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${x}" cy="${y}" r="${radius}">`
-        + `${svgStops(stops)}</radialGradient>`;
-}
-
-/**
- * 把一段 SVG 内容裁在一个形体里面。
- *
- * @param {string} id 蒙版的 id
- * @param {string} shape 画成白色的形体
- * @param {string} content 裁在形体里面的内容
- * @returns {string}
- */
-function svgMasked(id, shape, content) {
-    return `<mask id="${id}" maskUnits="userSpaceOnUse" ${SVG_WIDE}>${shape}</mask>`
-        + `<g mask="url(#${id})">${content}</g>`;
-}
-
-/**
- * 把一段 SVG 内容模糊成一片柔和的影子或光。
- *
- * @param {string} id 滤镜的 id
- * @param {string} content 要模糊的内容
- * @param {{dx?: number, dy?: number, blur: number, gain?: number, opacity: number}} options
- *     dx 与 dy 是模糊之前挪开的量，blur 是模糊的标准差，gain 是模糊之后透明度放大的倍数，opacity 是整片的不透明度
- * @returns {string}
- */
-function svgBlurred(id, content, { dx = 0, dy = 0, blur, gain = 1, opacity }) {
-    return `<filter id="${id}" filterUnits="userSpaceOnUse" ${SVG_WIDE} color-interpolation-filters="sRGB">`
-        + `<feGaussianBlur stdDeviation="${blur}"/>`
-        + `<feComponentTransfer><feFuncA type="linear" slope="${gain}"/></feComponentTransfer></filter>`
-        + `<g opacity="${opacity}" filter="url(#${id})"><g transform="translate(${dx} ${dy})">${content}</g></g>`;
-}
-
-/**
- * 形体内侧沿着轮廓的一道柔边：亮边、暗部都是它。
- *
- * 把形体以外的区域染上颜色，往形体里挪一点再模糊；裁回形体内部由调用方完成。
- *
- * @param {string} id 这道柔边用到的蒙版与滤镜的 id 前缀
- * @param {string} hole 画成黑色的形体
- * @param {{color: string, dx?: number, dy?: number, blur: number, gain: number, opacity: number}} options
- *     color 是柔边的颜色，其余见 svgBlurred
- * @returns {string}
- */
-function svgInnerBand(id, hole, { color, ...options }) {
-    return `<mask id="${id}-outside" maskUnits="userSpaceOnUse" ${SVG_WIDE}><rect ${SVG_WIDE} fill="#fff"/>${hole}</mask>`
-        + svgBlurred(`${id}-blur`, `<rect ${SVG_WIDE} fill="${color}" mask="url(#${id}-outside)"/>`, options);
-}
-
-/**
- * 把形体的尖角与接缝修圆的 SVG 滤镜：先模糊、再把透明度拉回硬边，凸角被修圆，相邻的形体在接缝处融成一条顺滑的轮廓。
- *
- * @param {string} id 滤镜的 id
- * @param {number} radius 修出的圆角半径
- * @returns {string}
- */
-function svgRounding(id, radius) {
-    // 直角被修出的圆角约为模糊标准差的 1.86 倍；斜率让拉回来的边保持约一个单位宽的过渡。
-    const deviation = radius * 0.54;
-    const slope = 2.3 * deviation;
-
-    return `<filter id="${id}" filterUnits="userSpaceOnUse" ${SVG_WIDE} color-interpolation-filters="sRGB">`
-        + `<feGaussianBlur stdDeviation="${deviation}"/>`
-        + `<feComponentTransfer><feFuncA type="linear" slope="${slope}" intercept="${-(slope - 1) / 2}"/></feComponentTransfer>`
-        + '</filter>';
-}
-
-/**
- * 眼睛亮成的四角星的 SVG 路径数据：四个角尖在中心的正上、正右、正下、正左，角尖之间的边按 ARMFUL_SPARKLES.pinch 往中心收。
- *
- * @param {number} x 中心的 x
- * @param {number} y 中心的 y
- * @param {number} reachX 左右两个角尖到中心的距离
- * @param {number} reachY 上下两个角尖到中心的距离
- * @returns {string}
- */
-function sparkleData(x, y, reachX, reachY) {
-    const waist = (signX, signY) => `${x + signX * reachX * ARMFUL_SPARKLES.pinch},${y + signY * reachY * ARMFUL_SPARKLES.pinch}`;
-
-    return `M${x},${y - reachY}Q${waist(1, -1)} ${x + reachX},${y}Q${waist(1, 1)} ${x},${y + reachY}`
-        + `Q${waist(-1, 1)} ${x - reachX},${y}Q${waist(-1, -1)} ${x},${y - reachY}Z`;
-}
-
-/**
- * 平滑穿过各锚点的闭合轮廓的 SVG 路径数据。
- *
- * @param {number[][]} points 轮廓依次经过的锚点
- * @returns {string}
- */
-function blobData(points) {
-    const curves = chordSpline(points, true);
-    return `M${curves[0][0]}${curves.map(([, control1, control2, to]) => `C${control1} ${control2} ${to}`).join('')}Z`;
-}
-
-/**
- * 渐细笔画的 SVG 路径数据：沿一条平滑穿过各点的中线，粗细从一头过渡到另一头的实心形体。
- *
- * @param {number[][]} line 中线经过的点
- * @param {number} from 起点处的粗细
- * @param {number} to 终点处的粗细
- * @param {number} belly 中段额外鼓出的粗细
- * @returns {string}
- */
-function taperData(line, from, to, belly = 0) {
-    const center = [line[0]];
-
-    for (const [start, control1, control2, end] of chordSpline(line, false)) {
-        center.push(...cubicPoints(start, control1, control2, end, 12).slice(1));
-    }
-
-    const last = center.length - 1;
-    const travelled = arcLengths(center);
-    const left = [];
-    const right = [];
-
-    // 粗细按走过的路程插值；两条边是中线沿法线各往一侧挪半个粗细。
-    center.forEach(([x, y], index) => {
-        const before = center[Math.max(0, index - 1)];
-        const after = center[Math.min(last, index + 1)];
-        const length = Math.hypot(after[0] - before[0], after[1] - before[1]);
-        const normalX = -(after[1] - before[1]) / length;
-        const normalY = (after[0] - before[0]) / length;
-
-        const along = travelled[index] / travelled[last];
-        const half = Math.max(0, from + (to - from) * along + belly * Math.sin(Math.PI * along)) / 2;
-
-        left.push([x + normalX * half, y + normalY * half]);
-        right.push([x - normalX * half, y - normalY * half]);
-    });
-
-    // 端头：有粗细时画半圆收口，细到接近 0 时直接收成尖。
-    const cap = (radius, target) => (radius > 0.4 ? `A${radius} ${radius} 0 0 0 ${target}` : `L${target}`);
-
-    return `M${left.join('L')}${cap(to / 2, right[last])}`
-        + `L${right.slice(0, last).reverse().join('L')}${cap(from / 2, left[0])}Z`;
-}
-
-/**
- * 平滑穿过各点的曲线：每相邻两点之间一段三次贝塞尔曲线。
- *
- * 手柄沿前后两点的连线，长度取本段弦长的三分之一，疏密不均的点也不会甩出鼓包。
- *
- * @param {number[][]} points 曲线依次经过的点
- * @param {boolean} closed 是否首尾相接
- * @returns {number[][][]} 各段的起点、两个控制点与终点
- */
-function chordSpline(points, closed) {
-    const count = points.length;
-
-    // 闭合曲线首尾相接；不闭合的曲线在两端重复端点。
-    const at = (index) => (closed
-        ? points[((index % count) + count) % count]
-        : points[Math.min(count - 1, Math.max(0, index))]);
-
-    return Array.from({ length: closed ? count : count - 1 }, (_, index) => {
-        const [before, from, to, after] = [at(index - 1), at(index), at(index + 1), at(index + 2)];
-        const reach = distanceBetween(from, to) / 3;
-
-        const handle = (start, end) => {
-            const length = distanceBetween(start, end) || 1;
-            return [((end[0] - start[0]) / length) * reach, ((end[1] - start[1]) / length) * reach];
-        };
-
-        const leaving = handle(before, to);
-        const arriving = handle(from, after);
-
-        return [
-            from,
-            [from[0] + leaving[0], from[1] + leaving[1]],
-            [to[0] - arriving[0], to[1] - arriving[1]],
-            to,
-        ];
-    });
 }

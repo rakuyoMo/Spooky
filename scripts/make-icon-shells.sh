@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 在 App 包里写出每个非默认图标组的壳 App：只装该组的默认图标，App 取它的系统图标作为该组运行时图标与自定义图标的底
+# 在 App 包里写出每个图标组的壳 App：只装该组的默认图标，App 取它的系统图标作为该组运行时图标与自定义图标的底
 # `scripts/build-app.sh` 与 `scripts/bundle.sh` 拷完 icns 之后调用
 #
 # 壳 App 放在 Contents/Resources/ 下：聚焦不收录这个位置的 App，壳 App 也作为资源封进外层签名，不必单独签名；
@@ -17,10 +17,10 @@ cd "$project_root"
 
 app_directory="$1"
 
-# 非默认组的默认图标名，与 `AppIconGroup` 的资源名一致；壳 App 与它同名
-icon_names=(AppIconArmfulPlain AppIconArmfulPurple AppIconPerch AppIconCherryPick AppIconServerGhost AppIconMidnight)
+# 各组的默认图标名，与 `AppIconGroup` 的资源名一致；壳 App 与它同名
+icon_names=(AppIconRise AppIconFront AppIconHide AppIconReveal AppIconMidnight AppIconPerch AppIconCherryPick AppIconArmful)
 
-# 先删掉包里已有的壳 App：开发 Bundle 不从空目录组装，改了默认的一组或删了一组之后，不留下多余的壳 App
+# 先删掉包里已有的壳 App：开发 Bundle 不从空目录组装，删了一组之后，不留下多余的壳 App
 rm -rf "$app_directory/Contents/Resources/"AppIcon*.app
 
 for icon_name in "${icon_names[@]}"; do

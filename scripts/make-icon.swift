@@ -1,19 +1,20 @@
-// 生成 Spooky 的七组应用图标：在无窗口的 WebKit 中运行 make-icon/ 目录下的 Canvas 绘制，
-// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成二十八份 .icns，每组放进输出目录下自己的文件夹。
+// 生成 Spooky 的八组应用图标：在无窗口的 WebKit 中运行 make-icon/ 目录下的 Canvas 绘制，
+// 为每组的默认图标与深色图标的指示灯灭着、亮着两版各导出全部尺寸，再由 iconutil 合成三十二份 .icns，每组放进输出目录下自己的文件夹。
 //
 // 用法：swift scripts/make-icon.swift <输出目录>
 
 import WebKit
 
-/// 七组图标：这一组的文件夹名，.icns 文件名的前缀，传给 renderIcon 的图标组，以及 make-icon/ 目录下这一组的绘制脚本；满怀的三组共用一个脚本。
+/// 八组图标：这一组的文件夹名，.icns 文件名的前缀，传给 renderIcon 的图标组，以及 make-icon/ 目录下这一组的绘制脚本；躲猫猫的四组共用一个脚本。
 let groups: [(folder: String, prefix: String, group: String, script: String)] = [
-    ("Armful", "AppIconArmful", "armful", "armful.js"),
-    ("ArmfulPlain", "AppIconArmfulPlain", "armfulPlain", "armful.js"),
-    ("ArmfulPurple", "AppIconArmfulPurple", "armfulPurple", "armful.js"),
+    ("Rise", "AppIconRise", "rise", "hide-and-seek.js"),
+    ("Front", "AppIconFront", "front", "hide-and-seek.js"),
+    ("Hide", "AppIconHide", "hide", "hide-and-seek.js"),
+    ("Reveal", "AppIconReveal", "reveal", "hide-and-seek.js"),
+    ("Midnight", "AppIconMidnight", "midnight", "midnight.js"),
     ("Perch", "AppIconPerch", "perch", "perch.js"),
     ("CherryPick", "AppIconCherryPick", "cherryPick", "cherry-pick.js"),
-    ("ServerGhost", "AppIconServerGhost", "serverGhost", "server-ghost.js"),
-    ("Midnight", "AppIconMidnight", "midnight", "midnight.js"),
+    ("Armful", "AppIconArmful", "armful", "armful.js"),
 ]
 
 /// 每组的四版：接在前缀后面的文件名后缀，以及传给 renderIcon 的样式与指示灯是否亮着。
@@ -24,7 +25,7 @@ let versions: [(suffix: String, style: String, lit: Bool)] = [
     ("DarkConnected", "dark", true),
 ]
 
-/// 要生成的二十八份图标：所在的文件夹与 .icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
+/// 要生成的三十二份图标：所在的文件夹与 .icns 的文件名，以及传给 renderIcon 的图标组、样式与指示灯是否亮着。
 let icons = groups.flatMap { group in
     versions.map { (folder: group.folder, name: group.prefix + $0.suffix, group: group.group, style: $0.style, lit: $0.lit) }
 }
@@ -45,13 +46,13 @@ guard CommandLine.arguments.count == 2 else {
 
 let outputDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
 
-/// 与本文件同目录的 make-icon/ 目录，放着各组的绘制脚本与它们共用的 kit.js。
+/// 与本文件同目录的 make-icon/ 目录，放着各组的绘制脚本与它们共用的 kit.js、sticker.js。
 let scriptDirectory = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .appending(path: "make-icon", directoryHint: .isDirectory)
 
-/// 绘制脚本的文件名：kit.js 在前，各组的脚本依次接在后面，几组共用的只接一次。
-let scripts = groups.reduce(into: ["kit.js"]) { scripts, group in
+/// 绘制脚本的文件名：kit.js、sticker.js 与各组都用到配色的 armful.js 在前，各组的脚本依次接在后面，几组共用的只接一次。
+let scripts = groups.reduce(into: ["kit.js", "sticker.js", "armful.js"]) { scripts, group in
     if !scripts.contains(group.script) {
         scripts.append(group.script)
     }

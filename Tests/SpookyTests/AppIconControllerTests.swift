@@ -30,7 +30,7 @@ struct AppIconControllerTests {
         let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
-        try Self.addMidnightIcons(to: app)
+        try Self.addIcons(of: .midnight, to: app)
 
         let controller = try AppIconController(defaults: defaults, bundle: #require(Bundle(url: app)))
 
@@ -228,15 +228,11 @@ struct AppIconControllerTests {
 
         let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
-        let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
 
-        try Self.addMidnightIcons(to: app)
+        try Self.addIcons(of: .midnight, to: app)
 
         // 包里有默认图标的资源时，交还默认图标才取系统给出的包图标
-        try FileManager.default.copyItem(
-            at: resources.appending(path: AppIconGroup.midnight.iconName(for: .standard) + ".icns"),
-            to: resources.appending(path: AppIconGroup.defaultGroup.iconName(for: .standard) + ".icns")
-        )
+        try Self.addIcons(of: .defaultGroup, to: app)
 
         // 取系统给出的包图标时，LaunchServices 登记了这个临时 App；删掉文件后登记还在，要另外注销
         defer { Self.unregister(app) }
@@ -253,6 +249,11 @@ struct AppIconControllerTests {
             bundle: #require(Bundle(url: app)),
             restartDock: { dockRestarts += 1 }
         )
+
+        // 包上挂着午夜的自定义图标时，默认的一组的预览取自它的壳 App，与午夜的预览同一张底，不是包上的那一张
+        let defaultPreview = try #require(controller.unlitIcon(of: .defaultGroup))
+
+        #expect(defaultPreview.tiffRepresentation == controller.unlitIcon(of: .midnight)?.tiffRepresentation)
 
         // 订阅图标变化的是关于窗口的内容控制器；关于窗口由窗口持有它，这里留到测试结束
         let about = AboutViewController(appIconController: controller)
@@ -359,7 +360,7 @@ struct AppIconControllerTests {
         let defaults = MemoryDefaults()
         let app = try Self.makeApp(in: directory)
 
-        try Self.addMidnightIcons(to: app)
+        try Self.addIcons(of: .midnight, to: app)
 
         _ = NSApplication.shared
 
@@ -598,10 +599,15 @@ extension AppIconControllerTests {
 // MARK: - Private
 
 extension AppIconControllerTests {
-    /// 给临时 App 放上午夜组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
-    /// 合成得出午夜的自定义图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
-    /// - Parameter app: App 包的位置
-    private static func addMidnightIcons(to app: URL) throws {
+    /// 给临时 App 放上一组的四张 icns 图标，并用指向不存在位置的符号链接代替壳 App：控制器取到通用的系统图标，
+    /// 合成得出这一组的图标，LaunchServices 也不登记它；同名的普通文件或目录会被当作 App 登记。
+    /// - Parameters:
+    ///   - group: 图标所属的组
+    ///   - app: App 包的位置
+    private static func addIcons(
+        of group: AppIconGroup,
+        to app: URL
+    ) throws {
         let resources = app.appending(path: "Contents/Resources", directoryHint: .isDirectory)
         let icon = try #require(sampleIcon())
 
@@ -610,14 +616,14 @@ extension AppIconControllerTests {
         for isDark in [false, true] {
             for isConnected in [false, true] {
                 let variant = AppIconVariant(isDark: isDark, isConnected: isConnected)
-                let name = AppIconGroup.midnight.iconName(for: variant)
+                let name = group.iconName(for: variant)
 
                 try icon.write(to: resources.appending(path: name + ".icns", directoryHint: .notDirectory))
             }
         }
 
         let shell = resources.appending(
-            path: AppIconGroup.midnight.iconName(for: .standard) + ".app",
+            path: group.iconName(for: .standard) + ".app",
             directoryHint: .notDirectory
         )
 
