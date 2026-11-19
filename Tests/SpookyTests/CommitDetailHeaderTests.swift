@@ -9,7 +9,7 @@ import Testing
 /// 提交详情头部的行与日期写法。
 @MainActor
 struct CommitDetailHeaderTests {
-    /// 展开与收起列出不同的行，引用行只在有引用时出现，每个父提交各占一行；日期带时间与时区，不随列表的日期格式变化。
+    /// 展开与收起列出不同的行，引用行只在有引用时出现，每个父提交各占一行；日期带时间与时区，两者不连写，不随列表的日期格式变化。
     @Test("详情头部的行与日期")
     func headerRows() throws {
         let locale = Locale(identifier: "en_US")
@@ -58,6 +58,12 @@ struct CommitDetailHeaderTests {
             key: "history.authorDate",
             value: "October 26, 2026 at 5:00:00\u{202F}PM EDT"
         ))
+
+        // 简体中文的系统格式把时区与时间连写；头部在两者之间留一个空格
+        #expect(
+            CommitMetadataView.headerDate(date, locale: Locale(identifier: "zh_CN"), timeZone: timeZone)
+                == "2026年10月26日 GMT-4 17:00:00"
+        )
     }
 }
 
