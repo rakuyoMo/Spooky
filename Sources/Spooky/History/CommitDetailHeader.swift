@@ -178,6 +178,12 @@ struct CommitMetadataView: View {
         formatter.dateStyle = .long
         formatter.timeStyle = .long
 
+        // 简体中文的系统格式把时区与时间连写，“GMT-8” 接 “08:05:00” 成了 “GMT-808:05:00”：时区后面紧接别的字段时补一个空格。
+        // 引号里的是原样输出的文字，整段跳过。
+        formatter.dateFormat = formatter.dateFormat.replacing(/'[^']*'|z(?=[A-Za-y])/) {
+            $0.output == "z" ? "z " : String($0.output)
+        }
+
         return formatter.string(from: date)
     }
 
