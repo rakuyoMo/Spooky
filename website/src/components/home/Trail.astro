@@ -1,0 +1,216 @@
+---
+import { createHash } from 'node:crypto';
+
+import { trailArt } from '../../art/site.ts';
+
+/*
+ * 首页跟着滚动的小幽灵：从顶部图标的机架身后飘出来，一路停在演示窗口边、示意图里的服务器身前，
+ * 横穿页面时翻一圈，在冲突向导旁那台服务器投出的光里浮一阵，最后摘到樱桃，落进收尾的满怀。
+ *
+ * 这里只放一个空的容器；画由页面的脚本取来 `trail.json` 后搭好。
+ * 脚本没有运行或访客要求减少动态效果时，容器一直是空的，页面就是静止的样子。
+ */
+
+/** `trail.json` 的地址，带上内容的摘要：画变了，浏览器就取新的。 */
+const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${createHash('sha256')
+    .update(JSON.stringify(trailArt))
+    .digest('hex')
+    .slice(0, 12)}`;
+---
+
+<div
+    class="trail"
+    aria-hidden="true"
+    data-trail-source={source}
+    style={`color: var(--spooky-sticker-cast, ${trailArt.plateCast})`}
+>
+</div>
+
+<script>
+    import { startTrail } from '../../trail/client.ts';
+
+    startTrail();
+</script>
+
+<style is:global>
+    /*
+     * 小幽灵在背景（夜空、图标底板、示意图的底）与内容之间：投影、贴纸边、成品分三档，
+     * 页面上机架的投影与贴纸边也挪进同样的档。顶部图标里幽灵夹在机架的贴纸边与成品之间；
+     * 示意图里机架的成品再退到贴纸边与幽灵的成品之间，幽灵浮在机架身前，都和图标里一样。
+     */
+    .trail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 0;
+        overflow: clip;
+        pointer-events: none;
+    }
+
+    .trail-tier,
+    .trail-ghost,
+    .trail-branch,
+    .trail-moon {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .trail-tier {
+        width: 100%;
+        height: 100%;
+    }
+
+    .trail-tier[data-tier='moon'] {
+        z-index: -5;
+    }
+
+    .trail-tier[data-tier='shadow'] {
+        z-index: -4;
+    }
+
+    .trail-tier[data-tier='edge'] {
+        z-index: -3;
+    }
+
+    .trail-tier[data-tier='paint'] {
+        z-index: -1;
+    }
+
+    /* 扒着窗口边的小手叠在窗口上面 */
+    .trail-tier[data-tier='front'] {
+        z-index: 1;
+    }
+
+    .trail-ghost,
+    .trail-branch {
+        transform-origin: 50% 50%;
+        will-change: transform;
+    }
+
+    .trail-branch {
+        transform-origin: 0 0;
+    }
+
+    .trail svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    /* 换姿势时新的淡入叠在上面，旧的稍后淡出，中间不露空 */
+    .trail-ghost > svg,
+    .trail-paw {
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 160ms ease 200ms,
+            visibility 0s linear 360ms;
+    }
+
+    .trail-ghost > svg.on,
+    .trail-paw.on {
+        opacity: 1;
+        visibility: visible;
+        transition:
+            opacity 220ms ease,
+            visibility 0s;
+    }
+
+    /* 摘下的樱桃从枝上淡去 */
+    .trail-branch [data-cherries] {
+        transition: opacity 240ms ease;
+    }
+
+    .trail-branch.picked [data-cherries] {
+        opacity: 0;
+    }
+
+    /* 停在图标里或已落进满怀时，由那幅画自己显示 */
+    .trail[data-still] .trail-ghost {
+        opacity: 0;
+    }
+
+    /* 满月只在深色主题里出现 */
+    :root[data-theme='light'] .trail-moon {
+        display: none;
+    }
+
+    @media screen {
+        /* 顶部图标：底板退到幽灵后面，机架的投影与贴纸边进入幽灵的档，图标自己的幽灵只在停着时显示 */
+        :root[data-trail] .app-icon > [data-layer='plate'] {
+            z-index: -5;
+        }
+
+        :root[data-trail] :is(.app-icon, [data-art='server']) > [data-layer$='-shadow'] {
+            z-index: -4;
+        }
+
+        :root[data-trail] :is(.app-icon, [data-art='server']) > [data-layer$='-edge'] {
+            z-index: -3;
+        }
+
+        /* 示意图里的服务器：机架的成品与亮灯的机架退到幽灵的成品后面 */
+        :root[data-trail] [data-art='server'] > :is([data-layer='rack'], [data-layer='lamps']) {
+            z-index: -2;
+        }
+
+        :root[data-trail] .app-icon > [data-layer='ghost'] {
+            z-index: -1;
+        }
+
+        :root[data-trail]:not([data-trail-rest]) .app-icon > [data-group='ghost'],
+        :root[data-trail] :is([data-art='server'], [data-art='reveal']) > [data-group='ghost'],
+        :root[data-trail]:not([data-trail-home]) .closing [data-art] {
+            visibility: hidden;
+        }
+
+        /* 显形的那台服务器：光束退到幽灵后面；幽灵停在光里时指示灯亮着、光束出现，飘走后都消失 */
+        :root[data-trail] [data-art='reveal'] > [data-layer='beam'] {
+            z-index: -5;
+        }
+
+        :root[data-trail] [data-art='reveal'] > :is([data-layer='beam'], [data-layer='lamps']) {
+            opacity: 0;
+            transition: opacity 500ms ease;
+        }
+
+        :root[data-trail][data-trail-reveal] [data-art='reveal'] > :is([data-layer='beam'], [data-layer='lamps']) {
+            opacity: 1;
+        }
+
+        /* 示意图里服务器的指示灯：幽灵来过之后亮着 */
+        [data-art='server'] > [data-layer='lamps'] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            opacity: 0;
+            transition: opacity 600ms ease;
+        }
+
+        :root[data-trail-lamps] [data-art='server'] > [data-layer='lamps'] {
+            opacity: 1;
+        }
+
+        /* 幽灵停在机架身前时，它的影子落在机身上 */
+        [data-art='server'] > [data-layer='lamps'] > [data-layer='shade'] {
+            opacity: 0;
+            transition: opacity 300ms ease;
+        }
+
+        :root[data-trail-server] [data-art='server'] > [data-layer='lamps'] > [data-layer='shade'] {
+            opacity: 1;
+        }
+    }
+
+    @media print {
+        .trail {
+            display: none;
+        }
+    }
+</style>

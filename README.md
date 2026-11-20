@@ -34,7 +34,7 @@ This README is for developers. It covers the tools you need, how to build, run, 
 
 - Xcode with Swift 6.2 or later. CI and releases build with the Xcode set by `DEVELOPER_DIR` in [`ci.yml`](.github/workflows/ci.yml); use the same version to get the same results
 
-- [mise](https://mise.jdx.dev), which runs the build, test, code style, and release tasks defined in `mise.toml`
+- [mise](https://mise.jdx.dev), which runs the build, test, code style, release, and website tasks defined in `mise.toml`
 
 ### Git and servers
 
@@ -210,6 +210,22 @@ In repositories, pins, archives, parent branches, and branch review marks are st
 Spooky is localized into English, Simplified Chinese, Traditional Chinese, Japanese, Korean, German, French, and Spanish. It follows the system language and falls back to English. Strings are in `Sources/Spooky/Resources/<language>.lproj/`.
 
 When you add a string, add it to every language with the same format arguments. `LocalizationTests` fails when a language is missing a key, a translation is empty, format arguments don't match, or a key isn't used anywhere. Keys built at run time are registered in `LocalizationTests.dynamicKeys`.
+
+## Website
+
+The website at [spooky.rakuyo.dev](https://spooky.rakuyo.dev), with the home page and the user guide, is built from `website/` with [Astro](https://astro.build) and [Starlight](https://starlight.astro.build). It needs Node.js 24, which mise installs for the website tasks only:
+
+```sh
+# Install the dependencies and start the development server
+mise run website:dev
+
+# Run the website's tests, check types and internal links, and build the site into website/dist/
+mise run website:build
+```
+
+Pages quote the app's labels from `Localizable.strings` by resource key, so renaming or removing a key that the website uses breaks its build. The simulated window on the home page also takes its colors from `BuiltinThemes.json` and `NamedColors.json`. The app icon and the ghosts on the home page and the 404 page are drawn at build time by the app icon scripts in `scripts/make-icon/`. Screenshots are stored with [Git LFS](https://git-lfs.com); install it before cloning to get them.
+
+GitHub Actions builds the website on pull requests that change it, and deploys it to GitHub Pages when it changes on `main`.
 
 ## Code style
 

@@ -1,0 +1,26 @@
+---
+import { screenshots } from 'virtual:spooky/site-data';
+import { localeOfRoute } from '../site/locales.ts';
+import { screenshotHtml, type ScreenshotFrame } from '../site/screenshot.ts';
+
+/** 组件的参数，与 Markdown 里的 `::screenshot` 相同；`bare` 时只输出两张图本身。 */
+interface Props {
+    name: string;
+    alt: string;
+    frame: ScreenshotFrame;
+    caption?: string;
+    markers?: string;
+    bare?: boolean;
+}
+
+const route = Astro.locals.starlightRoute;
+
+const html = screenshotHtml(
+    screenshots,
+    localeOfRoute(route.locale).code,
+    { ...Astro.props, where: route.entry.filePath ?? Astro.url.pathname },
+    { open: Astro.locals.t('screenshot.open'), close: Astro.locals.t('screenshot.close') },
+);
+---
+
+<Fragment set:html={html} />

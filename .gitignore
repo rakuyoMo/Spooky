@@ -18,3 +18,8 @@ mise.local.toml
 
 # Codex 本机覆盖指引
 AGENTS.override.md
+
+# 官网
+website/node_modules/
+website/dist/
+website/.astro/

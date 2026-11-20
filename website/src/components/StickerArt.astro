@@ -1,0 +1,59 @@
+---
+import { type Art, renderArt } from '../art/markup.ts';
+
+/**
+ * 由绘制脚本画出的一幅分层的画：各层是叠在一起的 SVG，从后往前。
+ *
+ * 每层带着 `data-layer` 与 `data-group`，动画按它们找到要移动的层；SVG 不裁掉画面之外的部分，移出画面的层照样看得见。
+ */
+
+/** 组件的参数。 */
+interface Props {
+    /** 要画的画 */
+    art: Art;
+
+    /** 这幅画的名字，用作 id 的前缀，同一页上不能重复 */
+    name: string;
+
+    /** 加在外层的样式类，由使用的地方定尺寸 */
+    class?: string;
+}
+
+const { art, name, class: className } = Astro.props;
+const { viewBox, layers, width, cast } = renderArt(art, name);
+const [, , viewWidth, viewHeight] = viewBox;
+
+// 投影的颜色跟着主题换：浅色主题由站点的主题变量给出，深色主题沿用绘制脚本的颜色
+const style = [
+    `--sticker-art-width: ${width}px`,
+    `aspect-ratio: ${viewWidth} / ${viewHeight}`,
+    cast ? `color: var(--spooky-sticker-cast, ${cast})` : '',
+]
+    .filter(Boolean)
+    .join('; ');
+---
+
+<div class:list={['sticker-art', className]} style={style} data-art={name} aria-hidden="true">
+    {
+        layers.map(({ name: layer, group, markup }) => (
+            <svg viewBox={viewBox.join(' ')} data-layer={layer} data-group={group} set:html={markup} />
+        ))
+    }
+</div>
+
+<style>
+    .sticker-art {
+        position: relative;
+        width: var(--sticker-art-width);
+        max-width: 100%;
+    }
+
+    svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+    }
+</style>

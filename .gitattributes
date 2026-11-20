@@ -1,2 +1,5 @@
 # 解析夹具是 Git 的原样输出，行首的空格与制表符都是数据，不做空白检查。
 Tests/SpookyKitTests/Fixtures/** -whitespace
+
+# 官网截图存进 Git LFS，仓库历史里只留指针。
+website/src/assets/screenshots/** filter=lfs diff=lfs merge=lfs -text

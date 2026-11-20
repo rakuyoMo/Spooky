@@ -1,0 +1,95 @@
+---
+import { localeOfRoute, localizedUrl } from '../site/locales.ts';
+
+/** 一个按钮：文字、地址与样式；站内地址照抄英文页的写法，按页面的语言加前缀。 */
+export interface ActionLink {
+    text: string;
+    link: string;
+    variant?: 'primary' | 'secondary' | 'minimal';
+}
+
+/** 组件的参数。 */
+interface Props {
+    actions: readonly ActionLink[];
+}
+
+const { actions } = Astro.props;
+const locale = localeOfRoute(Astro.locals.starlightRoute.locale);
+---
+
+{
+    actions.length > 0 && (
+        <div class="actions">
+            {actions.map(({ text, link, variant = 'primary' }) => (
+                <a class:list={['action', variant]} href={localizedUrl(link, locale)}>
+                    {text}
+                </a>
+            ))}
+        </div>
+    )
+}
+
+<style>
+    .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem 1rem;
+    }
+
+    .action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 3rem;
+        padding: 0.75rem 1.5rem;
+        border: 1px solid transparent;
+        border-radius: 999rem;
+        font-size: var(--sl-text-base);
+        font-weight: 600;
+        line-height: 1.2;
+        text-decoration: none;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    .action:focus-visible {
+        outline: 2px solid var(--sl-color-text-accent);
+        outline-offset: 3px;
+    }
+
+    .primary {
+        background-color: var(--spooky-button-bg);
+        color: var(--spooky-button-text);
+        box-shadow: 0 0.5rem 1.5rem rgb(91 75 224 / 0.35);
+    }
+
+    .primary:hover {
+        background-color: var(--spooky-button-bg-hover);
+        color: var(--spooky-button-text);
+    }
+
+    .secondary {
+        border-color: var(--spooky-outline);
+        background-color: rgb(255 255 255 / 0.04);
+        color: var(--sl-color-white);
+    }
+
+    .secondary:hover {
+        border-color: var(--sl-color-text-accent);
+        color: var(--sl-color-white);
+    }
+
+    .minimal {
+        color: var(--sl-color-text-accent);
+        padding-inline: 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .action:hover {
+            transform: translateY(-1px);
+        }
+    }
+</style>

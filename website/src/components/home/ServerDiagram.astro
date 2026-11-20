@@ -1,0 +1,233 @@
+---
+import { siteArt } from '../../art/site.ts';
+import StickerArt from '../StickerArt.astro';
+
+/**
+ * 服务器仓库的示意图：左边是 Mac，中间是 SSH 连接，右边是三层的机架与浮在它身前的幽灵。
+ *
+ * Mac 与服务器都是贴纸画，画面一样大，两边的贴纸边一样粗、底边对齐。
+ *
+ * 图里不放文字，三处的标题与说明都由页面传进来，跟着页面翻译；窄屏时三块竖着排。
+ */
+
+/** 示意图的一块：标题与几行说明。 */
+interface Part {
+    title: string;
+    items: string[];
+}
+
+/** 组件的参数。 */
+interface Props {
+    /** Mac 这一边 */
+    mac: Part;
+
+    /** 中间的连接 */
+    link: Part;
+
+    /** 服务器这一边 */
+    server: Part;
+}
+
+const { mac, link, server } = Astro.props;
+---
+
+<div class="diagram">
+    <div class="node">
+        <StickerArt class="art" art={siteArt.mac} name="mac" />
+
+        <p class="node-title">{mac.title}</p>
+
+        <ul>
+            {mac.items.map((item) => <li>{item}</li>)}
+        </ul>
+    </div>
+
+    <div class="link">
+        <div class="wire" aria-hidden="true">
+            <span class="lane out"></span>
+            <span class="lane back"></span>
+        </div>
+
+        <p class="pill" translate="no">{link.title}</p>
+
+        <ul>
+            {link.items.map((item) => <li>{item}</li>)}
+        </ul>
+    </div>
+
+    <div class="node">
+        <StickerArt class="art" art={siteArt.server} name="server" />
+
+        <p class="node-title">{server.title}</p>
+
+        <ul>
+            {server.items.map((item) => <li>{item}</li>)}
+        </ul>
+    </div>
+</div>
+
+<style>
+    .diagram {
+        --lane-color: var(--spooky-purple-light);
+
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.75fr) minmax(0, 1fr);
+        align-items: start;
+        position: relative;
+        gap: 1.5rem;
+        padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem);
+        border: 1px solid transparent;
+    }
+
+    /* 卡片的底与边框在跟着滚动的小幽灵后面，幽灵飘到机架身前时从卡片上经过 */
+    .diagram::before {
+        position: absolute;
+        z-index: -6;
+        inset: -1px;
+        border: 1px solid var(--spooky-surface-border);
+        border-radius: 1.5rem;
+        background:
+            radial-gradient(40rem 16rem at 80% 0%, rgb(122 99 246 / 0.16), transparent 70%),
+            var(--spooky-surface);
+        content: '';
+    }
+
+    :global(:root[data-theme='light']) .diagram {
+        --lane-color: var(--spooky-purple);
+    }
+
+    .node,
+    .link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .node-title {
+        margin-top: 1.5rem;
+        color: var(--sl-color-white);
+        font-size: var(--sl-text-xl);
+        font-weight: 700;
+    }
+
+    ul {
+        display: grid;
+        gap: 0.375rem;
+        margin-top: 0.75rem;
+        padding: 0;
+        list-style: none;
+        color: var(--sl-color-gray-3);
+        font-size: var(--sl-text-sm);
+        line-height: 1.55;
+    }
+
+    /* 连接：两条虚线，一条往服务器去，一条回到 Mac，中间是 SSH 的标签 */
+    .link {
+        padding-top: 3.25rem;
+    }
+
+    .wire {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        width: 100%;
+    }
+
+    .lane {
+        display: block;
+        height: 2px;
+        background-image: repeating-linear-gradient(90deg, var(--lane-color) 0 8px, transparent 8px 16px);
+        background-size: 16px 2px;
+    }
+
+    .lane.back {
+        opacity: 0.55;
+    }
+
+    .pill {
+        margin-top: 1.25rem;
+        padding: 0.375rem 1rem;
+        border: 1px solid var(--sl-color-text-accent);
+        border-radius: 999rem;
+        background-color: var(--sl-color-accent-low);
+        color: var(--sl-color-white);
+        font-family: var(--__sl-font-mono);
+        font-size: var(--sl-text-sm);
+        font-weight: 600;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .lane.out {
+            animation: lane-out 0.9s linear infinite;
+        }
+
+        .lane.back {
+            animation: lane-back 1.4s linear infinite;
+        }
+    }
+
+    @keyframes lane-out {
+        to {
+            background-position: 16px 0;
+        }
+    }
+
+    @keyframes lane-back {
+        to {
+            background-position: -16px 0;
+        }
+    }
+
+    /* 窄屏：三块竖着排，连接的虚线也改成竖的 */
+    @media (max-width: 50rem) {
+        .diagram {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.5rem;
+        }
+
+        .link {
+            padding-top: 1rem;
+        }
+
+        .wire {
+            flex-direction: row;
+            justify-content: center;
+            width: auto;
+            height: 4.5rem;
+        }
+
+        .lane {
+            width: 2px;
+            height: 100%;
+            background-image: repeating-linear-gradient(180deg, var(--lane-color) 0 8px, transparent 8px 16px);
+            background-size: 2px 16px;
+        }
+
+        .node:last-child {
+            margin-top: 2rem;
+        }
+    }
+
+    @media (max-width: 50rem) and (prefers-reduced-motion: no-preference) {
+        .lane.out {
+            animation-name: lane-down;
+        }
+
+        .lane.back {
+            animation-name: lane-up;
+        }
+    }
+
+    @keyframes lane-down {
+        to {
+            background-position: 0 16px;
+        }
+    }
+
+    @keyframes lane-up {
+        to {
+            background-position: 0 -16px;
+        }
+    }
+</style>

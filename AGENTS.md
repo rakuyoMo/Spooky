@@ -47,7 +47,7 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 
 ### `mise`
 
-根目录的 `mise.toml` 定义构建、测试、打包与代码规范检查的 task，这些操作优先经 `mise run` 执行。
+根目录的 `mise.toml` 定义构建、测试、打包、代码规范检查与官网的 task，这些操作优先经 `mise run` 执行。
 
 - 没有对应 task 的 Swift 命令直接执行
 - 纯 shell 命令不经 `mise` 执行
@@ -69,6 +69,8 @@ Spooky 是一个原生 macOS Git 客户端：既能打开本机仓库，也能�
 | `mise run bundle` | release 构建并生成 `build/Spooky.app`，拷贝资源、图标与更新框架后由内向外 ad-hoc 签名并校验 |
 | `swift scripts/make-icon.swift Sources/Spooky/AppIcon/Icons` | 重新生成探身、身前、藏身、显形、午夜、栖枝、采撷与满怀八组、共三十二份应用图标 |
 | `swift scripts/make-transfer-icons.swift Sources/Spooky/Resources` | 重新生成工具栏 Fetch、Pull、Push、Push To 与 Force Push 的模板图，Activity 里获取、拉取、推送的记录共用前三张 |
+| `mise run website:dev` | 安装官网的依赖并启动开发服务器 |
+| `mise run website:build` | 按锁文件安装官网的依赖，运行官网的自测，检查类型与站内链接并构建到 `website/dist/` |
 
 需要服务器、github.com 或大仓库的测试默认跳过，开启方式见 [测试](docs/testing/README.md)；`mise run release` 与 `mise run appcast` 见 [发布](docs/releasing.md)。
 
@@ -85,7 +87,8 @@ Tests/TestSupport/       测试共用的等待、进程闸门与空仓库模板
 Tests/InvisibleWindows/  App 测试进程里的窗口透明、sheet 不播动画
 scripts/                 App Bundle、应用图标、发布检查、发版与更新清单的脚本
 docs/                    架构、测试与发布的文档
-.github/workflows/       CI、发布检查与发布
+website/                 官网：首页与写给使用者的手册
+.github/workflows/       CI、发布检查、发布与官网
 ```
 
 各功能目录的职责见 [架构](docs/architecture.md) 的 “模块” 一节。
@@ -146,6 +149,33 @@ docs/                    架构、测试与发布的文档
 - 新建空仓库用 `TemporaryRepository.initialize` 或 `FileViewsTests.initializeRepository`，它们由 `RepositoryTemplate` 直接写出 `.git`，不逐个执行 `git init` 与 `git config`
 - 改动 App 时还须运行 `swift build --product Spooky`，按 [M1 验收步骤](docs/testing/M1.md) 实际启动、操作并截图；未执行的检查明确记录为未验证
 - 远端实测只使用 `spooky-test` 和测试专用密钥，写入仅限 `/Users/wgy/spooky-test/`、`~/.spooky/` 与会话临时目录；不分配 PTY，不转发 agent，不修改双方 SSH 和全局 Git 配置
+
+### 官网
+
+`website/` 是 Spooky 的官网，有首页与写给使用者的手册，用 Astro 与 Starlight 构建，推送到 `main` 后发布到 `https://spooky.rakuyo.dev`。
+
+- 界面叫法按资源键取，文字来自 App 的 `Localizable.strings`，不手抄
+  - `.md` 与 `.mdx` 里写 `:ui[资源键]`；菜单路径写 `:ui[键 > 键]`；有占位符时写 `:ui[键]{1="参数" 2="参数"}`
+  - `.astro` 里用 `UiLabel` 组件
+- 截图按名字取：`::screenshot[替代文本]{name="名字" frame="window"}`，`frame` 取 `window`、`dialog` 或 `closeup`
+  - 每个画面都要有 8 种语言 × 2 种外观，放在 `website/src/assets/screenshots/<语言>/<light|dark>/<名字>.webp`，缺一张构建就失败
+  - 要在图上标出位置时加 `markers="x,y x,y"`：每个点是占图宽、图高的百分比，按顺序显示成 1、2、3… 的编号，图的后面跟一个同样顺序的编号列表
+  - 截图存进 Git LFS
+- 8 种语言的页面一一对应：`website/src/content/docs/` 下英文在根目录，其余语言在各自的目录里，路径与英文相同
+  - 站内链接写英文页的根路径并以 `/` 结尾，如 `/guide/work/commit/#amend`，各语言照抄；要被链接的标题用 `{#锚点}` 写明锚点
+- 首页的演示窗口是照 App 的界面写的模拟窗口，能在网页里操作，代码在 `website/src/demo/`
+  - 窗口里的文字同样按资源键取自 `Localizable.strings`，用到的键列在 `text.ts`；颜色取自 App 的 `BuiltinThemes.json` 与 `NamedColors.json`
+  - 暂存、提交、推送等规则是不碰页面的纯函数，由 `demo.test.ts` 核对；改了之后在 `website/` 下运行 `npm test`
+  - App 里它演示到的界面变了，演示窗口跟着改
+- 首页与 404 页上的应用图标、幽灵等几幅画是构建时画出的 SVG：执行 `scripts/make-icon/` 里应用图标的绘制脚本，取出 SVG 片段写进页面，代码在 `website/src/art/`
+  - 绘制脚本改了，这几幅画跟着变；脚本里的函数或常量改名、拼画面的方式变了，官网的构建会失败，这时改 `website/src/art/kit.ts`
+  - 拆层、收短数字等处理由 `art.test.ts` 核对，同样用 `npm test` 运行
+- 首页有一只跟着滚动的小幽灵：从顶部图标的机架身后飘出来，一路停在演示窗口边、示意图的服务器身前与冲突向导旁那台服务器投出的光里，最后摘到樱桃、落在收尾的标语上方，代码在 `website/src/trail/`
+  - 路线按页面上各块内容的位置排出，是不碰页面的纯函数（`path.ts`），由 `trail.test.ts` 核对
+  - 一路上用到的画构建时写成 `trail.json`，页面的脚本启动后再取；脚本没有运行或系统开了 “减弱动态效果” 时，页面是静止的
+  - 首页的版式变了（增删段落、改演示窗口或示意图的位置）之后，在两种外观、宽屏与手机宽度下从头滚到底看一遍这一路
+- App 改了或删了资源键时，引用它的页面会让官网的构建失败：同时改官网，再运行 `mise run website:build`
+- 文案行文简洁但不生硬，描述清晰、重点准确，少用连词、转折词与修辞手法，稍微口语化；各语言都一样
 
 ## 协作约定
 

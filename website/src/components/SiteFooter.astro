@@ -1,0 +1,111 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+import { localeOfRoute, localizedUrl } from '../site/locales.ts';
+
+/*
+ * 首页与 404 页的页脚：几个常用链接与版权声明。
+ */
+
+/** 源代码仓库的地址，下载、发行说明、问题反馈与许可证都在这里。 */
+const repository = 'https://github.com/rakuyoMo/Spooky';
+
+/** 版权声明：首次发布的年份与作者。 */
+const copyright = '© 2026 Rakuyo';
+
+const { t } = Astro.locals;
+const locale = localeOfRoute(Astro.locals.starlightRoute.locale);
+
+const links = [
+    { text: t('footer.guide'), href: localizedUrl('/guide/', locale) },
+    { text: 'GitHub', href: repository, icon: 'github' as const },
+    { text: t('footer.releaseNotes'), href: `${repository}/releases` },
+    { text: t('footer.issues'), href: `${repository}/issues` },
+    { text: t('footer.license'), href: `${repository}/blob/main/LICENSE` },
+];
+---
+
+<footer class="site-footer not-content">
+    <div class="inner">
+        <ul class="links">
+            {
+                links.map(({ text, href, icon }) => (
+                    <li>
+                        <a href={href}>
+                            {icon && <Icon name={icon} size="1.1em" />}
+                            {text}
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+
+        <p class="copyright" translate="no">{copyright}</p>
+    </div>
+</footer>
+
+<style>
+    /*
+     * 定位之后才会盖在主视觉伸出来的夜空上面：404 页只有主视觉，夜空会伸进页脚。
+     * 页面比窗口矮时，页脚下面还露着一截页面底色；用只往下铺开的阴影把页脚的底色续到窗口底部，阴影不占滚动的范围。
+     */
+    .site-footer {
+        position: relative;
+        margin-top: clamp(4rem, 10vw, 7rem);
+        border-top: 1px solid var(--sl-color-hairline-light);
+        background-color: var(--spooky-surface);
+        box-shadow: 0 100vh 0 100vh var(--spooky-surface);
+    }
+
+    /* 宽屏上版权声明在行首、链接在行尾；窄屏上链接在上、版权声明在下 */
+    .inner {
+        display: flex;
+        flex-flow: row-reverse wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem 3rem;
+        max-width: 72rem;
+        margin-inline: auto;
+        padding: 2rem clamp(1.25rem, 4vw, 2.5rem);
+    }
+
+    .links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1.5rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* 每项排成弹性盒，带图标的链接与纯文字的链接文字对齐 */
+    .links li {
+        display: flex;
+    }
+
+    .links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        color: var(--sl-color-gray-2);
+        font-size: var(--sl-text-sm);
+        text-decoration: none;
+    }
+
+    .links a:hover {
+        color: var(--sl-color-text-accent);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+    }
+
+    .copyright {
+        color: var(--sl-color-gray-3);
+        font-size: var(--sl-text-sm);
+    }
+
+    @media (max-width: 50rem) {
+        .inner {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>

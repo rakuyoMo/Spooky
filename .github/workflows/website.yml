@@ -1,0 +1,102 @@
+# 官网的页面、App 的文案与颜色、应用图标的绘制脚本、构建官网的 task 或本文件变化时构建官网；PR 只构建，推送到 main 时构建后发布到 GitHub Pages
+
+name: Website
+
+# 页面里的界面叫法取自 App 的 Localizable.strings，资源键改名或删除会让官网构建失败，所以文案变化也触发；
+# 首页演示窗口的颜色取自 App 的内置主题与命名颜色，它们变化同样触发；
+# 首页与 404 页上的画由应用图标的绘制脚本画出，脚本变化同样触发；
+# Node 的版本与构建命令写在 mise.toml 的官网 task 里，它变了同样触发
+on:
+  pull_request:
+    paths:
+      - website/**
+      - Sources/Spooky/Resources/*.lproj/Localizable.strings
+      - Sources/Spooky/Resources/BuiltinThemes.json
+      - Sources/Spooky/Resources/NamedColors.json
+      - scripts/make-icon/**
+      - mise.toml
+      - .github/workflows/website.yml
+  push:
+    branches:
+      - main
+    paths:
+      - website/**
+      - Sources/Spooky/Resources/*.lproj/Localizable.strings
+      - Sources/Spooky/Resources/BuiltinThemes.json
+      - Sources/Spooky/Resources/NamedColors.json
+      - scripts/make-icon/**
+      - mise.toml
+      - .github/workflows/website.yml
+
+permissions:
+  contents: read
+
+# 同一 PR 的新推送取消旧运行；推送到 main 的运行依次进行，正在发布的不被取消
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# 构建时不向 Astro 发送使用统计
+env:
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  build:
+    name: 构建
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # 截图存在 Git LFS 里：按对象清单缓存 .git/lfs，清单不变时取出截图不再下载
+      - name: 列出 LFS 对象
+        run: git lfs ls-files --long | cut -d ' ' -f 1 | sort > .lfs-objects
+
+      - name: 缓存 LFS 对象
+        uses: actions/cache@v6
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-objects') }}
+
+      - name: 取出截图
+        run: git lfs pull
+
+      # 锁文件变了就按前缀恢复旧缓存，只下载变化的依赖
+      - name: 缓存 npm 下载
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('website/package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      # Node 的版本写在 mise.toml 的官网 task 里，运行 task 时才安装；装好的 Node 在 job 结束时存进缓存
+      - uses: jdx/mise-action@v5
+        with:
+          cache_save_post: true
+
+      - name: 构建
+        run: mise run website:build
+
+      - name: 上传站点
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/dist/
+
+  deploy:
+    name: 发布
+    if: ${{ github.event_name == 'push' }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

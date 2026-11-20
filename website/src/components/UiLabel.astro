@@ -1,0 +1,17 @@
+---
+import { uiLabelClass } from '../site/app-text.ts';
+import { uiText } from '../site/ui-text.ts';
+
+/** 组件的参数。 */
+interface Props {
+    /** 一个资源键，或菜单路径的几个键 */
+    ui: string | string[];
+
+    /** 按顺序代入占位符的参数 */
+    args?: string[];
+}
+
+const { ui, args } = Astro.props;
+---
+
+<strong class={uiLabelClass} translate="no">{uiText(Astro, ui, args)}</strong>
