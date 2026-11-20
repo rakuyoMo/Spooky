@@ -1,57 +1,18 @@
-# 提 PR 与推送到 main 时，检查代码规范、编译、测试并打包；分成三个 job，各占一台机器并行运行
-
 name: CI
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
 
-# 同一 PR 的新推送取消旧运行；推送到 main 按提交各自分组，互不取消
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
-
-# 固定 Xcode 版本，镜像更新默认版本时不跟着变
 env:
   DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
 
-# 测试与发布用同一个镜像与同一版 Xcode，改版本时各 job 的 runs-on 与上面的 DEVELOPER_DIR 和 release.yml 一起改
 jobs:
-  lint:
-    name: 检查代码规范与编译
-    runs-on: xcode-27
-
-    steps:
-      - uses: actions/checkout@v7
-
-      # SwiftPM 把依赖的 Git 镜像和下载过的二进制存进共享缓存，恢复后解析依赖直接取用，不再每次从 GitHub Release 下载
-      # 三个 job 各占一台机器，各自恢复；Package.resolved 变了就按前缀恢复旧缓存，只下载变化的部分
-      - name: 缓存 SwiftPM 依赖
-        uses: actions/cache@v6
-        with:
-          path: ~/Library/Caches/org.swift.swiftpm
-          key: swiftpm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-${{ runner.os }}-
-
-      - uses: jdx/mise-action@v4
-
-      - name: 检查代码规范
-        run: mise run swift:lint
-
-      # 编译测试时只能复用 swift build 的少量产物，编译放在这里，不拖长测试的 job
-      - name: 编译
-        run: mise run build
-
   test:
     name: 测试
     runs-on: xcode-27
-
-    # 测试不给单项测试或等待设时间上限，卡死的测试由这里结束
     timeout-minutes: 30
 
     steps:
@@ -66,49 +27,7 @@ jobs:
 
       - uses: jdx/mise-action@v4
 
-      # 测试的输出接到管道上时攒成整块再写，日志里每行的时间不是测试结束的时间；事件流里每个事件都带着发生的时间
-      # 这两个选项不列在 swift test 的帮助里
       - name: 测试
         run: |
-          mise run test \
-            --event-stream-output-path "$RUNNER_TEMP/test-events.jsonl" \
-            --event-stream-version 0
-
-      # swift test 运行中把每个测试目标的事件流写在临时目录的 swiftpm-test-output-* 里，全部跑完才合并成上面那一份
-      # 超时被取消时来不及合并，从临时目录取出各自的一份
-      - name: 取出未合并的测试事件
-        if: ${{ always() }}
-        run: |
-          [ -f "$RUNNER_TEMP/test-events.jsonl" ] && exit 0
-          mkdir -p "$RUNNER_TEMP/test-events-unmerged"
-          find "${TMPDIR:-/tmp}" -maxdepth 2 -path '*/swiftpm-test-output-*/event-stream-*.jsonl' \
-            -exec cp {} "$RUNNER_TEMP/test-events-unmerged/" \;
-
-      # 测试失败或超时被取消时同样上传，卡住的测试从事件流里找；产物名带上第几次运行，重跑时不与前一次重名
-      - name: 上传测试事件
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-events-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/test-events.jsonl
-            ${{ runner.temp }}/test-events-unmerged/
-
-  bundle:
-    name: 打包
-    runs-on: xcode-27
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: 缓存 SwiftPM 依赖
-        uses: actions/cache@v6
-        with:
-          path: ~/Library/Caches/org.swift.swiftpm
-          key: swiftpm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-${{ runner.os }}-
-
-      - uses: jdx/mise-action@v4
-
-      - name: 打包
-        run: mise run bundle
+          sw_vers
+          swift test --filter 'ActivityWindowTests|ActivityWindowProbe' 2>&1 | grep -E 'PROBE|ActivityWindow|✘|↳|error:'

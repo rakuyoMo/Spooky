@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import TestSupport
 
 @testable import Spooky
 @testable import SpookyKit
@@ -249,5 +250,72 @@ struct ActivityWindowTests {
         }
 
         return activity
+    }
+}
+
+// MARK: - Probe
+
+@MainActor
+struct ActivityWindowProbe {
+    @Test("PROBE")
+    func probe() async throws {
+        let controller = ActivityWindowController(activities: RepositoryActivities())
+
+        defer { controller.close() }
+
+        let window = try #require(controller.window)
+        window.setFrameAutosaveName("")
+
+        let toolbar = try #require(window.toolbar)
+        let group = try #require(toolbar.items.first { $0.itemIdentifier == ActivityToolbar.kinds } as? NSToolbarItemGroup)
+        let control = try #require(group.view as? NSSegmentedControl)
+
+        func dump(_ tag: String) {
+            let elements = ((control.cell as? NSSegmentedCell)?.accessibilityChildren() as? [NSAccessibilityElement]) ?? []
+            let font = control.font ?? .systemFont(ofSize: 0)
+            let texts = (0 ..< control.segmentCount).map {
+                NSAttributedString(string: control.label(forSegment: $0) ?? "", attributes: [.font: font]).size().width
+            }
+
+            print(
+                "PROBE", tag,
+                "| frame", control.frame,
+                "| intrinsic", control.intrinsicContentSize,
+                "| fitting", control.fittingSize,
+                "| controlSize", control.controlSize.rawValue,
+                "| font", font.pointSize,
+                "| dist", control.segmentDistribution.rawValue,
+                "| superview", control.superview.map { String(describing: type(of: $0)) } ?? "nil",
+                "| inWindow", control.window != nil,
+                "| seg", elements.map { $0.accessibilityFrame() },
+                "| text", texts,
+                "| visible", toolbar.visibleItems?.map(\.itemIdentifier.rawValue) ?? [],
+                "| window", window.frame,
+                "| screen", window.screen?.frame ?? .zero,
+                "| scale", window.backingScaleFactor,
+                "| os", ProcessInfo.processInfo.operatingSystemVersionString
+            )
+        }
+
+        dump("a-initial")
+
+        let saved = control.frame
+        control.frame.size = control.fittingSize
+        dump("b-fitted")
+        control.frame = saved
+
+        window.layoutIfNeeded()
+        dump("c-layoutIfNeeded")
+
+        controller.showWindow(nil)
+        await runLoopTurns(3) { window.layoutIfNeeded() }
+        dump("d-shown")
+
+        window.setContentSize(NSSize(width: 900, height: 299))
+        await runLoopTurns(3) { window.layoutIfNeeded() }
+        dump("e-wide")
+
+        control.frame.size = control.fittingSize
+        dump("f-wide-fitted")
     }
 }
