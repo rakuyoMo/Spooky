@@ -304,18 +304,19 @@ struct ActivityWindowProbe {
         dump("b-fitted")
         control.frame = saved
 
+        window.setContentSize(NSSize(width: 900, height: 299))
         window.layoutIfNeeded()
-        dump("c-layoutIfNeeded")
+        dump("c-wide-hidden")
 
         controller.showWindow(nil)
         await runLoopTurns(3) { window.layoutIfNeeded() }
-        dump("d-shown")
+        dump("d-wide-shown")
 
-        window.setContentSize(NSSize(width: 900, height: 299))
+        window.setContentSize(NSSize(width: 551, height: 299))
         await runLoopTurns(3) { window.layoutIfNeeded() }
-        dump("e-wide")
+        dump("e-narrow-shown")
 
         control.frame.size = control.fittingSize
-        dump("f-wide-fitted")
+        dump("f-narrow-fitted")
     }
 }
