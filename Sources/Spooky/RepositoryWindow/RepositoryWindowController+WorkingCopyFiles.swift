@@ -131,6 +131,7 @@ extension RepositoryWindowController {
             message: AppLocalization.text("files.untrackIgnored.message", session.scopeDescription(tracked)),
             submitTitle: AppLocalization.text("files.untrack"),
             alternate: (title: AppLocalization.text("files.untrackIgnored.skip"), action: { _ in write([]) }),
+            helpArticle: .ignore,
             close: close
         ) { _ in
             write(tracked)

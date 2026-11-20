@@ -163,6 +163,7 @@ website/                 官网：首页与写给使用者的手册
   - 截图存进 Git LFS
 - 8 种语言的页面一一对应：`website/src/content/docs/` 下英文在根目录，其余语言在各自的目录里，路径与英文相同
   - 站内链接写英文页的根路径并以 `/` 结尾，如 `/guide/work/commit/#amend`，各语言照抄；要被链接的标题用 `{#锚点}` 写明锚点
+  - App 里对话框的帮助按钮链到的页面与锚点列在 `HelpArticle`，改了页面路径或锚点时同时改它，`HelpArticleTests` 会核对
 - 首页的演示窗口是照 App 的界面写的模拟窗口，能在网页里操作，代码在 `website/src/demo/`
   - 窗口里的文字同样按资源键取自 `Localizable.strings`，用到的键列在 `text.ts`；颜色取自 App 的 `BuiltinThemes.json` 与 `NamedColors.json`
   - 暂存、提交、推送等规则是不碰页面的纯函数，由 `demo.test.ts` 核对；改了之后在 `website/` 下运行 `npm test`

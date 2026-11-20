@@ -45,6 +45,16 @@ enum SyncDialogKind {
         case .pushRevision: .infinity
         }
     }
+
+    /// 帮助按钮打开的官网文章；推送任意版本的对话框没有帮助按钮。
+    var helpArticle: HelpArticle? {
+        switch self {
+        case .sync: .sync
+        case .rebase: .rebase
+        case .forcePush: .forcePush
+        case .pushRevision: nil
+        }
+    }
 }
 
 // MARK: - SyncDialog
@@ -128,6 +138,7 @@ struct SyncDialog: View {
             formInsets: formInsets,
             submitTitle: AppLocalization.text(kind.submitKey),
             error: error,
+            helpArticle: kind.helpArticle,
             isValid: canSubmit,
             cancel: close,
             submit: perform

@@ -66,6 +66,7 @@ struct RevisionDialog: View {
             inputColumn: isExport ? 146 : DialogMetrics.inputColumn,
             submitTitle: AppLocalization.text(submitKey),
             error: error.isEmpty ? nil : error,
+            helpArticle: helpArticle,
             canSubmit: canSubmit,
             cancel: close,
             submit: submit,
@@ -187,6 +188,14 @@ extension RevisionDialog {
         case .export: "export.submit"
         case .savePatch: "patch.save"
         case .compare: "compare.submit"
+        }
+    }
+
+    /// 帮助按钮打开的官网文章：比较两个版本有，导出与保存补丁没有。
+    private var helpArticle: HelpArticle? {
+        switch request {
+        case .compare: .compare
+        case .export, .savePatch: nil
         }
     }
 

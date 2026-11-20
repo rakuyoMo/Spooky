@@ -34,6 +34,7 @@ struct CheckoutRevisionDialog: View {
             message: AppLocalization.text("rewrite.checkout.help"),
             submitTitle: AppLocalization.text("rewrite.checkout.button"),
             error: notice,
+            helpArticle: .checkoutRevision,
             isValid: destination.value(for: target) != nil && target != prefilled,
             cancel: close,
             submit: perform

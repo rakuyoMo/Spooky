@@ -14,6 +14,9 @@ struct ConfirmationRequest {
     /// 内容区 “Do not ask me again” 对应的确认项，勾选并确认后关掉它；为 nil 时没有这个勾选框。
     var suppression: ServerConfirmation? = nil
 
+    /// 底栏左下角帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
+    var helpArticle: HelpArticle? = nil
+
     /// 确认后执行，此时对话框已经关闭。
     let action: () -> Void
 }

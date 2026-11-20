@@ -44,6 +44,9 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     /// 对话框自己加载数据时底栏左侧的步骤；为 nil 时不显示。
     let progress: String?
 
+    /// 底栏左下角帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
+    let helpArticle: HelpArticle?
+
     /// 内容是否完整合法。
     let isValid: Bool
 
@@ -72,6 +75,7 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
             alternate: alternate,
             error: notice,
             progress: progress,
+            helpArticle: helpArticle,
             canSubmit: isValid && session.canWrite,
             cancel: cancel,
             submit: submit,
@@ -97,6 +101,7 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
     ///   - alternate: 备选按钮的标题与动作；给了时换成备选底栏。
     ///   - error: 校验或加载失败的说明。
     ///   - progress: 对话框自己加载数据时的步骤。
+    ///   - helpArticle: 帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     ///   - isValid: 内容是否完整合法。
     ///   - cancel: 取消的动作。
     ///   - submit: 主按钮的动作。
@@ -115,6 +120,7 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         alternate: (title: String, action: () -> Void)? = nil,
         error: String,
         progress: String? = nil,
+        helpArticle: HelpArticle? = nil,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
@@ -133,6 +139,7 @@ struct RepositoryDialogLayout<Content: View, Options: View>: View {
         self.alternate = alternate
         self.error = error
         self.progress = progress
+        self.helpArticle = helpArticle
         self.isValid = isValid
         self.cancel = cancel
         self.submit = submit
@@ -154,6 +161,7 @@ extension RepositoryDialogLayout {
         formInsets: (top: CGFloat, bottom: CGFloat) = (20, 20),
         submitTitle: String,
         error: String,
+        helpArticle: HelpArticle? = nil,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
@@ -169,6 +177,7 @@ extension RepositoryDialogLayout {
             formInsets: formInsets,
             submitTitle: submitTitle,
             error: error,
+            helpArticle: helpArticle,
             isValid: isValid,
             cancel: cancel,
             submit: submit,
@@ -192,6 +201,7 @@ extension RepositoryDialogLayout where Options == EmptyView {
         alternate: (title: String, action: () -> Void)? = nil,
         error: String,
         progress: String? = nil,
+        helpArticle: HelpArticle? = nil,
         isValid: Bool,
         cancel: @escaping () -> Void,
         submit: @escaping () -> Void,
@@ -209,6 +219,7 @@ extension RepositoryDialogLayout where Options == EmptyView {
             alternate: alternate,
             error: error,
             progress: progress,
+            helpArticle: helpArticle,
             isValid: isValid,
             cancel: cancel,
             submit: submit,

@@ -46,6 +46,7 @@ struct AddWorktreeDialog: View {
             width: 486,
             submitTitle: AppLocalization.text("worktree.add.submit"),
             error: error,
+            helpArticle: .addWorktree,
             isValid: !revision.isEmpty && destination.hasPrefix("/") && error.isEmpty,
             cancel: close,
             submit: submit
@@ -216,6 +217,7 @@ struct WorktreePathDialog: View {
             message: AppLocalization.text("worktree.move.message", worktree.name),
             submitTitle: AppLocalization.text("worktree.move.submit"),
             error: "",
+            helpArticle: .moveWorktree,
             isValid: path.hasPrefix("/") && path != worktree.path,
             cancel: close,
             submit: submit
@@ -319,6 +321,7 @@ struct RelocateWorktreeDialog: View {
             message: AppLocalization.text("worktree.relocate.message", worktree.name),
             submitTitle: AppLocalization.text("worktree.relocate.submit"),
             error: isRegisteredPath ? "" : problem ?? "",
+            helpArticle: .repairWorktree,
             isValid: !isRegisteredPath && (problem?.isEmpty ?? false),
             cancel: close,
             submit: submit
@@ -469,6 +472,7 @@ struct RemoveWorktreeDialog: View {
             formInsets: (0, 20),
             submitTitle: AppLocalization.text("worktree.remove.submit"),
             error: "",
+            helpArticle: .removeWorktree,
             isValid: true,
             cancel: close,
             submit: submit

@@ -35,6 +35,7 @@ struct ResetDialog: View {
             inputColumn: 146,
             submitTitle: AppLocalization.text("rewrite.reset.button"),
             error: leaving.error,
+            helpArticle: .reset,
             isValid: leaving.value(for: target) != nil,
             cancel: close,
             submit: perform

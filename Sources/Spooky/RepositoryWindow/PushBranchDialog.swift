@@ -33,6 +33,7 @@ struct PushBranchDialog: View {
             width: 450,
             submitTitle: AppLocalization.text("sync.pushBranch"),
             error: "",
+            helpArticle: .push,
             isValid: selection != nil,
             cancel: close,
             submit: perform

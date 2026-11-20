@@ -25,6 +25,9 @@ struct ConfirmationDialog: View {
     /// 内容区勾选框的标题；为 nil 时没有勾选框。
     let checkbox: String?
 
+    /// 底栏左下角帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
+    let helpArticle: HelpArticle?
+
     /// 关闭对话框。
     let close: () -> Void
 
@@ -48,6 +51,7 @@ struct ConfirmationDialog: View {
             alternate: alternate.map { alternate in
                 (title: alternate.title, action: { choose(alternate.action) })
             },
+            helpArticle: helpArticle,
             cancel: { choose(cancel) },
             submit: { choose(submit) }
         ) {
@@ -68,6 +72,7 @@ struct ConfirmationDialog: View {
     ///   - cancelTitle: 取消按钮的标题。
     ///   - alternate: 备选按钮的标题与动作，动作的参数是勾选框是否勾上。
     ///   - checkbox: 内容区勾选框的标题。
+    ///   - helpArticle: 帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     ///   - close: 关闭对话框。
     ///   - cancel: 取消后执行。
     ///   - submit: 选了主按钮后执行。
@@ -78,6 +83,7 @@ struct ConfirmationDialog: View {
         cancelTitle: String = AppLocalization.text("action.cancel"),
         alternate: (title: String, action: (_ checked: Bool) -> Void)? = nil,
         checkbox: String? = nil,
+        helpArticle: HelpArticle? = nil,
         close: @escaping () -> Void,
         cancel: @escaping (_ checked: Bool) -> Void = { _ in },
         submit: @escaping (_ checked: Bool) -> Void
@@ -88,6 +94,7 @@ struct ConfirmationDialog: View {
         self.cancelTitle = cancelTitle
         self.alternate = alternate
         self.checkbox = checkbox
+        self.helpArticle = helpArticle
         self.close = close
         self.cancel = cancel
         self.submit = submit
@@ -104,6 +111,7 @@ struct ConfirmationDialog: View {
             message: request.message,
             submitTitle: request.submitTitle,
             checkbox: request.suppression.map { _ in AppLocalization.text("dialog.doNotAskAgain") },
+            helpArticle: request.helpArticle,
             close: close
         ) { checked in
             if checked {

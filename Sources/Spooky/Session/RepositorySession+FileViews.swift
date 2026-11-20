@@ -128,6 +128,7 @@ extension RepositorySession {
                 title: title,
                 message: message,
                 submitTitle: submitTitle,
+                helpArticle: .restore,
                 action: perform
             ))
             return
@@ -138,6 +139,7 @@ extension RepositorySession {
             title: title,
             submitTitle: submitTitle,
             message: message,
+            helpArticle: .restore,
             action: perform
         )
     }

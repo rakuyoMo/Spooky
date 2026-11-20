@@ -63,6 +63,7 @@ struct RemoteValueDialog: View {
             submitTitle: AppLocalization.text(keys.submit),
             error: error,
             progress: running ? AppLocalization.text("remote.checking") : nil,
+            helpArticle: isURL ? .remoteSettings : nil,
             isValid: isValid && !running,
             cancel: close,
             submit: submit

@@ -106,7 +106,7 @@ private struct SignatureStatusIcon: View {
 
 /// 签名详情：有姓名与邮箱的 OpenPGP 签名显示头像与身份，其余显示短标识与状态，没有签名时只有一行说明。
 ///
-/// 四周留 20 pt；校验结果晚于弹窗出现时，弹窗跟着结果变大。
+/// 四周留 20 pt；校验结果晚于弹窗出现时，弹窗跟着结果变大。状态或说明右侧 8 pt 是帮助按钮。
 struct SignaturePopover: View {
     /// 校验结果；正在校验时为空。
     let signature: CommitSignature?
@@ -123,12 +123,26 @@ struct SignaturePopover: View {
                     details(signature, keyLabel: "signature.signingKey", labelAlignment: .trailing)
                 }
             } else if signature != nil {
-                Text(AppLocalization.text("signature.unsigned"))
-                    .font(.system(size: 13))
+                HStack(spacing: 8) {
+                    Text(AppLocalization.text("signature.unsigned"))
+                        .font(.system(size: 13))
+
+                    helpButton
+                }
             }
         }
         .padding(20)
         .fixedSize()
+    }
+
+    /// 打开官网上签名一节的按钮：13 pt 的 `questionmark.circle`，没有边框。
+    private var helpButton: some View {
+        Button(action: HelpArticle.signatures.open) {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 13))
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(AppLocalization.text("menu.help"))
     }
 
     /// 有身份的签名：头像右边是姓名与邮箱，分隔线下方是密钥与状态。
@@ -179,7 +193,11 @@ struct SignaturePopover: View {
                 Text(AppLocalization.text("signature.status"))
                     .gridColumnAlignment(labelAlignment)
 
-                Text(signature.status.title)
+                HStack(spacing: 8) {
+                    Text(signature.status.title)
+
+                    helpButton
+                }
             }
         }
         .font(.system(size: 11))

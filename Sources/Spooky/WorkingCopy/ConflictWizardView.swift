@@ -49,7 +49,7 @@ struct ConflictWizardView: View {
     @AppStorage(ExternalTool.mergeToolKey)
     private var mergeTool = ""
 
-    /// 载入中、失败或向导内容。
+    /// 载入中、失败或向导内容；向导内容的右栏左下角是系统的帮助按钮，距左、距底各 16。
     ///
     /// 写入结束、重新连上服务器与切回本程序时自动重新载入：文件可能已在外部编辑器里改过。换了文件时清空选择。
     var body: some View {
@@ -58,7 +58,12 @@ struct ConflictWizardView: View {
                 FailureDetailsView(failure: failure) { reloads += 1 }
                     .padding(20)
             } else if let contents {
+                // 失败说明左下角是重试按钮，帮助按钮只跟着向导内容出现
                 wizard(contents)
+                    .overlay(alignment: .bottomLeading) {
+                        HelpLink(action: HelpArticle.conflictWizard.open)
+                            .padding(16)
+                    }
             } else {
                 ProgressView(AppLocalization.text("conflict.loading"))
             }

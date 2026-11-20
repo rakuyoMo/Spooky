@@ -156,6 +156,7 @@ struct RepositoryOperationDialog: View {
             optionsInsets: request.kind == .create ? (16, 20) : (20, 20),
             submitTitle: AppLocalization.text(request.kind.submitKey(pushesHead: pushesHead)),
             error: Self.emptyState(for: request, in: session) ?? error,
+            helpArticle: request.kind.helpArticle,
             isValid: canSubmit,
             cancel: cancel,
             submit: perform,

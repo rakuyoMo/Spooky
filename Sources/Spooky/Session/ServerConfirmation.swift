@@ -55,12 +55,14 @@ extension RepositorySession {
     ///   - title: 确认对话框的标题。
     ///   - submitTitle: 主按钮的标题。
     ///   - message: 写明在服务器上覆盖、移进废纸篓或永久删除的说明。
+    ///   - helpArticle: 帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     ///   - action: 确认后执行的操作。
     func confirmOnServer(
         _ confirmation: ServerConfirmation,
         title: String,
         submitTitle: String,
         message: String,
+        helpArticle: HelpArticle? = nil,
         action: @escaping () -> Void
     ) {
         guard confirmation.isEnabled else {
@@ -73,6 +75,7 @@ extension RepositorySession {
             message: message,
             submitTitle: submitTitle,
             suppression: confirmation,
+            helpArticle: helpArticle,
             action: action
         ))
     }

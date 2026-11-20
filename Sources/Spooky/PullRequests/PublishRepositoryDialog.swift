@@ -61,6 +61,7 @@ struct PublishRepositoryDialog: View {
             message: AppLocalization.text("publish.message"),
             submitTitle: AppLocalization.text("publish.submit"),
             error: error,
+            helpArticle: .publishRepository,
             canSubmit: canSubmit,
             cancel: close,
             submit: submit
