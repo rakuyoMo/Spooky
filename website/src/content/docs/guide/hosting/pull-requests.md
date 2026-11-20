@@ -2,3 +2,109 @@
 title: "Pull Requests and Merge Requests"
 description: "List, create, discuss, check out, merge, and close pull requests on GitHub and merge requests on GitLab."
 ---
+
+Spooky shows the open pull requests on GitHub and merge requests on GitLab for a repository’s remote. You can read and discuss them, check them out, merge them, and create new ones, without leaving the repository window.
+
+This needs a [hosting account](/guide/hosting/accounts/) for the remote. When the remote is on GitLab, the sidebar, menus, and dialogs say merge request instead of pull request.
+
+## Open the list {#list}
+
+Click :ui[pr.title] in the sidebar, or choose :ui[menu.view > pr.show.menu] (<kbd>⌘4</kbd>).
+
+Choose a remote from the menu at the top of the list. Each row shows:
+
+- The title, marked :ui[pullRequests.state.draft] for drafts
+- The number, the author, and when it was opened
+- The source branch and the branch it goes into. For a request from a fork, the source branch comes with its project.
+
+Scroll to the bottom to load more. Closed and merged requests aren’t listed.
+
+If the list can’t load, it says why, and keeps the requests it already loaded below. When the account’s token is rejected or lacks a scope, you can click :ui[accounts.reauthenticate] right there.
+
+When the list can’t tell which account to use, see [Which account a remote uses](/guide/hosting/accounts/#remotes).
+
+## Read a request {#details}
+
+Select a request to see it on the right. Switch between three views at the top:
+
+- :ui[pullRequests.conversation]: the title and state, the description, the comments, and the commits grouped by day, oldest first.
+- :ui[pullRequests.commits]: the request’s commits. The bar above lists the contributors and how many commits there are.
+- :ui[pullRequests.changeset]: what the request changes, compared with where its source branch split off.
+
+In the conversation, double-click a commit or press <kbd>Return</kbd> to open it. Right-click a commit to copy its hash. Click a link in the text to open it.
+
+:ui[pullRequests.commits] and :ui[pullRequests.changeset] need the request’s commits in your repository. If they aren’t there yet, click :ui[pullRequests.fetch]. Spooky gets them from the remote without changing your branches.
+
+## Create a request {#create}
+
+The source branch has to be on a remote already, so push it first. Then do one of these:
+
+- Click the add button at the top of the list.
+- Choose :ui[menu.repository > pr.create.menu] (<kbd>⌃⌘P</kbd>).
+- Right-click a branch in the sidebar and choose :ui[pr.forBranch.create]{1="feature/units-toggle"} from the menu. If the branch already has an open request, the item is :ui[pr.forBranch.show]{1="feature/units-toggle"} instead.
+
+In the dialog:
+
+1. Next to :ui[pullRequests.source] and :ui[pullRequests.target], choose a remote and a branch on it. The source starts as the branch you right-clicked or the current branch, and the target as the remote’s default branch. Only remotes on the same instance as the account are listed. A source in a different project makes a request from a fork.
+2. The title starts as the source branch name. The description is optional.
+3. Click :ui[pr.create.submit].
+
+The source and target can’t be the same branch.
+
+## Discuss {#discuss}
+
+To add a comment, click :ui[pullRequests.addComment] at the end of the conversation, or press <kbd>⌘S</kbd>.
+
+For your own comments, use :ui[pullRequests.comment.edit] and :ui[pullRequests.comment.delete] on the comment, or right-click it. Double-clicking your comment also opens it for editing. Deleting a comment can’t be undone.
+
+On GitLab, you can also reply to any comment with :ui[pullRequests.comment.reply]. The reply goes into the same discussion on GitLab.
+
+For your own request, you can also:
+
+- Change the description: click :ui[pullRequests.edit] next to it, or right-click it and choose :ui[pullRequests.editDescription.menu] from the menu.
+- Change the title, description, and target branch: double-click the request in the list, or right-click it and choose :ui[pr.edit.menu]{1="#12"} from the menu. The source and the target project stay as they are.
+
+## Check out a request {#checkout}
+
+To work on a request’s code, click :ui[pullRequests.checkout] at the bottom of the details, or right-click the request and choose :ui[pr.checkout.menu]{1="#12"} from the menu.
+
+Enter a name for the local branch and click :ui[pullRequests.checkout]. The name starts as the source branch name. For a request from a fork, it’s `pullrequests/<author>/<branch>`.
+
+Spooky first gets the request’s commits, then checks out the branch:
+
+- If a local branch with that name already points to them, Spooky checks it out.
+- If it points somewhere else, the dialog says so. Choose another name.
+- Otherwise Spooky creates the branch. For a request from the same project, it tracks the source branch on the remote, as long as that’s at the same commit.
+
+When you have changes to tracked files, Spooky asks whether to stash them first; see [Auto stash](/guide/work/stash/#auto-stash).
+
+Checking out isn’t available when the local branch that tracks the source branch has commits you haven’t pushed. It isn’t available either when that branch is the current branch and already at the request’s commit.
+
+## Merge a request {#merge}
+
+Click :ui[pullRequests.merge] at the bottom of the details. The merge happens on the hosting service, and can’t be undone.
+
+- **GitHub**: choose a :ui[pullRequests.mergeType] from the ones the repository allows: :ui[pullRequests.method.merge], :ui[pullRequests.method.rebase], or :ui[pullRequests.method.squash]. Spooky picks the one you used last time.
+- **GitLab**: the dialog shows the project’s :ui[pullRequests.mergeStrategy]. Select :ui[pullRequests.squash] to squash. If the project requires squashing, it stays on.
+
+:ui[pullRequests.deleteBranch] removes the source branch on the service. It starts as the project’s setting.
+
+If the request can’t be merged, the dialog says why. For example, it’s a draft, it has conflicts, your account isn’t allowed to merge, or the service is still checking.
+
+After the merge, Spooky fetches from the remote, so its branches catch up with the result.
+
+## Close a request {#close}
+
+Click :ui[pullRequests.close] at the bottom of the details, and confirm. To reopen it, go to the hosting service.
+
+:::note[Server repositories]
+The list and everything you do on the service go from your Mac. Fetching a request’s commits, checking it out, and the fetch after a merge run on the server, as do the comparisons in :ui[pullRequests.commits] and :ui[pullRequests.changeset].
+:::
+
+Each request to the service shows up on the :ui[activity.service] page of the :ui[activity.title] window.
+
+## See also
+
+- [Hosting Accounts](/guide/hosting/accounts/)
+- [Branches](/guide/branches/branches/)
+- [Branches Review](/guide/branches/review/)
