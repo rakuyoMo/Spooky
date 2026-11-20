@@ -1,0 +1,156 @@
+---
+import { siteArt } from '../../art/site.ts';
+import type { ScreenshotFrame } from '../../site/screenshot.ts';
+import Screenshot from '../Screenshot.astro';
+import StickerArt from '../StickerArt.astro';
+
+/**
+ * 一组功能：一边是标题与说明，另一边是截图；`reverse` 时截图换到另一边，几组交替排开。
+ *
+ * 给两张截图时拼在一起：第一张靠左，第二张叠在它右侧。
+ * 只有一张整窗截图时，截图占满整行，标题与说明排在它上方；整窗缩到半行宽就看不清了。
+ * 这时可以在标题与说明的左边放上 “显形” 的服务器：跟着滚动的小幽灵会停到它上方的光里。
+ */
+
+/** 一张截图：名字、替代文本与边框，与 `<Screenshot>` 的参数相同。 */
+interface Shot {
+    name: string;
+    alt: string;
+    frame: ScreenshotFrame;
+}
+
+/** 组件的参数。 */
+interface Props {
+    /** 功能的标题 */
+    title: string;
+
+    /** 一到两张截图 */
+    shots: [Shot] | [Shot, Shot];
+
+    /** 截图是否放在开头一侧 */
+    reverse?: boolean;
+
+    /** 整窗截图的那一种里，标题与说明的左边是否放上 “显形” 的服务器 */
+    reveal?: boolean;
+}
+
+const { title, shots, reverse = false, reveal = false } = Astro.props;
+const wide = shots.length === 1 && shots[0].frame === 'window';
+---
+
+<article class:list={['feature', { reverse: reverse && !wide, wide }]}>
+    {wide && reveal && <StickerArt art={siteArt.reveal} name="reveal" />}
+
+    <div class="text spooky-rich">
+        <h3>{title}</h3>
+
+        <div class="body">
+            <slot />
+        </div>
+    </div>
+
+    <div class:list={['media', { pair: shots.length === 2 }]}>
+        {shots.map((shot) => <Screenshot {...shot} />)}
+    </div>
+</article>
+
+<style>
+    .feature {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        align-items: center;
+        gap: clamp(2rem, 5vw, 4.5rem);
+    }
+
+    /* 接在另一组功能或一组卡片后面时，上方留出一段 */
+    .feature + .feature,
+    :global(.grid) + .feature {
+        margin-top: clamp(4rem, 9vw, 7rem);
+    }
+
+    /* 截图换到开头一侧时，宽的一栏跟着截图走 */
+    .reverse {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
+
+    .reverse .text {
+        order: 2;
+    }
+
+    h3 {
+        color: var(--sl-color-white);
+        font-size: clamp(var(--sl-text-2xl), 3vw, var(--sl-text-3xl));
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+
+    h3:is(:lang(zh), :lang(ja), :lang(ko)) {
+        letter-spacing: 0;
+    }
+
+    /* 说明是页面里写的 Markdown */
+    .body :global(p) {
+        margin-top: 1rem;
+        color: var(--sl-color-gray-2);
+        font-size: var(--sl-text-lg);
+        line-height: 1.7;
+    }
+
+    .media {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* 整窗截图：标题与说明叠在一起、靠左排在截图上方，截图在下面占满整行；说明的行宽收到读着舒服的长度 */
+    .wide {
+        grid-template-columns: minmax(0, 1fr);
+        gap: clamp(1.75rem, 4vw, 3rem);
+    }
+
+    .wide .text {
+        max-width: 38rem;
+    }
+
+    /* 带服务器的：服务器在行首，标题与说明挪到它右边，截图仍占满下面一整行 */
+    .wide:has(> :global(.sticker-art)) {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .wide > .media {
+        grid-column: 1 / -1;
+    }
+
+    .media :global(.spooky-screenshot) {
+        margin: 0;
+    }
+
+    /* 两张截图：第一张占左边四成，第二张从三成处开始叠在上面，垂直居中 */
+    .pair {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        align-items: center;
+    }
+
+    .pair > :global(:first-child) {
+        grid-row: 1;
+        grid-column: 1 / 5;
+    }
+
+    .pair > :global(:last-child) {
+        z-index: 1;
+        grid-row: 1;
+        grid-column: 4 / 11;
+    }
+
+    @media (max-width: 50rem) {
+        .feature,
+        .wide:has(> :global(.sticker-art)) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .reverse .text {
+            order: 0;
+        }
+    }
+</style>

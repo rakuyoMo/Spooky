@@ -1,0 +1,147 @@
+---
+import { siteArt } from '../art/site.ts';
+import ActionLinks from './ActionLinks.astro';
+import Trail from './home/Trail.astro';
+import Sky from './Sky.astro';
+import StickerArt from './StickerArt.astro';
+
+/*
+ * 首页与 404 页的主视觉，替换 Starlight 自带的 Hero。
+ *
+ * 标题、副标题与按钮取自页面 frontmatter 的 `hero`；按钮里的站内地址按页面的语言加前缀。
+ * 首页在夜空里摆出应用图标与名字，并在后面放上跟着滚动的小幽灵；404 页换成幽灵。
+ */
+
+/** Starlight 给页面标题的锚点，页内的 “回到顶部” 指向它。 */
+const pageTitleId = '_top';
+
+const route = Astro.locals.starlightRoute;
+const { title = route.entry.data.title, tagline, actions = [] } = route.entry.data.hero ?? {};
+const notFound = route.entry.id === '404';
+---
+
+<section class:list={['hero', 'not-content', { 'not-found': notFound }]}>
+    <Sky />
+
+    <div class="hero-inner">
+        {
+            notFound ? (
+                <StickerArt art={siteArt.ghost} name="ghost" />
+            ) : (
+                <>
+                    <StickerArt class="app-icon" art={siteArt.hero} name="hero" />
+
+                    <p class="name" translate="no">
+                        {route.siteTitle}
+                    </p>
+                </>
+            )
+        }
+
+        <h1 id={pageTitleId} data-page-title set:html={title} />
+
+        {tagline && <p class="tagline" set:html={tagline} />}
+
+        <ActionLinks actions={actions} />
+    </div>
+</section>
+
+{!notFound && <Trail />}
+
+<style>
+    .hero {
+        position: relative;
+        padding: clamp(3rem, 8vw, 6rem) 1.25rem 0;
+        text-align: center;
+    }
+
+    .hero-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 48rem;
+        margin-inline: auto;
+    }
+
+    .hero-inner :global(.app-icon) {
+        width: clamp(5.5rem, 12vw, 8rem);
+    }
+
+    /* 紫色的光晕只围着底板，幽灵与机架不另外带光 */
+    .hero-inner :global(.app-icon [data-layer='plate']) {
+        filter: drop-shadow(0 0.75rem 2rem rgb(91 75 224 / 0.45));
+    }
+
+    .name {
+        margin-top: 1.25rem;
+        color: var(--sl-color-text-accent);
+        font-size: var(--sl-text-lg);
+        font-weight: 650;
+        letter-spacing: 0.02em;
+    }
+
+    h1 {
+        margin-top: 0.5rem;
+        color: var(--sl-color-white);
+        font-size: clamp(2.5rem, 7vw, 4.75rem);
+        font-weight: 750;
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+    }
+
+    /* 中日韩文的标题不收字距，行距稍宽；字号的下限让九个字的标题在宽 360 的屏幕上排成一行 */
+    h1:is(:lang(zh), :lang(ja), :lang(ko)) {
+        font-size: clamp(2.125rem, 6vw, 4rem);
+        line-height: 1.2;
+        letter-spacing: 0;
+    }
+
+    /* 标题里用 `<ruby>` 在字的上方加一行小字，点明这个字指的是什么；这时标题上方多留一些空，小字不挨着名字 */
+    h1:has(:global(ruby)) {
+        margin-top: 1rem;
+    }
+
+    h1 :global(rt) {
+        color: var(--sl-color-text-accent);
+        font-size: max(0.22em, 0.6875rem);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        ruby-align: center;
+    }
+
+    /* 宽度写明占满一行：按文字收缩时，Safari 会把正好排满一行的句子多折出一行 */
+    .tagline {
+        width: 100%;
+        max-width: 38rem;
+        margin-top: 1.25rem;
+        color: var(--sl-color-gray-2);
+        font-size: clamp(var(--sl-text-lg), 2.2vw, var(--sl-text-xl));
+        line-height: 1.6;
+        text-wrap: pretty;
+    }
+
+    /* 中文副标题的两句各起一行；第二句更长，宽屏上放宽到一行装得下 */
+    .tagline:lang(zh) {
+        max-width: 46rem;
+    }
+
+    /* 屏幕窄到第一句也要折行时去掉换行，让文字自然折行 */
+    @media (max-width: 22.4375rem) {
+        .tagline :global(.tagline-break) {
+            display: none;
+        }
+    }
+
+    .hero :global(.actions) {
+        margin-top: 2rem;
+    }
+
+    /* 404 页：幽灵下面是错误码与说明，按钮之后留出页脚前的空间 */
+    .not-found {
+        padding-bottom: clamp(4rem, 12vw, 8rem);
+    }
+
+    .not-found h1 {
+        margin-top: 1.5rem;
+    }
+</style>

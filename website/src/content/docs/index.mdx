@@ -1,0 +1,169 @@
+---
+title: "Native Git Client for macOS"
+description: "Spooky is a native Git client for macOS. It makes Git repositories on your server as easy to work with as local ones. No cloning needed."
+template: splash
+hero:
+  title: "Git at a distance."
+  tagline: "Spooky is a native Git client for macOS. It makes Git repositories on your server as easy to work with as local ones. No cloning needed."
+---
+
+import Closing from '~/components/home/Closing.astro';
+import Feature from '~/components/home/Feature.astro';
+import Grid from '~/components/home/Grid.astro';
+import HeroDemo from '~/components/home/HeroDemo.astro';
+import More from '~/components/home/More.astro';
+import Point from '~/components/home/Point.astro';
+import Section from '~/components/home/Section.astro';
+import ServerDiagram from '~/components/home/ServerDiagram.astro';
+
+<HeroDemo
+  actions={[
+    { text: 'Download', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'Read the Guide', link: '/guide/', variant: 'secondary' },
+  ]}
+  note="Free and open source · macOS 26 or later"
+/>
+
+<Section
+  id="server"
+  kicker="Server repositories"
+  title="Spooky action at a distance"
+  lead="The working tree stays on your server, and Git runs there. You work with it from a Spooky window on your Mac."
+>
+
+<ServerDiagram
+  mac={{ title: 'Your Mac', items: ['The Spooky window', '~/.ssh/config and your SSH keys'] }}
+  link={{ title: 'SSH', items: ['Git commands and their output', 'Files read and written over SFTP'] }}
+  server={{ title: 'Your server', items: ['The working tree and Git', 'A small helper in ~/.spooky/bin/'] }}
+/>
+
+<More>[How server repositories work](/guide/server/overview/)</More>
+
+<Grid columns={4}>
+
+<Point icon="server" title="No clone on your Mac">
+
+The working tree stays on the server. You don’t clone it to your Mac first.
+
+</Point>
+
+<Point icon="terminal" title="Git runs on the server">
+
+Spooky uses the server’s own Git, and reads and writes files over SFTP.
+
+</Point>
+
+<Point icon="key" title="The SSH you already use">
+
+Connections use the system’s SSH and the host aliases in `~/.ssh/config`. OpenSSH handles authentication, host keys, and connection sharing.
+
+</Point>
+
+<Point icon="script" title="No root, no background service">
+
+Spooky needs no root access on the server and installs no background service. It keeps just a small helper script in `~/.spooky/bin/`.
+
+</Point>
+
+</Grid>
+
+<Feature
+  title="A host alias and a path"
+  shots={[
+    {
+      name: 'add-server',
+      alt: 'The dialog for adding a server repository, with the host alias spooky-test and the path /srv/git/driftwood filled in.',
+      frame: 'dialog',
+    },
+  ]}
+>
+
+Choose :ui[action.addRemote], enter a host alias from `~/.ssh/config`, then type or browse to the repository’s path on the server.
+
+Spooky checks the connection and opens the repository.
+
+</Feature>
+
+</Section>
+
+<Section
+  id="workflow"
+  kicker="The whole Git workflow"
+  title="From first change to merged branch"
+  lead="Stage, commit, browse history, sync, and resolve conflicts the same way, whether the repository is on your Mac or on a server."
+>
+
+<Feature
+  title="Branches, sync, merge, and rebase"
+  reverse
+  shots={[
+    { name: 'branches', alt: 'The Branches section of the sidebar.', frame: 'closeup' },
+    { name: 'sync', alt: 'The push dialog, pushing main to origin/main.', frame: 'dialog' },
+  ]}
+>
+
+Fetch, pull, and push from the toolbar.
+
+Drag a branch onto the current one to merge it, or hold <kbd>⌥</kbd> while you drag to rebase onto it.
+
+</Feature>
+
+<Feature
+  title="A wizard for conflicts"
+  reveal
+  shots={[
+    {
+      name: 'conflict',
+      alt: 'The conflict wizard after a merge, showing both versions of src/units.ts.',
+      frame: 'window',
+    },
+  ]}
+>
+
+For each conflicted file, Spooky lays out the version from each side.
+
+Pick one to resolve the file with it, or select both and open a merge tool.
+
+</Feature>
+
+<Grid columns={4}>
+
+<Point icon="history" title="History and search">
+
+Follow every branch through the commit graph. Search by message, author, committer, file, commit hash, or date.
+
+</Point>
+
+<Point icon="undo" title="Undo and redo">
+
+Commits, reverts, stashes, and more can be undone with <kbd>⌘Z</kbd> and redone with <kbd>⇧⌘Z</kbd>.
+
+</Point>
+
+<Point icon="pullRequest" title="Pull requests and merge requests">
+
+List, create, discuss, check out, merge, and close them on GitHub, GitLab.com, and <mark>self-managed GitLab</mark>.
+
+</Point>
+
+<Point icon="layers" title="Stashes, submodules, <mark>worktrees</mark>, and Git LFS">
+
+They all work in server repositories too.
+
+</Point>
+
+</Grid>
+
+</Section>
+
+<Closing
+  title="Your repositories, wherever they live."
+  actions={[
+    { text: 'Download', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'Read the Guide', link: '/guide/', variant: 'secondary' },
+  ]}
+>
+
+Requires macOS 26 or later, and Git 2.41 or later on your Mac and your servers. See [System Requirements](/reference/requirements/) for the details.
+
+</Closing>

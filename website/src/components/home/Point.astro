@@ -1,0 +1,96 @@
+---
+import type { ComponentProps } from 'astro/types';
+import LineIcon from '../LineIcon.astro';
+
+/**
+ * 一块卡片：小图标、标题与说明，说明是页面里写的 Markdown，可以再放图标墙这类内容。
+ */
+
+/** 组件的参数。 */
+interface Props {
+    /** 小图标的名字；不写时没有小图标 */
+    icon?: ComponentProps<typeof LineIcon>['name'];
+
+    /** 要点的标题，可以带行内的 HTML，如标出重点词的 `<mark>` */
+    title: string;
+}
+
+const { icon, title } = Astro.props;
+---
+
+<div class="point">
+    {
+        icon && (
+            <span class="icon">
+                <LineIcon name={icon} size="1.375rem" />
+            </span>
+        )
+    }
+
+    <h3 class="spooky-rich" set:html={title} />
+
+    <div class="body spooky-rich">
+        <slot />
+    </div>
+</div>
+
+<style>
+    .point {
+        padding: 1.5rem;
+        border: 1px solid var(--spooky-surface-border);
+        border-radius: 1rem;
+        background-color: var(--spooky-surface);
+    }
+
+    /* 铺了底色的段落里，卡片换成页面底色，仍然分得开 */
+    :global(.tinted) .point {
+        background-color: var(--sl-color-bg);
+    }
+
+    .icon {
+        display: inline-grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background-color: var(--sl-color-accent-low);
+        color: var(--sl-color-text-accent);
+    }
+
+    h3 {
+        margin: 0;
+        color: var(--sl-color-white);
+        font-size: var(--sl-text-lg);
+        font-weight: 650;
+        line-height: 1.35;
+    }
+
+    .icon + h3 {
+        margin-top: 1rem;
+    }
+
+    .body :global(p) {
+        margin-top: 0.5rem;
+        color: var(--sl-color-gray-3);
+        font-size: var(--sl-text-base);
+        line-height: 1.65;
+    }
+
+    /* 窄屏时卡片一张一行，小图标挪到标题左边，卡片矮一些 */
+    @media (max-width: 40rem) {
+        .point:has(.icon) {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            column-gap: 0.875rem;
+        }
+
+        .icon + h3 {
+            margin-top: 0;
+        }
+
+        .body {
+            grid-column: 1 / -1;
+        }
+    }
+</style>

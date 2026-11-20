@@ -27,3 +27,19 @@ run = "./scripts/release.sh"
 [tasks.appcast]
 description = "把 build/Spooky.app 压缩成更新包并生成签名的更新清单，用法：mise run appcast <通道> [<上一份更新清单>]"
 run = "./scripts/appcast.sh"
+
+# 官网的两个 task 只在运行时使用 Node，不在 [tools] 里声明，编译与测试 App 时不安装 Node
+[tasks."website:dev"]
+description = "安装官网的依赖并启动开发服务器"
+dir = "website"
+tools = { node = "24" }
+env = { ASTRO_TELEMETRY_DISABLED = "1" }
+run = ["npm install", "npm run dev"]
+
+# 构建按锁文件重新安装依赖，本机与 CI 用同样的依赖版本
+[tasks."website:build"]
+description = "按锁文件安装官网的依赖，运行官网的自测，检查类型与站内链接并构建到 website/dist/"
+dir = "website"
+tools = { node = "24" }
+env = { ASTRO_TELEMETRY_DISABLED = "1" }
+run = ["npm ci", "npm test", "npm run build"]

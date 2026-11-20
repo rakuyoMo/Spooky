@@ -1,0 +1,162 @@
+---
+/**
+ * 主视觉背后的天空：暗色是有星星与紫色月亮的夜空，浅色是天亮以后的淡紫与晨光。
+ *
+ * 只作装饰，读屏软件跳过；星星的位置由固定的种子算出，每次构建都一样。
+ */
+
+/** 一颗星：圆点，或者带四个尖角的亮星。 */
+interface Star {
+    x: number;
+    y: number;
+    size: number;
+    opacity: number;
+    sparkle: boolean;
+    delay: number;
+}
+
+/** 画布的宽高，图按 `slice` 铺满天空，宽屏与窄屏都盖得住。 */
+const width = 1440;
+const height = 720;
+
+/** 固定种子的伪随机数，范围 [0, 1)。 */
+let seed = 0x5eed;
+
+const random = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+
+    return seed / 4294967296;
+};
+
+// 星星越往下越少、越淡，靠近地平线时几乎看不见
+const stars: Star[] = Array.from({ length: 64 }, (_, index) => {
+    const y = random() ** 1.6 * height * 0.85;
+    const x = random() * width;
+
+    return {
+        x,
+        y,
+        size: 0.6 + random() * 1.2,
+        opacity: (0.35 + random() * 0.6) * (1 - y / height),
+
+        // 亮星不落在正中间放图标与名字的一条窄带里，免得挨着名字像个符号
+        sparkle: index % 9 === 0 && Math.abs(x - width / 2) > 60,
+        delay: Math.round(random() * 40) / 10,
+    };
+});
+
+/** 亮星的四角形状，以原点为中心、半径为 1。 */
+const sparklePath = 'M0-1Q.15-.15 1 0Q.15 .15 0 1Q-.15 .15-1 0Q-.15-.15 0-1Z';
+---
+
+<div class="sky" aria-hidden="true">
+    <svg class="stars" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMin slice" focusable="false">
+        {
+            stars.map(({ x, y, size, opacity, sparkle, delay }) =>
+                sparkle ? (
+                    <path
+                        class="sparkle"
+                        d={sparklePath}
+                        transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(size * 4).toFixed(2)})`}
+                        style={`--star-opacity: ${opacity.toFixed(2)}; animation-delay: ${delay}s`}
+                    />
+                ) : (
+                    <circle
+                        cx={x.toFixed(1)}
+                        cy={y.toFixed(1)}
+                        r={size.toFixed(2)}
+                        style={`--star-opacity: ${opacity.toFixed(2)}`}
+                    />
+                ),
+            )
+        }
+    </svg>
+
+    <div class="moon"></div>
+</div>
+
+<style>
+    /* 夜空在首页最底下：跟着滚动的小幽灵排在它与内容之间 */
+    .sky {
+        position: absolute;
+        inset: calc(-1 * var(--sl-nav-height)) 0 -14rem;
+        z-index: -6;
+        overflow: hidden;
+        background:
+            radial-gradient(60rem 26rem at 50% 30%, var(--spooky-sky-glow), transparent 70%),
+            linear-gradient(
+                to bottom,
+                var(--spooky-sky-top),
+                var(--spooky-sky-mid) 55%,
+                var(--spooky-sky-horizon)
+            );
+        pointer-events: none;
+    }
+
+    /* 浅色时地平线上多一层晨光 */
+    :global(:root[data-theme='light']) .sky {
+        background:
+            radial-gradient(70rem 22rem at 50% 88%, var(--spooky-sky-glow), transparent 70%),
+            radial-gradient(50rem 24rem at 50% 25%, rgb(165 141 255 / 0.22), transparent 70%),
+            linear-gradient(
+                to bottom,
+                var(--spooky-sky-top),
+                var(--spooky-sky-mid) 55%,
+                var(--spooky-sky-horizon)
+            );
+    }
+
+    .stars {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .stars :is(circle, path) {
+        fill: var(--spooky-star);
+        opacity: var(--star-opacity);
+    }
+
+    /* 白天的星星淡一些 */
+    :global(:root[data-theme='light']) .stars {
+        opacity: 0.45;
+    }
+
+    /* 月亮：右上角的紫色圆，周围一圈光晕；只挂在暗色的夜空里 */
+    .moon {
+        position: absolute;
+        top: calc(var(--sl-nav-height) + 4.5rem);
+        inset-inline-end: max(5vw, calc(50% - 36rem));
+        width: clamp(4.5rem, 10vw, 8.5rem);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 34% 30%, var(--spooky-purple-light), var(--spooky-moon) 55%, var(--spooky-purple) 100%);
+        box-shadow: 0 0 5rem 1.5rem rgb(122 99 246 / 0.32);
+    }
+
+    :global(:root[data-theme='light']) .moon {
+        display: none;
+    }
+
+    @media (max-width: 50rem) {
+        .moon {
+            top: calc(var(--sl-nav-height) + 1.5rem);
+            inset-inline-end: 1.25rem;
+            width: 3.5rem;
+        }
+    }
+
+    /* 亮星慢慢明灭 */
+    @media (prefers-reduced-motion: no-preference) {
+        .sparkle {
+            animation: twinkle 4s ease-in-out infinite alternate;
+        }
+    }
+
+    @keyframes twinkle {
+        to {
+            opacity: calc(var(--star-opacity) * 0.25);
+        }
+    }
+</style>

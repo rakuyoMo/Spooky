@@ -1,0 +1,208 @@
+/*
+ * 全站的配色、字体与页头。
+ *
+ * 颜色取自应用图标：紫色的月亮与机架、白色的幽灵、橘红色的分支线。
+ * 暗色是夜里，浅色是天亮以后；两套都给 Starlight 的颜色变量赋值，手册与首页共用。
+ */
+
+/* 暗色：夜里 */
+:root {
+    --spooky-purple-deep: #3a2cae;
+    --spooky-purple: #5b4be0;
+    --spooky-purple-bright: #7a63f6;
+    --spooky-purple-light: #a58dff;
+    --spooky-ghost: #ebe4ff;
+    --spooky-orange: #f4572f;
+
+    --sl-color-white: #ffffff;
+    --sl-color-gray-1: #ebe4ff;
+    --sl-color-gray-2: #d4d0e6;
+    --sl-color-gray-3: #9a94b8;
+    --sl-color-gray-4: #6b6590;
+    --sl-color-gray-5: #2c2846;
+    --sl-color-gray-6: #1a172e;
+    --sl-color-black: #100e1c;
+
+    --sl-color-accent-low: #262058;
+    --sl-color-accent: #7a63f6;
+    --sl-color-accent-high: #c4b6ff;
+
+    --sl-color-bg-nav: #13111f;
+    --sl-color-hairline-light: #2c2846;
+    --sl-color-hairline: #221f38;
+    --sl-color-hairline-shade: #08070f;
+    --sl-color-backdrop-overlay: rgb(8 6 18 / 0.72);
+
+    /* 按钮：白字落在图标的紫色上 */
+    --spooky-button-bg: #5b4be0;
+    --spooky-button-bg-hover: #4e3fce;
+    --spooky-button-text: #ffffff;
+
+    /* 卡片与图框；描边用于次要按钮等需要看出边界的控件 */
+    --spooky-outline: #6b6590;
+    --spooky-surface: #17142a;
+    --spooky-surface-border: #2a2645;
+    --spooky-shadow-color: 4 2 18;
+    --spooky-shadow-strength: 0.55;
+
+    /* 主视觉的夜空 */
+    --spooky-sky-top: #0b0918;
+    --spooky-sky-mid: #171235;
+    --spooky-sky-glow: rgb(122 99 246 / 0.4);
+    --spooky-sky-horizon: #100e1c;
+    --spooky-star: #ebe4ff;
+    --spooky-moon: #7a63f6;
+    --spooky-nav-glass: rgb(11 9 24 / 0.62);
+}
+
+/* 浅色：天亮以后，紫色压暗一级保证文字的对比度 */
+:root[data-theme='light'] {
+    --sl-color-white: #17132f;
+    --sl-color-gray-1: #2a2547;
+    --sl-color-gray-2: #3b3656;
+    --sl-color-gray-3: #625c80;
+    --sl-color-gray-4: #9893b2;
+    --sl-color-gray-5: #d8d4ea;
+    --sl-color-gray-6: #eeebf8;
+    --sl-color-gray-7: #f7f5fe;
+    --sl-color-black: #fdfcff;
+
+    --sl-color-accent-low: #e9e4ff;
+    --sl-color-accent: #5b4be0;
+    --sl-color-accent-high: #3a2cae;
+
+    --sl-color-bg-nav: #f9f8ff;
+    --sl-color-hairline-light: #e4e0f2;
+    --sl-color-hairline: #eae7f6;
+    --sl-color-hairline-shade: #e1ddf0;
+    --sl-color-backdrop-overlay: rgb(40 32 90 / 0.4);
+
+    --spooky-button-bg: #5b4be0;
+    --spooky-button-bg-hover: #4e3fce;
+    --spooky-button-text: #ffffff;
+
+    --spooky-outline: #857fa3;
+    --spooky-surface: #f7f5fe;
+    --spooky-surface-border: #e4e0f2;
+    --spooky-shadow-color: 40 30 110;
+    --spooky-shadow-strength: 0.16;
+
+    /* 天亮以后的天空：淡紫过渡到一点晨光 */
+    --spooky-sky-top: #e9e5ff;
+    --spooky-sky-mid: #f4efff;
+    --spooky-sky-glow: rgb(255 196 170 / 0.45);
+    --spooky-sky-horizon: #fdfcff;
+    --spooky-star: #a58dff;
+    --spooky-nav-glass: rgb(233 229 255 / 0.66);
+
+    /* 贴纸画落在浅色页面上的投影：深紫，比深色主题里近黑的投影干净 */
+    --spooky-sticker-cast: var(--spooky-purple-deep);
+}
+
+/* 字体：系统字体；中日韩文先找各自的系统字体，没有时再用常见的开源字体 */
+:root {
+    --sl-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', 'Noto Sans', sans-serif;
+}
+
+:root[lang='zh-CN'] {
+    --sl-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+        'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
+}
+
+:root[lang='zh-TW'] {
+    --sl-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei',
+        'Noto Sans TC', 'Noto Sans CJK TC', sans-serif;
+}
+
+:root[lang='ja'] {
+    --sl-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+        'Yu Gothic UI', 'Meiryo', 'Noto Sans JP', 'Noto Sans CJK JP', sans-serif;
+}
+
+:root[lang='ko'] {
+    --sl-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic',
+        'Noto Sans KR', 'Noto Sans CJK KR', sans-serif;
+}
+
+/* 中日韩文的字面更密，正文的行距放宽一些 */
+:root:is([lang|='zh'], [lang='ja'], [lang='ko']) {
+    --sl-line-height: 1.85;
+}
+
+/* 中日文按严格的禁则换行；日文按词组换行，韩文不在词中间断开 */
+:is(:lang(zh), :lang(ja)) {
+    line-break: strict;
+}
+
+:lang(ja) {
+    word-break: auto-phrase;
+}
+
+:lang(ko) {
+    word-break: keep-all;
+}
+
+/* 标题：几行的长度尽量均匀 */
+:is(h1, h2, h3) {
+    text-wrap: balance;
+}
+
+p {
+    text-wrap: pretty;
+}
+
+::selection {
+    background-color: rgb(122 99 246 / 0.35);
+}
+
+/* 键盘焦点：一圈紫色，两种外观都看得清 */
+:is(a, button, summary, select, input, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--sl-color-text-accent);
+    outline-offset: 2px;
+}
+
+/* 页头：名字用标题色，不用链接色 */
+.site-title {
+    color: var(--sl-color-white);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+/* 首页与 404 的页头是半透明的，夜空从页头后面透出来 */
+[data-has-hero] header.header {
+    border-bottom-color: transparent;
+    background-color: var(--spooky-nav-glass);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+}
+
+/* 首页与 404 没有侧边栏，窄屏上也就没有菜单：GitHub、外观与语言留在页头里 */
+@media (max-width: 50rem) {
+    :root:not([data-has-sidebar]) header.header .right-group {
+        display: flex;
+    }
+}
+
+/* 再窄一些放不下站名：页头里的 GitHub 让出位置，页脚里还有一个 */
+@media (max-width: 22rem) {
+    :root:not([data-has-sidebar]) header.header .social-icons {
+        display: none;
+    }
+}
+
+/* 首页与 404：内容区铺满整个宽度，各区块自己控制版心与间距 */
+[data-has-hero] {
+    --sl-main-pad: 0;
+}
+
+[data-has-hero] .content-panel {
+    padding: 0;
+}
+
+[data-has-hero] .content-panel > .sl-container {
+    max-width: none;
+}
+
+[data-has-hero] .content-panel > .sl-container > * + * {
+    margin-top: 0;
+}

@@ -34,7 +34,7 @@ Spooky 既能打开本机的 Git 仓库，也能经 SSH 直接操作另一台机
 
 - 带 Swift 6.2 或更高版本的 Xcode。CI 与发布使用 [`ci.yml`](.github/workflows/ci.yml) 里 `DEVELOPER_DIR` 指定的 Xcode，想得到与 CI 相同的结果时用同一版
 
-- [mise](https://mise.jdx.dev)，用来执行 `mise.toml` 里定义的构建、测试、代码规范与发布任务
+- [mise](https://mise.jdx.dev)，用来执行 `mise.toml` 里定义的构建、测试、代码规范、发布与官网任务
 
 ### Git 与服务器
 
@@ -210,6 +210,22 @@ Spooky 的日志写在 `com.rakuyo.spooky` 子系统下，category 是所在的�
 Spooky 支持英文、简体中文、繁体中文、日文、韩文、德文、法文和西班牙文，跟随系统语言，其它语言环境下显示英文。文案在 `Sources/Spooky/Resources/<语言>.lproj/`。
 
 新增文案时，所有语言一起加上，格式参数保持一致。任一语言缺少资源键、译文为空、格式参数对不上，或者资源键没有被界面用到时，`LocalizationTests` 都会失败；运行时拼出的资源键登记在 `LocalizationTests.dynamicKeys`。
+
+## 官网
+
+官网 [spooky.rakuyo.dev](https://spooky.rakuyo.dev) 有首页与使用手册，由 `website/` 用 [Astro](https://astro.build) 与 [Starlight](https://starlight.astro.build) 构建。构建需要 Node.js 24，由 mise 只为官网的任务安装：
+
+```sh
+# 安装依赖并启动开发服务器
+mise run website:dev
+
+# 运行官网的自测，检查类型与站内链接，构建到 website/dist/
+mise run website:build
+```
+
+页面里的界面叫法按资源键取自 `Localizable.strings`，官网用到的资源键改名或删除时，官网的构建会失败。首页的模拟窗口还从 `BuiltinThemes.json` 与 `NamedColors.json` 取颜色。首页与 404 页上的应用图标和幽灵，构建时由 `scripts/make-icon/` 里应用图标的绘制脚本画出。截图存在 [Git LFS](https://git-lfs.com) 里，克隆前先装好它才能取到截图。
+
+改到官网的 PR 由 GitHub Actions 构建一次，`main` 上官网有变化时再发布到 GitHub Pages。
 
 ## 代码规范
 

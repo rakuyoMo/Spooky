@@ -1,0 +1,179 @@
+---
+import { getImage } from 'astro:assets';
+import { appStrings } from 'virtual:spooky/site-data';
+import appIcon from '../../assets/app-icons/rise.png';
+import { demoColorsCss } from '../../demo/colors.ts';
+import repo from '../../demo/data/repo.json';
+import type { RepoData } from '../../demo/model.ts';
+import { createState } from '../../demo/model.ts';
+import { createUi } from '../../demo/render/context.ts';
+import { icon } from '../../demo/render/format.ts';
+import { compose, renderRegions } from '../../demo/render/regions.ts';
+import { createText, demoStrings } from '../../demo/text.ts';
+import { localeOfRoute } from '../../site/locales.ts';
+import ActionLinks, { type ActionLink } from '../ActionLinks.astro';
+import '../../demo/demo.css';
+
+/*
+ * 首页主视觉下半部分：两个按钮、一行小字与能操作的演示窗口，紧接着页面 frontmatter 里的标题与副标题。
+ *
+ * 窗口的初始状态在构建时写成 HTML，没有脚本也能看；窗口进入视口附近时才加载脚本，之后由脚本接管。
+ * 浏览器只拿到演示用到的那些资源键，按页面的语言取自 App 的文案。
+ */
+
+/** 组件的参数。 */
+interface Props {
+    /** 副标题下面的按钮，站内地址照抄英文页的写法 */
+    actions: readonly ActionLink[];
+
+    /** 按钮下面的一行小字 */
+    note: string;
+}
+
+const { actions, note } = Astro.props;
+const { t } = Astro.locals;
+const locale = localeOfRoute(Astro.locals.starlightRoute.locale);
+const strings = demoStrings(appStrings, locale.code);
+const data = repo as RepoData;
+
+// 推送对话框里的应用图标按 52 点显示，取两倍大小
+const sheetIcon = await getImage({ src: appIcon, width: 104, format: 'png' });
+
+const windowHtml = compose(
+    renderRegions({
+        state: createState(data),
+        ui: createUi(),
+        data,
+        text: createText(strings, locale.lang),
+        changes: null,
+        appIcon: sheetIcon.src,
+    }),
+    'window',
+);
+
+// 写进 `<script type="application/json">`，`<` 转义后文案里不会出现能结束脚本的字符
+const stringsJson = JSON.stringify(strings).replaceAll('<', '\\u003c');
+
+const steps = [
+    { step: 'stage', label: t('demo.step.stage') },
+    { step: 'commit', label: t('demo.step.commit') },
+    { step: 'push', label: t('demo.step.push') },
+];
+
+const endId = 'spooky-demo-end';
+---
+
+<div class="hero-demo not-content">
+    <ActionLinks actions={actions} />
+
+    <p class="note">{note}</p>
+
+    <div
+        class="sd"
+        data-spooky-demo
+        data-lang={locale.lang}
+        data-app-icon={sheetIcon.src}
+        data-unavailable={t('demo.unavailable')}
+        data-up-to-date={t('demo.upToDate')}
+    >
+        <Fragment set:html={`<style>${demoColorsCss()}</style>`} />
+
+        <script type="application/json" data-demo-strings set:html={stringsJson} />
+
+        <a class="sd-skip" href={`#${endId}`}>{t('demo.skip')}</a>
+
+        <div class="sd-stage">
+            <div
+                class="sd-window"
+                tabindex="-1"
+                role="region"
+                aria-label={t('demo.label')}
+                data-view="working"
+                set:html={windowHtml}
+            />
+        </div>
+
+        <div class="sd-toast" role="status" aria-live="polite"></div>
+
+        <div class="sd-guide">
+            <span class="sd-guide-label">{t('demo.try')}</span>
+
+            <ol class="sd-steps">
+                {
+                    steps.map(({ step, label }, index) => (
+                        <li>
+                            <button type="button" data-step={step}>
+                                <span class="sd-step-number" aria-hidden="true">
+                                    {index + 1}
+                                </span>
+
+                                <Fragment set:html={icon('check', 'sd-step-check')} />
+
+                                {label}
+
+                                <span class="sd-step-state sr-only" hidden>
+                                    {t('demo.done')}
+                                </span>
+                            </button>
+                        </li>
+                    ))
+                }
+            </ol>
+
+            <button type="button" class="sd-reset" data-reset>
+                {t('demo.reset')}
+            </button>
+
+            <p class="sd-note">{t('demo.note')}</p>
+        </div>
+
+        <span id={endId} tabindex="-1"></span>
+    </div>
+</div>
+
+<script>
+    // 窗口进入视口附近时才加载演示的脚本与数据
+    for (const root of document.querySelectorAll<HTMLElement>('[data-spooky-demo]')) {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) {
+                    return;
+                }
+
+                observer.disconnect();
+                void import('../../demo/main.ts').then(({ mount }) => mount(root));
+            },
+            { rootMargin: '600px 0px' },
+        );
+
+        observer.observe(root);
+    }
+</script>
+
+<style>
+    /* 定位之后才会盖在主视觉伸出来的夜空上面 */
+    .hero-demo {
+        position: relative;
+        margin: 0;
+        padding-inline: clamp(1rem, 4vw, 2.5rem);
+        text-align: center;
+    }
+
+    .hero-demo > :global(.actions) {
+        margin-top: 2rem;
+    }
+
+    .note {
+        margin-top: 1.25rem;
+        color: var(--sl-color-gray-3);
+        font-size: var(--sl-text-sm);
+    }
+
+    .sd {
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    #spooky-demo-end:focus {
+        outline: none;
+    }
+</style>

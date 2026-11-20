@@ -1,0 +1,165 @@
+/*
+ * 手册正文里各元素的样子：链接、界面叫法、按键、提示框、表格与行内代码。
+ *
+ * 选择器都带 `:not(:where(.not-content *))`，首页等自己排版的区块不受影响；
+ * 这些区块里由页面写的说明放在 `.spooky-rich` 里，界面叫法、按键、行内代码与链接用同一套样子，另有标出重点词的 `<mark>`。
+ */
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+    text-decoration-thickness: 2px;
+}
+
+/* 界面叫法：加粗并用标题色，与正文区分开，不另加底色 */
+.sl-markdown-content .ui-label:not(:where(.not-content *)),
+.spooky-rich .ui-label {
+    color: var(--sl-color-white);
+    font-weight: 600;
+}
+
+/*
+ * 按键：一个个键帽，底边稍厚；用系统字体，⌘ ⌥ ⇧ 这些符号才好看，↩ 这类符号按文字而不按表情画。
+ * 上下不留外边距：键帽排在列表项末尾时，Starlight 给末尾元素加的下边距不落到它身上。
+ */
+.sl-markdown-content kbd:not(:where(.not-content *)),
+.spooky-rich kbd {
+    display: inline-block;
+    min-width: 1.6em;
+    margin: 0 0.1em;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--sl-color-gray-5);
+    border-bottom-width: 2px;
+    border-radius: 0.375em;
+    background-color: var(--spooky-surface);
+    color: var(--sl-color-white);
+    font-family: var(--__sl-font);
+    font-size: 0.875em;
+    font-variant-emoji: text;
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* 行内代码：圆角稍大，字号随正文 */
+.sl-markdown-content code:not(:where(.not-content *)) {
+    border-radius: 0.3em;
+}
+
+.spooky-rich code {
+    padding: 0.1em 0.35em;
+    border-radius: 0.3em;
+    background-color: var(--sl-color-bg-inline-code);
+    color: var(--sl-color-gray-1);
+    font-size: 0.875em;
+}
+
+/* 重点词：品牌紫的粗体字，垫一层淡紫的底；整个词排在同一行，不从中间折开 */
+.spooky-rich mark {
+    padding: 0.1em 0.2em;
+    border-radius: 0.3em;
+    background-color: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+/* 自己排版的区块里，链接不加下划线，悬停时才有 */
+.spooky-rich a {
+    color: var(--sl-color-text-accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.spooky-rich a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+/* 表格：表头有底色，行之间只有细线 */
+.sl-markdown-content table:not(:where(.not-content *)) {
+    font-size: var(--sl-text-sm);
+}
+
+.sl-markdown-content th:not(:where(.not-content *)) {
+    background-color: var(--spooky-surface);
+    color: var(--sl-color-white);
+    font-weight: 600;
+}
+
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+    padding: 0.625rem 1rem;
+}
+
+/* 单元格里的长路径与名称可以从中间折行：窄屏上整张表不用横着滚 */
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) code {
+    overflow-wrap: anywhere;
+}
+
+/* 提示框：四周一圈淡色细线，开头一侧是粗一些的色条；说明用品牌紫，提醒用橘红 */
+.starlight-aside {
+    border: 1px solid var(--spooky-aside-line);
+    border-inline-start: 0.25rem solid var(--sl-color-asides-border);
+    border-radius: 0.625rem;
+    padding: 1rem 1.25rem;
+    color: var(--sl-color-gray-1);
+}
+
+.starlight-aside--note {
+    --sl-color-asides-text-accent: #c4b6ff;
+    --sl-color-asides-border: #7a63f6;
+    --spooky-aside-line: rgb(122 99 246 / 0.35);
+    background-color: #1b1740;
+}
+
+.starlight-aside--tip {
+    --sl-color-asides-text-accent: #8cebb4;
+    --sl-color-asides-border: #46e08a;
+    --spooky-aside-line: rgb(70 224 138 / 0.3);
+    background-color: #0f251f;
+}
+
+.starlight-aside--caution {
+    --sl-color-asides-text-accent: #ffb7a3;
+    --sl-color-asides-border: #f4572f;
+    --spooky-aside-line: rgb(244 87 47 / 0.35);
+    background-color: #2b1514;
+}
+
+.starlight-aside--danger {
+    --sl-color-asides-text-accent: #ffa3b8;
+    --sl-color-asides-border: #f0506e;
+    --spooky-aside-line: rgb(240 80 110 / 0.35);
+    background-color: #2c1020;
+}
+
+:root[data-theme='light'] .starlight-aside--note {
+    --sl-color-asides-text-accent: #3a2cae;
+    --sl-color-asides-border: #5b4be0;
+    --spooky-aside-line: rgb(91 75 224 / 0.22);
+    background-color: #f2efff;
+}
+
+:root[data-theme='light'] .starlight-aside--tip {
+    --sl-color-asides-text-accent: #0f6238;
+    --sl-color-asides-border: #23a35e;
+    --spooky-aside-line: rgb(35 163 94 / 0.25);
+    background-color: #ebf8f0;
+}
+
+:root[data-theme='light'] .starlight-aside--caution {
+    --sl-color-asides-text-accent: #9e2f15;
+    --sl-color-asides-border: #f4572f;
+    --spooky-aside-line: rgb(244 87 47 / 0.25);
+    background-color: #fff1ec;
+}
+
+:root[data-theme='light'] .starlight-aside--danger {
+    --sl-color-asides-text-accent: #a3173a;
+    --sl-color-asides-border: #d92d50;
+    --spooky-aside-line: rgb(217 45 80 / 0.25);
+    background-color: #ffeef2;
+}

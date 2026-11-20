@@ -1,0 +1,38 @@
+---
+/**
+ * 把几块内容排成网格，如几条 `<Point>`；宽屏时一行最多 `columns` 块，窄屏时一块一行。
+ */
+
+/** 组件的参数。 */
+interface Props {
+    /** 宽屏时一行最多几块 */
+    columns?: 1 | 2 | 3 | 4;
+}
+
+const { columns = 2 } = Astro.props;
+---
+
+<div class="grid" style={`--columns: ${columns}`}>
+    <slot />
+</div>
+
+<style>
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+        gap: 1.25rem;
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    @media (max-width: 64rem) {
+        .grid {
+            grid-template-columns: repeat(min(var(--columns), 2), minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 40rem) {
+        .grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>

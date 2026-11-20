@@ -1,0 +1,124 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+
+/*
+ * 外观切换：页头与手册的窄屏菜单里的一个按钮，图标是当前的外观，点一下换成另一种。
+ *
+ * 页面默认跟着系统外观；换成另一种之后按选择显示，换回系统此刻的外观就重新跟着系统。
+ * 选择存在 `starlight-theme` 里，页面打开时由 Starlight 的内联脚本按它写好 `<html data-theme>`，这里只管之后的切换。
+ */
+
+const label = Astro.locals.t('themeToggle.label');
+---
+
+<button class="theme-toggle" type="button" aria-label={label} title={label} data-theme-toggle>
+    <Icon name="sun" class="theme-toggle-light" />
+    <Icon name="moon" class="theme-toggle-dark" />
+</button>
+
+<style>
+    /* 按钮比旁边的语言选择矮，在所在的一行里垂直居中 */
+    .theme-toggle {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        align-self: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background-color: transparent;
+        color: var(--sl-color-gray-1);
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition:
+            color 0.2s,
+            background-color 0.2s;
+    }
+
+    .theme-toggle:hover {
+        background-color: var(--sl-color-gray-6);
+        color: var(--sl-color-white);
+    }
+
+    /* 浏览器不运行脚本时按钮点了没用，不显示 */
+    @media (scripting: none) {
+        .theme-toggle {
+            display: none;
+        }
+    }
+
+    /* 两枚图标按当前的外观取一枚：浅色是日，暗色是月 */
+    .theme-toggle :global(.theme-toggle-dark),
+    :global(:root[data-theme='dark']) .theme-toggle :global(.theme-toggle-light) {
+        display: none;
+    }
+
+    :global(:root[data-theme='dark']) .theme-toggle :global(.theme-toggle-dark) {
+        display: block;
+    }
+</style>
+
+<script>
+    type Theme = 'light' | 'dark';
+
+    /** 选择存在 `localStorage` 里的键；空字符串表示没有选择，跟着系统。 */
+    const storageKey = 'starlight-theme';
+
+    /** 系统外观是不是浅色。 */
+    const systemLight = matchMedia('(prefers-color-scheme: light)');
+
+    /** 访客是不是要求减少动态效果。 */
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+    /** 系统此刻的外观。 */
+    const systemTheme = (): Theme => (systemLight.matches ? 'light' : 'dark');
+
+    /** 读访客选过的外观；没有选过或读不到时是空字符串。 */
+    function storedTheme(): Theme | '' {
+        try {
+            const stored = localStorage.getItem(storageKey);
+
+            return stored === 'light' || stored === 'dark' ? stored : '';
+        } catch {
+            return '';
+        }
+    }
+
+    /** 按给定的外观显示页面。 */
+    function apply(theme: Theme): void {
+        document.documentElement.dataset.theme = theme;
+    }
+
+    /** 换成另一种外观并记下选择，整页交叉淡入。 */
+    function toggle(): void {
+        const next: Theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+
+        // 换回系统此刻的外观就是不再指定：清掉选择，重新跟着系统
+        try {
+            localStorage.setItem(storageKey, next === systemTheme() ? '' : next);
+        } catch {
+            // 存不进去时只是下次打开记不住，这次照样按它显示
+        }
+
+        // 浏览器不支持整页过渡，或访客要求减少动态效果时直接换
+        if (reducedMotion.matches || !('startViewTransition' in document)) {
+            apply(next);
+
+            return;
+        }
+
+        document.startViewTransition(() => apply(next));
+    }
+
+    // 一页里有不止一个按钮（页头与窄屏菜单），用事件委托接在文档上
+    document.addEventListener('click', (event) => {
+        if (event.target instanceof Element && event.target.closest('[data-theme-toggle]')) toggle();
+    });
+
+    // 没有选择时页面跟着系统外观，系统换了页面也跟着换
+    systemLight.addEventListener('change', () => {
+        if (!storedTheme()) apply(systemTheme());
+    });
+</script>

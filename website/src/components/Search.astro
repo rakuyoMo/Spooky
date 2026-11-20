@@ -1,0 +1,11 @@
+---
+import DefaultSearch from '@astrojs/starlight/components/Search.astro';
+
+/*
+ * 搜索框：只放在手册页面的页头里，首页与 404 页不放。
+ */
+
+const isSplash = Astro.locals.starlightRoute.entry.data.template === 'splash';
+---
+
+{!isSplash && <DefaultSearch {...Astro.props} />}

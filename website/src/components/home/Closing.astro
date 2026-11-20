@@ -1,0 +1,89 @@
+---
+import { siteArt } from '../../art/site.ts';
+import ActionLinks, { type ActionLink } from '../ActionLinks.astro';
+import StickerArt from '../StickerArt.astro';
+
+/**
+ * 首页的收尾：抱着樱桃的幽灵、一句标题、再放一次按钮，下面是页面写的系统要求摘要。
+ */
+
+/** 组件的参数。 */
+interface Props {
+    /** 收尾的标题 */
+    title: string;
+
+    /** 标题下的按钮，站内地址照抄英文页的写法 */
+    actions: readonly ActionLink[];
+}
+
+const { title, actions } = Astro.props;
+---
+
+<section class="closing not-content">
+    <div class="stage">
+        <StickerArt art={siteArt.armful} name="armful" />
+    </div>
+
+    <h2>{title}</h2>
+
+    <ActionLinks actions={actions} />
+
+    <div class="summary spooky-rich">
+        <slot />
+    </div>
+</section>
+
+<style>
+    /*
+     * 视口够高时这一段占满页头与页脚（高约 5.5rem）之间的一整屏，内容居中：滚到底看到的正好是它，
+     * 上方空出一段，小幽灵从那里横穿过去摘樱桃。
+     * 上下的留白只取够用的一段：视口矮时滚到底，整幅画仍在页头下面。
+     */
+    .closing {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.75rem;
+        min-height: calc(100vh - var(--sl-nav-height) - 5.5rem);
+        margin: 0;
+        overflow: clip;
+        padding: 4.5rem clamp(1.25rem, 4vw, 2.5rem);
+        text-align: center;
+    }
+
+    .stage {
+        position: relative;
+    }
+
+    /* 光晕垫在幽灵落脚的地方，圆心在那幅画正中，四周都淡出，伸出这一段的部分裁掉；光晕在跟着滚动的小幽灵后面 */
+    .stage::before {
+        position: absolute;
+        z-index: -6;
+        inset: -12rem -32rem;
+        background: radial-gradient(32rem 12rem at 50% 50%, var(--spooky-sky-glow), transparent 70%);
+        content: '';
+    }
+
+    h2 {
+        max-width: 40rem;
+        color: var(--sl-color-white);
+        font-size: clamp(2rem, 4.6vw, 3.25rem);
+        font-weight: 720;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+    }
+
+    h2:is(:lang(zh), :lang(ja), :lang(ko)) {
+        line-height: 1.3;
+        letter-spacing: 0;
+    }
+
+    /* 系统要求的摘要是页面里写的 Markdown */
+    .summary :global(p) {
+        max-width: 40rem;
+        color: var(--sl-color-gray-3);
+        font-size: var(--sl-text-sm);
+        line-height: 1.7;
+    }
+</style>

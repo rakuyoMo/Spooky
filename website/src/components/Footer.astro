@@ -1,0 +1,12 @@
+---
+import DefaultFooter from '@astrojs/starlight/components/Footer.astro';
+import SiteFooter from './SiteFooter.astro';
+
+/*
+ * 页脚：首页与 404 页用站点自己的页脚，手册页面照旧是 Starlight 的上一页、下一页。
+ */
+
+const isSplash = Astro.locals.starlightRoute.entry.data.template === 'splash';
+---
+
+{isSplash ? <SiteFooter /> : <DefaultFooter />}

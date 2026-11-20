@@ -1,0 +1,33 @@
+---
+/**
+ * 一段内容下面通往手册的一条链接，居中，链接后面跟一个箭头。
+ *
+ * 链接写在页面里，用 Markdown 的写法，站内地址按页面的语言加前缀。
+ */
+---
+
+<p class="more spooky-rich not-content">
+    <slot />
+</p>
+
+<style>
+    .more {
+        margin-top: 1.75rem;
+        font-size: var(--sl-text-base);
+        text-align: center;
+    }
+
+    /* 箭头只作装饰，读屏软件不读 */
+    .more :global(a)::after {
+        content: '\2192' / '';
+        display: inline-block;
+        margin-inline-start: 0.375em;
+        transition: transform 0.2s ease;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .more :global(a):hover::after {
+            transform: translateX(0.2em);
+        }
+    }
+</style>
