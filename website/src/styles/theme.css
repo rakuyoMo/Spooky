@@ -161,11 +161,16 @@ p {
     outline-offset: 2px;
 }
 
-/* 页头：名字用标题色，不用链接色 */
+/* 页头：名字用标题色，不用链接色；左边的应用图标四周带着透明的边，图与字之间的空隙按看得见的底板收窄 */
 .site-title {
+    gap: 0.5rem;
     color: var(--sl-color-white);
     font-weight: 650;
     letter-spacing: -0.01em;
+}
+
+.site-title img {
+    height: 2rem;
 }
 
 /* 首页与 404 的页头是半透明的，夜空从页头后面透出来 */

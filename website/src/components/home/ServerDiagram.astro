@@ -167,6 +167,11 @@ const { mac, link, server } = Astro.props;
         }
     }
 
+    /* 跟着滚动的小幽灵在页面上时，机架的灯亮着才传输：幽灵碰到机架时开始，离开之后灯熄灭时停下 */
+    :global(:root[data-trail]:not([data-trail-linked])) .lane {
+        animation-play-state: paused;
+    }
+
     @keyframes lane-out {
         to {
             background-position: 16px 0;

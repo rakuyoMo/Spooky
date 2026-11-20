@@ -48,19 +48,13 @@ export interface GhostPresets {
     };
 }
 
-/** 画一只幽灵的参数。 */
+/** 画一只幽灵的参数：眼睛不画在身上，由页面另画。 */
 export interface GhostArtOptions {
     /** 脊线在头部与下摆处的倾角，度，正值是头往右歪；省略时直立 */
     lean?: Point;
 
     /** 小手，省略时没有 */
     hands?: readonly GhostLimb[];
-
-    /** 眼睛 */
-    eyes: readonly GhostEye[];
-
-    /** 眼睛是否亮成四角星 */
-    lit?: boolean;
 
     /** 页面上的显示宽度，CSS 像素 */
     width: number;
@@ -111,18 +105,18 @@ export function ghostPresets(kit: IconKit): GhostPresets {
         eyes: {
             front: rise.eyes,
             right: cherryPick.eyes,
-            left: cherryPick.eyes.map((eye) => ({ ...eye, u: -eye.u })),
+            left: cherryPick.eyes.map((eye) => ({ ...eye, u: -eye.u, tilt: -(eye.tilt ?? kit.ghostEye.tilt) })),
             upward: ghostOf('perch').eyes,
         },
     };
 }
 
 /**
- * 一只幽灵，身体正中落在画面正中；换姿势时画面的范围不变，几张画叠在一起切换不会跳。
+ * 一只幽灵的身体与小手，身体正中落在画面正中；换姿势时画面的范围不变，几张画叠在一起切换不会跳。
  *
- * 分成投影、贴纸边与成品三层，组名都是 `ghost`。
+ * 分成投影、贴纸边与成品三层，组名都是 `ghost`；返回值另带幽灵的姿态，眼睛按它摆到身上。
  */
-export function ghostArt(kit: IconKit, options: GhostArtOptions): Art {
+export function ghostArt(kit: IconKit, options: GhostArtOptions): Art & { pose: GhostPose } {
     const source = kit.capture('cherryPick', 'default', false).palette;
     const palette = { ...source, cast: 'currentColor' };
 
@@ -142,33 +136,35 @@ export function ghostArt(kit: IconKit, options: GhostArtOptions): Art {
             from,
             to,
         })),
-        eyes: options.eyes,
+        eyes: [],
     });
 
     return {
         ...sizeArt({
             viewBox: poseFrame([middle, middle], ghostScale),
-            layers: clusterLayers(kit, palette, options.lit ?? false, [{ name: 'ghost', stickers: [ghost] }]),
+            layers: clusterLayers(kit, palette, false, [{ name: 'ghost', stickers: [ghost] }]),
         }, options.width),
         cast: source.cast,
+        pose,
     };
 }
 
 /**
- * 一组图标里的幽灵：姿势、小手与眼睛原样照搬，见 `posedGhostArt`。
+ * 一组图标里的幽灵：姿势与小手原样照搬，见 `posedGhostArt`；返回值另带造贴纸的参数，眼睛按其中的姿态与眼睛另画。
  */
 export function iconGhostArt(
     kit: IconKit,
     group: IconGroup,
-    options: { lit?: boolean; width: number },
-): Art & { centre: Point; scale: number } {
+    options: { width: number },
+): Art & { centre: Point; scale: number; ghost: GhostOptions } {
     const capture = kit.capture(group, 'default', false);
+    const ghost = capturedGhost(capture).options as GhostOptions;
 
-    return posedGhostArt(kit, capturedGhost(capture).options as GhostOptions, capture.palette, options);
+    return { ...posedGhostArt(kit, ghost, capture.palette, options), ghost };
 }
 
 /**
- * 按造贴纸的参数 `ghost` 与配色 `source` 画出的一只幽灵，`lit` 为真时眼睛亮成四角星。
+ * 按造贴纸的参数 `ghost` 与配色 `source` 画出的一只幽灵，只画身体与小手，眼睛由页面另画。
  *
  * 画面见 `poseFrame`，与 `ghostArt` 按同一个显示宽度画出时，两只幽灵的单位长度相同；
  * 返回值另带身体正中在图标网格里的位置与幽灵的大小，别的零件按它们对齐。
@@ -177,7 +173,7 @@ export function posedGhostArt(
     kit: IconKit,
     ghost: GhostOptions,
     source: Palette,
-    options: { lit?: boolean; width: number },
+    options: { width: number },
 ): Art & { centre: Point; scale: number } {
     const palette = { ...source, cast: 'currentColor' };
     const centre = ghost.pose.place(0, ghostMiddle);
@@ -185,8 +181,8 @@ export function posedGhostArt(
     return {
         ...sizeArt({
             viewBox: poseFrame(centre, ghost.pose.scale),
-            layers: clusterLayers(kit, palette, options.lit ?? false, [
-                { name: 'ghost', stickers: [kit.ghostSticker(ghost)] },
+            layers: clusterLayers(kit, palette, false, [
+                { name: 'ghost', stickers: [kit.ghostSticker({ ...ghost, eyes: [] })] },
             ]),
         }, options.width),
         cast: source.cast,

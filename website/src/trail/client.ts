@@ -1,32 +1,37 @@
-import type { TrailArt, TrailPart, TrailPoseName, TrailTier } from '../art/trail.ts';
+import type { TrailArt } from '../art/trail.ts';
+import { poseAt, rampAt } from './cues.ts';
 import {
     approach,
     type Box,
     leanOf,
     planTrail,
-    progress,
     sampleTrail,
+    spring,
     type TrailLayout,
     type TrailMetrics,
     type TrailPlan,
     type TrailSample,
 } from './path.ts';
+import { build, place, type Scene } from './scene.ts';
+import { apply, drive, stateAt, type Track, tracksOf } from './tracks.ts';
 
 /*
- * 首页小幽灵的页面脚本：取来 `trail.json`，在容器里搭好各档的画，量出页面布局排好路线，再跟着滚动逐帧摆放。
+ * 首页小幽灵的页面脚本：取来 `trail.json`，在容器里搭好画面，量出页面布局排好路线，再跟着滚动摆放。
  *
- * 每帧只改 `transform` 与 `opacity`，滚动的回调里不读布局；标签页藏起来时停下。
- * 访客要求减少动态效果时整个拆掉，页面回到静止的样子。
+ * 位置、姿势、眼神、小手与灯光都只由滚动的距离决定，交给滚动时间线：浏览器按滚动的距离直接算出来，
+ * 与页面的滚动在同一帧里，不落后、不抖；不支持滚动时间线的浏览器由每帧的回调按滚动的距离写上同样的样式。
+ * 只有顺着方向的倾斜、停着时的上下飘动、演示窗口里做完一步时的反应随时间变化，由每帧的回调摆在里面一层。
+ * 滚动的回调里不读布局；标签页藏起来时停下。访客要求减少动态效果时整个拆掉，页面回到静止的样子。
  */
-
-/** 幽灵跟上滚动的快慢：差距在这么多秒后剩下约三分之一。 */
-const lag = 0.18;
 
 /** 停稳之后上下飘动一个来回的秒数。 */
 const bobPeriod = 3.4;
 
 /** 宽屏上飘动的幅度，CSS 像素；幽灵小时按比例减小。 */
 const bobHeight = 5;
+
+/** 飘着时轻轻点头：一个来回的秒数，以及往两边各歪多少度。 */
+const nod = { period: 3.9, degrees: 1.1 };
 
 /** 贴纸投影在图标网格里挪开的量：身体转过一个角度时，投影仍落在原来的方向上。 */
 const castOffset = [6, 14] as const;
@@ -40,14 +45,20 @@ const hopTime = 420;
 /** 轻轻一跳的高度，CSS 像素；幽灵小时按比例减小。 */
 const hopHeight = 10;
 
+/** 身体顺着横向速度倾斜：弹簧的固有角频率与阻尼比。停下时身子晃一下再摆正。 */
+const leanSpring = { omega: 7, zeta: 0.55 };
+
+/** 横向速度先平滑一下再定倾角：差距在这么多秒后剩下约三分之一。 */
+const velocityLag = 0.06;
+
 /** 演示窗口右边一行右端空着的地方：差异区里文件名下面那一行概要，文字靠左。 */
 const gripSelector = '.sd-diff-summary';
 
-/** SVG 的命名空间。 */
-const svgNamespace = 'http://www.w3.org/2000/svg';
-
 /** 演示窗口里做完一步时发出的事件。 */
 const demoEvents = ['spooky-demo:staged', 'spooky-demo:committed', 'spooky-demo:pushed'] as const;
+
+/** 跟着滚动距离切换、写在 `<html>` 上的开关。 */
+const flags = ['trail', 'trailRest', 'trailHome', 'trailLinked'] as const;
 
 /** 页面上各块内容：幽灵横穿页面时从它们之间的空当过。 */
 const blockSelector = [
@@ -130,37 +141,22 @@ function run(root: HTMLElement): () => void {
     };
 }
 
-/** 搭好的画面里，每帧要改的元素。 */
-interface Scene {
-    /** 投影、贴纸边、成品三档里的幽灵，以及扒着窗口边的小手；摆放方式相同 */
-    ghosts: Record<'shadow' | 'edge' | 'paint' | 'paw', HTMLElement>;
+/** 由弹簧带着的一个量：当前的值与速度。 */
+interface Channel {
+    /** 当前的值 */
+    value: number;
 
-    /** 各个姿势在各档里的画 */
-    poses: Map<TrailPoseName, SVGSVGElement[]>;
-
-    /** 举手探身的投影：落在图标底板上的一份与落在页面上的一份 */
-    casts: { plate: SVGGElement; page: SVGGElement } | undefined;
-
-    /** 投影与贴纸边两档里的樱桃枝 */
-    branches: HTMLElement[];
-
-    /** 满怀背后的满月 */
-    moon: HTMLElement;
-
-    /** 盖在示意图服务器上的亮灯机架，其中一层的机身上落着幽灵的影子 */
-    lamps: SVGSVGElement | undefined;
-
-    /** 扒着窗口边的小手 */
-    paw: SVGSVGElement | undefined;
+    /** 每秒变化多少 */
+    speed: number;
 }
 
-/** 逐帧摆放的状态。 */
+/** 逐帧摆放里面一层的状态。 */
 interface Motion {
-    /** 跟着滚动、缓缓追上的距离 */
-    smooth: number;
-
     /** 上一帧的时间，毫秒 */
     time: number;
+
+    /** 上一帧的滚动距离 */
+    s: number;
 
     /** 上一帧幽灵在屏幕上的 x，用来算横向速度 */
     x: number;
@@ -168,56 +164,81 @@ interface Motion {
     /** 平滑过的横向速度，px / s */
     velocity: number;
 
+    /** 身体顺着横向速度的倾角，度 */
+    lean: Channel;
+
     /** 飘动的相位，秒 */
     phase: number;
 
-    /** 正在显示的姿势 */
-    pose: TrailPoseName | undefined;
-
-    /** 换上的姿势一个比一个叠得高 */
-    layer: number;
-
-    /** 眼睛亮着到这个时间为止，毫秒 */
+    /** 演示窗口里做完一步的反应到这个时间为止，毫秒 */
     flash: number;
 }
 
-/** 量布局、排路线并逐帧摆放；返回拆掉一切的函数。 */
+/** 排好的路线连同它的布局与轨道；`driven` 为真时轨道已交给滚动时间线。 */
+interface Course {
+    /** 页面布局 */
+    layout: TrailLayout;
+
+    /** 路线 */
+    plan: TrailPlan;
+
+    /** 各条轨道 */
+    tracks: readonly Track[];
+
+    /** 轨道是否已交给滚动时间线 */
+    driven: boolean;
+}
+
+/** 量布局、排路线并跟着滚动摆放；返回拆掉一切的函数。 */
 function animate(root: HTMLElement, art: TrailArt): () => void {
     const scene = build(root, art);
-    const metrics = metricsOf(art, scene.paw);
+    const metrics = metricsOf(art, scene.paw?.paint);
+    const timeline = 'ScrollTimeline' in window ? new ScrollTimeline({ source: document.documentElement }) : undefined;
+    const animations = new Map<Element, Animation>();
     const motion: Motion = {
-        smooth: scrollY,
         time: 0,
+        s: scrollY,
         x: 0,
         velocity: 0,
+        lean: { value: 0, speed: 0 },
         phase: 0,
-        pose: undefined,
-        layer: 0,
         flash: 0,
     };
-    let plan: TrailPlan | undefined;
-    let layout: TrailLayout | undefined;
+    let course: Course | undefined;
     let frame = 0;
 
-    // 量出布局、排好路线；滚动距离与幽灵之间的差距保持不变，布局变了幽灵也不跳
+    // 量出布局、排好路线，换上滚动时间线的关键帧
     const relayout = (): void => {
-        const gap = scrollY - motion.smooth;
+        const layout = measure();
+        const plan = layout ? planTrail(layout, metrics) : undefined;
 
-        layout = measure();
-        plan = layout ? planTrail(layout, metrics) : undefined;
-        motion.smooth = scrollY - gap;
         cancelAnimationFrame(frame);
+        frame = 0;
 
         // 首页缺了哪一块时退回静止的样子
         if (!layout || !plan) {
+            course = undefined;
             root.style.height = '0';
             delete document.documentElement.dataset.trail;
 
             return;
         }
 
+        const range = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const tracks = tracksOf(scene, art, plan, layout);
+        const driven = timeline !== undefined && range > 0;
+
         root.style.height = `${layout.end + layout.height}px`;
         place(scene, art, layout);
+
+        if (driven) {
+            drive(tracks, art, plan, range, timeline, animations);
+        } else {
+            animations.forEach((animation) => animation.cancel());
+            animations.clear();
+        }
+
+        course = { layout, plan, tracks, driven };
 
         // 先摆好这一帧，再让页面上的画让出幽灵：两者在同一帧里交接，看不出换过
         motion.time = 0;
@@ -228,16 +249,16 @@ function animate(root: HTMLElement, art: TrailArt): () => void {
     const tick = (now: number): void => {
         frame = 0;
 
-        if (!plan || !layout) {
+        if (!course) {
             return;
         }
 
         const seconds = motion.time ? Math.min((now - motion.time) / 1000, 0.05) : 0;
-        const settled = step(root, scene, art, plan, layout, motion, now, seconds);
+        const moving = step(root, scene, art, course, motion, now, seconds);
 
         motion.time = now;
 
-        if (!settled) {
+        if (moving) {
             frame = requestAnimationFrame(tick);
         }
     };
@@ -269,9 +290,17 @@ function animate(root: HTMLElement, art: TrailArt): () => void {
         wake();
     };
 
+    // 只改了视口的高度时页面本身的尺寸不变，ResizeObserver 不会报告，能滚动的距离却变了
+    const resize = (): void => {
+        if (document.documentElement.clientHeight !== course?.layout.height) {
+            relayout();
+        }
+    };
+
     const observer = new ResizeObserver(relayout);
 
     observer.observe(document.body);
+    addEventListener('resize', resize);
     addEventListener('scroll', wake, { passive: true });
     document.addEventListener('visibilitychange', pause);
     demoEvents.forEach((name) => document.addEventListener(name, flash));
@@ -280,331 +309,136 @@ function animate(root: HTMLElement, art: TrailArt): () => void {
     return () => {
         observer.disconnect();
         cancelAnimationFrame(frame);
+        animations.forEach((animation) => animation.cancel());
+        removeEventListener('resize', resize);
         removeEventListener('scroll', wake);
         document.removeEventListener('visibilitychange', pause);
         demoEvents.forEach((name) => document.removeEventListener(name, flash));
         scene.lamps?.remove();
+        scene.beams.forEach((beam) => beam.style.removeProperty('opacity'));
         root.replaceChildren();
         root.style.removeProperty('height');
         root.removeAttribute('data-still');
 
-        for (const name of ['trail', 'trailRest', 'trailHome', 'trailLamps', 'trailServer', 'trailReveal']) {
+        for (const name of flags) {
             delete document.documentElement.dataset[name];
         }
     };
 }
 
 /**
- * 摆好一帧：滚动距离缓缓追上，按路线取出幽灵的样子，加上顺着方向的倾斜与上下飘动。
+ * 摆好一帧：里面一层加上倾斜、飘动与做完一步时的反应，切换跟着滚动距离的几个开关；
+ * 轨道没有交给滚动时间线时，另按这一刻的滚动距离写上各个元素的样式。
  *
- * 返回是否已经停稳：停稳后不再请求下一帧，直到再次滚动。
+ * 返回是否还要下一帧：滚动停下、身子停稳、也不飘动时不再请求。
  */
 function step(
     root: HTMLElement,
     scene: Scene,
     art: TrailArt,
-    plan: TrailPlan,
-    layout: TrailLayout,
+    course: Course,
     motion: Motion,
     now: number,
     seconds: number,
 ): boolean {
-    const target = scrollY;
+    const { plan, tracks, driven } = course;
+    const s = scrollY;
+    const sample = sampleTrail(plan, s);
 
-    motion.smooth = approach(motion.smooth, target, seconds, lag);
-
-    if (Math.abs(motion.smooth - target) < 0.05) {
-        motion.smooth = target;
+    if (!driven) {
+        apply(tracks, stateAt(art, plan, s));
     }
 
-    const s = motion.smooth;
-    const sample = sampleTrail(plan, s);
+    // 横向速度只算幽灵自己在屏幕上的移动，平滑之后定倾角
     const velocity = seconds > 0 ? (sample.x - motion.x) / seconds : 0;
 
-    motion.velocity = approach(motion.velocity, velocity, seconds, 0.12);
+    motion.velocity = approach(motion.velocity, velocity, seconds, velocityLag);
     motion.x = sample.x;
     motion.phase += seconds;
 
+    // 停在窗口边时做完一步，眼睛亮一下；在别处时轻轻一跳，跳起的高度从做完那一刻起先升后落
     const flashing = now < motion.flash;
-    const lit = flashing && sample.pose === 'hide';
-    const pose = lit ? 'hideLit' : sample.pose;
-
-    // 跳起的高度占满幅的比例：从做完那一刻起，先升后落
-    const hop = flashing && !lit
+    const atWindow = plan.hide.mode === 'side' && s >= plan.hide.from && s <= plan.hide.to;
+    const hop = flashing && !atWindow
         ? Math.sin(Math.PI * Math.min((now - motion.flash + flashTime) / hopTime, 1))
         : 0;
 
-    showPose(scene, motion, pose);
+    scene.eyeLayer.classList.toggle('flash', flashing && atWindow);
     toggles(root, plan, s);
-    position(scene, art, sample, {
-        lean: leanOf(motion.velocity),
-        phase: motion.phase,
-        hop,
-    });
-    scenery(scene, art, plan, layout, s, pose);
 
-    return (
-        motion.smooth === target &&
-        Math.abs(motion.velocity) < 0.5 &&
-        sample.bob === 0 &&
-        !flashing
-    );
+    // 投影的偏移按正显示得多的那个姿势的画面比例算
+    const blend = poseAt(plan.poses, s);
+    const frameWidth = art.poses[blend.t < 0.5 ? blend.from : blend.to].viewBox[2];
+    const swaying = sway(scene, art, motion, sample, frameWidth, hop, seconds);
+    const scrolled = s !== motion.s;
+
+    motion.s = s;
+
+    return scrolled || swaying || sample.bob > 0 || flashing;
 }
 
 /**
- * 摆放三档里的幽灵与小手：位置、倾斜加翻转、大小；投影另外补上转动带来的偏移。
+ * 里层的倾斜、飘动与轻轻一跳：身体顺着横向速度倾斜，由弹簧带着，停下时晃一下再摆正；飘着时上下浮动、轻轻点头。
  *
- * `lean` 是顺着横向速度的倾斜角，`phase` 是飘动的相位（秒），`hop` 是轻轻一跳升到的比例。
+ * 投影另补上转动带来的偏移，`frameWidth` 是正显示的姿势画面在图标网格里的宽度。返回身子是否还在晃。
  */
-function position(
+function sway(
     scene: Scene,
     art: TrailArt,
+    motion: Motion,
     sample: TrailSample,
-    { lean, phase, hop }: { lean: number; phase: number; hop: number },
-): void {
-    const [width, height] = art.size;
+    frameWidth: number,
+    hop: number,
+    seconds: number,
+): boolean {
+    const [width] = art.size;
     const scale = sample.u / art.unit;
-    const angle = sample.roll + lean;
+    const leaning = pull(motion.lean, leanOf(motion.velocity), seconds) || Math.abs(motion.velocity) > 0.5;
+    const nodding = sample.bob * nod.degrees * Math.sin(2 * Math.PI * (motion.phase / nod.period + 0.3));
+    const angle = motion.lean.value + nodding;
 
-    // 宽屏上的幽灵按原幅度飘动与跳起，小的按比例减小
+    // 上下浮动与跳起都是屏幕上竖直方向的位移，宽屏上按原幅度，幽灵小时按比例减小
     const fit = Math.min(scale / 0.79, 1);
-    const bob = sample.bob * Math.sin((phase * 2 * Math.PI) / bobPeriod) * bobHeight;
+    const bob = sample.bob * Math.sin((motion.phase * 2 * Math.PI) / bobPeriod) * bobHeight;
     const lift = (bob - hop * hopHeight) * fit;
-    const left = sample.x - width / 2;
-    const top = sample.y - height / 2 + lift;
-    const tail = `rotate(${angle.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
-    const transform = `translate3d(${left.toFixed(2)}px, ${top.toFixed(2)}px, 0) ${tail}`;
+    const [liftX, liftY] = local(0, lift, sample.roll, scale);
+    const body = `translate(${liftX.toFixed(2)}px, ${liftY.toFixed(2)}px) rotate(${angle.toFixed(2)}deg)`;
 
-    // 投影画在身体右下方：身体转过 angle 后，把投影挪回原来的方向
-    const pose = art.poses[sample.pose];
-    const grid = (width / pose.viewBox[2]) * scale;
-    const radians = (angle * Math.PI) / 180;
+    scene.ghosts.edge.inner.style.transform = body;
+    scene.ghosts.paint.inner.style.transform = body;
+    scene.ghosts.paw.inner.style.transform = body;
+
+    // 投影画在身体右下方：身体一共转过翻转加倾斜的角度，把投影挪回原来的方向
+    const grid = (width / frameWidth) * scale;
+    const radians = ((sample.roll + angle) * Math.PI) / 180;
     const [dx, dy] = [castOffset[0] * grid, castOffset[1] * grid];
     const shiftX = dx - (dx * Math.cos(radians) - dy * Math.sin(radians));
     const shiftY = dy - (dx * Math.sin(radians) + dy * Math.cos(radians));
+    const [castX, castY] = local(shiftX, shiftY + lift, sample.roll, scale);
 
-    scene.ghosts.edge.style.transform = transform;
-    scene.ghosts.paint.style.transform = transform;
-    scene.ghosts.paw.style.transform = transform;
-    scene.ghosts.shadow.style.transform = [
-        `translate3d(${(left + shiftX).toFixed(2)}px, ${(top + shiftY).toFixed(2)}px, 0)`,
-        tail,
-    ].join(' ');
-}
+    scene.ghosts.shadow.inner.style.transform =
+        `translate(${castX.toFixed(2)}px, ${castY.toFixed(2)}px) rotate(${angle.toFixed(2)}deg)`;
 
-/** 换姿势：新姿势的各档淡入并叠在上面，旧的由样式表稍后淡出。 */
-function showPose(scene: Scene, motion: Motion, pose: TrailPoseName): void {
-    if (motion.pose === pose) {
-        return;
-    }
-
-    for (const svg of scene.poses.get(motion.pose ?? pose) ?? []) {
-        svg.classList.remove('on');
-    }
-
-    motion.layer += 1;
-
-    for (const svg of scene.poses.get(pose) ?? []) {
-        svg.style.zIndex = String(motion.layer);
-        svg.classList.add('on');
-    }
-
-    // 小手只在扒着窗口边时出现
-    scene.ghosts.paw.firstElementChild?.classList.toggle('on', pose === 'hide' || pose === 'hideLit');
-    motion.pose = pose;
+    return leaning;
 }
 
 /**
- * 跟着滚动距离切换的几处：图标与满怀自己显示幽灵的时候，示意图里服务器的指示灯与落在机架上的影子，
- * 以及显形那台服务器的指示灯与光束。
+ * 跟着滚动距离切换的几个开关：图标与满怀自己显示幽灵的时候，以及示意图里的 SSH 连接开始传输之后。
  */
 function toggles(root: HTMLElement, plan: TrailPlan, s: number): void {
     const page = document.documentElement;
     const rest = s < plan.rest;
     const home = s >= plan.home;
-    const [docked, away] = plan.server;
-    const [from, to] = plan.reveal ?? [Number.POSITIVE_INFINITY, 0];
 
     flag(page, 'trailRest', rest);
     flag(page, 'trailHome', home);
-    flag(page, 'trailLamps', s >= docked);
-    flag(page, 'trailServer', s >= docked && s <= away);
-    flag(page, 'trailReveal', s >= from && s <= to);
+
+    // 示意图里机架的灯亮着时，SSH 连接才在传输
+    flag(page, 'trailLinked', rampAt(plan.lamps, s) > 0);
 
     if (root.hasAttribute('data-still') !== (rest || home)) {
         root.toggleAttribute('data-still', rest || home);
     }
-}
-
-/** 樱桃枝滑进来、樱桃被摘下，满月淡入，举手探身的投影从底板的颜色换成页面的颜色。 */
-function scenery(
-    scene: Scene,
-    art: TrailArt,
-    plan: TrailPlan,
-    layout: TrailLayout,
-    s: number,
-    pose: TrailPoseName,
-): void {
-    const { branch } = plan;
-    const left = branch.x + art.branch.offset[0] * branch.scale;
-    const top = branch.y + art.branch.offset[1] * branch.scale;
-    const reach = progress(s, branch.from, branch.to);
-    const slide = (1 - easeOut(reach)) * (layout.width - left + 8);
-
-    for (const element of scene.branches) {
-        element.style.transform = [
-            `translate3d(${(left + slide).toFixed(2)}px, ${top.toFixed(2)}px, 0)`,
-            `scale(${branch.scale.toFixed(4)})`,
-        ].join(' ');
-        element.classList.toggle('picked', s >= branch.pick);
-    }
-
-    scene.moon.style.opacity = progress(s, plan.moon[0], plan.moon[1]).toFixed(3);
-
-    if (scene.casts && pose === 'rise') {
-        const page = progress(s, plan.plate[0], plan.plate[1]);
-
-        scene.casts.page.style.opacity = page.toFixed(3);
-        scene.casts.plate.style.opacity = (1 - page).toFixed(3);
-    }
-}
-
-/** 樱桃枝的尺寸与满月的位置只随布局变：排好路线后摆一次。 */
-function place(scene: Scene, art: TrailArt, layout: TrailLayout): void {
-    const [, , viewWidth, viewHeight] = art.moon.viewBox;
-    const armful = layout.armful;
-    const width = armful.right - armful.left;
-    const centreX = armful.left + art.moon.centre[0] * width;
-    const centreY = armful.top + art.moon.centre[1] * (armful.bottom - armful.top);
-    const height = (art.moon.width * viewHeight) / viewWidth;
-
-    Object.assign(scene.moon.style, {
-        width: `${art.moon.width}px`,
-        height: `${height}px`,
-        transform: [
-            `translate(${(centreX - art.moon.width / 2).toFixed(2)}px,`,
-            `${(centreY - height / 2).toFixed(2)}px)`,
-        ].join(' '),
-    });
-
-    for (const element of scene.branches) {
-        element.style.width = `${art.branch.width}px`;
-        element.style.height = `${(art.branch.width * art.branch.viewBox[3]) / art.branch.viewBox[2]}px`;
-    }
-}
-
-/** 在容器里搭好各档：满月、投影、贴纸边、成品与叠在窗口上的小手。 */
-function build(root: HTMLElement, art: TrailArt): Scene {
-    const tier = (name: string): HTMLElement => element('div', 'trail-tier', root, name);
-    const moonTier = tier('moon');
-    const tiers = { shadow: tier('shadow'), edge: tier('edge'), paint: tier('paint') };
-    const front = tier('front');
-    const ghost = (parent: HTMLElement): HTMLElement => sized(element('div', 'trail-ghost', parent), art.size);
-    const ghosts = {
-        shadow: ghost(tiers.shadow),
-        edge: ghost(tiers.edge),
-        paint: ghost(tiers.paint),
-        paw: ghost(front),
-    };
-    const poses = new Map<TrailPoseName, SVGSVGElement[]>();
-
-    // 每个姿势按档拆开，放进对应那一档里的幽灵
-    for (const [name, part] of Object.entries(art.poses) as [TrailPoseName, TrailPart][]) {
-        const svgs = (['shadow', 'edge', 'paint'] as const).flatMap((each) => {
-            const svg = svgOf(part, [each]);
-
-            if (svg) {
-                ghosts[each].append(svg);
-            }
-
-            return svg ? [svg] : [];
-        });
-
-        poses.set(name, svgs);
-    }
-
-    const paw = svgOf(art.paw, ['shadow', 'edge', 'paint']);
-
-    if (paw) {
-        paw.classList.add('trail-paw');
-        ghosts.paw.append(paw);
-    }
-
-    const branches = [
-        branchOf(art.branch, ['shadow'], tiers.shadow),
-        branchOf(art.branch, ['edge', 'paint'], tiers.edge),
-    ];
-    const moon = element('div', 'trail-moon', moonTier);
-
-    moon.append(
-        svgOf(art.moon, ['shadow', 'edge', 'paint']) ??
-            document.createElementNS(svgNamespace, 'svg'),
-    );
-    moon.style.opacity = '0';
-
-    return {
-        ghosts,
-        poses,
-        casts: plateCast(art, poses.get('rise')?.[0]),
-        branches,
-        moon,
-        lamps: lampsOf(art),
-        paw,
-    };
-}
-
-/**
- * 举手探身的投影另画一份底板上的颜色：浅色主题里页面上的投影是紫色，图标底板上的投影仍是图标自己的颜色。
- *
- * 返回两份投影各自所在的组，由滚动距离调它们的不透明度。
- */
-function plateCast(art: TrailArt, shadow: SVGSVGElement | undefined): Scene['casts'] {
-    if (!shadow) {
-        return undefined;
-    }
-
-    const page = document.createElementNS(svgNamespace, 'g');
-    const plate = document.createElementNS(svgNamespace, 'g');
-
-    page.append(...shadow.childNodes);
-
-    // 第二份的 id 换一个前缀，不与第一份重复
-    plate.innerHTML = page.innerHTML.replaceAll('trail-rise-', 'trail-rise-plate-');
-    plate.style.color = art.plateCast;
-    page.style.opacity = '0';
-    shadow.append(page, plate);
-
-    return { plate, page };
-}
-
-/** 樱桃枝的一部分：几档的层画进一个 SVG，樱桃单独成组，摘下时淡去。 */
-function branchOf(part: TrailPart, tiers: readonly TrailTier[], parent: HTMLElement): HTMLElement {
-    const holder = element('div', 'trail-branch', parent);
-    const svg = document.createElementNS(svgNamespace, 'svg');
-
-    svg.setAttribute('viewBox', part.viewBox.join(' '));
-    svg.innerHTML = tiers
-        .flatMap((tier) => part.layers.filter((layer) => layer.tier === tier))
-        .map(({ group, markup }) => (group === 'cherries' ? `<g data-cherries="">${markup}</g>` : markup))
-        .join('');
-    holder.append(svg);
-
-    return holder;
-}
-
-/** 亮灯的机架盖在示意图的服务器上，由样式表在幽灵来过之后淡入；落着影子的一层只在幽灵停在机架身前时显示。 */
-function lampsOf(art: TrailArt): SVGSVGElement | undefined {
-    const server = document.querySelector('[data-art="server"]');
-    const svg = svgOf(art.lamps, ['shadow', 'edge', 'paint']);
-
-    if (!server || !svg) {
-        return undefined;
-    }
-
-    svg.dataset.layer = 'lamps';
-    server.append(svg);
-
-    return svg;
 }
 
 /** 量出排路线要用的页面布局；首页缺了哪一块时返回空，页面保持静止。 */
@@ -615,9 +449,11 @@ function measure(): TrailLayout | undefined {
         return found ? boxOf(found) : undefined;
     };
     const hero = one('.hero .app-icon');
+    const headline = one('.hero h1');
     const window = one('.sd-window');
     const server = one('[data-art="server"]');
     const reveal = one('[data-art="reveal"]');
+    const revealTitle = document.querySelector('[data-art="reveal"]')?.closest('.feature')?.querySelector('h3');
     const armful = one('.closing [data-art]');
     const title = one('.closing h2');
     const heading = union(
@@ -625,7 +461,11 @@ function measure(): TrailLayout | undefined {
     );
     const column = union([...document.querySelectorAll('.diagram, .point, .feature')].map(boxOf));
 
-    if (!hero || !window || !server || !reveal || !armful || !title || !heading || !column) {
+    if (!hero || !headline || !window || !server || !reveal || !revealTitle || !armful || !title) {
+        return undefined;
+    }
+
+    if (!heading || !column) {
         return undefined;
     }
 
@@ -641,12 +481,15 @@ function measure(): TrailLayout | undefined {
         column: { left: column.left, right: column.right },
         hero,
         heading,
+        headline,
         window,
 
         // 那一行一直伸到窗口右边时，小手扒在它的右端
         ...(grip && grip.right >= window.right - 2 ? { grip: (grip.top + grip.bottom) / 2 } : {}),
         server,
+        media: [...document.querySelectorAll('.feature .media')].map(boxOf).toSorted((a, b) => a.top - b.top),
         reveal,
+        revealTitle: boxOf(revealTitle),
         armful,
         title,
         blocks: [...document.querySelectorAll(blockSelector)].map(boxOf),
@@ -655,12 +498,16 @@ function measure(): TrailLayout | undefined {
 
 /** 由 JSON 里的画取出排路线要用的尺寸；小手的位置由搭好的画量出。 */
 function metricsOf(art: TrailArt, paw: SVGSVGElement | undefined): TrailMetrics {
+    const { offset, width, viewBox, cherry } = art.branch;
+
     return {
         unit: art.unit,
         anchors: art.anchors,
         hideEdge: art.size[0] / 2 - art.paw.edge,
         pawDrop: pawDrop(art, paw),
-        branchReach: art.branch.offset[0] + art.branch.width,
+        branchReach: offset[0] + width,
+        branchSpan: [offset[1], offset[1] + (width * viewBox[3]) / viewBox[2]],
+        cherry,
     };
 }
 
@@ -678,43 +525,34 @@ function pawDrop(art: TrailArt, paw: SVGSVGElement | undefined): number {
     return (box.y + box.height / 2 - (top + height / 2)) * (art.size[0] / width);
 }
 
-/** 一幅画里属于这几档的层，画进一个 SVG；一层都没有时返回空。 */
-function svgOf(part: TrailPart, tiers: readonly TrailTier[]): SVGSVGElement | undefined {
-    const layers = tiers.flatMap((tier) => part.layers.filter((layer) => layer.tier === tier));
+/** 屏幕上的一段位移换进外层自身的坐标：外层转过 `roll` 度、缩放到 `scale`，里层按换出的量平移，落到屏幕上正好是这一段。 */
+function local(dx: number, dy: number, roll: number, scale: number): [number, number] {
+    const radians = (roll * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
 
-    if (layers.length === 0) {
-        return undefined;
-    }
-
-    const svg = document.createElementNS(svgNamespace, 'svg');
-
-    svg.setAttribute('viewBox', part.viewBox.join(' '));
-    svg.innerHTML = layers.map(({ name, markup }) => `<g data-layer="${name}">${markup}</g>`).join('');
-
-    return svg;
+    return [(dx * cos + dy * sin) / scale, (dy * cos - dx * sin) / scale];
 }
 
-/** 新建一个带样式类的元素放进容器；给了档名时记在 `data-tier` 上。 */
-function element(tag: 'div', className: string, parent: HTMLElement, tier?: string): HTMLElement {
-    const created = document.createElement(tag);
+/** 弹簧带着倾角朝目标走过这么多秒；离目标与速度都足够小时停在目标上。返回它是否还在动。 */
+function pull(channel: Channel, target: number, seconds: number): boolean {
+    [channel.value, channel.speed] = spring(
+        channel.value,
+        channel.speed,
+        target,
+        seconds,
+        leanSpring.omega,
+        leanSpring.zeta,
+    );
 
-    created.className = className;
-
-    if (tier) {
-        created.dataset.tier = tier;
+    if (Math.abs(channel.value - target) > 0.01 || Math.abs(channel.speed) > 0.01) {
+        return true;
     }
 
-    parent.append(created);
+    channel.value = target;
+    channel.speed = 0;
 
-    return created;
-}
-
-/** 按画面原大的宽高定好元素的尺寸。 */
-function sized(target: HTMLElement, [width, height]: readonly [number, number]): HTMLElement {
-    target.style.width = `${width}px`;
-    target.style.height = `${height}px`;
-
-    return target;
+    return false;
 }
 
 /** 元素在文档坐标里的范围。 */
@@ -754,9 +592,4 @@ function flag(root: HTMLElement, name: string, on: boolean): void {
     } else {
         delete root.dataset[name];
     }
-}
-
-/** 先快后慢的缓动。 */
-function easeOut(t: number): number {
-    return 1 - (1 - t) ** 3;
 }

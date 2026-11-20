@@ -132,8 +132,27 @@ const endId = 'spooky-demo-end';
 </div>
 
 <script>
-    // 窗口进入视口附近时才加载演示的脚本与数据
+    /** 页面最后一次滚动之后再过这么多毫秒，才算停稳。 */
+    const settleTime = 200;
+
     for (const root of document.querySelectorAll<HTMLElement>('[data-spooky-demo]')) {
+        let settle = 0;
+
+        // 页面滚动时窗口不接手指针，滚动经过窗口时不会被窗口里的列表截走；页面停稳之后才能操作窗口
+        addEventListener(
+            'scroll',
+            () => {
+                if (!('pageScrolling' in root.dataset)) {
+                    root.dataset.pageScrolling = '';
+                }
+
+                clearTimeout(settle);
+                settle = window.setTimeout(() => delete root.dataset.pageScrolling, settleTime);
+            },
+            { passive: true },
+        );
+
+        // 窗口进入视口附近时才加载演示的脚本与数据
         const observer = new IntersectionObserver(
             (entries) => {
                 if (!entries.some((entry) => entry.isIntersecting)) {
@@ -171,6 +190,10 @@ const endId = 'spooky-demo-end';
 
     .sd {
         margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .sd[data-page-scrolling] .sd-window {
+        pointer-events: none;
     }
 
     #spooky-demo-end:focus {

@@ -225,6 +225,8 @@ mise run website:build
 
 Pages quote the app's labels from `Localizable.strings` by resource key, so renaming or removing a key that the website uses breaks its build. The simulated window on the home page also takes its colors from `BuiltinThemes.json` and `NamedColors.json`. The app icon and the ghosts on the home page and the 404 page are drawn at build time by the app icon scripts in `scripts/make-icon/`. Screenshots are stored with [Git LFS](https://git-lfs.com); install it before cloning to get them.
 
+When the home page is opened on your machine (the development server, or a preview of the built site), a numbered grid covers the page and the header reads out where the top of the viewport and the ghost's center are, in grid cells, so you can point at where the scrolling ghost should do what. The published site doesn't show the grid.
+
 GitHub Actions builds the website on pull requests that change it, and deploys it to GitHub Pages when it changes on `main`.
 
 ## Code style

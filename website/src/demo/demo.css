@@ -30,7 +30,7 @@
     --sd-row-separator: #3d3b3a;
     --sd-sheet: #323030;
     --sd-quick: rgb(46 44 44 / 0.94);
-    --sd-shadow: 0 0 0 1px rgb(255 255 255 / 0.12), 0 1.5rem 3.5rem rgb(0 0 0 / 0.55), 0 0.25rem 0.75rem rgb(0 0 0 / 0.35);
+    --sd-ring: 0 0 0 1px rgb(255 255 255 / 0.12);
     --sd-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', sans-serif;
     --sd-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
@@ -62,7 +62,19 @@
     --sd-row-separator: #e5e5e5;
     --sd-sheet: #fff;
     --sd-quick: rgb(250 250 250 / 0.94);
-    --sd-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 1.5rem 3.5rem rgb(40 30 90 / 0.22), 0 0.25rem 0.75rem rgb(40 30 90 / 0.12);
+    --sd-ring: 0 0 0 1px rgb(0 0 0 / 0.08);
+}
+
+/*
+ * 窗口落在页面上的投影。首页跟着滚动的小幽灵在页面上时，这片投影由它的画面另画一份、垫在幽灵下面，
+ * 所以定义在页面根上，窗口以外也取得到。
+ */
+:root {
+    --sd-cast: 0 1.5rem 3.5rem rgb(0 0 0 / 0.55), 0 0.25rem 0.75rem rgb(0 0 0 / 0.35);
+}
+
+:root[data-theme='light'] {
+    --sd-cast: 0 1.5rem 3.5rem rgb(40 30 90 / 0.22), 0 0.25rem 0.75rem rgb(40 30 90 / 0.12);
 }
 
 /* 跳过演示：平时藏起来，键盘聚焦时出现在窗口上方 */
@@ -112,7 +124,7 @@
     overflow: hidden;
     border-radius: 26px;
     background: var(--sd-bg);
-    box-shadow: var(--sd-shadow);
+    box-shadow: var(--sd-ring), var(--sd-cast);
     color: var(--sd-text);
     font: 13px/1.35 var(--sd-font);
     letter-spacing: normal;

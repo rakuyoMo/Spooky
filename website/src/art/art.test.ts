@@ -13,9 +13,11 @@ import {
 import { compactNumbers, renderArt, scopeIds, sizeArt } from './markup.ts';
 import { ghostPresets } from './parts.ts';
 import { createSiteArt, frontStickers } from './scenes.ts';
+import { createTrailArt } from './trail.ts';
 
 /*
- * 首页与 404 页上那几幅画的自测：id 的作用域、数字收短、修圆滤镜放宽后的轮廓、拆层的次序与零件的坐标换算。
+ * 首页与 404 页上那几幅画的自测：id 的作用域、数字收短、修圆滤镜放宽后的轮廓、拆层的次序与零件的坐标换算，
+ * 以及跟着滚动的幽灵另画的眼睛望向各处时的位置。
  *
  * 在 `website/` 下运行：`node --test src/art/art.test.ts`
  */
@@ -105,7 +107,7 @@ test('示意图里的身前是图标的左右镜像：身体、小手、眼睛�
     // 小手与眼睛
     assert.deepEqual(ghost.hands?.map(({ line }) => line), original.hands?.map(({ line }) => line.map(mirrored)));
     assert.deepEqual(ghost.eyes.map(({ u }) => u), original.eyes.map(({ u }) => -u));
-    assert.ok(ghost.eyes.every(({ tilt }) => tilt === -kit.eyeTilt));
+    assert.ok(ghost.eyes.every(({ tilt }) => tilt === -kit.ghostEye.tilt));
 
     // 机架：指示灯翻到左边，三台的盘位槽都在最上面那台的槽翻过去的位置
     const top = servers.find(({ slot }) => slot);
@@ -140,4 +142,29 @@ test('小手换算到幽灵自身坐标后，按原来的姿势放回去仍在�
             assert.ok(Math.hypot(x - expectedX, y - expectedY) < 1);
         });
     });
+});
+
+test('跟着滚动的幽灵另画的眼睛分九格：望向左右与上下时两只眼睛都往那边挪，镜像与歪着的姿势、过渡画都一样', () => {
+    const { poses, morphs } = createTrailArt(kit);
+
+    // 满怀那张由它自己画的眼睛望着前方，另画的眼睛在那时隐去
+    const images = [
+        ...Object.entries(poses).flatMap(([name, pose]) => (name === 'armful' ? [] : [pose])),
+        ...Object.values(morphs).flatMap((steps) => steps ?? []),
+    ];
+
+    for (const { eyes: grid } of images) {
+        assert.equal(grid.length, 9);
+
+        for (const eye of [0, 1]) {
+            const x = (row: number, column: number): number => grid[row * 3 + column]?.[eye]?.x ?? Number.NaN;
+            const y = (row: number, column: number): number => grid[row * 3 + column]?.[eye]?.y ?? Number.NaN;
+
+            // 同一行里从左往右，同一列里从上往下
+            for (const line of [0, 1, 2]) {
+                assert.ok(x(line, 0) < x(line, 1) && x(line, 1) < x(line, 2));
+                assert.ok(y(0, line) < y(1, line) && y(1, line) < y(2, line));
+            }
+        }
+    }
 });

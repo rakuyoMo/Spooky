@@ -21,6 +21,9 @@ export default defineConfig({
 
         starlight({
             title: 'Spooky',
+
+            // 页头的名字左边是应用图标；图标只是点缀，读屏只读名字
+            logo: { src: './src/assets/app-icons/rise.png' },
             favicon: '/favicon.png',
             social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/rakuyoMo/Spooky' }],
             disable404Route: true,
@@ -38,6 +41,7 @@ export default defineConfig({
             },
 
             head: [{ tag: 'script', content: localeScript() }],
+            routeMiddleware: './src/site/route-data.ts',
             plugins: [starlightLinksValidator({ errorOnInconsistentLocale: true })],
         }),
     ],

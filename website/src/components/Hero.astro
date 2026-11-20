@@ -1,6 +1,7 @@
 ---
 import { siteArt } from '../art/site.ts';
 import ActionLinks from './ActionLinks.astro';
+import DebugGrid from './home/DebugGrid.astro';
 import Trail from './home/Trail.astro';
 import Sky from './Sky.astro';
 import StickerArt from './StickerArt.astro';
@@ -47,6 +48,8 @@ const notFound = route.entry.id === '404';
 </section>
 
 {!notFound && <Trail />}
+
+{!notFound && <DebugGrid />}
 
 <style>
     .hero {
