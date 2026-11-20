@@ -204,6 +204,48 @@ export interface MoonStar {
     color: string;
 }
 
+/** 幽灵近处那只眼睛：竖椭圆的两个半轴，以及眼睛没有写 `tilt` 时相对身体顺时针转的度数，`STICKER_GHOST_EYE`。 */
+export interface EyeShape {
+    /** 横半轴 */
+    radiusX: number;
+
+    /** 竖半轴 */
+    radiusY: number;
+
+    /** 相对身体顺时针转的度数 */
+    tilt: number;
+}
+
+/** 眼睛亮成的四角星，见 `sparkleData`。 */
+export interface SparkleKit {
+    /** 左右两个角尖到中心的距离与眼睛横半轴之比，`ARMFUL_SPARKLES.reachX` */
+    reachX: number;
+
+    /** 上下两个角尖到中心的距离与眼睛竖半轴之比，`ARMFUL_SPARKLES.reachY` */
+    reachY: number;
+
+    /** 修圆角尖的描边宽度，按幽灵的大小缩放，`ARMFUL_SPARKLES.rounding` */
+    rounding: number;
+
+    /** 自上而下由浅琥珀到深橙的渐变色，`ARMFUL_LIT.eye` */
+    colors: readonly string[];
+
+    /** 四周一圈光的颜色，`ARMFUL_LIT.eyeGlow` */
+    glow: string;
+
+    /** 中心在 (x, y)、角尖到中心的距离为 `reachX` 与 `reachY` 的四角星路径数据，`sparkleData` */
+    data: (x: number, y: number, reachX: number, reachY: number) => string;
+}
+
+/** 满怀的两只眼睛，`ARMFUL_EYES`：竖椭圆的中心与两个半轴都在满怀这一团放到画面上之前的坐标里。 */
+export interface ArmfulEyes {
+    /** 各自绕中心顺时针转的度数 */
+    tilt: number;
+
+    /** 近处的一只与远处的一只 */
+    ovals: readonly { x: number; y: number; radiusX: number; radiusY: number }[];
+}
+
 /** 满怀这一团放到画面上的姿态：绕 `pivot` 顺时针转 `degrees` 度、缩到 `scale` 倍，再平移 `shift`。 */
 export interface ArmfulPose {
     /** 旋转与缩放的中心 */
@@ -323,8 +365,14 @@ export interface IconKit {
     /** 满怀里幽灵身体的轮廓锚点与整团的姿态，`ARMFUL_BODY` 与 `ARMFUL_POSE`；跟着滚动的幽灵按它们对齐满怀 */
     armfulGhost: { body: readonly Point[]; pose: ArmfulPose };
 
-    /** 眼睛没有写 `tilt` 时相对身体顺时针转的度数，`STICKER_GHOST_EYE.tilt` */
-    eyeTilt: number;
+    /** 满怀的两只眼睛：跟着滚动的幽灵另画的眼睛落在满怀时移到这里 */
+    armfulEyes: ArmfulEyes;
+
+    /** 幽灵近处那只眼睛的形状与默认的倾斜 */
+    ghostEye: EyeShape;
+
+    /** 眼睛亮成的四角星 */
+    sparkle: SparkleKit;
 
     /** 拼 SVG 片段的工具 */
     svg: SvgTools;
@@ -407,6 +455,8 @@ export function createIconKit(scripts: readonly IconScript[]): IconKit {
     const capture = captureIcons(global);
     const origin = value<number>('PLATE_ORIGIN');
     const size = value<number>('PLATE_SIZE');
+    const sparkles = value<{ reachX: number; reachY: number; rounding: number }>('ARMFUL_SPARKLES');
+    const lit = value<{ eye: string[]; eyeGlow: string }>('ARMFUL_LIT');
     const squareData = callable<(left: number, top: number, size: number, radius: number) => string>(
         'continuousSquareData',
     );
@@ -425,7 +475,16 @@ export function createIconKit(scripts: readonly IconScript[]): IconKit {
         },
         armfulMoon: value<IconKit['armfulMoon']>('ARMFUL_MOON'),
         armfulGhost: { body: value<Point[]>('ARMFUL_BODY'), pose: value<ArmfulPose>('ARMFUL_POSE') },
-        eyeTilt: value<{ tilt: number }>('STICKER_GHOST_EYE').tilt,
+        armfulEyes: value<ArmfulEyes>('ARMFUL_EYES'),
+        ghostEye: value<EyeShape>('STICKER_GHOST_EYE'),
+        sparkle: {
+            reachX: sparkles.reachX,
+            reachY: sparkles.reachY,
+            rounding: sparkles.rounding,
+            colors: lit.eye,
+            glow: lit.eyeGlow,
+            data: callable('sparkleData'),
+        },
         svg: {
             wide: value<string>('SVG_WIDE'),
             linear: callable('svgLinear'),

@@ -51,7 +51,8 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
     .trail-tier,
     .trail-ghost,
     .trail-branch,
-    .trail-moon {
+    .trail-moon,
+    .trail-window-cast {
         position: absolute;
         top: 0;
         left: 0;
@@ -62,7 +63,7 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
         height: 100%;
     }
 
-    .trail-tier[data-tier='moon'] {
+    .trail-tier[data-tier='back'] {
         z-index: -5;
     }
 
@@ -83,7 +84,20 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
         z-index: 1;
     }
 
+    /* 演示窗口落在页面上的投影：与窗口重合，尺寸、圆角与位置由脚本照着窗口摆好 */
+    .trail-window-cast {
+        box-shadow: var(--sd-cast);
+        transform-origin: 0 0;
+    }
+
+    /* 里层铺满外层：外层由滚动摆放，里层另加倾斜、飘动与轻轻一跳 */
+    .trail-body {
+        position: absolute;
+        inset: 0;
+    }
+
     .trail-ghost,
+    .trail-body,
     .trail-branch {
         transform-origin: 50% 50%;
         will-change: transform;
@@ -101,32 +115,43 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
         overflow: visible;
     }
 
-    /* 换姿势时新的淡入叠在上面，旧的稍后淡出，中间不露空 */
-    .trail-ghost > svg,
+    /* 各张姿势的画、眼睛与小手的显隐都由滚动定；排好路线之前先藏起来 */
+    .trail-pose,
+    .trail-paw svg {
+        opacity: 0;
+    }
+
+    /* 另画的眼睛：一只眼睛是一个点，由滚动摆放它的位置、转角与大小；里面的画以这个点为中心 */
+    .trail-eyes,
     .trail-paw {
-        opacity: 0;
-        visibility: hidden;
-        transition:
-            opacity 160ms ease 200ms,
-            visibility 0s linear 360ms;
+        position: absolute;
+        inset: 0;
     }
 
-    .trail-ghost > svg.on,
-    .trail-paw.on {
+    .trail-eye,
+    .trail-eye-oval {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .trail-eye {
+        transform-origin: 0 0;
+    }
+
+    /* 演示窗口里做完一步时眼睛亮一下：竖椭圆淡去，另一份四角星淡入 */
+    .trail-eye-oval,
+    .trail-eye-flash {
+        transition: opacity 200ms ease;
+    }
+
+    .trail-eye-flash,
+    .trail-eyes.flash .trail-eye-oval {
+        opacity: 0;
+    }
+
+    .trail-eyes.flash .trail-eye-flash {
         opacity: 1;
-        visibility: visible;
-        transition:
-            opacity 220ms ease,
-            visibility 0s;
-    }
-
-    /* 摘下的樱桃从枝上淡去 */
-    .trail-branch [data-cherries] {
-        transition: opacity 240ms ease;
-    }
-
-    .trail-branch.picked [data-cherries] {
-        opacity: 0;
     }
 
     /* 停在图标里或已落进满怀时，由那幅画自己显示 */
@@ -168,21 +193,21 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
             visibility: hidden;
         }
 
-        /* 显形的那台服务器：光束退到幽灵后面；幽灵停在光里时指示灯亮着、光束出现，飘走后都消失 */
+        /* 演示窗口：落在页面上的投影让给垫在幽灵下面的那一份，自己只留一圈细线；幽灵躲在窗口后面时，身上没有窗口的影子 */
+        :root[data-trail] .sd-window {
+            box-shadow: var(--sd-ring);
+        }
+
+        /* 显形的那台服务器：光束退到幽灵后面；幽灵飘进光里时指示灯与光束渐渐亮起，飘走时渐渐消失，都由滚动定 */
         :root[data-trail] [data-art='reveal'] > [data-layer='beam'] {
             z-index: -5;
         }
 
         :root[data-trail] [data-art='reveal'] > :is([data-layer='beam'], [data-layer='lamps']) {
             opacity: 0;
-            transition: opacity 500ms ease;
         }
 
-        :root[data-trail][data-trail-reveal] [data-art='reveal'] > :is([data-layer='beam'], [data-layer='lamps']) {
-            opacity: 1;
-        }
-
-        /* 示意图里服务器的指示灯：幽灵来过之后亮着 */
+        /* 示意图里服务器的指示灯与落在机身上的影子：幽灵碰到机架时渐渐亮起，离开时渐渐熄灭，都由滚动定 */
         [data-art='server'] > [data-layer='lamps'] {
             position: absolute;
             inset: 0;
@@ -190,21 +215,6 @@ const source = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/trail.json?v=${cr
             height: 100%;
             overflow: visible;
             opacity: 0;
-            transition: opacity 600ms ease;
-        }
-
-        :root[data-trail-lamps] [data-art='server'] > [data-layer='lamps'] {
-            opacity: 1;
-        }
-
-        /* 幽灵停在机架身前时，它的影子落在机身上 */
-        [data-art='server'] > [data-layer='lamps'] > [data-layer='shade'] {
-            opacity: 0;
-            transition: opacity 300ms ease;
-        }
-
-        :root[data-trail-server] [data-art='server'] > [data-layer='lamps'] > [data-layer='shade'] {
-            opacity: 1;
         }
     }
 

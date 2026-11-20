@@ -225,6 +225,8 @@ mise run website:build
 
 页面里的界面叫法按资源键取自 `Localizable.strings`，官网用到的资源键改名或删除时，官网的构建会失败。首页的模拟窗口还从 `BuiltinThemes.json` 与 `NamedColors.json` 取颜色。首页与 404 页上的应用图标和幽灵，构建时由 `scripts/make-icon/` 里应用图标的绘制脚本画出。截图存在 [Git LFS](https://git-lfs.com) 里，克隆前先装好它才能取到截图。
 
+在本机打开首页时（开发服务器或预览构建出的站点），页面上铺一层带序号的网格，页头读出视口顶边与幽灵中心所在的格，方便按坐标说明跟着滚动的小幽灵在哪里该做什么；发布的站点上不显示这层网格。
+
 改到官网的 PR 由 GitHub Actions 构建一次，`main` 上官网有变化时再发布到 GitHub Pages。
 
 ## 代码规范

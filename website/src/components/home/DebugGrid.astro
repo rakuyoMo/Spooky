@@ -1,0 +1,194 @@
+---
+/*
+ * 首页的调试网格：在本机打开首页时（开发服务器或预览构建出的站点）铺上带序号的网格线，按坐标说明幽灵在哪里该做什么；
+ * 发布的站点上不显示。
+ *
+ * 格线跟着页面滚动，每条横线的两端标行号；列号标在视口顶部一条固定的标尺上。
+ * 页头正中（窄屏在左下角）读出视口顶边所在的行与幽灵中心的坐标，单位都是格。
+ */
+---
+
+<div class="debug-grid" aria-hidden="true" hidden></div>
+
+<script>
+    /** 在本机打开时的主机名：开发服务器与预览都开在这几个地址上。 */
+    const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+    /** 每一格的边长：宽屏 100 px，窄屏 50 px，都与幽灵的大小相当。 */
+    const stepOf = (width: number): number => (width >= 800 ? 100 : 50);
+
+    const grid = document.querySelector<HTMLElement>('.debug-grid');
+
+    if (grid && localHosts.has(location.hostname)) {
+        const ruler = document.createElement('div');
+        const readout = document.createElement('div');
+        let step = stepOf(document.documentElement.clientWidth);
+        let frame = 0;
+
+        grid.hidden = false;
+        ruler.className = 'debug-grid-ruler';
+        readout.className = 'debug-grid-readout';
+        document.body.append(ruler, readout);
+
+        // 读出视口顶边所在的行与幽灵中心的坐标
+        const update = (): void => {
+            frame = 0;
+
+            const ghost = document.querySelector('.trail-tier[data-tier="paint"] .trail-ghost');
+            const lines = [`网格 ${step} px · 视口顶边 y ${(scrollY / step).toFixed(2)}`];
+
+            if (ghost) {
+                const box = ghost.getBoundingClientRect();
+                const x = (box.left + box.right) / 2 / step;
+                const y = ((box.top + box.bottom) / 2 + scrollY) / step;
+
+                lines.push(`幽灵中心 x ${x.toFixed(2)} · y ${y.toFixed(2)}`);
+            }
+
+            readout.textContent = lines.join('\n');
+        };
+
+        // 按页面的尺寸重画序号：横线两端标行号，列号标在固定的标尺上
+        const draw = (): void => {
+            const width = document.documentElement.clientWidth;
+            const height = document.body.getBoundingClientRect().height;
+            const header = document.querySelector('header.header')?.getBoundingClientRect().bottom ?? 0;
+            const labels: HTMLElement[] = [];
+
+            step = stepOf(width);
+
+            const columns = Math.floor(width / step);
+
+            grid.style.height = `${height}px`;
+            grid.style.setProperty('--step', `${step}px`);
+            ruler.style.top = `${header}px`;
+            readout.style.setProperty('--header', `${header}px`);
+
+            for (let row = 1; row * step < height; row += 1) {
+                labels.push(
+                    label(row, 'row', { left: '2px', top: `${row * step}px` }),
+                    label(row, 'row', { right: '2px', top: `${row * step}px` }),
+                );
+            }
+
+            grid.replaceChildren(...labels);
+            ruler.replaceChildren(
+                ...Array.from({ length: columns }, (_, index) =>
+                    label(index + 1, 'column', { left: `${(index + 1) * step}px`, top: '0' }),
+                ),
+            );
+            update();
+        };
+
+        addEventListener(
+            'scroll',
+            () => {
+                frame ||= requestAnimationFrame(update);
+            },
+            { passive: true },
+        );
+        new ResizeObserver(draw).observe(document.body);
+
+        // 幽灵搭好之后先读一次坐标
+        new MutationObserver(update).observe(document.documentElement, { attributeFilter: ['data-trail'] });
+    }
+
+    /** 一个序号标签：行号垂直居中在横线上，列号挂在竖线下面；位置写在 `place` 里。 */
+    function label(value: number, kind: 'row' | 'column', place: Partial<CSSStyleDeclaration>): HTMLElement {
+        const element = document.createElement('span');
+
+        element.className = `debug-grid-label ${kind}`;
+        element.textContent = String(value);
+        Object.assign(element.style, place);
+
+        return element;
+    }
+</script>
+
+<style is:global>
+    /* 格线盖在页面与幽灵上面、页头下面，不挡指针：半格最淡（最密 50 px），每格稍深，每 5 格最深 */
+    .debug-grid {
+        --grid-line: 0 200 255;
+        --step: 100px;
+
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 9;
+        width: 100%;
+        overflow: hidden;
+        pointer-events: none;
+        background-image:
+            linear-gradient(to right, rgb(var(--grid-line) / 0.6) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(var(--grid-line) / 0.6) 1px, transparent 1px),
+            linear-gradient(to right, rgb(var(--grid-line) / 0.3) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(var(--grid-line) / 0.3) 1px, transparent 1px),
+            linear-gradient(to right, rgb(var(--grid-line) / 0.12) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(var(--grid-line) / 0.12) 1px, transparent 1px);
+        background-size:
+            calc(var(--step) * 5) calc(var(--step) * 5),
+            calc(var(--step) * 5) calc(var(--step) * 5),
+            var(--step) var(--step),
+            var(--step) var(--step),
+            max(calc(var(--step) / 2), 50px) max(calc(var(--step) / 2), 50px),
+            max(calc(var(--step) / 2), 50px) max(calc(var(--step) / 2), 50px);
+    }
+
+    :root[data-theme='light'] .debug-grid {
+        --grid-line: 0 120 200;
+    }
+
+    .debug-grid-label {
+        position: absolute;
+        padding: 1px 3px;
+        border-radius: 3px;
+        background: rgb(0 70 110 / 0.85);
+        color: #fff;
+        font: 600 10px / 1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: nowrap;
+    }
+
+    .debug-grid-label.row {
+        transform: translateY(-50%);
+    }
+
+    .debug-grid-label.column {
+        transform: translate(-50%, 3px);
+    }
+
+    /* 视口顶部固定的列号标尺 */
+    .debug-grid-ruler {
+        position: fixed;
+        left: 0;
+        z-index: 9;
+        width: 100%;
+        height: 18px;
+        background: rgb(0 30 50 / 0.45);
+        pointer-events: none;
+    }
+
+    /* 读数：宽屏放在页头正中，窄屏放在左下角 */
+    .debug-grid-readout {
+        position: fixed;
+        top: calc(var(--header, 64px) / 2);
+        left: 50%;
+        z-index: 11;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgb(0 40 70 / 0.88);
+        color: #fff;
+        font: 600 11px / 1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: pre;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+    }
+
+    @media (max-width: 799px) {
+        .debug-grid-readout {
+            top: auto;
+            bottom: 8px;
+            left: 8px;
+            transform: none;
+        }
+    }
+</style>

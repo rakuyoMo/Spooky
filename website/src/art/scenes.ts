@@ -251,7 +251,7 @@ export function frontStickers(kit: IconKit): FrontStickers {
             ...hand,
             line: hand.line.map(([x, y]): Point => [mirror(x), y]),
         })),
-        eyes: captured.eyes.map((eye) => ({ ...eye, u: -eye.u, tilt: -(eye.tilt ?? kit.eyeTilt) })),
+        eyes: captured.eyes.map((eye) => ({ ...eye, u: -eye.u, tilt: -(eye.tilt ?? kit.ghostEye.tilt) })),
     };
 
     // 机身上的影子都是幽灵的：换成翻过来的那只的剪影，往另一边挪开
