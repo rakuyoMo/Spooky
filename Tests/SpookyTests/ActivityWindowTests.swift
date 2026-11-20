@@ -146,6 +146,12 @@ struct ActivityWindowTests {
         control: NSSegmentedControl,
         in controller: ActivityWindowController
     ) throws {
+        // 窗口初始的宽度容不下整组时，分段收在 » 菜单里、没有排版，读到的段宽随系统版本而不同；先放宽窗口，让分段回到工具栏排好再量
+        let window = try #require(controller.window)
+
+        window.setContentSize(NSSize(width: 900, height: 299))
+        window.layoutIfNeeded()
+
         let font = try #require(control.font)
         let segments = 0 ..< control.segmentCount
         let titles = segments.map { control.label(forSegment: $0) ?? "" }
