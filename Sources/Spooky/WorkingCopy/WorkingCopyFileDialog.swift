@@ -39,6 +39,7 @@ struct WorkingCopyFileDialog: View {
             message: message,
             submitTitle: submitTitle,
             error: error,
+            helpArticle: helpArticle,
             isValid: canSubmit,
             cancel: close,
             submit: submit
@@ -163,6 +164,15 @@ extension WorkingCopyFileDialog {
         case .move: AppLocalization.text("files.move")
         case .pattern, .lfsPattern: AppLocalization.text("files.pattern.save")
         case .applyPatch: AppLocalization.text("files.applyPatch")
+        }
+    }
+
+    /// 帮助按钮打开的官网文章：恢复到指定版本与自定义忽略规则有，移动、LFS 跟踪规则与应用补丁没有。
+    private var helpArticle: HelpArticle? {
+        switch form {
+        case .revert: .restore
+        case .pattern: .ignore
+        case .move, .lfsPattern, .applyPatch: nil
         }
     }
 

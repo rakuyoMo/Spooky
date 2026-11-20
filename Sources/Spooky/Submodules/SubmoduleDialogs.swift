@@ -36,6 +36,7 @@ struct AddSubmoduleDialog: View {
             inputColumn: 144,
             submitTitle: AppLocalization.text("submodule.add.submit"),
             error: error,
+            helpArticle: .addSubmodule,
             isValid: !url.isEmpty && !trimmedPath.isEmpty && error.isEmpty,
             cancel: close,
             submit: submit
@@ -186,6 +187,16 @@ struct SubmoduleOperationDialog: View {
 
         /// 删除；可以保留工作区。
         case delete
+
+        /// 帮助按钮打开的官网文章：获取与更新同一节，初始化与同步同一节。
+        var helpArticle: HelpArticle {
+            switch self {
+            case .fetch, .update: .updateSubmodule
+            case .initialize, .synchronize: .initializeSubmodule
+            case .repair: .repairSubmodule
+            case .delete: .deleteSubmodule
+            }
+        }
     }
 
     /// 发起动作的窗口会话。
@@ -246,6 +257,7 @@ extension SubmoduleOperationDialog {
             message: message,
             submitTitle: AppLocalization.text(kind == .fetch ? "submodule.fetch.submit" : "submodule.update.submit"),
             error: candidates.isEmpty ? AppLocalization.text("submodule.none") : "",
+            helpArticle: kind.helpArticle,
             isValid: all ? !candidates.isEmpty : selected != nil,
             cancel: close,
             submit: submit
@@ -294,6 +306,7 @@ extension SubmoduleOperationDialog {
             formInsets: (0, 20),
             submitTitle: submitTitle,
             error: "",
+            helpArticle: kind.helpArticle,
             isValid: selected != nil,
             cancel: close,
             submit: submit
@@ -413,6 +426,14 @@ struct SubmoduleValueDialog: View {
 
         /// 修改 `.gitmodules` 或本地配置里的地址。
         case url(SubmoduleConfigurationScope)
+
+        /// 帮助按钮打开的官网文章：只有修改地址有，移动与改名没有。
+        var helpArticle: HelpArticle? {
+            switch self {
+            case .url: .submoduleSettings
+            case .move, .rename: nil
+            }
+        }
     }
 
     /// 发起动作的窗口会话。
@@ -443,6 +464,7 @@ struct SubmoduleValueDialog: View {
             message: texts.message,
             submitTitle: texts.submit,
             error: error,
+            helpArticle: target.helpArticle,
             isValid: !trimmed.isEmpty && error.isEmpty,
             cancel: close,
             submit: submit

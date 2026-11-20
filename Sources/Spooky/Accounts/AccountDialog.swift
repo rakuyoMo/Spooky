@@ -30,6 +30,15 @@ struct AccountDialog: View {
             }
         }
 
+        /// 对话框帮助按钮打开的官网文章，添加与重新认证相同。
+        var helpArticle: HelpArticle {
+            switch self {
+            case .github: .github
+            case .gitlab: .gitlab
+            case .gitlabSelfManaged: .selfManagedGitLab
+            }
+        }
+
         /// 账号所在实例的种类。
         init(_ instance: HostingInstance) {
             switch instance.service {
@@ -116,6 +125,7 @@ struct AccountDialog: View {
             submitTitle: AppLocalization.text(isReauthentication ? "accounts.update.submit" : "accounts.add.submit"),
             error: inputError,
             progress: progressMessage,
+            helpArticle: kind.helpArticle,
             canSubmit: canSubmit,
             cancel: cancel,
             submit: submit

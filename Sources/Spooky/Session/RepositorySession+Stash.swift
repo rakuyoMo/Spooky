@@ -122,7 +122,8 @@ extension RepositorySession {
         onConfirm?(ConfirmationRequest(
             title: title,
             message: message,
-            submitTitle: title
+            submitTitle: title,
+            helpArticle: .deleteStashes
         ) { [weak self] in
             guard let self, self.repository == repository else { return }
 

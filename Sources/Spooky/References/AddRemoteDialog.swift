@@ -55,6 +55,7 @@ struct AddRemoteDialog: View {
             submitTitle: AppLocalization.text("remote.add.submit"),
             error: error,
             progress: running ? AppLocalization.text("remote.checking") : nil,
+            helpArticle: .addRemote,
             isValid: validName && !url.isEmpty && error.isEmpty && !running,
             cancel: close,
             submit: submit

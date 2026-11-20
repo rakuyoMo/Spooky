@@ -7,11 +7,12 @@ import Testing
 // MARK: - DialogLayoutTests + Footer
 
 /// 头部与底栏：标题只占一行；按钮文字短时正好 70 宽、相隔 12、右边距 20；提交中两个按钮都不可用，进度文字在转圈右侧；
-/// 备选底栏的取消对齐输入列；确认版与提示版的结构。
+/// 备选底栏的取消对齐输入列；帮助按钮在左下角；确认版与提示版的结构。
 extension DialogLayoutTests {
     /// 确认版只有标题、说明与两个按钮：超长的标题只占一行、截在右边距 20 之前，说明在它下方 8；
     /// 取消与主按钮的文字短，两者都正好 70 宽、相隔 12，主按钮距右边 20；平时两个按钮都可用，底栏没有转圈。
-    /// 提交中两个按钮都不可用，进度文字在转圈右侧 8，两者与按钮在同一条水平中线上。
+    /// 提交中两个按钮都不可用，进度文字在转圈右侧 8，两者与按钮在同一条水平中线上；
+    /// 有帮助文章时帮助按钮在左下角、提交中仍可用，转圈让到它右侧 8。
     @Test("确认版的头部、底栏与提交中的状态", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func confirmation() async throws {
         let title = String(repeating: "Very Long Dialog Title ", count: 6)
@@ -28,13 +29,14 @@ extension DialogLayoutTests {
         #expect(Self.controls(in: idle).map(\.name).sorted() == expected)
         #expect(!idle.contains { $0.role == "AXBusyIndicator" })
 
-        // 提交中：按钮都不可用，左侧是转圈与进度文字
+        // 提交中：按钮都不可用，左侧是帮助按钮、转圈与进度文字
         let submitting = await AccessibilityProbe.elements(until: Self.hasButtons) {
             DialogLayout(
                 title: "Title",
                 message: "Message",
                 submitTitle: "OK",
                 progress: "Validating…",
+                helpArticle: .fetch,
                 submitting: true,
                 cancel: { },
                 submit: { }
@@ -43,10 +45,17 @@ extension DialogLayoutTests {
 
         try Self.expectButtons(in: submitting, enabled: false)
         try Self.expectProgress("Validating…", in: submitting)
+
+        let help = try Self.expectHelpButton(in: submitting)
+        let spinner = try #require(submitting.first { $0.role == "AXBusyIndicator" })
+
+        // 帮助按钮宽 24，转圈在它右侧 8
+        #expect(help.isEnabled)
+        #expect(abs(spinner.frame.minX - help.frame.midX - 12 - 8) <= 1)
     }
 
     /// 按钮组在 480 里放不下时对话框随之加宽：备选底栏的取消仍对齐输入列（没有内容区时是 120），
-    /// 备选按钮与主按钮相隔 12、主按钮距右边 20；提示版只有一个 Close。
+    /// 备选按钮与主按钮相隔 12、主按钮距右边 20，左下角另有帮助按钮时也一样；提示版只有一个 Close。
     @Test("备选底栏与提示版", .enabled(if: AXIsProcessTrusted(), "需要辅助功能权限"))
     func alternateAndNotice() async throws {
         let alternateTitle = String(repeating: "Alternate ", count: 8)
@@ -56,6 +65,7 @@ extension DialogLayoutTests {
             message: "Message",
             submitTitle: "OK",
             alternate: (title: alternateTitle, action: { }),
+            helpArticle: .autoStash,
             cancel: { },
             submit: { }
         )
@@ -77,6 +87,8 @@ extension DialogLayoutTests {
         #expect(abs(cancel.frame.minX - DialogMetrics.alignment) <= 1)
         #expect(abs(submit.frame.minX - alternate.frame.maxX - 12) <= 1)
         #expect(abs(width - submit.frame.maxX - 20) <= 1)
+
+        try Self.expectHelpButton(in: elements)
 
         // 提示版：没有取消，只有 Close
         let close = AppLocalization.text("action.close")
@@ -127,6 +139,23 @@ extension DialogLayoutTests {
         #expect(abs(480 - submit.frame.maxX - 20) <= 1)
         #expect(cancel.isEnabled == enabled)
         #expect(submit.isEnabled == enabled)
+    }
+
+    /// 左下角的帮助按钮：宽高 24，距左 20；距底 20，比距底 17、同样高 24 的取消按钮高 3。
+    ///
+    /// 帮助按钮的名称由系统按语言给出，这里按位置找它；按中心比较，不受辅助功能里按钮外框大小的影响。
+    @discardableResult
+    private static func expectHelpButton(in elements: [AccessibilityProbe.Element]) throws -> AccessibilityProbe.Element {
+        let cancel = try #require(button(AppLocalization.text("action.cancel"), in: elements))
+
+        let help = try #require(
+            controls(in: elements).first { $0.role == "AXButton" && abs($0.frame.midX - 20 - 12) <= 1 },
+            "左下角距左 20 处没有帮助按钮"
+        )
+
+        #expect(abs(cancel.frame.midY - help.frame.midY - 3) <= 1)
+
+        return help
     }
 
     /// 进度文字在转圈右侧 8，两者与取消按钮在同一条水平中线上。

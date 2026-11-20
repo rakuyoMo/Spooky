@@ -52,6 +52,7 @@ struct StashDialog: View {
             cancelTitle: AppLocalization.text(skipAction == nil ? "action.cancel" : "stash.autoStash.abort"),
             alternate: skipAction.map { (title: AppLocalization.text("stash.autoStash.skip"), action: $0) },
             error: notice,
+            helpArticle: helpArticle,
             isValid: canSubmit,
             cancel: cancel,
             submit: submit
@@ -193,6 +194,15 @@ extension StashDialog {
         case .save(let snapshot, _): snapshot ? "stash.snapshot" : "stash.save"
         case .apply: "stash.apply"
         case .autoStash: "stash.autoStash.confirm"
+        }
+    }
+
+    /// 帮助按钮打开的官网文章：储藏与快照同一节，只储藏所选文件时是部分储藏那一节。
+    private var helpArticle: HelpArticle {
+        switch request {
+        case .save(_, let entries): entries.isEmpty ? .saveStash : .partialStash
+        case .apply: .applyStash
+        case .autoStash: .autoStash
         }
     }
 

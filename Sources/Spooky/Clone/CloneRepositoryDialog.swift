@@ -49,6 +49,7 @@ struct CloneRepositoryDialog: View {
             submitTitle: AppLocalization.text("clone.submit"),
             error: CloneTarget.notice(for: failure) ?? problem,
             progress: task == nil ? nil : AppLocalization.text("accounts.validating"),
+            helpArticle: .clone,
             canSubmit: destination != nil && problem == nil && task == nil,
             cancel: cancel,
             submit: start

@@ -50,8 +50,11 @@ struct DialogLayout<Content: View, Options: View>: View {
     /// 输入校验或加载失败的说明；为 nil 时错误区收起。
     let error: String?
 
-    /// 对话框自己加载数据时的步骤，如 “Loading commits…”；为 nil 时底栏左侧是空的。
+    /// 对话框自己加载数据时底栏左侧的步骤，如 “Loading commits…”；为 nil 时不显示。
     let progress: String?
+
+    /// 底栏左下角帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
+    let helpArticle: HelpArticle?
 
     /// 内容是否合法。
     let canSubmit: Bool
@@ -146,6 +149,7 @@ struct DialogLayout<Content: View, Options: View>: View {
     ///   - alternate: 备选按钮的标题与动作。
     ///   - error: 输入校验或加载失败的说明。
     ///   - progress: 对话框自己加载数据时的步骤。
+    ///   - helpArticle: 帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     ///   - canSubmit: 内容是否合法。
     ///   - submitting: 是否正在提交。
     ///   - optionsTitle: Options 开关的文字。
@@ -167,6 +171,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         alternate: (title: String, action: () -> Void)? = nil,
         error: String? = nil,
         progress: String? = nil,
+        helpArticle: HelpArticle? = nil,
         canSubmit: Bool = true,
         submitting: Bool = false,
         optionsTitle: String = AppLocalization.text("dialog.options"),
@@ -188,6 +193,7 @@ struct DialogLayout<Content: View, Options: View>: View {
         self.alternate = alternate
         self.error = error
         self.progress = progress
+        self.helpArticle = helpArticle
         self.canSubmit = canSubmit
         self.submitting = submitting
         self.resizable = resizable
@@ -206,6 +212,15 @@ extension DialogLayout {
     /// 头部文字、错误文字与备选底栏按钮组的左缘。
     private var alignment: CGFloat {
         DialogMetrics.textLeading(for: reportedInputColumn)
+    }
+
+    /// 底栏左侧内容的起点：备选底栏从对齐线开始；普通底栏距左 20，有帮助按钮时让到按钮右侧 8 pt。
+    private var footerLeading: CGFloat {
+        if alternate != nil {
+            return alignment
+        }
+
+        return helpArticle == nil ? 20 : 20 + Self.helpButtonSize + 8
     }
 
     /// 内容区：13 pt 的字，表单按输入列排版。
@@ -242,6 +257,7 @@ extension DialogLayout {
     /// 左侧是加载中的步骤，右侧是取消与主按钮；给了备选按钮时换成备选底栏，取消在左端。高 53，按钮距顶 12。
     ///
     /// 主按钮与它左侧的按钮相隔 12，转圈与步骤文字相隔 8。
+    /// 有帮助文章时左下角是系统的帮助按钮，距左、距底各 20，加载中的步骤排在它右侧 8 pt。
     private var footer: some View {
         HStack(spacing: 8) {
             if alternate == nil, let progress {
@@ -274,10 +290,17 @@ extension DialogLayout {
                     .disabled(!canSubmit || submitting)
             }
         }
-        .padding(.leading, alternate == nil ? 20 : alignment)
+        .padding(.leading, footerLeading)
         .padding(.trailing, 20)
         .padding(.top, 12)
         .frame(height: Self.footerHeight, alignment: .top)
+        .overlay(alignment: .bottomLeading) {
+            if let helpArticle {
+                HelpLink(action: helpArticle.open)
+                    .padding(.leading, 20)
+                    .padding(.bottom, 20)
+            }
+        }
         .background {
             // 没有取消按钮时 ⎋ 也按主按钮
             if cancel == nil {
@@ -402,6 +425,11 @@ extension DialogLayout {
     /// 底栏的高度。
     private static var footerHeight: CGFloat {
         53
+    }
+
+    /// 系统帮助按钮的边长。
+    private static var helpButtonSize: CGFloat {
+        24
     }
 
     /// 文字里的网址写成可点的链接。

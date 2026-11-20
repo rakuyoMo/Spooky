@@ -58,6 +58,19 @@ struct RepositoryActionRequest {
             case .create, .fetch, .pull, .publish, .merge: rawValue
             }
         }
+
+        /// 对话框帮助按钮打开的官网文章；跟踪远端分支的对话框没有帮助按钮。
+        var helpArticle: HelpArticle? {
+            switch self {
+            case .create: .createBranch
+            case .track: nil
+            case .fetch: .fetch
+            case .pull: .pull
+            case .push: .push
+            case .publish: .publishBranch
+            case .merge: .merge
+            }
+        }
     }
 
     /// 对话框类型。

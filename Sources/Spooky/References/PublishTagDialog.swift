@@ -43,6 +43,7 @@ struct PublishTagDialog: View {
             message: AppLocalization.text("tag.publish.message"),
             submitTitle: AppLocalization.text("tag.publish"),
             error: error,
+            helpArticle: .publishTag,
             isValid: !selectedTag.isEmpty && !remote.isEmpty,
             cancel: close,
             submit: submit

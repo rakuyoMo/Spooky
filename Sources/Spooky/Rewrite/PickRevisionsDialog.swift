@@ -66,6 +66,7 @@ struct PickRevisionsDialog: View {
             ),
             error: error,
             progress: loading ? AppLocalization.text("rewrite.loadingCommits") : nil,
+            helpArticle: kind == .revert ? .revert : .cherryPick,
             isValid: !loading && error.isEmpty,
             cancel: close,
             submit: perform,
