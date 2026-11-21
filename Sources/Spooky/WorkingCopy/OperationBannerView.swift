@@ -106,6 +106,14 @@ extension OperationBannerView {
         return session.isWorkingCopyClean ? .empty : .resolved
     }
 
+    /// 只看冲突文件的勾选框：全部解决后仍可切换，直到操作结束；标题完整显示，不折行。
+    private var onlyConflictsToggle: some View {
+        Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $onlyConflicts)
+            .toggleStyle(.checkbox)
+            .disabled(session.conflictPaths == nil)
+            .fixedSize()
+    }
+
     /// 左侧是操作类型的图标，右侧是文字列；底行的勾选框与文字列左对齐，按钮靠右。
     private func banner(_ progress: OperationProgress) -> some View {
         let summary = Self.conflictSummary(
@@ -185,26 +193,42 @@ extension OperationBannerView {
     }
 
     /// 只看冲突文件的勾选框，以及中止、结束编辑和跳过；勾选框完整显示，与按钮之间只留一份间距。
+    ///
+    /// 文字列放不下一行时不压缩勾选框，按钮换到下一行靠右。
     private func actionRow(_ progress: OperationProgress) -> some View {
-        HStack(spacing: 8) {
-            // 全部解决后仍可切换，直到操作结束；勾选框占去按钮左边的空间，按钮靠右
-            Toggle(AppLocalization.text("working.onlyConflicts"), isOn: $onlyConflicts)
-                .toggleStyle(.checkbox)
-                .disabled(session.conflictPaths == nil)
-                .fixedSize()
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                // 勾选框占去按钮左边的空间，按钮靠右
+                onlyConflictsToggle
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
-                .disabled(!session.canWrite)
-
-            // 工作区还有改动或未跟踪文件时照样可以结束编辑，Git 拒绝时报告它的错误
-            if progress.stopsForEdit {
-                Button(AppLocalization.text("working.endEditing")) { session.finishOperation("continue") }
-                    .disabled(!session.canWrite)
-            } else if session.offersSkip {
-                Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
-                    .disabled(!session.canWrite)
+                actionButtons(progress)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                onlyConflictsToggle
+
+                HStack(spacing: 8) {
+                    actionButtons(progress)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    /// 中止，以及 edit 停顿时的结束编辑或空的一步时的跳过。
+    @ViewBuilder
+    private func actionButtons(_ progress: OperationProgress) -> some View {
+        Button(AppLocalization.text("working.abort")) { session.finishOperation("abort") }
+            .disabled(!session.canWrite)
+
+        // 工作区还有改动或未跟踪文件时照样可以结束编辑，Git 拒绝时报告它的错误
+        if progress.stopsForEdit {
+            Button(AppLocalization.text("working.endEditing")) { session.finishOperation("continue") }
+                .disabled(!session.canWrite)
+        } else if session.offersSkip {
+            Button(AppLocalization.text("working.skip")) { session.finishOperation("skip") }
+                .disabled(!session.canWrite)
         }
     }
 
