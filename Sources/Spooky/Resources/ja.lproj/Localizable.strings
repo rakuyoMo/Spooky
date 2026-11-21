@@ -1239,7 +1239,7 @@
 "rewrite.reword.button" = "保存";
 "rewrite.squash.confirm" = "%ld 件のコミットを “%@” にスカッシュしますか？";
 "rewrite.fixup.confirm" = "%ld 件のコミットを “%@” に取り込み、そのメッセージだけを残しますか？";
-"rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “続行” をクリックしてください。";
+"rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “編集を終了” をクリックしてください。";
 "rewrite.drop.confirm" = "現在のブランチから %ld 件のコミットを削除しますか？";
 "rewrite.move.confirm" = "%ld 件のコミットを新しい位置へ移動しますか？";
 "rewrite.autosquash.confirm" = "fixup!、squash!、amend! の付いたコミットを、それぞれが指すコミットに取り込みますか？";
@@ -1442,7 +1442,7 @@
 "branch.parentOption" = "親ブランチ：";
 "branch.parentOption.none" = "親ブランチなし";
 "branch.parentOption.help" = "新しいブランチの比較と更新は親ブランチを基準にします。";
-"branch.pin.help" = "サイドバーの Pinned セクションにブランチを追加します。";
+"branch.pin.help" = "サイドバーの「ピン留め」セクションにブランチを追加します。";
 "branch.remoteField" = "リモートブランチ：";
 "branch.rename" = "ブランチ名を変更";
 "branch.rename.message" = "ローカルブランチの新しい名前を入力してください。";
@@ -1690,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "リバート…";
 "rewrite.menu.cherryPick" = "「%@」をチェリーピック…";
 "rewrite.menu.cherryPickMany" = "%ld 個のリビジョンをチェリーピック…";
-"rewrite.menu.rebaseOnto" = "'%@' を別の場所へリベース…";
+"rewrite.menu.rebaseOnto" = "「%@」を別の場所へリベース…";
 "rewrite.menu.rebaseOntoMany" = "%ld 個のリビジョンを別の場所へリベース…";
 "rewrite.menu.amend" = "「%@」を修正";
 "rewrite.menu.edit" = "「%@」を編集";
@@ -2239,7 +2239,7 @@
 "whatsNew.card.learnMore" = "詳しく見る…";
 "crash.issueTitle" = "Spooky が予期せず終了しました";
 "crash.title" = "Spooky は前回予期せず終了しました";
-"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
+"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれます。概要はページの URL に含まれるため、ページを開いた時点で GitHub に送られます。Issue はご自身で送信するまで作成されません。";
 "crash.report" = "GitHub で報告…";
 "crash.dontReport" = "報告しない";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";

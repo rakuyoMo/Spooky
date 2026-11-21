@@ -1038,7 +1038,7 @@
 "history.group.month" = "월";
 "history.group.none" = "그룹 없음";
 "history.group.weekTitle" = "%ld주차 (%@, 연간 %ld주차)";
-"history.search.info" = "%@: '%@'";
+"history.search.info" = "%@: “%@”";
 "history.search.kind" = "검색 조건";
 "history.search.add" = "조건 추가";
 "history.search.remove" = "조건 제거";
@@ -1239,7 +1239,7 @@
 "rewrite.reword.button" = "저장";
 "rewrite.squash.confirm" = "%ld개의 커밋을 “%@”에 스쿼시할까요?";
 "rewrite.fixup.confirm" = "%ld개의 커밋을 “%@”에 합치고 그 메시지만 남길까요?";
-"rewrite.edit.confirm" = "“%@”에서 멈추고 변경을 작업 사본으로 되돌릴까요? 변경을 커밋한 뒤 “계속”을 클릭하세요.";
+"rewrite.edit.confirm" = "“%@”에서 멈추고 변경을 작업 사본으로 되돌릴까요? 변경을 커밋한 뒤 “편집 종료”를 클릭하세요.";
 "rewrite.drop.confirm" = "현재 브랜치에서 %ld개의 커밋을 삭제할까요?";
 "rewrite.move.confirm" = "%ld개의 커밋을 새 위치로 옮길까요?";
 "rewrite.autosquash.confirm" = "fixup!, squash!, amend! 표시가 있는 커밋을 각각 가리키는 커밋에 합칠까요?";
@@ -1442,7 +1442,7 @@
 "branch.parentOption" = "부모 브랜치:";
 "branch.parentOption.none" = "부모 브랜치 없음";
 "branch.parentOption.help" = "새 브랜치를 비교하고 업데이트할 때 부모 브랜치를 기준으로 씁니다.";
-"branch.pin.help" = "사이드바의 Pinned 섹션에 브랜치를 추가합니다.";
+"branch.pin.help" = "사이드바의 “고정됨” 섹션에 브랜치를 추가합니다.";
 "branch.remoteField" = "원격 브랜치:";
 "branch.rename" = "브랜치 이름 변경";
 "branch.rename.message" = "로컬 브랜치의 새 이름을 입력하세요.";
@@ -1690,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "되돌리기…";
 "rewrite.menu.cherryPick" = "“%@” 체리픽…";
 "rewrite.menu.cherryPickMany" = "리비전 %ld개 체리픽…";
-"rewrite.menu.rebaseOnto" = "'%@'을(를) 다른 곳으로 리베이스…";
+"rewrite.menu.rebaseOnto" = "“%@”을(를) 다른 곳으로 리베이스…";
 "rewrite.menu.rebaseOntoMany" = "리비전 %ld개를 다른 곳으로 리베이스…";
 "rewrite.menu.amend" = "“%@” 수정";
 "rewrite.menu.edit" = "“%@” 편집";
@@ -2239,7 +2239,7 @@
 "whatsNew.card.learnMore" = "더 알아보기…";
 "crash.issueTitle" = "Spooky가 예기치 않게 종료됨";
 "crash.title" = "Spooky가 지난번에 예기치 않게 종료됨";
-"crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거되며, 직접 이슈를 제출하기 전에는 아무것도 전송되지 않습니다.";
+"crash.message" = "GitHub에서 이 문제를 보고하겠습니까? 브라우저에서 충돌 요약이 담긴 새 이슈 페이지가 열립니다. 개인 경로, 이메일 주소와 네트워크 주소는 제거됩니다. 요약은 페이지 주소에 포함되므로 페이지가 열릴 때 GitHub로 전송되며, 이슈는 직접 제출해야 만들어집니다.";
 "crash.report" = "GitHub에서 보고…";
 "crash.dontReport" = "보고 안 함";
 "settings.crashReports.always" = "항상 충돌 보고서 보내기";

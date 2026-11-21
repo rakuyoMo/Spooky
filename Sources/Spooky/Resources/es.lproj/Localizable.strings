@@ -1239,7 +1239,7 @@
 "rewrite.reword.button" = "Guardar";
 "rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»?";
 "rewrite.fixup.confirm" = "¿Incorporar %ld commits en «%@» y conservar solo su mensaje?";
-"rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Continuar».";
+"rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Terminar edición».";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
 "rewrite.move.confirm" = "¿Mover %ld commits a la nueva posición?";
 "rewrite.autosquash.confirm" = "¿Incorporar cada commit marcado con fixup!, squash! o amend! en el commit al que se refiere?";
@@ -1442,7 +1442,7 @@
 "branch.parentOption" = "Rama padre:";
 "branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
-"branch.pin.help" = "Añade la rama a la sección Pinned de la barra lateral.";
+"branch.pin.help" = "Añade la rama a la sección «Fijadas» de la barra lateral.";
 "branch.remoteField" = "Rama remota:";
 "branch.rename" = "Renombrar rama";
 "branch.rename.message" = "Introduce un nuevo nombre para la rama local.";
@@ -1690,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "Revertir…";
 "rewrite.menu.cherryPick" = "Cherry-pick de “%@”…";
 "rewrite.menu.cherryPickMany" = "Cherry-pick de %ld revisiones…";
-"rewrite.menu.rebaseOnto" = "Hacer rebase de '%@' en otra base…";
+"rewrite.menu.rebaseOnto" = "Hacer rebase de “%@” en otra base…";
 "rewrite.menu.rebaseOntoMany" = "Hacer rebase de %ld revisiones en otra base…";
 "rewrite.menu.amend" = "Enmendar “%@”";
 "rewrite.menu.edit" = "Editar “%@”";
@@ -2239,7 +2239,7 @@
 "whatsNew.card.learnMore" = "Más información…";
 "crash.issueTitle" = "Spooky se cerró inesperadamente";
 "crash.title" = "Spooky se cerró inesperadamente la última vez";
-"crash.message" = "¿Quieres informar del problema en GitHub? Se abrirá en el navegador una página de nueva incidencia con un resumen del fallo. Se quitan las rutas personales, los correos y las direcciones de red, y no se envía nada hasta que tú mismo envíes la incidencia.";
+"crash.message" = "¿Quieres informar del problema en GitHub? Se abrirá en el navegador una página de nueva incidencia con un resumen del fallo. Se quitan las rutas personales, los correos y las direcciones de red. El resumen va en la dirección de la página, así que GitHub lo recibe al abrirla; la incidencia solo se crea cuando tú mismo la envías.";
 "crash.report" = "Informar en GitHub…";
 "crash.dontReport" = "No informar";
 "settings.crashReports.always" = "Enviar siempre informes de fallos";

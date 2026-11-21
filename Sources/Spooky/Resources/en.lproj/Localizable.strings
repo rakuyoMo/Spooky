@@ -1038,7 +1038,7 @@
 "history.group.month" = "Month";
 "history.group.none" = "No Groups";
 "history.group.weekTitle" = "Week %ld of %@ (CW%ld)";
-"history.search.info" = "%@: '%@'";
+"history.search.info" = "%@: “%@”";
 "history.search.kind" = "Search Condition";
 "history.search.add" = "Add Condition";
 "history.search.remove" = "Remove Condition";
@@ -1239,7 +1239,7 @@
 "rewrite.reword.button" = "Save";
 "rewrite.squash.confirm" = "Are you sure you want to squash %ld revisions into “%@”?";
 "rewrite.fixup.confirm" = "Fold %ld revisions into “%@” and keep only its message?";
-"rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click Continue.";
+"rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click End Editing.";
 "rewrite.drop.confirm" = "Delete %ld revisions from the current branch?";
 "rewrite.move.confirm" = "Move %ld revisions to the new position?";
 "rewrite.autosquash.confirm" = "Fold every commit marked fixup!, squash! or amend! into the commit it refers to?";
@@ -1690,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "Revert…";
 "rewrite.menu.cherryPick" = "Cherry-Pick “%@”…";
 "rewrite.menu.cherryPickMany" = "Cherry-Pick %ld Revisions…";
-"rewrite.menu.rebaseOnto" = "Rebase '%@' Onto…";
+"rewrite.menu.rebaseOnto" = "Rebase “%@” Onto…";
 "rewrite.menu.rebaseOntoMany" = "Rebase %ld Revisions Onto…";
 "rewrite.menu.amend" = "Amend “%@”";
 "rewrite.menu.edit" = "Edit “%@”";
@@ -2239,7 +2239,7 @@
 "whatsNew.card.learnMore" = "Learn More…";
 "crash.issueTitle" = "Spooky quit unexpectedly";
 "crash.title" = "Spooky Quit Unexpectedly Last Time";
-"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and addresses are removed, and nothing is sent until you submit the issue yourself.";
+"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and network addresses are removed. The summary is part of the page’s address, so GitHub receives it when the page opens; the issue is created only when you submit it yourself.";
 "crash.report" = "Report on GitHub…";
 "crash.dontReport" = "Don’t Report";
 "settings.crashReports.always" = "Always send crash reports";
