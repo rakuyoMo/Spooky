@@ -76,8 +76,8 @@ struct WorkingCopyDetailView: View {
                 }
                 .disabled(!session.canDiscard(session.selectedEntries))
 
-                // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除
-                EmptyStateButton(AppLocalization.text("files.delete")) {
+                // 直接移进废纸篓，服务器上没有可用的废纸篓时确认后永久删除；按钮名与右键菜单的这一项相同
+                EmptyStateButton(AppLocalization.text(session.fileRemoval == .trash ? "files.trash" : "files.delete")) {
                     session.delete(session.selectedEntries)
                 }
                 .disabled(!session.canDelete(session.selectedEntries))
