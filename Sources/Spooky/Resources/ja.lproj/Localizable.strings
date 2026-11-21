@@ -1727,7 +1727,7 @@
 "branch.moveHere" = "ここへ移動";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
+"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが 1 件あります。";
 "history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "取り消す";
