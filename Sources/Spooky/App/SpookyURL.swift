@@ -6,7 +6,8 @@ import SpookyKit
 /// App 接收的链接：打开仓库并切到某个视图、提交或分支，或者打开克隆对话框。
 ///
 /// - `spooky://open?repository=<位置>[&view=…][&commit=<哈希>][&branch=<分支>]`：位置是本机绝对路径，或 `<主机别名>:<远端路径>`；
-///   `view` 取 `workingCopy`、`history`、`stashes`、`reflog`、`branchesReview`，另可带 `ref`、`remote`、`path`、`revision`、`mode`，
+///   `view` 取 `workingCopy`、`history`、`commit`、`stashes`、`reflog`、`pullRequests`、`branchesReview`、`settings`、`remote`、
+///   `submodule`、`worktree`、`fileHistory`、`file`，另可带 `ref`、`commit`、`remote`、`path`、`revision`、`mode`，
 ///   与窗口恢复的视图引用相同
 /// - `spooky://clone?url=<远端地址>`
 /// - github.com 的 “Open with Desktop” 链接 `x-github-client://openRepo/<仓库网址>` 与 `github-mac://openRepo/<仓库网址>`：
