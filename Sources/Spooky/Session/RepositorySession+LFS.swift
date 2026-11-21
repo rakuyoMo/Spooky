@@ -133,7 +133,7 @@ extension RepositorySession {
         })
     }
 
-    /// 与远端之间传输 LFS 对象，进度写进 Activity。
+    /// 与远端之间传输 LFS 对象，进度写进 Activity；与获取、拉取、推送一样不进撤销记录。
     ///
     /// - Returns: 是否已开始执行。
     @discardableResult
@@ -150,7 +150,8 @@ extension RepositorySession {
             },
             title: transfer.title,
             target: ActivityTarget(transfer: transfer.activityTransfer, remote: remote, refspec: nil),
-            touchesWorkingCopy: false
+            touchesWorkingCopy: false,
+            undo: .unrecorded
         )
     }
 }

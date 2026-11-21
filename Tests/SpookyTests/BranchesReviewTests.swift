@@ -83,7 +83,7 @@ struct BranchesReviewTests {
         try checkListRules(session: session)
     }
 
-    /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明；
+    /// 打开 Compare Branches 后插入分叉点行、置灰父分支的提交；没有新提交的分支只有一行说明；两种行记下基准是不是父分支，据此取文案；
     /// 没有父分支或父分支已删除时，默认基准取标准名的基准分支（含 trunk），再取引用名排第一的其它本地分支，当前分支不优先。
     @Test("与基准分支比较的表格行与默认基准")
     func compareRows() async throws {
@@ -93,6 +93,9 @@ struct BranchesReviewTests {
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
         try await prepareBranches(runner: runner, in: directory)
+
+        // conflict 的父分支是 main；merged 没有父分支，比较时默认取标准名的 main
+        try await RepositoryReferences(runner: runner).setParent("refs/heads/main", of: "refs/heads/conflict")
 
         let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
         defaults.set(true, forKey: RepositoryHistoryState.comparesBranchesKey)
@@ -109,17 +112,17 @@ struct BranchesReviewTests {
         await waitForComparison(session)
 
         let fork = try #require(session.history.baseComparison?.forkPoint)
-        let index = try #require(session.history.rows.firstIndex(of: .forkPoint("main")))
+        let index = try #require(session.history.rows.firstIndex(of: .forkPoint("main", isParent: true)))
 
         #expect(session.history.rows[index + 1].commit?.id == fork)
         #expect(session.history.parentCommits.contains(fork))
         #expect(session.history.baseComparison?.comparison?.divergence.behind == 1)
 
-        // 顶端就是分叉点的分支没有新提交
+        // 顶端就是分叉点的分支没有新提交；基准是默认取的，不是父分支
         session.history.selectedReference = "refs/heads/merged"
         await waitForComparison(session)
 
-        #expect(session.history.rows.first == .noNewCommits("main"))
+        #expect(session.history.rows.first == .noNewCommits("main", isParent: false))
 
         // 关掉比较后恢复普通的表格行。关掉的设置写进另一个偏好域：覆盖已有的值后立即读取，可能仍读到旧值
         let closed = try #require(UserDefaults(suiteName: directory.appending(path: "compare-off").path))
@@ -130,8 +133,7 @@ struct BranchesReviewTests {
         #expect(session.history.baseComparison == nil)
 
         // 只剩提交与日期分组的标题，没有分叉点与没有新提交的行
-        #expect(!session.history.rows.contains(.forkPoint("main")))
-        #expect(!session.history.rows.contains(.noNewCommits("main")))
+        #expect(!session.history.rows.contains { ["fork-point", "no-new-commits"].contains($0.id) })
 
         try await checkDefaultBase(session, runner: runner)
     }

@@ -40,11 +40,11 @@ Undo puts the repository back the way it was. Some changes are outside what Spoo
 - Anything you do while a merge, rebase, or other operation is in progress, including continuing or aborting it.
 - A rebase or cherry-pick that stops on a conflict. A merge or revert that stops on conflicts can be undone, which aborts it.
 - New files that were deleted for good, for example on a server without a Trash.
-- Fetching, updating, initializing, syncing, and repairing submodules; anything you do with worktrees; updating the Git LFS hooks, and fetching, pulling, and pushing LFS content; and publishing a repository to a hosting service. See [Submodules](/guide/advanced/submodules/#undo), [Worktrees](/guide/advanced/worktrees/#undo), [Git LFS](/guide/advanced/lfs/#undo), and [Publish a repository](/guide/hosting/accounts/#publish).
+- Initializing, syncing, and repairing submodules; anything you do with worktrees; updating the Git LFS hooks; and publishing a repository to a hosting service. See [Submodules](/guide/advanced/submodules/#undo), [Worktrees](/guide/advanced/worktrees/#undo), [Git LFS](/guide/advanced/lfs/#undo), and [Publish a repository](/guide/hosting/accounts/#publish).
 
 After one of these, the menu item says that the operation can’t be undone. Operations before it can’t be undone anymore either.
 
-Fetch, pull, push, and sync aren’t recorded, so they can’t be undone.
+Fetch, pull, push, and sync aren’t recorded, so they can’t be undone. The same goes for fetching and updating submodules, and for fetching, pulling, and pushing LFS content.
 
 ## When undo is blocked {#blocked}
 

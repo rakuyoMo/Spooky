@@ -194,7 +194,7 @@ extension RepositorySession {
 // MARK: - Git Actions
 
 extension RepositorySession {
-    /// 取回请求的源分支提交，之后比较提交与改动。
+    /// 取回请求的源分支提交，之后比较提交与改动；与获取一样不进撤销记录。
     func fetchPullRequestHead(_ request: PullRequest) {
         guard let remote = pullRequests.remote else { return }
 
@@ -205,6 +205,7 @@ extension RepositorySession {
             title: pullRequestText("fetchHead.title", request.id.reference),
             target: .fetch(remote),
             touchesWorkingCopy: false,
+            undo: .unrecorded,
             success: { [weak self] in
                 guard let self, let runner else { return }
                 pullRequests.reloadDetail(runner: runner)

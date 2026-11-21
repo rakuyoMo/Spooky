@@ -169,7 +169,7 @@
 "error.outputLimitHelp" = "命令超过标准输出 256 MiB 或标准错误 1 MiB 的收集上限，已拒绝载入超限结果。";
 "action.addRemote" = "添加服务器仓库…";
 "action.openTerminal" = "在终端中打开";
-"action.revealFinder" = "在 Finder 中显示";
+"action.revealFinder" = "在访达中显示";
 "action.revealFinder.notMounted" = "“%@” 没有挂载到这台 Mac。";
 "action.revealFinder.notConnected" = "没有连上 “%@”。";
 "action.revealFinder.connecting" = "正在连接 “%@”…";
@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "搜索储藏说明";
 "stash.subtitle" = "储藏（%ld 个储藏）";
+"stash.subtitle.one" = "储藏（1 个储藏）";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "来自应用的补丁或储藏的版本";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "加载";
 "history.reveal.slow.message" = "提交 %1$@ 排在这段历史的前 %2$ld 个提交之后。加载到它为止可能需要一些时间。";
 "history.subtitle" = "%@（%ld 个提交）";
+"history.subtitle.one" = "%@（1 个提交）";
 "history.commitPage.subtitle" = "提交 %@";
 "history.subtitle.more" = "%@（%ld 个或更多提交）";
 "working.subtitle" = "工作区（%ld 个改动的文件）";
@@ -1237,7 +1239,7 @@
 "rewrite.reword.button" = "保存";
 "rewrite.squash.confirm" = "确定要把 %ld 个提交压缩进 “%@” 吗？";
 "rewrite.fixup.confirm" = "将 %ld 个提交并入 “%@”，只保留它的提交信息？";
-"rewrite.edit.confirm" = "停在 “%@” 并把它的改动撤回到工作区？提交这些改动后点按 “继续”。";
+"rewrite.edit.confirm" = "停在 “%@” 并把它的改动撤回到工作区？提交这些改动后点按 “结束编辑”。";
 "rewrite.drop.confirm" = "从当前分支删除 %ld 个提交？";
 "rewrite.move.confirm" = "把 %ld 个提交移到新的位置？";
 "rewrite.autosquash.confirm" = "把所有标记了 fixup!、squash! 或 amend! 的提交并入它们所指的提交？";
@@ -1440,7 +1442,7 @@
 "branch.parentOption" = "父分支：";
 "branch.parentOption.none" = "无父分支";
 "branch.parentOption.help" = "比较与更新新分支时以父分支为基准。";
-"branch.pin.help" = "把分支加到侧边栏的 Pinned 分组。";
+"branch.pin.help" = "把分支加到侧边栏的 “置顶” 分组。";
 "branch.remoteField" = "远端分支：";
 "branch.rename" = "重命名分支";
 "branch.rename.message" = "输入本地分支的新名称。";
@@ -1665,8 +1667,10 @@
 "history.compareBranches.help" = "与另一个分支比较";
 "history.compareOn" = "已打开";
 "history.forkPoint" = "父分支 “%@” 的分叉点";
+"history.forkPointOfBranch" = "分支 “%@” 的分叉点";
 "history.noNewCommits" = "这个分支没有新提交";
 "history.identicalToParent" = "这个分支与父分支 “%@” 相同。";
+"history.identicalToBranch" = "这个分支与 “%@” 相同。";
 "history.hint.stale" = "分支似乎已陈旧";
 "history.hint.staleMessage" = "这个分支已超过 %ld 个月没有更新，可以考虑归档或删除。";
 "sidebar.needsReview" = "有待查看的自动归档分支";
@@ -1686,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "反转…";
 "rewrite.menu.cherryPick" = "摘取 “%@”…";
 "rewrite.menu.cherryPickMany" = "摘取 %ld 个版本…";
-"rewrite.menu.rebaseOnto" = "把 '%@' 变基到别处…";
+"rewrite.menu.rebaseOnto" = "把 “%@” 变基到别处…";
 "rewrite.menu.rebaseOntoMany" = "把 %ld 个版本变基到别处…";
 "rewrite.menu.amend" = "修补 “%@”";
 "rewrite.menu.edit" = "编辑 “%@”";
@@ -1723,7 +1727,7 @@
 "branch.moveHere" = "移到这里";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash.one" = "这个分支上有 1 个标记为 fixup!、squash! 或 amend! 的提交。";
 "history.autosquash" = "这个分支上有 %ld 个标记为 fixup!、squash! 或 amend! 的提交。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "撤销";
@@ -1953,7 +1957,7 @@
 "toolbar.createBranch" = "新建分支";
 "toolbar.forcePush" = "安全强推";
 "toolbar.pushTo" = "推送到";
-"toolbar.finder" = "Finder";
+"toolbar.finder" = "访达";
 "toolbar.terminal" = "终端";
 "toolbar.quickActions" = "快捷操作";
 "toolbar.quickActions.tip" = "显示快捷操作";
@@ -2071,7 +2075,7 @@
 "quickActions.type.commit" = "提交";
 "quickActions.type.action" = "操作";
 "quickActions.showInApp" = "在 Spooky 中显示";
-"quickActions.revealWorktree" = "在 Finder 中显示工作树";
+"quickActions.revealWorktree" = "在访达中显示工作树";
 "quickActions.openWorktreeInTerminal" = "在终端中打开工作树";
 "quickActions.showBranchHistory" = "显示分支历史";
 "quickActions.showRemoteBranchHistory" = "显示远端分支历史";
@@ -2235,7 +2239,7 @@
 "whatsNew.card.learnMore" = "了解更多…";
 "crash.issueTitle" = "Spooky 意外退出";
 "crash.title" = "Spooky 上次意外退出";
-"crash.message" = "要在 GitHub 上报告这个问题吗？浏览器会打开新问题页，附上崩溃的摘要。个人路径、邮箱与网络地址已经去掉，在你自己提交问题之前不会发送任何内容。";
+"crash.message" = "要在 GitHub 上报告这个问题吗？浏览器会打开新问题页，附上崩溃的摘要。个人路径、邮箱与网络地址已经去掉。摘要在新问题页的网址里，页面打开时就会发给 GitHub；问题要等你自己提交后才会建立。";
 "crash.report" = "在 GitHub 上报告…";
 "crash.dontReport" = "不报告";
 "settings.crashReports.always" = "总是发送崩溃报告";
@@ -2437,7 +2441,7 @@
 "worktree.branch.openNewTab" = "在新标签页中打开 “%@” 的工作树";
 "worktree.branch.openNewWindow" = "在新窗口中打开 “%@” 的工作树";
 "worktree.branch.remove" = "删除 “%@” 的工作树…";
-"worktree.branch.reveal" = "在 Finder 中显示 “%@” 的工作树";
+"worktree.branch.reveal" = "在访达中显示 “%@” 的工作树";
 "worktree.branch.terminal" = "在终端中打开 “%@” 的工作树";
 "worktree.checkoutBranch" = "在新工作树中检出 “%@”…";
 "worktree.create" = "创建工作树";
@@ -2487,7 +2491,7 @@
 "worktree.repair.notNeeded" = "这个工作树不需要修复。";
 "worktree.repair.otherRepository" = "选中的文件夹是别的仓库的工作树。";
 "worktree.repair.unreadableGitFile" = "选中文件夹里的 .git 文件无法读取。";
-"worktree.reveal" = "在 Finder 中显示工作树";
+"worktree.reveal" = "在访达中显示工作树";
 "worktree.revision" = "版本：";
 "worktree.subtitle" = "工作树（%@）";
 "worktree.checkedOutIn" = "已在工作树 “%@” 中检出";

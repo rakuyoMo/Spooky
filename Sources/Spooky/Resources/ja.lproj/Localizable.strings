@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "スタッシュのメッセージを検索";
 "stash.subtitle" = "スタッシュ（%ld 個のスタッシュ）";
+"stash.subtitle.one" = "スタッシュ（1 個のスタッシュ）";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "適用したパッチまたはスタッシュのバージョン";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "読み込む";
 "history.reveal.slow.message" = "コミット %1$@ はこの履歴の最初の %2$ld 件のコミットより後にあります。そこまで読み込むには時間がかかることがあります。";
 "history.subtitle" = "%@（%ld 件のコミット）";
+"history.subtitle.one" = "%@（1 件のコミット）";
 "history.commitPage.subtitle" = "コミット %@";
 "history.subtitle.more" = "%@（%ld 件以上のコミット）";
 "working.subtitle" = "作業コピー（変更されたファイル %ld 件）";
@@ -1237,7 +1239,7 @@
 "rewrite.reword.button" = "保存";
 "rewrite.squash.confirm" = "%ld 件のコミットを “%@” にスカッシュしますか？";
 "rewrite.fixup.confirm" = "%ld 件のコミットを “%@” に取り込み、そのメッセージだけを残しますか？";
-"rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “続行” をクリックしてください。";
+"rewrite.edit.confirm" = "“%@” で止めて、その変更を作業コピーに戻しますか？変更をコミットしてから “編集を終了” をクリックしてください。";
 "rewrite.drop.confirm" = "現在のブランチから %ld 件のコミットを削除しますか？";
 "rewrite.move.confirm" = "%ld 件のコミットを新しい位置へ移動しますか？";
 "rewrite.autosquash.confirm" = "fixup!、squash!、amend! の付いたコミットを、それぞれが指すコミットに取り込みますか？";
@@ -1440,7 +1442,7 @@
 "branch.parentOption" = "親ブランチ：";
 "branch.parentOption.none" = "親ブランチなし";
 "branch.parentOption.help" = "新しいブランチの比較と更新は親ブランチを基準にします。";
-"branch.pin.help" = "サイドバーの Pinned セクションにブランチを追加します。";
+"branch.pin.help" = "サイドバーの「ピン留め」セクションにブランチを追加します。";
 "branch.remoteField" = "リモートブランチ：";
 "branch.rename" = "ブランチ名を変更";
 "branch.rename.message" = "ローカルブランチの新しい名前を入力してください。";
@@ -1665,8 +1667,10 @@
 "history.compareBranches.help" = "別のブランチと比較";
 "history.compareOn" = "オン";
 "history.forkPoint" = "親ブランチ「%@」の分岐点";
+"history.forkPointOfBranch" = "ブランチ「%@」の分岐点";
 "history.noNewCommits" = "このブランチに新しいコミットはありません";
 "history.identicalToParent" = "このブランチは親ブランチ「%@」と同じです。";
+"history.identicalToBranch" = "このブランチは「%@」と同じです。";
 "history.hint.stale" = "古いブランチのようです";
 "history.hint.staleMessage" = "このブランチは %ld か月以上更新されていません。アーカイブか削除を検討してください。";
 "sidebar.needsReview" = "自動アーカイブの確認待ち";
@@ -1686,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "リバート…";
 "rewrite.menu.cherryPick" = "「%@」をチェリーピック…";
 "rewrite.menu.cherryPickMany" = "%ld 個のリビジョンをチェリーピック…";
-"rewrite.menu.rebaseOnto" = "'%@' を別の場所へリベース…";
+"rewrite.menu.rebaseOnto" = "「%@」を別の場所へリベース…";
 "rewrite.menu.rebaseOntoMany" = "%ld 個のリビジョンを別の場所へリベース…";
 "rewrite.menu.amend" = "「%@」を修正";
 "rewrite.menu.edit" = "「%@」を編集";
@@ -1723,7 +1727,7 @@
 "branch.moveHere" = "ここへ移動";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
+"history.autosquash.one" = "このブランチには fixup!、squash!、amend! の付いたコミットが 1 件あります。";
 "history.autosquash" = "このブランチには fixup!、squash!、amend! の付いたコミットが %ld 件あります。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "取り消す";
@@ -2235,7 +2239,7 @@
 "whatsNew.card.learnMore" = "詳しく見る…";
 "crash.issueTitle" = "Spooky が予期せず終了しました";
 "crash.title" = "Spooky は前回予期せず終了しました";
-"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれ、ご自身で Issue を送信するまで何も送られません。";
+"crash.message" = "GitHub でこの問題を報告しますか？ブラウザでクラッシュの概要を添えた新しい Issue ページが開きます。個人のパス、メールアドレス、ネットワークアドレスは取り除かれます。概要はページの URL に含まれるため、ページを開いた時点で GitHub に送られます。Issue はご自身で送信するまで作成されません。";
 "crash.report" = "GitHub で報告…";
 "crash.dontReport" = "報告しない";
 "settings.crashReports.always" = "クラッシュレポートを常に送信";

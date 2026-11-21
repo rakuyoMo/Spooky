@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "Buscar mensaje de stash";
 "stash.subtitle" = "Stashes (%ld stashes)";
+"stash.subtitle.one" = "Stashes (1 stash)";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "Versión del parche o stash aplicado";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "Cargar";
 "history.reveal.slow.message" = "El commit %1$@ está después de los primeros %2$ld commits de este historial. Cargar el historial hasta ese commit puede tardar un poco.";
 "history.subtitle" = "%@ (%ld commits)";
+"history.subtitle.one" = "%@ (1 commit)";
 "history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld commits o más)";
 "working.subtitle" = "Copia de trabajo (%ld archivos modificados)";
@@ -1237,7 +1239,7 @@
 "rewrite.reword.button" = "Guardar";
 "rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»?";
 "rewrite.fixup.confirm" = "¿Incorporar %ld commits en «%@» y conservar solo su mensaje?";
-"rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Continuar».";
+"rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Terminar edición».";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
 "rewrite.move.confirm" = "¿Mover %ld commits a la nueva posición?";
 "rewrite.autosquash.confirm" = "¿Incorporar cada commit marcado con fixup!, squash! o amend! en el commit al que se refiere?";
@@ -1440,7 +1442,7 @@
 "branch.parentOption" = "Rama padre:";
 "branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
-"branch.pin.help" = "Añade la rama a la sección Pinned de la barra lateral.";
+"branch.pin.help" = "Añade la rama a la sección «Fijadas» de la barra lateral.";
 "branch.remoteField" = "Rama remota:";
 "branch.rename" = "Renombrar rama";
 "branch.rename.message" = "Introduce un nuevo nombre para la rama local.";
@@ -1665,8 +1667,10 @@
 "history.compareBranches.help" = "Comparar con otra rama";
 "history.compareOn" = "Activado";
 "history.forkPoint" = "Punto de bifurcación de la rama padre “%@”";
+"history.forkPointOfBranch" = "Punto de bifurcación de la rama “%@”";
 "history.noNewCommits" = "No hay commits nuevos en esta rama";
 "history.identicalToParent" = "Esta rama es idéntica a su rama padre “%@”.";
+"history.identicalToBranch" = "Esta rama es idéntica a “%@”.";
 "history.hint.stale" = "La rama parece obsoleta";
 "history.hint.staleMessage" = "Esta rama no se ha actualizado en más de %ld meses. Considera archivarla o eliminarla.";
 "sidebar.needsReview" = "Archivado automático pendiente de revisión";
@@ -1686,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "Revertir…";
 "rewrite.menu.cherryPick" = "Cherry-pick de “%@”…";
 "rewrite.menu.cherryPickMany" = "Cherry-pick de %ld revisiones…";
-"rewrite.menu.rebaseOnto" = "Hacer rebase de '%@' en otra base…";
+"rewrite.menu.rebaseOnto" = "Hacer rebase de “%@” en otra base…";
 "rewrite.menu.rebaseOntoMany" = "Hacer rebase de %ld revisiones en otra base…";
 "rewrite.menu.amend" = "Enmendar “%@”";
 "rewrite.menu.edit" = "Editar “%@”";
@@ -1723,7 +1727,7 @@
 "branch.moveHere" = "Mover aquí";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "Esta rama tiene %ld commit marcado con fixup!, squash! o amend!.";
+"history.autosquash.one" = "Esta rama tiene 1 commit marcado con fixup!, squash! o amend!.";
 "history.autosquash" = "Esta rama tiene %ld commits marcados con fixup!, squash! o amend!.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Deshacer";
@@ -2235,7 +2239,7 @@
 "whatsNew.card.learnMore" = "Más información…";
 "crash.issueTitle" = "Spooky se cerró inesperadamente";
 "crash.title" = "Spooky se cerró inesperadamente la última vez";
-"crash.message" = "¿Quieres informar del problema en GitHub? Se abrirá en el navegador una página de nueva incidencia con un resumen del fallo. Se quitan las rutas personales, los correos y las direcciones de red, y no se envía nada hasta que tú mismo envíes la incidencia.";
+"crash.message" = "¿Quieres informar del problema en GitHub? Se abrirá en el navegador una página de nueva incidencia con un resumen del fallo. Se quitan las rutas personales, los correos y las direcciones de red. El resumen va en la dirección de la página, así que GitHub lo recibe al abrirla; la incidencia solo se crea cuando tú mismo la envías.";
 "crash.report" = "Informar en GitHub…";
 "crash.dontReport" = "No informar";
 "settings.crashReports.always" = "Enviar siempre informes de fallos";

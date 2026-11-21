@@ -40,11 +40,11 @@ description: "了解 ⌘Z 能撤销什么、有些操作为什么撤销不了，
 - 合并、变基等操作进行期间做的任何事，包括继续或中止这个操作。
 - 停在冲突上的变基或摘取。停在冲突上的合并或反转可以撤销，效果就是中止它。
 - 被彻底删掉的新文件，比如在没有废纸篓的服务器上。
-- 子模块的获取、更新、初始化、同步与修复，工作树的各种操作，更新 Git LFS 的钩子与获取、拉取、推送 LFS 内容，以及把仓库发布到托管服务。见 [子模块](/guide/advanced/submodules/#undo)、[工作树](/guide/advanced/worktrees/#undo)、[Git LFS](/guide/advanced/lfs/#undo) 与 [发布仓库](/guide/hosting/accounts/#publish)。
+- 子模块的初始化、同步与修复，工作树的各种操作，更新 Git LFS 的钩子，以及把仓库发布到托管服务。见 [子模块](/guide/advanced/submodules/#undo)、[工作树](/guide/advanced/worktrees/#undo)、[Git LFS](/guide/advanced/lfs/#undo) 与 [发布仓库](/guide/hosting/accounts/#publish)。
 
 做了这类操作以后，菜单项会写明这个操作撤销不了。在它之前的操作也都撤销不了了。
 
-获取、拉取、推送与同步不会记进撤销记录，所以也撤销不了。
+获取、拉取、推送与同步不会记进撤销记录，所以也撤销不了。子模块的获取与更新，以及获取、拉取、推送 LFS 内容，也是这样。
 
 ## 暂时撤销不了 {#blocked}
 

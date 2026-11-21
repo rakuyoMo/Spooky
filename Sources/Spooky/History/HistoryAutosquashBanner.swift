@@ -90,6 +90,8 @@ struct HistoryAutosquashBanner: View {
 
     /// 只有一个时选用单数，其余数量使用复数。
     private static func message(_ count: Int) -> String {
-        AppLocalization.text(count == 1 ? "history.autosquash.one" : "history.autosquash", count)
+        count == 1
+            ? AppLocalization.text("history.autosquash.one")
+            : AppLocalization.text("history.autosquash", count)
     }
 }

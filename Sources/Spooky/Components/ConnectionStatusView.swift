@@ -60,7 +60,7 @@ struct ConnectionStatusView: View {
             Spacer()
 
             if state == .unavailable {
-                Button(AppLocalization.text("action.reconnect")) { session.reconnect() }
+                Button(AppLocalization.text("action.reconnect")) { session.reconnectNow() }
                     .controlSize(.small)
             }
         }

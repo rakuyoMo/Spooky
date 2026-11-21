@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "Search for Stash Message";
 "stash.subtitle" = "Stashes (%ld Stashes)";
+"stash.subtitle.one" = "Stashes (1 Stash)";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "Version from Applied Patch or Stash";
@@ -1037,7 +1038,7 @@
 "history.group.month" = "Month";
 "history.group.none" = "No Groups";
 "history.group.weekTitle" = "Week %ld of %@ (CW%ld)";
-"history.search.info" = "%@: '%@'";
+"history.search.info" = "%@: “%@”";
 "history.search.kind" = "Search Condition";
 "history.search.add" = "Add Condition";
 "history.search.remove" = "Remove Condition";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "Load";
 "history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
 "history.subtitle" = "%@ (%ld Commits)";
+"history.subtitle.one" = "%@ (1 Commit)";
 "history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld Commits or more)";
 "working.subtitle" = "Working Copy (%ld Changed Files)";
@@ -1237,7 +1239,7 @@
 "rewrite.reword.button" = "Save";
 "rewrite.squash.confirm" = "Are you sure you want to squash %ld revisions into “%@”?";
 "rewrite.fixup.confirm" = "Fold %ld revisions into “%@” and keep only its message?";
-"rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click Continue.";
+"rewrite.edit.confirm" = "Stop at “%@” and return its changes to the working copy? Commit them, then click End Editing.";
 "rewrite.drop.confirm" = "Delete %ld revisions from the current branch?";
 "rewrite.move.confirm" = "Move %ld revisions to the new position?";
 "rewrite.autosquash.confirm" = "Fold every commit marked fixup!, squash! or amend! into the commit it refers to?";
@@ -1665,8 +1667,10 @@
 "history.compareBranches.help" = "Compare to another branch";
 "history.compareOn" = "On";
 "history.forkPoint" = "Fork point of parent branch “%@”";
+"history.forkPointOfBranch" = "Fork point of branch “%@”";
 "history.noNewCommits" = "No new commits on this branch";
 "history.identicalToParent" = "This branch is identical to its parent “%@”.";
+"history.identicalToBranch" = "This branch is identical to “%@”.";
 "history.hint.stale" = "Branch Appears Stale";
 "history.hint.staleMessage" = "This branch hasn't been updated in over %ld months. Consider archiving or removing it.";
 "sidebar.needsReview" = "Needs auto archive review";
@@ -1686,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "Revert…";
 "rewrite.menu.cherryPick" = "Cherry-Pick “%@”…";
 "rewrite.menu.cherryPickMany" = "Cherry-Pick %ld Revisions…";
-"rewrite.menu.rebaseOnto" = "Rebase '%@' Onto…";
+"rewrite.menu.rebaseOnto" = "Rebase “%@” Onto…";
 "rewrite.menu.rebaseOntoMany" = "Rebase %ld Revisions Onto…";
 "rewrite.menu.amend" = "Amend “%@”";
 "rewrite.menu.edit" = "Edit “%@”";
@@ -1723,7 +1727,7 @@
 "branch.moveHere" = "Move Here";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "This branch has %ld commit marked fixup!, squash! or amend!.";
+"history.autosquash.one" = "This branch has 1 commit marked fixup!, squash! or amend!.";
 "history.autosquash" = "This branch has %ld commits marked fixup!, squash! or amend!.";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Undo";
@@ -2235,7 +2239,7 @@
 "whatsNew.card.learnMore" = "Learn More…";
 "crash.issueTitle" = "Spooky quit unexpectedly";
 "crash.title" = "Spooky Quit Unexpectedly Last Time";
-"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and addresses are removed, and nothing is sent until you submit the issue yourself.";
+"crash.message" = "Do you want to report the problem on GitHub? A new issue page opens in your browser with a summary of the crash. Personal paths, email addresses and network addresses are removed. The summary is part of the page’s address, so GitHub receives it when the page opens; the issue is created only when you submit it yourself.";
 "crash.report" = "Report on GitHub…";
 "crash.dontReport" = "Don’t Report";
 "settings.crashReports.always" = "Always send crash reports";

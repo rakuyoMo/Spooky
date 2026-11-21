@@ -149,8 +149,11 @@ extension RepositoryHistoryState {
             return
         }
 
+        // 基准正是所选分支的父分支时，两种行都按父分支说明；手动选了别的分支或默认取了其它基准时只写分支名
+        let isParent = snapshot?.metadata(for: comparison.branch.id).parent == comparison.base.id
+
         if comparison.hasNoNewCommits {
-            rows = [.noNewCommits(comparison.base.name)] + base
+            rows = [.noNewCommits(comparison.base.name, isParent: isParent)] + base
             return
         }
 
@@ -160,7 +163,7 @@ extension RepositoryHistoryState {
         }
 
         var result = base
-        result.insert(.forkPoint(comparison.base.name), at: index)
+        result.insert(.forkPoint(comparison.base.name, isParent: isParent), at: index)
         rows = result
     }
 }

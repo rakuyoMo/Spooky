@@ -8,7 +8,7 @@ struct PublishTagDialog: View {
     /// 发起动作的窗口会话。
     let session: RepositorySession
 
-    /// 预选的标签短名；为 nil 时选第一个标签。
+    /// 预选的标签短名；为 nil 时选按名称排序的最后一个标签。
     let tag: String?
 
     /// 预选的远端，如标签拖到的远端；为 nil 时选 HEAD 跟踪的远端。

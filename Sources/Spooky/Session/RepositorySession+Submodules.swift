@@ -234,7 +234,7 @@ extension RepositorySession {
         )
     }
 
-    /// 依次获取若干子模块的全部远端。
+    /// 依次获取若干子模块的全部远端；与仓库自己的获取一样不进撤销记录。
     ///
     /// - Parameters:
     ///   - targets: 已检出的子模块。
@@ -253,11 +253,12 @@ extension RepositorySession {
             title: AppLocalization.text(targets.count == 1 ? "submodule.fetch" : "submodule.fetchAll"),
             target: .fetch(nil),
             touchesWorkingCopy: false,
+            undo: .unrecorded,
             available: { $0.canFetchSubmodules }
         )
     }
 
-    /// 更新子模块：没有初始化的先初始化，再检出指针所指的提交。
+    /// 更新子模块：没有初始化的先初始化，再检出指针所指的提交；与拉取一样不进撤销记录。
     ///
     /// - Parameters:
     ///   - targets: 要更新的子模块；nil 表示全部。
@@ -271,6 +272,7 @@ extension RepositorySession {
             },
             title: AppLocalization.text(targets?.count == 1 ? "submodule.update" : "submodule.updateAll"),
             target: .pull(nil),
+            undo: .unrecorded,
             available: { $0.canUpdateSubmodules }
         )
     }

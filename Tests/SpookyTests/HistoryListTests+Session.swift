@@ -198,7 +198,7 @@ extension HistoryListTests {
         #expect(history.selectedCommit == target)
     }
 
-    /// 工作区写出分支与改动数；历史写出所选引用与提交数，数到上限时写 “or more”；
+    /// 工作区写出分支与改动数；历史写出所选引用与提交数，只有 1 个时用单数，数到上限时写 “or more”；
     /// Reflog 看 HEAD 时只写 Reflog，看分支时写出分支名。
     @Test("工作区、历史与 Reflog 的窗口副标题")
     func subtitles() async throws {
@@ -226,10 +226,10 @@ extension HistoryListTests {
             2
         ))
 
-        // 换选引用时当场重读第一页与提交数
+        // 换选引用时当场重读第一页与提交数；topic 只有 1 个提交，用单数
         session.history.selectedReference = "refs/heads/topic"
         await untilFinished { session.history.activeTasks }
-        #expect(controller.repositorySubtitle == AppLocalization.text("history.subtitle", "topic", 1))
+        #expect(controller.repositorySubtitle == AppLocalization.text("history.subtitle.one", "topic"))
 
         session.history.selectedReferences = ["refs/heads/main", "refs/heads/topic"]
         await untilFinished { session.history.activeTasks }

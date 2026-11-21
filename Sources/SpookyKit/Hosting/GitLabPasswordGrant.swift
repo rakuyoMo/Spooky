@@ -56,7 +56,7 @@ public struct GitLabPasswordGrant: Sendable {
     /// - Parameters:
     ///   - instance: 账号所在的实例。
     ///   - session: 发请求用的会话。
-    public init(instance: HostingInstance, session: URLSession = .shared) {
+    public init(instance: HostingInstance, session: URLSession = .hosting) {
         self.instance = instance
         self.session = session
     }

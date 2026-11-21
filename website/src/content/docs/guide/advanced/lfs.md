@@ -64,7 +64,9 @@ Choose a remote in the dialog. It starts as the remote of the current branch’s
 
 You can undo turning on Git LFS, adding a tracking pattern, and removing one. See [Undo and Recovery](/guide/work/undo/).
 
-Updating the hooks, fetching, pulling, and pushing LFS content can’t be undone. After one of them, operations before it can’t be undone anymore either.
+Updating the hooks can’t be undone, and operations before it can’t be undone anymore either.
+
+Fetching, pulling, and pushing LFS content aren’t recorded, just like fetching, pulling, and pushing in the repository. Operations before them can still be undone.
 
 :::note[Server repositories]
 Git LFS runs on the server, and LFS content goes between the server and the remote. Your Mac doesn’t need Git LFS for a server repository.

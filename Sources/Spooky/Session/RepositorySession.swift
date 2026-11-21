@@ -277,7 +277,7 @@ final class RepositorySession {
     /// 自动重连任务，重复断线事件共用一次重连。
     private(set) var reconnectTask: Task<Void, Never>? = nil
 
-    /// 自动重连两次尝试之间的等待；Show in Finder 要立即连接时提前结束它。
+    /// 自动重连两次尝试之间的等待；Show in Finder 或 Reconnect 要立即连接时提前结束它。
     @ObservationIgnored
     var reconnectDelay: Task<Void, Never>? = nil
 

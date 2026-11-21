@@ -289,7 +289,7 @@
 "remoteError.pathPermission" = "無權存取伺服器目錄";
 "remoteError.pathPermission.help" = "SSH 登入使用者需要該目錄的讀取與搜尋權限。";
 "remoteError.diskAccess" = "伺服器目錄被隱私設定阻擋";
-"remoteError.diskAccess.help" = "伺服器上的 macOS 不允許 SSH 工作階段讀取這個資料夾。請在伺服器的 共享 → 遠端登入 中允許遠端使用者完整磁碟取用權限，或把倉庫移出受保護的資料夾。";
+"remoteError.diskAccess.help" = "伺服器上的 macOS 不允許 SSH 工作階段讀取這個資料夾。請在伺服器的 共享 → 遠端登入 中允許遠端使用者完整磁碟取用權限，或把儲存庫移出受保護的資料夾。";
 "remoteError.notWorkingTree" = "伺服器路徑不是 Git 工作目錄";
 "remoteError.notWorkingTree.help" = "請選擇伺服器上現有的 Git 工作目錄，並查看 Git 原文中的擁有權限制。";
 "remoteError.statusFormat" = "無法讀取伺服器狀態";
@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "搜尋儲藏說明";
 "stash.subtitle" = "儲藏（%ld 個儲藏）";
+"stash.subtitle.one" = "儲藏（1 個儲藏）";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "來自套用的修補或儲藏的版本";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "載入";
 "history.reveal.slow.message" = "提交 %1$@ 排在這段歷史的前 %2$ld 個提交之後。載入到它為止可能需要一些時間。";
 "history.subtitle" = "%@（%ld 個提交）";
+"history.subtitle.one" = "%@（1 個提交）";
 "history.commitPage.subtitle" = "提交 %@";
 "history.subtitle.more" = "%@（%ld 個或更多提交）";
 "working.subtitle" = "工作區（%ld 個變更的檔案）";
@@ -1237,7 +1239,7 @@
 "rewrite.reword.button" = "儲存";
 "rewrite.squash.confirm" = "確定要把 %ld 個提交壓縮進 “%@” 嗎？";
 "rewrite.fixup.confirm" = "將 %ld 個提交併入 “%@”，只保留它的提交訊息？";
-"rewrite.edit.confirm" = "停在 “%@” 並把它的變更撤回到工作區？提交這些變更後按一下 “繼續”。";
+"rewrite.edit.confirm" = "停在 “%@” 並把它的變更撤回到工作區？提交這些變更後按一下 “結束編輯”。";
 "rewrite.drop.confirm" = "從目前分支刪除 %ld 個提交？";
 "rewrite.move.confirm" = "把 %ld 個提交移到新的位置？";
 "rewrite.autosquash.confirm" = "把所有標記了 fixup!、squash! 或 amend! 的提交併入它們所指的提交？";
@@ -1440,15 +1442,15 @@
 "branch.parentOption" = "父分支：";
 "branch.parentOption.none" = "無父分支";
 "branch.parentOption.help" = "比較與更新新分支時以父分支為基準。";
-"branch.pin.help" = "把分支加到側邊欄的 Pinned 分組。";
+"branch.pin.help" = "把分支加到側邊欄的 “釘選” 分組。";
 "branch.remoteField" = "遠端分支：";
 "branch.rename" = "重新命名分支";
 "branch.rename.message" = "輸入本機分支的新名稱。";
 "branch.renameRemote" = "重新命名遠端分支";
 "branch.renameRemote.message" = "輸入遠端分支的新名稱。分支會在遠端上改名。";
 "branch.remoteExists" = "遠端分支 “%@” 已存在於 “%@”。";
-"branch.delete.message" = "刪除分支 “%@” 會把它從這個 Git 倉庫中移除。";
-"branch.deleteMultiple.message" = "刪除所選分支會把它們從這個 Git 倉庫中移除。";
+"branch.delete.message" = "刪除分支 “%@” 會把它從這個 Git 儲存庫中移除。";
+"branch.deleteMultiple.message" = "刪除所選分支會把它們從這個 Git 儲存庫中移除。";
 "branch.deleteUpstream" = "刪除追蹤的分支";
 "branch.deleteUpstream.help" = "同時在遠端刪除追蹤的分支 “%@”。";
 "branch.forceDelete" = "強制刪除";
@@ -1469,10 +1471,10 @@
 "branch.error.remoteExists.help" = "請換一個名稱，或先刪除遠端上已有的分支。";
 "branch.error.checkoutCreated.title" = "分支已建立，但未簽出";
 "branch.error.checkoutCreated" = "新分支已建立，但簽出失敗。";
-"branch.error.checkoutCreated.help" = "分支保留在倉庫中。請查看原始輸出，解決問題後再簽出這個分支。";
+"branch.error.checkoutCreated.help" = "分支保留在儲存庫中。請查看原始輸出，解決問題後再簽出這個分支。";
 "branch.error.inWorktree.title" = "分支已在其他工作樹簽出";
 "branch.error.inWorktree" = "這個分支已在另一個工作樹中簽出。";
-"branch.error.inWorktree.help" = "倉庫沒有任何變更。請打開那個工作樹，或先在那裡切換到其他分支。";
+"branch.error.inWorktree.help" = "儲存庫沒有任何變更。請打開那個工作樹，或先在那裡切換到其他分支。";
 "branch.error.checkoutTracking.title" = "上游已設定，但分支未簽出";
 "branch.error.checkoutTracking" = "分支的上游已設定，但簽出失敗。";
 "branch.error.checkoutTracking.help" = "分支保留原有的提交與新的上游。請查看原始輸出，解決問題後再簽出這個分支。";
@@ -1665,8 +1667,10 @@
 "history.compareBranches.help" = "與另一個分支比較";
 "history.compareOn" = "已開啟";
 "history.forkPoint" = "父分支 “%@” 的分岔點";
+"history.forkPointOfBranch" = "分支 “%@” 的分岔點";
 "history.noNewCommits" = "這個分支沒有新提交";
 "history.identicalToParent" = "這個分支與父分支 “%@” 相同。";
+"history.identicalToBranch" = "這個分支與 “%@” 相同。";
 "history.hint.stale" = "分支似乎已陳舊";
 "history.hint.staleMessage" = "這個分支已超過 %ld 個月沒有更新，可以考慮封存或刪除。";
 "sidebar.needsReview" = "有待檢視的自動封存分支";
@@ -1686,7 +1690,7 @@
 "rewrite.menu.revertGeneric" = "反轉…";
 "rewrite.menu.cherryPick" = "摘取 “%@”…";
 "rewrite.menu.cherryPickMany" = "摘取 %ld 個版本…";
-"rewrite.menu.rebaseOnto" = "把 '%@' 變基到別處…";
+"rewrite.menu.rebaseOnto" = "把 “%@” 變基到別處…";
 "rewrite.menu.rebaseOntoMany" = "把 %ld 個版本變基到別處…";
 "rewrite.menu.amend" = "修補 “%@”";
 "rewrite.menu.edit" = "編輯 “%@”";
@@ -1723,7 +1727,7 @@
 "branch.moveHere" = "移到這裡";
 
 /* 历史列表头下方的自动压缩横幅。 */
-"history.autosquash.one" = "這個分支上有 %ld 個標記為 fixup!、squash! 或 amend! 的提交。";
+"history.autosquash.one" = "這個分支上有 1 個標記為 fixup!、squash! 或 amend! 的提交。";
 "history.autosquash" = "這個分支上有 %ld 個標記為 fixup!、squash! 或 amend! 的提交。";
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "還原";
@@ -1974,10 +1978,10 @@
 
 /* 仓库管理：书签侧边栏的 “+” 菜单与右键菜单、详情、拖放页与对话框，以及仓库找不到或连不上时的整页。 */
 "bookmarks.newGroup" = "新增群組";
-"bookmarks.add" = "加入倉庫…";
-"bookmarks.add.prompt" = "加入倉庫";
+"bookmarks.add" = "加入儲存庫…";
+"bookmarks.add.prompt" = "加入儲存庫";
 "bookmarks.addMenu" = "加入";
-"bookmarks.create" = "新增本機倉庫…";
+"bookmarks.create" = "新增本機儲存庫…";
 "bookmarks.open" = "打開 “%@”";
 "bookmarks.openNewWindow" = "在新視窗中打開 “%@”";
 "bookmarks.openRepository" = "打開";
@@ -1990,16 +1994,16 @@
 "bookmarks.sortParent" = "依名稱排序所在群組";
 "bookmarks.delete.title" = "刪除 “%@”？";
 "bookmarks.delete.titleMultiple" = "刪除 %ld 項？";
-"bookmarks.delete.note" = "書籤會被移除。倉庫資料夾仍留在磁碟上，除非同時移到垃圾桶。";
-"bookmarks.delete.noteServer" = "書籤會被移除。倉庫仍留在原處，除非同時移到垃圾桶；伺服器上的倉庫會移進那台伺服器的垃圾桶。";
-"bookmarks.delete.trash" = "同時將倉庫資料夾移到垃圾桶，包括未提交的變更";
-"bookmarks.delete.trashMultiple" = "同時將 %ld 個倉庫資料夾移到垃圾桶，包括未提交的變更";
+"bookmarks.delete.note" = "書籤會被移除。儲存庫資料夾仍留在磁碟上，除非同時移到垃圾桶。";
+"bookmarks.delete.noteServer" = "書籤會被移除。儲存庫仍留在原處，除非同時移到垃圾桶；伺服器上的儲存庫會移進那台伺服器的垃圾桶。";
+"bookmarks.delete.trash" = "同時將儲存庫資料夾移到垃圾桶，包括未提交的變更";
+"bookmarks.delete.trashMultiple" = "同時將 %ld 個儲存庫資料夾移到垃圾桶，包括未提交的變更";
 "bookmarks.delete.submit" = "刪除";
 "bookmarks.trashFailed.title" = "無法移到垃圾桶";
 "bookmarks.trashFailed.message" = "書籤已移除，但下列資料夾仍在原處：";
 "bookmarks.trashFailed.protected" = "未移動：這是家目錄、包含家目錄的資料夾或卷宗的最上層。";
 "bookmarks.dropZone.title" = "拖入資料夾或網址";
-"bookmarks.dropZone.subtitle" = "以加入 Git 倉庫";
+"bookmarks.dropZone.subtitle" = "以加入 Git 儲存庫";
 "bookmarks.dropZone.add" = "加入";
 "bookmarks.dropZone.create" = "新增";
 "bookmarks.multiple.title" = "已選擇 %ld 個項目";
@@ -2012,27 +2016,27 @@
 "bookmarks.detail.description" = "描述";
 "bookmarks.detail.remotes" = "遠端";
 "bookmarks.detail.viewInBrowser" = "在瀏覽器中檢視";
-"bookmarks.detail.missing" = "倉庫不存在。";
+"bookmarks.detail.missing" = "儲存庫不存在。";
 "bookmarks.detail.neverOpened" = "從未";
 "bookmarks.detail.noCommits" = "還沒有提交";
 "bookmarks.detail.noIdentity" = "未設定";
 "bookmarks.detail.noRemotes" = "沒有遠端";
 "bookmarks.detail.edit" = "編輯";
 "bookmarks.detail.unset" = "取消設定";
-"bookmarks.detail.repository" = "倉庫";
+"bookmarks.detail.repository" = "儲存庫";
 "bookmarks.detail.status" = "狀態";
 "bookmarks.detail.noChanges" = "沒有變更";
-"bookmarks.description.edit" = "編輯倉庫描述";
-"bookmarks.description.message" = "輸入這個倉庫的描述。";
+"bookmarks.description.edit" = "編輯儲存庫描述";
+"bookmarks.description.message" = "輸入這個儲存庫的描述。";
 "bookmarks.description.label" = "描述：";
 "bookmarks.identity.edit" = "編輯提交者身分";
-"bookmarks.identity.message" = "這裡的姓名與電子郵件只對這個倉庫生效；全域的值在 設定 → Git Config 中設定。";
+"bookmarks.identity.message" = "這裡的姓名與電子郵件只對這個儲存庫生效；全域的值在 設定 → Git Config 中設定。";
 "bookmarks.identity.name" = "姓名：";
 "bookmarks.identity.namePrompt" = "姓名";
 "bookmarks.identity.email" = "電子郵件：";
 "bookmarks.identity.emailPrompt" = "電子郵件地址";
-"bookmarks.create.title" = "新增本機倉庫";
-"bookmarks.create.message" = "在新的或現有的資料夾中新增一個空的 Git 倉庫。";
+"bookmarks.create.title" = "新增本機儲存庫";
+"bookmarks.create.message" = "在新的或現有的資料夾中新增一個空的 Git 儲存庫。";
 "bookmarks.create.submit" = "新增";
 "bookmarks.create.name" = "名稱：";
 "bookmarks.create.location" = "位置：";
@@ -2040,13 +2044,13 @@
 "bookmarks.create.choosePrompt" = "選擇";
 "bookmarks.create.invalidName" = "名稱不能包含 “/”，也不能是 “.” 或 “..”。";
 "bookmarks.create.fileExists" = "這個位置已有同名的檔案。";
-"bookmarks.noRepository.title" = "找不到 Git 倉庫";
-"bookmarks.noRepository.message" = "“%@” 不是 Git 倉庫。要在這個資料夾中新增倉庫嗎？";
-"bookmarks.noRepository.create" = "新增倉庫";
-"missing.title" = "Spooky 找不到這個倉庫";
-"missing.message" = "Spooky 在 “%@” 找不到倉庫。";
+"bookmarks.noRepository.title" = "找不到 Git 儲存庫";
+"bookmarks.noRepository.message" = "“%@” 不是 Git 儲存庫。要在這個資料夾中新增儲存庫嗎？";
+"bookmarks.noRepository.create" = "新增儲存庫";
+"missing.title" = "Spooky 找不到這個儲存庫";
+"missing.message" = "Spooky 在 “%@” 找不到儲存庫。";
 "missing.unreachable.title" = "無法連線至 “%@”";
-"missing.unreachable.message" = "倉庫 “%@” 所在的伺服器目前無法連線。";
+"missing.unreachable.message" = "儲存庫 “%@” 所在的伺服器目前無法連線。";
 
 "quickActions.menu" = "快速操作…";
 "quickActions.placeholder" = "快速操作";
@@ -2125,9 +2129,9 @@
 "hostError.lfsUnavailable.help" = "請在執行複製的機器上安裝 Git LFS 並執行 “git lfs install”，或者不使用 LFS 複製。";
 
 /* 克隆：对话框与目标的机器和目录、服务器目录浏览、克隆进度、最近克隆的气泡与工具栏 Clone 项。 */
-"clone.menu" = "複製 Git 倉庫…";
-"clone.title" = "複製遠端倉庫";
-"clone.message" = "把遠端 Git 倉庫複製到這台 Mac 或伺服器上的新資料夾。";
+"clone.menu" = "複製 Git 儲存庫…";
+"clone.title" = "複製遠端儲存庫";
+"clone.message" = "把遠端 Git 儲存庫複製到這台 Mac 或伺服器上的新資料夾。";
 "clone.submit" = "複製";
 "clone.url" = "遠端位址：";
 "clone.to" = "複製到：";
@@ -2158,7 +2162,7 @@
 "clone.phase.resolving" = "處理差異";
 "clone.phase.checkingOut" = "更新檔案";
 "clone.phase.filtering" = "過濾內容";
-"clone.recent.title" = "最近複製的倉庫";
+"clone.recent.title" = "最近複製的儲存庫";
 "clone.recent.clear" = "清除";
 "clone.notification.title" = "複製完成";
 "clone.notification.body" = "已複製到 “%@”。";
@@ -2166,26 +2170,26 @@
 "bookmarks.dropZone.clone" = "複製";
 "browse.title" = "選擇 “%@” 上的資料夾";
 "browse.up" = "上一層資料夾";
-"browse.repository" = "Git 倉庫";
+"browse.repository" = "Git 儲存庫";
 "browse.empty" = "沒有資料夾";
 
 /* 在本机或服务器的目录里寻找仓库。 */
-"scan.menu" = "尋找倉庫…";
-"scan.title" = "尋找倉庫";
-"scan.message" = "在這台 Mac 或伺服器上你選的資料夾裡尋找 Git 倉庫，不會尋找這個資料夾以外的位置。";
-"scan.add" = "加入倉庫";
+"scan.menu" = "尋找儲存庫…";
+"scan.title" = "尋找儲存庫";
+"scan.message" = "在這台 Mac 或伺服器上你選的資料夾裡尋找 Git 儲存庫，不會尋找這個資料夾以外的位置。";
+"scan.add" = "加入儲存庫";
 "scan.in" = "尋找位置：";
 "scan.start" = "尋找";
 "scan.stop" = "停止";
 "scan.selectAll" = "全選";
-"scan.searching" = "正在尋找 Git 倉庫…";
-"scan.found" = "找到 %ld 個倉庫";
+"scan.searching" = "正在尋找 Git 儲存庫…";
+"scan.found" = "找到 %ld 個儲存庫";
 "scan.column.name" = "名稱";
 
 /* spooky:// 与 github.com 仓库链接：无效链接的提示，以及 Integration 页的 github.com 一行。 */
 "link.invalid.title" = "無法打開這個連結";
 "link.invalid.message" = "Spooky 無法打開 “%@”。連結無效或不受支援。";
-"settings.github" = "打開來自 github.com 的倉庫：";
+"settings.github" = "打開來自 github.com 的儲存庫：";
 
 /* 仓库设置：General、Git LFS、Ignores 与 Excludes 四段，以及修改单项的对话框。 */
 "repositorySettings.title" = "設定";
@@ -2203,9 +2207,9 @@
 "repositorySettings.signCommits" = "簽署提交";
 "repositorySettings.signingKey" = "簽署金鑰";
 "repositorySettings.allowedSigners" = "Allowed Signers 檔案";
-"repositorySettings.write" = "修改倉庫設定";
+"repositorySettings.write" = "修改儲存庫設定";
 "repositorySettings.edit.title" = "編輯%@";
-"repositorySettings.edit.message" = "這個值會寫進這個倉庫的本機 Git 設定。";
+"repositorySettings.edit.message" = "這個值會寫進這個儲存庫的本機 Git 設定。";
 
 /* 关于窗口、Help 菜单、What’s New 窗口与新功能卡片、诊断报告与崩溃报告。 */
 "menu.about" = "關於 Spooky";
@@ -2235,7 +2239,7 @@
 "whatsNew.card.learnMore" = "瞭解更多…";
 "crash.issueTitle" = "Spooky 意外結束";
 "crash.title" = "Spooky 上次意外結束";
-"crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除，在你自己提交問題之前不會傳送任何內容。";
+"crash.message" = "要在 GitHub 上回報這個問題嗎？瀏覽器會打開新問題頁，附上當機的摘要。個人路徑、電子郵件與網路位址已經移除。摘要在新問題頁的網址裡，頁面打開時就會傳給 GitHub；問題要等你自己提交後才會建立。";
 "crash.report" = "在 GitHub 上回報…";
 "crash.dontReport" = "不回報";
 "settings.crashReports.always" = "一律傳送當機報告";
@@ -2264,7 +2268,7 @@
 
 /* 第一次连接服务器时的环境变量提示。 */
 "remote.environment.title" = "伺服器設定了 Git 環境變數";
-"remote.environment.message" = "“%1$@” 的非互動 shell 設定了 %2$@。這些變數會改變 Spooky 在那裡執行的每條 Git 命令尋找倉庫與讀取設定的方式。如果 Git 表現異常，請從伺服器的 shell 啟動檔案裡移除它們。";
+"remote.environment.message" = "“%1$@” 的非互動 shell 設定了 %2$@。這些變數會改變 Spooky 在那裡執行的每條 Git 命令尋找儲存庫與讀取設定的方式。如果 Git 表現異常，請從伺服器的 shell 啟動檔案裡移除它們。";
 
 "files.openSubmodules" = "總是在 Spooky 中開啟子模組";
 "menu.addSubmodule" = "加入新子模組…";
@@ -2281,7 +2285,7 @@
 "submodule.add.menu" = "加入子模組…";
 "submodule.add.message" = "輸入新子模組的遠端位址與本機路徑。路徑必須指向儲存庫裡的一個空資料夾。";
 "submodule.add.submit" = "加入子模組";
-"submodule.add.title" = "加入子模組倉庫";
+"submodule.add.title" = "加入子模組儲存庫";
 "submodule.autoUpdate" = "自動更新子模組";
 "submodule.autoUpdate.always" = "總是自動更新子模組";
 "submodule.autoUpdate.message" = "這次操作改動了以下子模組登記的版本。要現在更新它們嗎？";

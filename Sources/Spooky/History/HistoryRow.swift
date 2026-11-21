@@ -13,11 +13,11 @@ enum HistoryRow: Equatable {
     /// 一个提交。
     case commit(HistoryCommit)
 
-    /// 基准分支的分叉点，插在分叉点提交之前；参数是基准分支名。
-    case forkPoint(String)
+    /// 基准分支的分叉点，插在分叉点提交之前；参数是基准分支名，以及它是不是所选分支的父分支。
+    case forkPoint(String, isParent: Bool)
 
-    /// 所选分支没有自己的提交，排在最前；参数是基准分支名。
-    case noNewCommits(String)
+    /// 所选分支没有自己的提交，排在最前；参数是基准分支名，以及它是不是所选分支的父分支。
+    case noNewCommits(String, isParent: Bool)
 
     /// 表格比较行是否变化时用的身份。
     var id: String {

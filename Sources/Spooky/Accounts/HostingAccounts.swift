@@ -107,6 +107,10 @@ final class HostingAccounts {
     @ObservationIgnored
     private let credentials: any HostingCredentialStore
 
+    /// 账号的 API 客户端发请求用的会话；测试换成只送回固定响应的会话。
+    @ObservationIgnored
+    private let session: URLSession
+
     /// 用刷新令牌换新的令牌；测试换成不联网的实现。
     @ObservationIgnored
     private let renewToken: @Sendable (HostingInstance, String) async throws -> GitLabOAuthToken
@@ -120,16 +124,19 @@ final class HostingAccounts {
     /// - Parameters:
     ///   - defaults: 存放账号列表的偏好。
     ///   - credentials: 存放令牌的地方。
+    ///   - session: 账号的 API 客户端发请求用的会话。
     ///   - renewToken: 用刷新令牌换新的令牌。
     init(
         defaults: UserDefaults = .standard,
         credentials: any HostingCredentialStore = KeychainHostingCredentials(),
+        session: URLSession = .hosting,
         renewToken: @escaping @Sendable (HostingInstance, String) async throws -> GitLabOAuthToken = {
             try await GitLabPasswordGrant(instance: $0).refresh($1)
         }
     ) {
         self.defaults = defaults
         self.credentials = credentials
+        self.session = session
         self.renewToken = renewToken
         items = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([HostingAccount].self, from: $0) } ?? []
     }
@@ -148,10 +155,10 @@ final class HostingAccounts {
         }
 
         guard account.authentication == .password else {
-            return HostingClient(instance: account.instance, token: stored)
+            return HostingClient(instance: account.instance, token: stored, session: session)
         }
 
-        return HostingClient(instance: account.instance, authentication: .password) { [self] in
+        return HostingClient(instance: account.instance, authentication: .password, session: session) { [self] in
             // 请求之间账号被移除时，钥匙串里已经没有令牌
             guard let accessToken = try await token(for: account) else {
                 throw HostingError.unauthorized("")
