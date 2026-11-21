@@ -39,7 +39,7 @@ public struct HostingClient: Sendable {
     ///   - instance: 账号所在的实例。
     ///   - token: github.com 的 OAuth 令牌或个人访问令牌。
     ///   - session: 发请求用的会话。
-    public init(instance: HostingInstance, token: String, session: URLSession = .shared) {
+    public init(instance: HostingInstance, token: String, session: URLSession = .hosting) {
         self.init(instance: instance, authentication: .personalAccessToken, session: session) { token }
     }
 
@@ -53,7 +53,7 @@ public struct HostingClient: Sendable {
     public init(
         instance: HostingInstance,
         authentication: HostingAuthentication,
-        session: URLSession = .shared,
+        session: URLSession = .hosting,
         token: @escaping @Sendable () async throws -> String
     ) {
         self.instance = instance
@@ -380,6 +380,13 @@ extension HostingClient {
             return String(describing: error)
         }
     }
+}
+
+// MARK: - URLSession
+
+extension URLSession {
+    /// 托管服务的请求默认用的会话：缓存与 Cookie 只留在内存里，API 的响应不写进磁盘。
+    public static let hosting = URLSession(configuration: .ephemeral)
 }
 
 // MARK: - GitHubUser

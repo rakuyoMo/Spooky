@@ -17,7 +17,11 @@ extension ChangesetFixture {
         ChangesetRequestProtocol.install(host: host, base: commits[0].id, source: source)
         defer { ChangesetRequestProtocol.remove(host: host) }
 
-        let accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
+        let accounts = HostingAccounts(
+            defaults: defaults,
+            credentials: MemoryCredentials(),
+            session: ChangesetRequestProtocol.session()
+        )
         try accounts.save(
             HostingUser(username: "test", name: nil),
             on: instance,
@@ -60,7 +64,6 @@ private final class ChangesetRequestProtocol: URLProtocol, @unchecked Sendable {
             "diff_refs":{"base_sha":"\(base)","start_sha":"\(base)","head_sha":"\(source)"}}
             """
         responses.withLock { $0[host] = Data(json.utf8) }
-        URLProtocol.registerClass(Self.self)
     }
 
     /// 释放已经读完的本测试响应。
@@ -68,7 +71,14 @@ private final class ChangesetRequestProtocol: URLProtocol, @unchecked Sendable {
         _ = responses.withLock { $0.removeValue(forKey: host) }
     }
 
-    /// 只认测试域名，避免干扰其它测试的 URLSession。
+    /// 只经这个协议发请求的会话，交给账号的 API 客户端。
+    static func session() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [Self.self]
+        return URLSession(configuration: configuration)
+    }
+
+    /// 只认测试域名，其它地址的请求不送回本测试的响应。
     override class func canInit(with request: URLRequest) -> Bool {
         request.url?.host?.hasSuffix(".spooky-changeset.invalid") ?? false
     }

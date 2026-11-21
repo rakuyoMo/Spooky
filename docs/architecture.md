@@ -229,7 +229,7 @@ Spooky 由两个 target 组成：
 
 - 接口一律经 `HostingClient` 从 A 发起
   - 令牌只放在请求头：GitHub 与用户名和密码登录的 GitLab 账号用 `Authorization: Bearer`，其余 GitLab 账号用 `PRIVATE-TOKEN`
-  - 请求不用 URLCache 里的旧响应；失败按 `HostingError` 分类并保留服务端原文
+  - 请求经只在内存里缓存的会话发出，响应与 Cookie 不写进磁盘，也不用 URLCache 里的旧响应；失败按 `HostingError` 分类并保留服务端原文
 - 令牌只存在钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例网页地址>`，账户名是账号 UUID
   - 个人访问令牌与浏览器授权的令牌存原文
   - 私有部署 GitLab 的用户名与密码经 `GitLabPasswordGrant` 换成 OAuth 令牌，钥匙串存访问令牌、刷新令牌与到期时间的 JSON，密码不保存

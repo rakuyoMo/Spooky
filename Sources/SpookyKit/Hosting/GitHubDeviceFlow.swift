@@ -44,7 +44,7 @@ public struct GitHubDeviceFlow: Sendable {
     ///   - sleep: 两次轮询之间的等待。
     public init(
         clientID: String,
-        session: URLSession = .shared,
+        session: URLSession = .hosting,
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.clientID = clientID
