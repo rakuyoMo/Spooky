@@ -690,18 +690,22 @@ extension HistoryCommitTable.Coordinator {
 
             return tableView.hostingView(view, identifier: "history-group")
 
-        case .forkPoint(let base):
+        case .forkPoint(let base, let isParent):
             // 分叉点行同样画出穿到分叉点提交的线
             let next = history.commit(atRow: row + 1).flatMap { history.graphRows[$0.id] }
             let view = HistoryForkPointRow(
                 base: base,
+                isParent: isParent,
                 graph: parent.showGraph && next != nil ? HistoryGraphView(passingInto: next) : nil
             )
 
             return tableView.hostingView(view, identifier: "history-fork-point")
 
-        case .noNewCommits(let base):
-            return tableView.hostingView(HistoryNoNewCommitsRow(base: base), identifier: "history-no-new-commits")
+        case .noNewCommits(let base, let isParent):
+            return tableView.hostingView(
+                HistoryNoNewCommitsRow(base: base, isParent: isParent),
+                identifier: "history-no-new-commits"
+            )
 
         case .commit(let commit):
             let view = HistoryCommitRow(

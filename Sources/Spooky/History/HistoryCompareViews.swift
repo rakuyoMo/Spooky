@@ -206,10 +206,13 @@ struct UpdateBranchStatus: View {
 
 // MARK: - HistoryForkPointRow
 
-/// 分叉点行：分支图标与 “Fork point of parent branch “X””，提交图照常穿过。
+/// 分叉点行：分支图标与 “Fork point of parent branch “X””，基准不是父分支时写 “Fork point of branch “X””；提交图照常穿过。
 struct HistoryForkPointRow: View {
     /// 基准分支名。
     let base: String
+
+    /// 基准是不是所选分支的父分支。
+    let isParent: Bool
 
     /// 穿过这一行的提交图。
     let graph: HistoryGraphView?
@@ -228,7 +231,7 @@ struct HistoryForkPointRow: View {
                 .frame(width: 16, height: 16)
                 .accessibilityHidden(true)
 
-            Text(AppLocalization.text("history.forkPoint", base))
+            Text(AppLocalization.text(isParent ? "history.forkPoint" : "history.forkPointOfBranch", base))
                 .font(.system(size: 13))
                 .lineLimit(1)
         }
@@ -240,10 +243,13 @@ struct HistoryForkPointRow: View {
 
 // MARK: - HistoryNoNewCommitsRow
 
-/// 所选分支没有自己的提交：左侧竖线、对勾图标与两行说明。
+/// 所选分支没有自己的提交：左侧竖线、对勾图标与两行说明，第二行按基准是不是父分支取文案。
 struct HistoryNoNewCommitsRow: View {
     /// 基准分支名。
     let base: String
+
+    /// 基准是不是所选分支的父分支。
+    let isParent: Bool
 
     /// 竖线、图标与说明。
     var body: some View {
@@ -260,7 +266,7 @@ struct HistoryNoNewCommitsRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(AppLocalization.text("history.noNewCommits"))
 
-                Text(AppLocalization.text("history.identicalToParent", base))
+                Text(AppLocalization.text(isParent ? "history.identicalToParent" : "history.identicalToBranch", base))
             }
             .font(.system(size: 13))
             .lineLimit(1)

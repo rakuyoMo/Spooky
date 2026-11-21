@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "Comparer à une autre branche";
 "history.compareOn" = "Activé";
 "history.forkPoint" = "Point de bifurcation de la branche parente « %@ »";
+"history.forkPointOfBranch" = "Point de bifurcation de la branche « %@ »";
 "history.noNewCommits" = "Aucun nouveau commit sur cette branche";
 "history.identicalToParent" = "Cette branche est identique à sa branche parente « %@ ».";
+"history.identicalToBranch" = "Cette branche est identique à « %@ ».";
 "history.hint.stale" = "La branche semble obsolète";
 "history.hint.staleMessage" = "Cette branche n’a pas été mise à jour depuis plus de %ld mois. Envisagez de l’archiver ou de la supprimer.";
 "sidebar.needsReview" = "Archivage automatique à vérifier";

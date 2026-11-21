@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "Compare to another branch";
 "history.compareOn" = "On";
 "history.forkPoint" = "Fork point of parent branch “%@”";
+"history.forkPointOfBranch" = "Fork point of branch “%@”";
 "history.noNewCommits" = "No new commits on this branch";
 "history.identicalToParent" = "This branch is identical to its parent “%@”.";
+"history.identicalToBranch" = "This branch is identical to “%@”.";
 "history.hint.stale" = "Branch Appears Stale";
 "history.hint.staleMessage" = "This branch hasn't been updated in over %ld months. Consider archiving or removing it.";
 "sidebar.needsReview" = "Needs auto archive review";

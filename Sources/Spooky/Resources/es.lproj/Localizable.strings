@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "Comparar con otra rama";
 "history.compareOn" = "Activado";
 "history.forkPoint" = "Punto de bifurcación de la rama padre “%@”";
+"history.forkPointOfBranch" = "Punto de bifurcación de la rama “%@”";
 "history.noNewCommits" = "No hay commits nuevos en esta rama";
 "history.identicalToParent" = "Esta rama es idéntica a su rama padre “%@”.";
+"history.identicalToBranch" = "Esta rama es idéntica a “%@”.";
 "history.hint.stale" = "La rama parece obsoleta";
 "history.hint.staleMessage" = "Esta rama no se ha actualizado en más de %ld meses. Considera archivarla o eliminarla.";
 "sidebar.needsReview" = "Archivado automático pendiente de revisión";

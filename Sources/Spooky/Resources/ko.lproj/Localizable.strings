@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "다른 브랜치와 비교";
 "history.compareOn" = "켬";
 "history.forkPoint" = "상위 브랜치 “%@”의 분기점";
+"history.forkPointOfBranch" = "브랜치 “%@”의 분기점";
 "history.noNewCommits" = "이 브랜치에 새 커밋 없음";
 "history.identicalToParent" = "이 브랜치는 상위 브랜치 “%@”와 같습니다.";
+"history.identicalToBranch" = "이 브랜치는 “%@”와 같습니다.";
 "history.hint.stale" = "오래된 브랜치로 보입니다";
 "history.hint.staleMessage" = "이 브랜치는 %ld개월 넘게 업데이트되지 않았습니다. 보관하거나 삭제하는 것을 고려하십시오.";
 "sidebar.needsReview" = "자동 보관 검토 필요";

@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "與另一個分支比較";
 "history.compareOn" = "已開啟";
 "history.forkPoint" = "父分支 “%@” 的分岔點";
+"history.forkPointOfBranch" = "分支 “%@” 的分岔點";
 "history.noNewCommits" = "這個分支沒有新提交";
 "history.identicalToParent" = "這個分支與父分支 “%@” 相同。";
+"history.identicalToBranch" = "這個分支與 “%@” 相同。";
 "history.hint.stale" = "分支似乎已陳舊";
 "history.hint.staleMessage" = "這個分支已超過 %ld 個月沒有更新，可以考慮封存或刪除。";
 "sidebar.needsReview" = "有待檢視的自動封存分支";

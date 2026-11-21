@@ -1667,8 +1667,10 @@
 "history.compareBranches.help" = "別のブランチと比較";
 "history.compareOn" = "オン";
 "history.forkPoint" = "親ブランチ「%@」の分岐点";
+"history.forkPointOfBranch" = "ブランチ「%@」の分岐点";
 "history.noNewCommits" = "このブランチに新しいコミットはありません";
 "history.identicalToParent" = "このブランチは親ブランチ「%@」と同じです。";
+"history.identicalToBranch" = "このブランチは「%@」と同じです。";
 "history.hint.stale" = "古いブランチのようです";
 "history.hint.staleMessage" = "このブランチは %ld か月以上更新されていません。アーカイブか削除を検討してください。";
 "sidebar.needsReview" = "自動アーカイブの確認待ち";
