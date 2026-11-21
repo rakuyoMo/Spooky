@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 import TestSupport
@@ -106,5 +107,43 @@ extension WorkingCopyFileListTests {
         await list.show(entries)
 
         #expect(list.paths.first == "dir" && list.paths.contains("dir/sub"))
+    }
+
+    /// 能暂存的行，辅助功能读到的是带勾选状态的勾选框，VoiceOver 才能读出 “勾选框” 与勾选与否；
+    /// 不能暂存的行勾选框隐藏，辅助功能也读不到它。
+    @Test("暂存勾选框的辅助功能")
+    func stagingCheckboxAccessibility() {
+        let source = StatusSource()
+        let session = RepositorySession(loadStatus: { _ in await source.status }, activities: RepositoryActivities())
+        defer { session.close() }
+
+        let coordinator = WorkingCopyFileList.Coordinator(session: session)
+
+        let describe = { (role: NSAccessibility.Role?, value: Any?) in
+            (role?.rawValue ?? "") + " " + (value.map { "\($0)" } ?? "")
+        }
+
+        // 辅助功能读到的元素写成 “角色 值”：按钮自己是元素时读按钮，否则读它下面不被忽略的子元素
+        let exposed = { (entry: StatusEntry) -> [String] in
+            let node = WorkingCopyFileList.Node(path: entry.path, entry: entry)
+
+            let buttons = coordinator.statusCell(node).subviews
+                .compactMap { $0 as? WorkingCopyFileList.StagingButton }
+
+            return buttons.flatMap { button -> [String] in
+                if button.isAccessibilityElement() {
+                    return [describe(button.accessibilityRole(), button.accessibilityValue())]
+                }
+
+                return NSAccessibility.unignoredChildren(from: button.accessibilityChildren() ?? []).map { child in
+                    let cell = child as? NSCell
+                    return describe(cell?.accessibilityRole(), cell?.accessibilityValue())
+                }
+            }
+        }
+
+        #expect(exposed(.modified("a.txt")) == ["AXCheckBox 0"])
+        #expect(exposed(.added("b.txt")) == ["AXCheckBox 1"])
+        #expect(exposed(StatusEntry(kind: .ignored, path: "build/")).isEmpty)
     }
 }

@@ -30,8 +30,10 @@ extension WorkingCopyFileList.Coordinator {
         // 不能暂存的行隐藏勾选框但保留位置，各行的徽标保持对齐
         button.alphaValue = entries.isEmpty ? 0 : 1
         button.isEnabled = session.canToggleStaging && !entries.isEmpty && !pending
-        button.setAccessibilityElement(!entries.isEmpty)
         button.setAccessibilityLabel(AppLocalization.text("working.staging", node.path))
+
+        // 隐藏的勾选框移出辅助功能树：辅助功能读到的勾选框是按钮的 cell，设在按钮上不起作用
+        button.cell?.setAccessibilityElement(!entries.isEmpty)
 
         // 勾选状态按 Git 模型计算，点击后的临时状态优先
         let states = entries.map { entry -> Int in
