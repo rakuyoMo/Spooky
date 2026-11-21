@@ -50,7 +50,20 @@ extension RepositorySession {
         }
     }
 
-    /// 自动重连两次尝试之间的等待：Show in Finder 要立即连接时提前结束；整个重连任务取消时等待一并结束。
+    /// 断线横条上的 Reconnect：自动重连在等下一次重试时立即开始这一次，不等重试的间隔；没有自动重连时开始重连。
+    ///
+    /// 连接状态变为不可用时自动调用的是 ``reconnect()``，那里不提前结束等待，以免每次失败都立即再试。
+    func reconnectNow() {
+        // 自动重连进行中：提前结束两次尝试之间的等待
+        if reconnectTask != nil {
+            reconnectDelay?.cancel()
+            return
+        }
+
+        reconnect()
+    }
+
+    /// 自动重连两次尝试之间的等待：Show in Finder 或 Reconnect 要立即连接时提前结束；整个重连任务取消时等待一并结束。
     func waitBeforeReconnecting() async {
         let delay = Task<Void, Never> {
             try? await Task.sleep(for: RemoteConnection.reconnectInterval)
