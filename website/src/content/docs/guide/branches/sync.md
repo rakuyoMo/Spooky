@@ -14,7 +14,7 @@ The toolbar has :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] side by side
 Fetch, pull, push, and sync aren’t recorded in the undo history, so they can’t be undone. Publishing a branch can be undone.
 
 :::note[Server repositories]
-Remotes are reached from the server, with the server’s network and SSH keys. When a remote asks for a password, Spooky asks you; see [Password and passphrase prompts](/guide/server/connection/#prompts).
+Remotes are reached from the server, with the server’s network and SSH keys. When a remote asks for a password, Spooky asks you. See [Password and passphrase prompts](/guide/server/connection/#prompts).
 :::
 
 ## Fetch {#fetch}
@@ -38,15 +38,15 @@ After a fetch, the remote branches in the sidebar are up to date, and ↓ on a l
 1. Click :ui[sync.pull] in the toolbar, or choose :ui[menu.repository > sync.pullMenu] (<kbd>⇧⌘P</kbd>). To pull a particular remote branch, right-click it and choose :ui[branch.pullMenu]{1="origin/main"} from the menu.
 2. Pick the branch in :ui[sync.remoteBranch]. At first it’s the [upstream](/guide/branches/branches/#track) of the branch you’re on.
 3. Select :ui[sync.rebase] to put your commits on top of the pulled ones, instead of joining the two with a merge commit. Spooky remembers this choice.
-4. Below the options, a preview says whether the pull will run into conflicts; see [Preview conflicts](/guide/branches/merge-rebase/#preview).
+4. Below the options, a preview says whether the pull will run into conflicts. See [Preview conflicts](/guide/branches/merge-rebase/#preview).
 5. Set the options:
    - :ui[merge.verify] stops the pull unless the pulled commit has a trusted signature. Spooky remembers it.
    - :ui[sync.skipHooks] skips the repository’s Git hooks this time.
 6. Click :ui[sync.pull].
 
-Your tracked files need to be unchanged for a pull. If they aren’t, Spooky offers to stash the changes first; see [Auto stash](/guide/work/stash/#auto-stash). New files only get in the way when the pull would overwrite them.
+Your tracked files need to be unchanged for a pull. If they aren’t, Spooky offers to stash the changes first. See [Auto stash](/guide/work/stash/#auto-stash). New files only get in the way when the pull would overwrite them.
 
-If the pull runs into conflicts, Spooky switches to the Working Copy and shows a banner; see [Resolve Conflicts](/guide/work/conflicts/#banner).
+If the pull runs into conflicts, Spooky switches to the Working Copy and shows a banner. See [Resolve Conflicts](/guide/work/conflicts/#banner).
 
 ## Push {#push}
 
@@ -54,14 +54,14 @@ If the pull runs into conflicts, Spooky switches to the Working Copy and shows a
 2. Pick the remote branch in :ui[sync.destination]. At first it’s the upstream of the branch you’re on.
 3. Set the options:
    - :ui[sync.pushAllTags] pushes every local tag too.
-   - :ui[sync.forcePush] overwrites the remote branch when a normal push can’t; see [Force push](#force-push).
+   - :ui[sync.forcePush] overwrites the remote branch when a normal push can’t. See [Force push](#force-push).
    - :ui[sync.pushSubmodules] handles submodule commits this push refers to. Choose between :ui[sync.pushSubmodules.onDemand] and :ui[sync.pushSubmodules.check].
    - :ui[sync.skipHooks] skips the repository’s Git hooks this time.
 4. Click :ui[sync.pushHead].
 
 Spooky remembers the tag and submodule options.
 
-If the branch you’re on doesn’t track a remote branch yet, :ui[sync.push] opens the publish dialog instead; see [Publish a branch](#publish). If the repository has no remote at all, it opens the dialog for publishing the repository; see [Publish a repository](/guide/hosting/accounts/#publish).
+If the branch you’re on doesn’t track a remote branch yet, :ui[sync.push] opens the publish dialog instead. See [Publish a branch](#publish). If the repository has no remote at all, it opens the dialog for publishing the repository. See [Publish a repository](/guide/hosting/accounts/#publish).
 
 If someone else pushed to the remote branch first, the remote refuses your push. Pull their commits, then push again.
 
@@ -118,6 +118,10 @@ Spooky only force pushes with a lease. The push goes through only if the remote 
    - If both branches are at the same commit, there’s nothing to push.
 4. Click :ui[sync.forcePush].
 
+::screenshot[The Force Push with Lease dialog. The local branch is feature/units-toggle and the remote branch is origin/feature/units-toggle. Below them, a line with a green check mark says the remote branch is at the version this branch had before it was rewritten.]{name="branches-force-push" frame="dialog" markers="16.4,65.9"}
+
+1. The comparison
+
 The :ui[sync.forcePush] option in the push dialog uses the same protection.
 
 :::tip
@@ -139,7 +143,7 @@ Right-click menus have quick versions too, such as :ui[sync.quickFetchNamed]{1="
 
 ## Fetch automatically {#auto-fetch}
 
-Spooky can fetch in the background, so the remote branches and ↓ counts stay current. Choose how often in :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.autoFetch]: :ui[settings.autoFetch.never], every 5, 10, or 30 minutes, or :ui[settings.autoFetch.hour]. It’s every 30 minutes at first.
+Spooky can fetch in the background, so the remote branches and ↓ counts stay current. Choose how often in :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.autoFetch]: :ui[settings.autoFetch.never], every 5, 10, or 30 minutes, or :ui[settings.autoFetch.hour]. It’s every 30 minutes at first. See [Operations](/guide/settings/general/#operations).
 
 - Spooky looks for remotes that are due about 10 seconds after a repository opens, and every few minutes after that. A remote is due when it was never fetched, or when the interval has passed since its last fetch.
 - It fetches only while the window shows the repository and no dialog is open. It keeps going while Spooky is in the background.

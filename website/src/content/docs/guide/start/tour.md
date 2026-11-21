@@ -42,7 +42,7 @@ The :ui[workspace.group] section at the top switches between the views of the re
 | :ui[pr.title] | Pull requests or merge requests from the hosting service |
 | :ui[review.title] | Your branches, to find the ones you can clean up |
 | :ui[reflog.title] | Where HEAD has been. Shown after you turn on :ui[sidebar.showReflog] in :ui[sidebar.viewSettings]. |
-| :ui[repositorySettings.title] | Settings for this repository |
+| :ui[repositorySettings.title] | Settings for this repository. See [Repository settings](/guide/settings/identity/#repository). |
 
 Below it come :ui[sidebar.pinned] (once you pin a branch), :ui[branch.group], :ui[sidebar.archived], :ui[sidebar.tags], :ui[remote.group], :ui[submodule.group], and :ui[worktree.group]. In :ui[branch.group], a HEAD badge marks the branch you’re on. An arrow with a number, such as ↑3, counts the commits you haven’t pushed yet.
 
@@ -64,7 +64,7 @@ From left to right, the toolbar has these buttons:
 
 Hold <kbd>⌥</kbd> and the buttons from :ui[sync.fetch] to :ui[sync.rebaseHead] become quick versions, such as :ui[sync.quickPush]. A quick version works with the tracking branch right away, without opening a dialog.
 
-:ui[toolbar.clone] appears while you have recent clones; see [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder], and :ui[toolbar.terminal].
+:ui[toolbar.clone] appears while you have recent clones. See [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder], and :ui[toolbar.terminal].
 
 ### The three columns {#columns}
 

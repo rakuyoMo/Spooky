@@ -13,10 +13,10 @@ This page covers how Spooky finds or mounts that folder, and how Terminal and ot
 
 - The :ui[menu.file] menu
 - :ui[toolbar.finder] in the toolbar. To add it, choose :ui[menu.view > menu.customizeToolbar] and drag it into the toolbar.
-- The :ui[workspace.title] row in the sidebar, when you Control-click it
+- The :ui[workspace.title] row in the sidebar, when you right-click it
 - [Quick Actions](/guide/repositories/navigation/#quick-actions)
-- The Repositories window, when you Control-click a server repository
-- Files in the Working Copy, when you Control-click them. Finder selects those files.
+- The Repositories window, when you right-click a server repository
+- Files in the Working Copy, when you right-click them. Finder selects those files.
 
 If the location is known and the folder is there, Finder opens right away. Otherwise, Spooky shows a sheet and works through these steps:
 
@@ -92,7 +92,7 @@ If you change the host alias, the menu goes back to :ui[remote.mount.none].
 
 These commands work in a server repository without a location on this Mac:
 
-- **:ui[action.openTerminal]** opens the terminal app chosen in :ui[app.name > settings.title] › :ui[settings.general], logs in with `ssh -t` and the host alias, and goes to the repository folder. If the server doesn’t allow a terminal, Spooky connects again without one. Commands still work, but line editing and full-screen programs don’t. You’ll find it in the :ui[menu.file] menu, as :ui[toolbar.terminal] in the toolbar, and when you Control-click the Working Copy or a repository in the Repositories window.
+- **:ui[action.openTerminal]** opens the terminal app chosen in :ui[app.name > settings.title] › :ui[settings.general], logs in with `ssh -t` and the host alias, and goes to the repository folder. If the server doesn’t allow a terminal, Spooky connects again without one. Commands still work, but line editing and full-screen programs don’t. You’ll find it in the :ui[menu.file] menu, as :ui[toolbar.terminal] in the toolbar, and when you right-click the Working Copy or a repository in the Repositories window. To choose the terminal app, see [Terminal](/guide/settings/integration/#terminal).
 - **:ui[action.copyPath]** copies the path with the host alias in front, such as `driftwood-server:/srv/git/driftwood`.
 - **:ui[files.open] and :ui[files.openWith]** in the Working Copy open a file in another app. Visual Studio Code, Visual Studio Code Insiders, and Cursor open the file on the server directly, if a Remote SSH extension is installed. Other apps get a copy on this Mac. When you save, Spooky writes the copy back to the server.
 

@@ -11,13 +11,13 @@ Your local branches are listed in the sidebar under :ui[branch.group]. Most of w
 2. A folder for the branches whose names start with `feature/`
 3. :ui[sidebar.archived]
 4. :ui[sidebar.filter]
-5. :ui[reference.addMenu] and :ui[sidebar.viewSettings]
+5. The add button and the view settings button
 
 ## In the sidebar {#sidebar}
 
 Click a branch to see its commits in the history. Double-click it to check it out.
 
-A branch that tracks a remote branch shows how far apart the two are: ↑ counts your commits that aren’t on the remote yet, ↓ counts the commits on the remote that you don’t have. Hold the pointer over a branch to see what it tracks.
+A branch that tracks a remote branch shows how far apart the two are. ↑ counts your commits that aren’t on the remote yet. ↓ counts the commits on the remote that you don’t have. Hold the pointer over a branch to see what it tracks.
 
 A branch that hasn’t had a new commit for a while is stale. Its name is dimmed, followed by a clock and how long it’s been. `main`, `master`, `trunk`, `dev`, `develop`, `next`, and any branch that is another branch’s parent are never stale.
 
@@ -25,7 +25,7 @@ Under :ui[remote.group], a house icon marks the default branch of each remote.
 
 ## Create a branch {#create}
 
-1. Choose :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). You can also choose it from the :ui[reference.addMenu] button at the bottom of the sidebar, or right-click :ui[branch.group].
+1. Choose :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). You can also click the add button at the bottom of the sidebar, or right-click :ui[branch.group], and choose it from the menu.
 2. Type the name in :ui[reference.name].
 3. Pick where the branch starts in :ui[branch.start]. At first it’s the branch you’re on, or what you right-clicked to get here.
 4. Set the options:
@@ -37,7 +37,7 @@ Under :ui[remote.group], a house icon marks the default branch of each remote.
 
 To start a branch from a particular branch, tag, or commit, right-click it and choose :ui[branch.createFromMenu]{1="main"} from the menu. You can also drag it onto :ui[branch.group].
 
-While you type, Spooky fixes the name for Git: spaces and characters that Git doesn’t allow become `-` or are dropped. To type names as they are, turn off :ui[branch.cleanNames] in :ui[app.name > settings.title] › :ui[settings.general].
+While you type, Spooky fixes the name for Git: spaces and characters that Git doesn’t allow become `-` or are dropped. To type names as they are, turn off :ui[branch.cleanNames] in :ui[app.name > settings.title] › :ui[settings.general]. See [Operations](/guide/settings/general/#operations).
 
 A `/` in a name puts the branch in a folder, such as `feature/units-toggle` in `feature`. Right-click a folder and choose :ui[branch.createMenu] from the menu, and the name starts with the folder for you.
 
@@ -49,9 +49,9 @@ Double-clicking a remote branch works too:
 
 - If a local branch already tracks it, Spooky checks out that branch.
 - If there’s a local branch with the same name that doesn’t track it, Spooky asks first in :ui[branch.trackExisting.title]. It then checks out that branch and makes it track the remote branch.
-- Otherwise, Spooky creates a local branch with the same name that tracks the remote branch, and checks it out.
+- Otherwise, Spooky creates a local branch with the same name that tracks the remote branch. Then it checks the branch out.
 
-When you have changes to tracked files, Spooky asks whether to stash them first; see [Auto stash](/guide/work/stash/#auto-stash).
+When you have changes to tracked files, Spooky asks whether to stash them first. See [Auto stash](/guide/work/stash/#auto-stash).
 
 A branch that’s checked out in another worktree can’t be checked out here. Double-click it and Spooky opens that worktree instead. Hold <kbd>⌘</kbd> while you double-click to open it in a new tab.
 
@@ -63,7 +63,7 @@ When what you pick isn’t a local branch, the dialog warns that HEAD will be de
 
 ## Track a remote branch {#track}
 
-A local branch can track a branch on a remote, its upstream. Pull and push use the upstream unless you pick something else, and the ↑ and ↓ counts compare against it.
+A local branch can track a branch on a remote, its upstream. Pull and push use the upstream unless you pick something else. The ↑ and ↓ counts compare against it.
 
 To get a local branch for a remote branch:
 
@@ -82,7 +82,7 @@ Right-click the branch and choose :ui[reference.renameMenu]{1="feature/dark-mode
 
 The pin, archive, and parent settings go with the branch. Renaming a remote branch renames it on the remote.
 
-To move a branch into a folder, drag it onto the folder; see [Drag and drop](/guide/branches/merge-rebase/#drag-and-drop).
+To move a branch into a folder, drag it onto the folder. See [Drag and drop](/guide/branches/merge-rebase/#drag-and-drop).
 
 ## Delete a branch {#delete}
 
@@ -97,7 +97,7 @@ You can’t delete the branch you’re on. Check out another branch first.
 
 Deleting a remote branch deletes it on the remote.
 
-To get a deleted local branch back, choose :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>). This works even with :ui[branch.deleteUpstream] selected. Deleting only a remote branch can’t be undone; see [Undo and Recovery](/guide/work/undo/).
+To get a deleted local branch back, choose :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>). This works even with :ui[branch.deleteUpstream] selected. Deleting only a remote branch can’t be undone. See [Undo and Recovery](/guide/work/undo/).
 
 ## Pin a branch {#pin}
 
@@ -107,11 +107,11 @@ Right-click a branch and choose :ui[branch.pinNamed]{1="feature/station-map"} fr
 
 ## Archive a branch {#archive}
 
-Archiving puts a branch out of the way without deleting it. It moves from :ui[branch.group] to :ui[sidebar.archived], and you can still use it as before.
+Archiving puts a branch out of the way without deleting it. It moves from :ui[branch.group] to :ui[sidebar.archived]. You can still use it as before.
 
 Right-click a branch and choose :ui[branch.archiveNamed]{1="feature/dark-mode"} from the menu, or drag it onto :ui[sidebar.archived]. To bring it back, choose :ui[branch.unarchiveNamed]{1="feature/dark-mode"} instead.
 
-Spooky can also find branches worth archiving, and archive them for you; see [Branches Review](/guide/branches/review/#archive-suggestions).
+Spooky can also find branches worth archiving, and archive them for you. See [Branches Review](/guide/branches/review/#archive-suggestions).
 
 :::note[Server repositories]
 Pinning, archiving, and parent branches are saved in the repository’s Git config. For a server repository, they’re saved on the server.
@@ -125,16 +125,16 @@ To set it, right-click the branch and choose a suggested branch under :ui[branch
 
 Once a branch has a parent:
 
-- Comparing branches in the history starts with the parent; see [Compare with another branch](/guide/history/browse/#compare-branches).
-- When the parent has commits your branch doesn’t, the history of your branch shows :ui[history.parentBanner.title]. The branch’s menu has :ui[branch.updateNamed]{1="feature/units-toggle"} to bring them in; see [Update a branch](/guide/branches/merge-rebase/#update).
+- Comparing branches in the history starts with the parent. See [Compare with another branch](/guide/history/browse/#compare-branches).
+- When the parent has commits your branch doesn’t, the history of your branch shows :ui[history.parentBanner.title]. The branch’s menu has :ui[branch.updateNamed]{1="feature/units-toggle"} to bring them in. See [Update a branch from its parent](/guide/branches/merge-rebase/#update).
 - For the branch you’re on, :ui[branch.mergeWith]{1="main"} and :ui[branch.rebaseOn]{1="main"} in the menu open the merge and rebase dialogs with the parent picked.
 - The parent itself is never stale.
 
 ## Filter and group {#filter}
 
-Type in :ui[sidebar.filter] at the bottom of the sidebar to show only matching branches, tags, remotes, submodules, and worktrees. The letters don’t have to be next to each other: `stm` finds `station-map`. Case and accents don’t matter. Folders open while you filter, and <kbd>Esc</kbd> clears the field.
+Type in :ui[sidebar.filter] at the bottom of the sidebar to show only matching branches, tags, remote branches, submodules, and worktrees. The letters don’t have to be next to each other: `stm` finds `station-map`. Case and accents don’t matter. Folders open while you filter, and <kbd>Esc</kbd> clears the field.
 
-Click :ui[sidebar.viewSettings] at the bottom right, or choose :ui[menu.view > sidebar.menu], to set what the sidebar shows. The settings apply to every window.
+Click the view settings button at the bottom right, or choose :ui[menu.view > sidebar.menu], to set what the sidebar shows. The settings apply to every window.
 
 - :ui[sidebar.groupRefs] puts names with a `/` in folders. It’s on at first. :ui[sidebar.groupedRefsOnTop] lists the folders before the other branches.
 - :ui[sidebar.showStaleInfo] shows which branches are stale. :ui[sidebar.staleInterval] sets how long a branch can go without a commit, 6 months at first.

@@ -14,7 +14,7 @@ Diff 分成一个个块。块是一组改动的行，前后带几行没改的内
 - Diff 下面的底栏显示一共几个块，增加和删除了多少行。
 - 图片的 Diff 显示新旧两张图。:ui[diff.twoUp] 把两张并排放，:ui[diff.oneUp] 一次显示一张，在 :ui[diff.old] 与 :ui[diff.new] 之间切换。
 
-特别大的 Diff 会让窗口变慢，所以 Spooky 先问一句：:ui[working.largeDiff] 点 :ui[working.showDiff] 就能看到。大小的上限是 :ui[app.name > settings.title] › :ui[settings.general] 里的 :ui[working.diffThreshold]，默认 20,000 kB。
+特别大的 Diff 会让窗口变慢，所以 Spooky 先问一句：:ui[working.largeDiff]点 :ui[working.showDiff] 就能看到。大小的上限是 :ui[app.name > settings.title] › :ui[settings.general] 里的 :ui[working.diffThreshold]，默认 20,000 kB，见 [历史与 Diff](/guide/settings/general/#history)。
 
 ## Diff 的显示选项 {#options}
 
@@ -36,7 +36,7 @@ Diff 分成一个个块。块是一组改动的行，前后带几行没改的内
 | :ui[text.showInvisibles] | 用符号显示空格、制表符与换行 |
 | :ui[text.tabWidth] | 一个制表符占几个空格宽 |
 
-颜色来自主题，见 [外观与主题](/guide/settings/appearance/)。
+这几项的详细说明见 [文本](/guide/settings/appearance/#text)。颜色来自主题，见 [主题](/guide/settings/appearance/#themes)。
 
 ## 暂存整个文件 {#stage-file}
 
@@ -79,7 +79,7 @@ Diff 分成一个个块。块是一组改动的行，前后带几行没改的内
 
 丢弃文件时，Spooky 会先问你。已跟踪的文件回到最后一次提交时的样子，已暂存的改动也一起扔掉。新文件移到废纸篓。点 :ui[working.discard] 或 :ui[working.discardAll.submit] 继续。
 
-丢弃块或行时，Spooky 会问 :ui[working.discardContent.title] 勾选 :ui[dialog.doNotAskAgain]，下次就不再问。想恢复这个提问，在 :ui[app.name > settings.title] › :ui[settings.general] 里打开 :ui[settings.warnDiscardingChunks]。
+丢弃块或行时，Spooky 会问 :ui[working.discardContent.title]勾选 :ui[dialog.doNotAskAgain]，下次就不再问。想恢复这个提问，在 :ui[app.name > settings.title] › :ui[settings.general] 里打开 :ui[settings.warnDiscardingChunks]，见 [确认](/guide/settings/general/#confirmations)。
 
 :::caution
 丢弃的改动不在任何提交里。唯一的回头路是 :ui[menu.edit > menu.undo]（<kbd>⌘Z</kbd>），而且只在仓库还没有再变化之前有效。新文件只要还在废纸篓里，就能拿回来。
@@ -96,7 +96,7 @@ Diff 分成一个个块。块是一组改动的行，前后带几行没改的内
 - 把指针停在右边一栏顶部的文件名上，点 :ui[externalTool.action.diffTool]。比较的是你正在看的那一侧。
 - 或者右键点按文件，从 :ui[externalTool.compare] 子菜单里选：:ui[externalTool.compare.workingTreeToBase]、:ui[externalTool.compare.workingTreeToIndex] 或 :ui[externalTool.compare.indexToBase]。
 
-第一次用时，Spooky 会问你用哪个 App。以后想换，改 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里的 :ui[externalTool.diffTool]。Spooky 支持 Araxis Merge、BBEdit、Beyond Compare、DeltaWalker、FileMerge、Kaleidoscope、P4Merge、TextMate 与 Visual Studio Code。
+第一次用时，Spooky 会问你用哪个 App。以后想换，改 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里的 :ui[externalTool.diffTool]。Spooky 支持 Araxis Merge、BBEdit、Beyond Compare、DeltaWalker、FileMerge、Kaleidoscope、P4Merge、TextMate 与 Visual Studio Code，见 [比较与合并工具](/guide/settings/integration/#diff-merge-tools)。
 
 :::note[服务器仓库]
 比较工具拿到的是文件的副本，放在这台 Mac 上的一个临时文件夹里。关掉仓库时，这个文件夹会被删掉。

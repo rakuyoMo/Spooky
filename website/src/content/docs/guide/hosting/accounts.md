@@ -15,6 +15,11 @@ Open :ui[app.name > settings.title] and click :ui[settings.accounts]. Click the 
 | :ui[accounts.add.gitlab] | GitLab.com | A personal access token |
 | :ui[accounts.add.gitlabSelfManaged] | GitLab on your own server | A personal access token, or a user name and password |
 
+::screenshot[The sheet for adding a self-managed GitLab account. The host is https://gitlab.example.com, and the authentication method is user name and password.]{name="hosting-add-account" frame="dialog" markers="79.2,62.8 83.3,54.6"}
+
+1. The host
+2. The authentication method
+
 While Spooky checks the account, :ui[accounts.validating] shows at the bottom of the dialog. :ui[action.cancel] stops the check and leaves the dialog open, so you can fix what you entered. If the check fails, a message says why, and what you entered is still there.
 
 Each account appears in the list with its service, instance, and user name. You can add more than one account on the same service.

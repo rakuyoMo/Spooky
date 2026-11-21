@@ -7,7 +7,7 @@ description: "了解这份手册怎样组织、从哪里开始读。"
 
 第一次用 Spooky，按顺序读 “开始使用” 的几页。仓库放在服务器上的，接着读 “服务器仓库”。
 
-在 Spooky 里选 :ui[menu.help > help.help]（<kbd>⌘?</kbd>）会打开这个网站。
+在 Spooky 里选 :ui[menu.help > help.help]（<kbd>⌘?</kbd>）会打开这个网站。很多对话框里还有帮助按钮，点它会打开手册里讲这个对话框的那一节。
 
 ## 手册的结构 {#organization}
 

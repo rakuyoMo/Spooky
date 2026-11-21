@@ -36,7 +36,7 @@ ssh-keygen -t ed25519 -C "alex@example.com"
 引号里换成你自己的邮箱。它只是个标签，方便你认出这把密钥。
 
 1. 问保存在哪里时，按 Return 键，用它建议的位置。
-2. 输入一个口令，再输入一遍。输入时屏幕上什么都不显示。有人拷走密钥文件时，口令能保护它。
+2. 输入一个口令，再输入一遍。输入时屏幕上什么都不显示。有人复制了密钥文件时，口令能保护它。
 
 完成后，`~/.ssh` 里会有 `id_ed25519` 和 `id_ed25519.pub`。
 
@@ -65,7 +65,7 @@ ssh-keygen -t ed25519 -C "alex@example.com"
 
 | 这一行 | 填什么 |
 |---|---|
-| `Host` | 别名。用一个词，不带空格、`@`、`:` 或 `/`。 |
+| `Host` | 别名。用一个词，不带空格、`@`、`:` 或 `/`，也不要以 `-` 开头。 |
 | `HostName` | 服务器的地址或名称，比如 `203.0.113.10` 或 `server.example.com` |
 | `User` | 你在服务器上的用户名 |
 | `IdentityFile` | 上面新建或找到的私钥 |
@@ -102,13 +102,13 @@ SSH 警告远程主机的标识变了（remote host identification has changed�
 
 ## 把公钥放到服务器上 {#copy-key}
 
-服务器能用密码登录的话，这条命令会把公钥拷过去。问密码时，输入你在服务器上的密码。
+服务器能用密码登录的话，这条命令会把公钥复制过去。问密码时，输入你在服务器上的密码。
 
 ```sh
 ssh-copy-id -i ~/.ssh/id_ed25519.pub driftwood-server
 ```
 
-服务器不接受密码登录时，把公钥发给服务器管理者。这条命令会把公钥拷到剪贴板：
+服务器不接受密码登录时，把公钥发给服务器管理者。这条命令会把公钥复制到剪贴板：
 
 ```sh
 pbcopy < ~/.ssh/id_ed25519.pub
@@ -144,7 +144,7 @@ ssh-add --apple-load-keychain
 
 ## 改用别的 SSH agent {#agent}
 
-SSH agent 替 SSH 保管已经解锁的密钥。Spooky 默认用 macOS 自带的那一个。密钥放在别的 agent 里时，比如密码管理器带的 agent，在 :ui[app.name > settings.title] › :ui[settings.integration] 的 :ui[settings.sshAgent] 里选它。之后 Spooky 登录服务器就用这个 agent。
+SSH agent 替 SSH 保管已经解锁的密钥。Spooky 用的是系统的 agent，也就是 macOS 替你启动的那一个。密钥放在别的 agent 里时，比如密码管理器带的 agent，把 `SSH_AUTH_SOCK` 设成那个 agent 的 socket。可以在 :ui[app.name > settings.title] › :ui[settings.environment] 里把它加成自定义变量，也可以写在登录 shell 里。之后 Spooky 登录服务器就用这个 agent，见 [SSH agent](/guide/settings/integration/#ssh-agent)。
 
 ## 用一台 Mac 当服务器 {#mac-server}
 

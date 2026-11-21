@@ -33,11 +33,11 @@ Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge
 
 在讨论里连按一个提交，或者按 <kbd>Return</kbd>，可以打开它。右键点按提交可以复制它的哈希。点正文里的链接可以打开它。
 
-:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 需要请求的提交已经在你的仓库里。还没有时，点 :ui[pullRequests.fetch]，Spooky 会从远端取回这些提交，不改动你的分支。
+:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 需要请求的提交已经在你的仓库里。还没有时，点 :ui[pullRequests.fetch]。Spooky 会从远端取回这些提交，不改动你的分支。
 
 ## 新建请求 {#create}
 
-源分支必须已经在远端上，所以先推送它。然后任选一种方式：
+源分支必须已经在远端上，要先推送它。然后任选一种方式：
 
 - 点列表顶部的添加按钮。
 - 选 :ui[menu.repository > pr.create.menu]（<kbd>⌃⌘P</kbd>）。
@@ -57,7 +57,7 @@ Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge
 
 自己的评论，可以用评论上的 :ui[pullRequests.comment.edit] 和 :ui[pullRequests.comment.delete]，也可以右键点按它。连按自己的评论同样会打开编辑。删除评论不能撤销。
 
-在 GitLab 上，还可以用 :ui[pullRequests.comment.reply] 回复任何一条评论，回复会放进 GitLab 上的同一个讨论里。
+在 GitLab 上，还可以用 :ui[pullRequests.comment.reply] 回复任何一条评论。回复会放进 GitLab 上的同一个讨论里。
 
 自己的请求，还可以：
 
@@ -68,12 +68,12 @@ Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge
 
 想在本地处理请求的代码，点详情底部的 :ui[pullRequests.checkout]，或者右键点按请求，选 :ui[pr.checkout.menu]{1="#12"}。
 
-填本地分支的名字，点 :ui[pullRequests.checkout]。名字一开始是源分支的名字；来自 Fork 的请求是 `pullrequests/<author>/<branch>`。
+填本地分支的名字，点 :ui[pullRequests.checkout]。名字一开始是源分支的名字。来自 Fork 的请求是 `pullrequests/<author>/<branch>`。
 
 Spooky 先取回请求的提交，再检出分支：
 
-- 已有同名的本地分支并且指向这些提交时，直接检出它。
-- 同名分支指向别处时，对话框会提示，换个名字即可。
+- 已有同名的本地分支、又指向这些提交时，直接检出它。
+- 同名分支指向别处时，对话框会提示。换个名字即可。
 - 否则新建这个分支。同一个项目里的请求，只要远端上的源分支在同一个提交上，新分支就跟踪它。
 
 已跟踪的文件有改动时，Spooky 会先问要不要储藏，见 [自动储藏](/guide/work/stash/#auto-stash)。
@@ -85,9 +85,9 @@ Spooky 先取回请求的提交，再检出分支：
 点详情底部的 :ui[pullRequests.merge]。合并在托管服务上进行，不能撤销。
 
 - **GitHub**：在仓库允许的方式里选 :ui[pullRequests.mergeType]：:ui[pullRequests.method.merge]、:ui[pullRequests.method.rebase] 或 :ui[pullRequests.method.squash]。Spooky 会预选你上次用的方式。
-- **GitLab**：对话框写出项目的 :ui[pullRequests.mergeStrategy]。想压缩就勾选 :ui[pullRequests.squash]；项目要求压缩时，这一项一直勾着。
+- **GitLab**：对话框写出项目的 :ui[pullRequests.mergeStrategy]。想压缩就勾选 :ui[pullRequests.squash]。项目不允许压缩时，没有这一项。项目要求压缩时，这一项一直勾着。
 
-:ui[pullRequests.deleteBranch] 会删除服务上的源分支，一开始按项目的设置勾选。
+:ui[pullRequests.deleteBranch] 会删除服务上的源分支。一开始按项目的设置勾选。
 
 请求不能合并时，对话框会说明原因，比如它是草稿、有冲突、你的账号没有合并权限，或者服务还在检查。
 
@@ -98,7 +98,7 @@ Spooky 先取回请求的提交，再检出分支：
 点详情底部的 :ui[pullRequests.close] 并确认。想重新打开，到托管服务上操作。
 
 :::note[服务器仓库]
-列表和在服务上做的操作都从你的 Mac 发出。取回请求的提交、检出请求和合并后的获取在服务器上执行，:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比较也在服务器上进行。
+列表和在服务上做的操作都从你的 Mac 发出。取回请求的提交、检出请求和合并后的获取在服务器上执行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比较也在服务器上进行。
 :::
 
 对服务的每一次请求都会出现在 :ui[activity.title] 窗口的 :ui[activity.service] 页里。

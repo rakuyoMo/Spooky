@@ -10,7 +10,7 @@ This page lists what Spooky needs on your Mac and on the servers you connect to.
 | What | Requirement |
 |---|---|
 | macOS | macOS 26 or later |
-| Git | Git 2.41.0 or later. Spooky uses `/usr/bin/git` unless you choose another one next to :ui[settings.gitProgram] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. |
+| Git | Git 2.41.0 or later. Spooky uses `/usr/bin/git` unless you choose another one next to :ui[settings.gitProgram] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. See [Git program](/guide/settings/identity/#git-program). |
 | SSH | The SSH that comes with macOS. Server repositories use it to connect. |
 
 Spooky relies on Git features added in version 2.41.0, so older versions don’t work.
@@ -29,7 +29,7 @@ A server can be a Linux machine or a Mac. Spooky doesn’t need administrator ac
 | Files | Write access to `~/.spooky/bin` in your home folder on the server, and to `/tmp` |
 | Trash | Optional. On a Mac, Spooky uses `/usr/bin/trash`, which comes with macOS 15 and later. On Linux, it uses `gio` or `trash-put`. Without one, Spooky asks first, then deletes files for good. |
 
-To see what a server provides before you add a repository, run the test in [Prepare SSH](/guide/server/prepare-ssh/#test). You can also check a server in :ui[app.name > settings.title] › :ui[settings.environment].
+To see what a server provides before you add a repository, run the test in [Prepare SSH](/guide/server/prepare-ssh/#test). You can also check a server in :ui[app.name > settings.title] › :ui[settings.environment]. See [Check a server](/guide/settings/general/#server-check).
 
 ## Optional {#optional}
 

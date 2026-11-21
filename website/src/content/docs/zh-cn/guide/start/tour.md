@@ -42,7 +42,7 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 | :ui[pr.title] | 托管服务上的 Pull Request 或 Merge Request |
 | :ui[review.title] | 你的分支，用来找出可以清理的分支 |
 | :ui[reflog.title] | HEAD 去过哪些地方。在 :ui[sidebar.viewSettings] 里打开 :ui[sidebar.showReflog] 后才显示 |
-| :ui[repositorySettings.title] | 这个仓库的设置 |
+| :ui[repositorySettings.title] | 这个仓库的设置，见 [仓库设置](/guide/settings/identity/#repository) |
 
 再往下依次是 :ui[sidebar.pinned]（置顶了分支后才有）、:ui[branch.group]、:ui[sidebar.archived]、:ui[sidebar.tags]、:ui[remote.group]、:ui[submodule.group] 与 :ui[worktree.group]。:ui[branch.group] 里，带 HEAD 标记的是你当前所在的分支。↑3 这样的箭头加数字，表示还有几个提交没推送。
 

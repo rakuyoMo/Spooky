@@ -7,7 +7,7 @@ This guide shows how to do everyday Git work in Spooky. It covers repositories o
 
 If you’re new to Spooky, read the Getting Started pages in order. If your repositories live on a server, read Server Repositories next.
 
-In Spooky, :ui[menu.help > help.help] (<kbd>⌘?</kbd>) opens this website.
+In Spooky, :ui[menu.help > help.help] (<kbd>⌘?</kbd>) opens this website. Many dialogs also have a help button. It opens the part of this guide about that dialog.
 
 ## How the guide is organized {#organization}
 

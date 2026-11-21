@@ -65,7 +65,7 @@ A host alias is a short name for a server. You type it in Terminal and in Spooky
 
 | Line | What to put there |
 |---|---|
-| `Host` | The alias. Use one word without spaces, `@`, `:`, or `/`. |
+| `Host` | The alias. Use one word without spaces, `@`, `:`, or `/`, and don’t start it with `-`. |
 | `HostName` | The server’s address or name, such as `203.0.113.10` or `server.example.com` |
 | `User` | Your user name on the server |
 | `IdentityFile` | The private key you created or found above |
@@ -144,7 +144,7 @@ ssh-add --apple-load-keychain
 
 ## Use another SSH agent {#agent}
 
-An SSH agent keeps unlocked keys ready for SSH. Spooky uses the one built into macOS. If your keys are in another agent, for example one that comes with a password manager, choose it next to :ui[settings.sshAgent] in :ui[app.name > settings.title] › :ui[settings.integration]. Spooky then uses that agent to log in to servers.
+An SSH agent keeps unlocked keys ready for SSH. Spooky uses the system agent, the one macOS starts for you. If your keys are in another agent, for example one that comes with a password manager, set `SSH_AUTH_SOCK` to that agent’s socket. Add it as a custom variable in :ui[app.name > settings.title] › :ui[settings.environment], or set it in your login shell. Spooky then uses that agent to log in to servers. See [SSH agent](/guide/settings/integration/#ssh-agent).
 
 ## Use a Mac as the server {#mac-server}
 

@@ -22,16 +22,16 @@ description: "浏览提交列表与提交图，看懂引用徽标，搜索与筛
 
 ## 提交列表 {#list}
 
-每一行写着作者的头像与名字、日期、短哈希，以及提交信息的第一行。提交按月分组。
+每一行写着作者的头像与名字、日期、短哈希，以及提交信息的第一行。提交默认按月分组。
 
 列表显示的是设了上游的本地分支时：
 
 - ↑ 标出还没推送的提交。
 - ↓ 标出还没拉取的提交，这些行的颜色会变浅。
 
-Spooky 先读出前 100 个提交，滚到底时再读后面的 100 个。想一次多读一些，在 :ui[app.name > settings.title] › :ui[settings.general] 里改 :ui[history.pageSize]。:ui[settings.dateFormat] 也在这一页。
+Spooky 先读出前 100 个提交，滚到底时再读后面的 100 个。想一次多读一些，在 :ui[app.name > settings.title] › :ui[settings.general] 里改 :ui[history.pageSize]。同一页的 :ui[settings.dateFormat] 决定列表里日期的写法，见 [历史与 Diff](/guide/settings/general/#history)。
 
-点一个提交就选中它；按住 <kbd>⇧</kbd> 或 <kbd>⌘</kbd> 再点，可以选中多个。按 <kbd>⌘C</kbd> 拷贝所选提交的完整哈希。连按一个提交，就整页打开它的详情。
+点一个提交就选中它。按住 <kbd>⇧</kbd> 或 <kbd>⌘</kbd> 再点，可以选中多个。按 <kbd>⌘C</kbd> 复制所选提交的完整哈希。连按一个提交，就整页打开它的详情。
 
 右键点按一个提交，可以看到对它能做的所有操作。如果这个提交没被选中，菜单只作用于它一个，原来的选择保持不变。
 
@@ -68,36 +68,41 @@ Spooky 先读出前 100 个提交，滚到底时再读后面的 100 个。想一
 各种方式怎样匹配：
 
 - 提交信息、作者与提交人按正则表达式匹配，不分大小写。
-- 文件匹配改动过它的提交；文件夹匹配改动过其中任何内容的提交。
+- 文件匹配改动过它的提交。文件夹匹配改动过其中任何内容的提交。
 - 提交哈希至少要写前 4 个字符。
 
-搜索条件会显示在表头下面的一行里。点 :ui[history.search.add]（+）再加一个条件，在这一行开头的菜单里选它的种类。种类相同的几个条件满足其一即可，种类不同的要全部满足。日期条件可以选 :ui[history.search.after]、:ui[history.search.before] 或 :ui[history.search.range]。点 − 删掉一个条件。
+搜索条件会显示在表头下面的一行里。想再加一个条件，点添加按钮，在新的一行开头的菜单里选它的种类。日期条件可以选 :ui[history.search.after]、:ui[history.search.before] 或 :ui[history.search.range]。想删掉一个条件，点它的移除按钮。
+
+有几个条件时：
+
+- 种类不同的条件要全部满足。
+- 种类相同的几个条件，满足其中一个就行。日期例外：每个日期条件都要满足。
 
 切换到别的视图时，搜索就结束了。
 
 ## 视图选项 {#view-options}
 
-点表头最右端的 :ui[history.viewOptions]，或者选 :ui[menu.view > history.title]：
+点表头最右端的视图选项按钮，或者选 :ui[menu.view > history.title]：
 
 | 选项 | 作用 |
 |---|---|
 | :ui[history.showGraph] | 显示提交图。默认打开 |
 | :ui[history.firstParentOnly] | 在每个合并处只沿第一父提交往下走 |
-| :ui[history.sortBy] | :ui[history.sort.topo] 把同一条开发线上的提交排在一起，:ui[history.sort.date] 按日期排列。显示提交图时 :ui[history.sort.topo] 始终打开。两项都打开时按日期排列 |
+| :ui[history.sortBy] | :ui[history.sort.topo] 把同一条开发线上的提交排在一起。:ui[history.sort.date] 按日期排列。显示提交图时 :ui[history.sort.topo] 始终打开。两项都打开时按日期排列 |
 | :ui[history.groupBy] | 按天、按周或按月给提交分组并加上小标题，也可以不分组。只在按日期排列时有效 |
 | :ui[history.medium] / :ui[history.small] | 每个提交占两行或一行。小号行只在显示提交图时有效 |
 | :ui[signature.verify] | 标出带签名的提交，见 [签名](/guide/history/commit-details/#signatures) |
 | :ui[history.compareBranches] | 见 [与另一个分支比较](#compare-branches) |
 
-这些选项对所有窗口和所有仓库都有效，Spooky 会记住它们。
+这些选项对所有窗口和所有仓库都有效。Spooky 会记住它们。
 
 ## 与另一个分支比较 {#compare-branches}
 
 想看一个本地分支和另一个分支的关系：
 
 1. 点侧边栏里的这个分支。
-2. 点表头里的 :ui[history.compareBranches]，或者在视图选项里打开它（<kbd>⌃⌥⌘C</kbd>）。
-3. 在 :ui[history.compareTo] 菜单里选另一个分支。这个分支有父分支时，Spooky 先选它。
+2. 点表头里的比较按钮。也可以在视图选项里打开 :ui[history.compareBranches]，或者按 <kbd>⌃⌥⌘C</kbd>。
+3. 在 :ui[history.compareTo] 旁边的菜单里选另一个分支。这个分支有父分支时，Spooky 先选父分支。
 
 列表里有一行标出两个分支分开的地方。它下面的提交也属于另一个分支，颜色会变浅。如果这个分支还没有自己的提交，列表里写着 :ui[history.noNewCommits]。
 

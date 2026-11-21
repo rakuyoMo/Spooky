@@ -9,13 +9,13 @@ Tags are listed in the sidebar under :ui[sidebar.tags], and remotes under :ui[re
 
 A tag gives a commit a name that stays put, usually for a release such as `v0.4.0`. Unlike a branch, it doesn’t move when you commit.
 
-Hold the pointer over a tag to see the commit it points at, and its message if it has one. Double-click a tag to check out its commit; see [Check out a tag or a commit](/guide/branches/branches/#checkout-revision).
+Hold the pointer over a tag to see the commit it points at, and its message if it has one. Double-click a tag to check out its commit. See [Check out a tag or a commit](/guide/branches/branches/#checkout-revision).
 
 Like branches, tags whose names contain a `/` go into folders. To show only the newest few, or sort them the other way round, see [Filter and group](/guide/branches/branches/#filter).
 
 ### Create a tag {#create-tag}
 
-1. Choose :ui[menu.repository > tag.createMenu] (<kbd>⇧⌘T</kbd>), or choose it from the :ui[reference.addMenu] button at the bottom of the sidebar. To tag a particular branch or commit, right-click it and choose :ui[tag.createFrom]{1="main"} from the menu instead.
+1. Choose :ui[menu.repository > tag.createMenu] (<kbd>⇧⌘T</kbd>). You can also click the add button at the bottom of the sidebar and choose it from the menu. To tag a particular branch or commit, right-click it and choose :ui[tag.createFrom]{1="main"} from the menu instead.
 2. Type the name in :ui[reference.name].
 3. :ui[tag.revision] is the commit to tag. At first it’s the branch you’re on, or what you right-clicked.
 4. Write a :ui[tag.messageField] if you like. Without one, the tag is just a name for the commit. With one, Git also saves who made the tag and when.
@@ -35,7 +35,7 @@ A new tag exists only in this repository until you publish it. To remove it agai
 
 Publishing a tag can be undone. Undo deletes it on the remote again.
 
-To push every tag to a remote at once, right-click the remote and choose :ui[tag.pushAll]{1="origin"} from the menu. The push dialog can also send all tags along; see [Push](/guide/branches/sync/#push).
+To push every tag to a remote at once, right-click the remote and choose :ui[tag.pushAll]{1="origin"} from the menu. The push dialog can also send all tags along. See [Push](/guide/branches/sync/#push).
 
 ### Delete a tag {#delete-tag}
 
@@ -53,7 +53,7 @@ Under :ui[remote.group], each remote lists its branches. Hold the pointer over a
 
 Right-click a remote for its menu:
 
-- :ui[remote.fetchMenu]{1="origin"} and :ui[sync.prune] open the fetch dialog for this remote; see [Fetch](/guide/branches/sync/#fetch).
+- :ui[remote.fetchMenu]{1="origin"} and :ui[sync.prune] open the fetch dialog for this remote. See [Fetch](/guide/branches/sync/#fetch).
 - :ui[remote.viewInBrowser]{1="origin"} opens the remote’s web page. It works for HTTP(S), SSH, and `git://` URLs, but not for local paths.
 - The other items add, edit, rename, and delete remotes, as described below.
 
@@ -63,12 +63,12 @@ Remotes are reached from the server, with the server’s network and SSH keys. A
 
 ### Add a remote {#add-remote}
 
-1. Choose :ui[menu.repository > remote.addMainMenu], or choose :ui[remote.addMenu] from the :ui[reference.addMenu] button at the bottom of the sidebar. You can also right-click :ui[remote.group].
+1. Choose :ui[menu.repository > remote.addMainMenu] in the menu bar. You can also click the add button at the bottom of the sidebar, or right-click :ui[remote.group], and choose :ui[remote.addMenu] from the menu.
 2. Type a short name in :ui[reference.name], such as `upstream`.
 3. Paste the address in :ui[remote.url].
 4. Click :ui[remote.add.submit].
 
-Spooky checks the connection before it adds the remote. The dialog stays open until that works, so you can fix a typo and try again. Once the remote is added, Spooky fetches it right away.
+Spooky checks the connection before it adds the remote. If it can’t connect, the dialog stays open. You can fix a typo and try again. Once the remote is added, Spooky fetches it right away.
 
 ### Remote settings {#remote-settings}
 

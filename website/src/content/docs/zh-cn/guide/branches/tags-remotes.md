@@ -15,7 +15,7 @@ description: "新建、发布与删除标签，添加、编辑、重命名与移
 
 ### 新建标签 {#create-tag}
 
-1. 选 :ui[menu.repository > tag.createMenu]（<kbd>⇧⌘T</kbd>），或者从侧边栏底部的 :ui[reference.addMenu] 按钮里选。想给某个分支或提交打标签，改为右键点按它，选 :ui[tag.createFrom]{1="main"}。
+1. 选 :ui[menu.repository > tag.createMenu]（<kbd>⇧⌘T</kbd>）。也可以点侧边栏底部的添加按钮，在菜单里选它。想给某个分支或提交打标签，改为右键点按它，选 :ui[tag.createFrom]{1="main"}。
 2. 在 :ui[reference.name] 里输入名字。
 3. :ui[tag.revision] 是要打标签的提交。一开始是当前所在的分支，或者你右键点按的那一项。
 4. 可以写一段 :ui[tag.messageField]。不写的话，标签只是提交的一个名字。写了的话，Git 还会记下是谁、在什么时候打的标签。
@@ -33,7 +33,7 @@ description: "新建、发布与删除标签，添加、编辑、重命名与移
 3. 勾选 :ui[sync.skipHooks]，推送时就不运行仓库的 Git 钩子。
 4. 点 :ui[tag.publish]。
 
-发布标签可以撤销，撤销时会把它从远端上删掉。
+发布标签可以撤销。撤销时会把它从远端上删掉。
 
 想一次把全部标签推送到某个远端，右键点按这个远端，选 :ui[tag.pushAll]{1="origin"}。推送对话框也能把全部标签一起推送，见 [推送](/guide/branches/sync/#push)。
 
@@ -43,7 +43,7 @@ description: "新建、发布与删除标签，添加、编辑、重命名与移
 
 Spooky 总会先问一下。想在远端上也删掉这个标签，勾选 :ui[tag.deleteRemote]，在 :ui[sync.remote] 里选好远端。
 
-只在这个仓库里删除标签可以撤销，在远端上删除就撤销不了了。
+只在这个仓库里删除标签可以撤销。在远端上也删除时，就撤销不了了。
 
 ## 远端 {#remotes}
 
@@ -63,12 +63,12 @@ Spooky 总会先问一下。想在远端上也删掉这个标签，勾选 :ui[ta
 
 ### 添加远端 {#add-remote}
 
-1. 选 :ui[menu.repository > remote.addMainMenu]，或者从侧边栏底部的 :ui[reference.addMenu] 按钮里选 :ui[remote.addMenu]。也可以右键点按 :ui[remote.group]。
+1. 选 :ui[menu.repository > remote.addMainMenu]。也可以点侧边栏底部的添加按钮，或者右键点按 :ui[remote.group]，在菜单里选 :ui[remote.addMenu]。
 2. 在 :ui[reference.name] 里输入一个简短的名字，比如 `upstream`。
 3. 在 :ui[remote.url] 里粘贴地址。
 4. 点 :ui[remote.add.submit]。
 
-添加之前，Spooky 会先检查连接。连上之前对话框一直开着，写错了可以改了再试。远端添加好以后，Spooky 会马上获取一次。
+添加之前，Spooky 会先检查连接。连不上时，对话框不会关闭。写错了可以改了再试。远端添加好以后，Spooky 会马上获取一次。
 
 ### 远端设置 {#remote-settings}
 
@@ -95,7 +95,7 @@ Refspec 是一条规则，把一边的分支名对应到另一边的名字。大
 
 右键点按远端，选 :ui[reference.renameMenu]{1="origin"} 或 :ui[reference.deleteMenu]{1="origin"}。
 
-移除远端，会把它和它的远端分支从这个仓库里去掉，它指向的那个仓库不受影响。重命名和移除都可以撤销。
+移除远端，会把它和它的远端分支从这个仓库里去掉。它指向的那个仓库不受影响。重命名和移除都可以撤销。
 
 ## 相关页面
 

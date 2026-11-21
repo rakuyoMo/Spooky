@@ -18,7 +18,7 @@ The toolbar has :ui[sync.merge] and :ui[sync.rebaseHead] side by side. Both star
    - :ui[merge.squash] stages all the changes for a single commit of your own, without a merge commit.
    - :ui[merge.alwaysCommit] creates a merge commit even when Git could just move your branch forward.
    - :ui[merge.autoCommit] commits the merge right away. You can only clear it while :ui[merge.alwaysCommit] is selected. Then the merged changes wait in the Working Copy for you to commit.
-4. If the merge would run into conflicts, a line below says so; see [Preview conflicts](#preview).
+4. If the merge would run into conflicts, a line below says so. See [Preview conflicts](#preview).
 5. Set the options:
    - :ui[merge.verify] stops the merge unless the merged commit has a trusted signature.
    - :ui[sync.skipHooks] skips the repository’s Git hooks this time.
@@ -26,7 +26,9 @@ The toolbar has :ui[sync.merge] and :ui[sync.rebaseHead] side by side. Both star
 
 Spooky remembers :ui[merge.alwaysCommit], :ui[merge.autoCommit], and :ui[merge.verify].
 
-If the merge stops on conflicts, Spooky switches to the Working Copy and shows a banner; see [Resolve Conflicts](/guide/work/conflicts/#banner). <kbd>⌘Z</kbd> undoes a merge, including one that stopped on conflicts, which aborts it.
+If the merge stops on conflicts, Spooky switches to the Working Copy and shows a banner. See [Resolve Conflicts](/guide/work/conflicts/#banner).
+
+<kbd>⌘Z</kbd> undoes a merge. If the merge stopped on conflicts, undoing it aborts the merge.
 
 ## Rebase {#rebase}
 
@@ -49,7 +51,7 @@ A merge needs your tracked files to be unchanged. New files only get in the way 
 
 Rebasing and updating a branch from its parent need a Working Copy with no changes at all, new files included.
 
-When local changes block one of them, Spooky offers to stash the changes first; see [Auto stash](/guide/work/stash/#auto-stash).
+When local changes block one of them, Spooky offers to stash the changes first. See [Auto stash](/guide/work/stash/#auto-stash).
 
 ## Preview conflicts {#preview}
 
@@ -58,9 +60,9 @@ Before you start, the merge, rebase, pull, and sync dialogs check whether the br
 - :ui[merge.checking] while Spooky compares them.
 - How many files conflict. Hold the pointer over the line to see which files.
 - :ui[merge.clean] or :ui[merge.unchanged].
-- :ui[merge.unavailable] when the check didn’t work.
+- :ui[merge.unavailable] when the check didn’t work. Hold the pointer over the line to see why.
 
-The merge dialog only shows a line when there are conflicts. The others show every result.
+The merge dialog leaves out :ui[merge.clean] and :ui[merge.unchanged]. The others show every result.
 
 ## Quick versions {#quick}
 
@@ -89,7 +91,7 @@ Spooky checks out the branch first, then merges or rebases. Update is only avail
 For the branch you’re on, :ui[branch.mergeWith]{1="main"} and :ui[branch.rebaseOn]{1="main"} in the sidebar menu open the merge and rebase dialogs with the parent already picked.
 
 :::tip
-Hold <kbd>⌥</kbd> while the menu is open, and :ui[branch.updateNamed]{1="feature/units-toggle"} turns into :ui[branch.quickUpdateNamed]{1="feature/units-toggle"}, which merges the parent right away, without the dialog.
+Hold <kbd>⌥</kbd> while the menu is open, and :ui[branch.updateNamed]{1="feature/units-toggle"} turns into :ui[branch.quickUpdateNamed]{1="feature/units-toggle"}. It merges the parent right away, without the dialog.
 :::
 
 ## Drag and drop {#drag-and-drop}
@@ -112,7 +114,7 @@ Many branch operations start by dragging in the sidebar. While you drag, the lab
 
 To move a branch into a folder, drag it onto the folder. The branch is renamed to the folder plus the last part of its name, with no dialog. A remote branch can only move into folders of its own remote. To move a branch out of its folder, drag it to the top or bottom edge of the list. You can undo the rename with <kbd>⌘Z</kbd>.
 
-You can also drag commits from the history onto :ui[workspace.title] or the branch you’re on to cherry-pick them. Hold <kbd>⌥</kbd> to revert them instead; see [Cherry-pick a commit](/guide/history/rewrite/#cherry-pick). Drag a single file from a commit’s changeset there, and only that file’s changes are applied to the Working Copy, without staging them.
+You can also drag commits from the history onto :ui[workspace.title] or the branch you’re on to cherry-pick them. Hold <kbd>⌥</kbd> to revert them instead. See [Cherry-pick a commit](/guide/history/rewrite/#cherry-pick). Drag a single file from a commit’s changeset there, and only that file’s changes are applied to the Working Copy, without staging them.
 
 ## See also
 

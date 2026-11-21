@@ -3,7 +3,7 @@ title: "储藏"
 description: "保存、应用与查看储藏，以及使用自动储藏。"
 ---
 
-储藏把本地改动先放到一边，不用提交。比如要切换分支或拉取，需要一会儿干净的工作区，之后再把改动拿回来，就可以用它。
+储藏把本地改动先放到一边，不用提交。需要暂时腾出干净的工作区、之后再把改动拿回来时，就用它，比如切换分支或拉取之前。
 
 储藏属于这个仓库，不会推送到远端。
 
@@ -82,7 +82,7 @@ Spooky 每次都会先问。删掉以后想拿回来，选 :ui[menu.edit > menu.
 
 中间哪一步出了问题，改动都留在储藏里，Spooky 会告诉你发生了什么。
 
-不想再被问，在 :ui[app.name > settings.title] › :ui[settings.general] 里关掉 :ui[stash.offerAutoStash]。
+不想再被问，在 :ui[app.name > settings.title] › :ui[settings.general] 里关掉 :ui[stash.offerAutoStash]，见 [操作](/guide/settings/general/#operations)。
 
 ## 相关页面
 

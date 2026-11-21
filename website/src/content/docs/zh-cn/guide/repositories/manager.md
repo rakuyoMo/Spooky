@@ -46,7 +46,7 @@ Spooky 新建这个文件夹，把它初始化为一个空的 Git 仓库，加�
 
 Spooky 先检查能不能连上远端。连不上时，对话框不关，会写出原因，改好地址再试就行。连上后对话框关闭，克隆在后台进行。进度显示在列表里这个仓库的那一行。克隆完成后，Spooky 会发出一条 :ui[clone.notification.title] 通知。
 
-克隆到这台 Mac 时，文件夹默认是你的个人文件夹，或者是 :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.cloneDirectory] 里设定的文件夹。
+克隆到这台 Mac 时，文件夹默认是你的个人文件夹，或者是 :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.cloneDirectory] 里设定的文件夹，见 [克隆与终端](/guide/settings/general/#cloning)。
 
 有最近的克隆时，工具栏上会出现 :ui[toolbar.clone]。点它会显示 :ui[clone.recent.title]。在那里可以停止正在进行的克隆，用 :ui[clone.retry] 重新开始失败或取消的克隆，或者把它 :ui[clone.remove]。连按完成的克隆就能打开它。:ui[clone.recent.clear] 清空这份列表。
 
@@ -77,6 +77,8 @@ Spooky 先检查能不能连上远端。连不上时，对话框不关，会写�
 - :ui[settings.showWorktreesInRepositoryList]：有其它工作树的仓库可以展开，列出这些工作树。打开工作树的方式和打开仓库一样。默认关闭。
 - :ui[settings.showHostAliasesInRepositoryList]：服务器仓库的名称以主机别名开头。默认打开。
 
+见 [窗口与仓库管理](/guide/settings/general/#windows)。
+
 ## 打开仓库 {#open}
 
 连按一个仓库，或选中后按 <kbd>↩</kbd>。仓库在同一个窗口里打开，取代列表。仓库已经在另一个窗口里打开时，Spooky 会切换到那个窗口。
@@ -86,10 +88,10 @@ Spooky 先检查能不能连上远端。连不上时，对话框不关，会写�
 - :ui[bookmarks.open]{1="driftwood"} 与 :ui[bookmarks.openNewWindow]{1="driftwood"}
 - :ui[action.revealFinder]、:ui[action.copyPath] 与 :ui[action.openTerminal]
 
-右边的详情里也有 :ui[action.open] 与 :ui[bookmarks.multiple.delete] 按钮。点那里的 :ui[bookmarks.detail.edit]，可以修改 :ui[bookmarks.detail.description] 与 :ui[bookmarks.detail.identity]。:ui[bookmarks.detail.unset] 去掉给这个仓库单独设定的身份。每个远端旁边的 :ui[bookmarks.detail.viewInBrowser] 会打开它的网页。
+右边的详情里也有 :ui[action.open] 与 :ui[bookmarks.multiple.delete] 按钮。点那里的 :ui[bookmarks.detail.edit]，可以修改 :ui[bookmarks.detail.description] 与 :ui[bookmarks.detail.identity]。:ui[bookmarks.detail.unset] 去掉给这个仓库单独设定的身份。每个远端旁边的 :ui[bookmarks.detail.viewInBrowser] 会打开它的网页。这里的描述与身份，和 [仓库设置](/guide/settings/identity/#repository) 里的是同一份。
 
 :::note[服务器仓库]
-:ui[action.copyPath] 拷贝的路径前面带着主机别名，形如 `alias:/path/to/repository`。服务器仓库的详情在选中时才读取。选中它时，Spooky 可能会去连接服务器。
+:ui[action.copyPath] 复制的路径前面带着主机别名，形如 `alias:/path/to/repository`。服务器仓库的详情在选中时才读取。选中它时，Spooky 可能会去连接服务器。
 :::
 
 ## 丢失的仓库 {#missing}

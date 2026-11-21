@@ -78,7 +78,7 @@ description: "使用窗口与标签页、后退与前进、快捷操作、窗口
 
 恢复的仓库已经找不到时，它的窗口会说明仓库丢失了，见 [丢失的仓库](/guide/repositories/manager/#missing)。
 
-打开 :ui[settings.showLaunchWindow] 后，Spooky 启动时还会打开一个列出最近仓库的窗口。连按其中一个，或选中后按 <kbd>↩</kbd>，就会打开它。有仓库窗口来到最前面后，这个窗口会自己关闭。
+打开 :ui[settings.showLaunchWindow] 后，Spooky 启动时还会打开一个列出最近仓库的窗口。连按其中一个，或选中后按 <kbd>↩</kbd>，就会打开它。有仓库窗口来到最前面后，这个窗口会自己关闭。这两项设置见 [窗口与仓库管理](/guide/settings/general/#windows)。
 
 :::note[服务器仓库]
 恢复的服务器仓库会在 Spooky 启动时重新连接服务器。
@@ -136,7 +136,7 @@ spooky://clone?url=<address>
 
 这个链接会打开克隆对话框，地址已经填好。你选好放在哪里、点了 :ui[clone.submit] 之后才会开始克隆，见 [克隆仓库](/guide/repositories/manager/#clone)。
 
-:ui[app.name > settings.title] › :ui[settings.integration] › :ui[settings.github] 设为 Spooky 时，github.com 上用桌面 App 打开仓库的链接也会打开这个克隆对话框。
+:ui[app.name > settings.title] › :ui[settings.integration] › :ui[settings.github] 设为 Spooky 时，github.com 上用桌面 App 打开仓库的链接也会打开这个克隆对话框，见 [来自 github.com 的链接](/guide/settings/integration/#github-links)。
 
 链接用不了时，例如写了不认识的视图，或者给的是相对路径，Spooky 只显示 :ui[link.invalid.title]，不做别的事。
 
