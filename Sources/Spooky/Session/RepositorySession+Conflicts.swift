@@ -4,22 +4,25 @@ import SpookyKit
 // MARK: - Conflicts
 
 extension RepositorySession {
-    /// 进行中的操作里已经解决的冲突数：有 resolve-undo 记录、当前不再是冲突的文件。
+    /// 这次操作中已经解决的冲突文件：上下文里的 resolve-undo 记录，加上刚解决、上下文还没重读到的文件；没有进行中的操作时为空。
+    var resolvedConflictPaths: Set<String> {
+        context?.progress.map { $0.resolvedPaths.union(pendingResolvedPaths) } ?? []
+    }
+
+    /// 进行中的操作里已经解决的冲突数：已经解决、当前不再是冲突的文件。
     var resolvedConflictCount: Int {
-        let conflicted = Set(status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? [])
-        return context?.progress?.resolvedPaths.subtracting(conflicted).count ?? 0
+        resolvedConflictPaths.subtracting(Self.conflictedPaths(in: status)).count
     }
 
     /// 只看冲突时列表保留的文件：当前未解决的冲突与这次操作已经解决的冲突。
     ///
     /// 没有进行中的操作，或这次操作从没有出现过冲突时为 nil：横幅里的开关不可用，列表也不按它过滤。
     var conflictPaths: Set<String>? {
-        guard let progress = context?.progress else {
+        guard context?.progress != nil else {
             return nil
         }
 
-        let unresolved = status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? []
-        let paths = progress.resolvedPaths.union(unresolved)
+        let paths = resolvedConflictPaths.union(Self.conflictedPaths(in: status))
 
         return paths.isEmpty ? nil : paths
     }
@@ -189,7 +192,7 @@ extension RepositorySession {
             return false
         }
 
-        let resolved = context?.progress?.resolvedPaths ?? []
+        let resolved = resolvedConflictPaths
 
         return entries.contains { entry in
             switch version {
@@ -218,6 +221,15 @@ extension RepositorySession {
             recordsActivity: false,
             available: { $0.canRestoreConflicts(entries, to: version) }
         )
+    }
+}
+
+// MARK: - Helpers
+
+extension RepositorySession {
+    /// 状态里未解决的冲突文件；还没有状态时为空。
+    static func conflictedPaths(in status: WorkingCopyStatus?) -> Set<String> {
+        Set(status?.entries.filter { $0.kind == .conflicted }.map(\.path) ?? [])
     }
 }
 

@@ -6,6 +6,7 @@ extension WorkingCopyOperations {
     /// 用信息框里编辑后的信息提交序列的这一步，再交给 Git 处理后面的步骤。
     ///
     /// 信息经 `commit -F -` 送到仓库所在机器，不写 Git 目录下的文件，也不启动编辑器；后面的步骤仍由 Git 按默认方式处理。
+    /// 后面的步骤停在冲突上时正常返回，由读到的状态显示下一步的冲突。
     ///
     /// - Parameters:
     ///   - operation: 进行中的变基、摘取或反转。
@@ -39,8 +40,44 @@ extension WorkingCopyOperations {
                 return
             }
 
-            _ = try await runner.run(Self.continuing + [operation == .revert ? "revert" : "cherry-pick", "--continue"])
+            try await proceedSequence(operation, action: "continue")
         }
+    }
+
+    /// 让 Git 接着处理序列后面的步骤，不启动编辑器；下一步停在待解决的冲突上时不当作失败。
+    ///
+    /// 下一步变成空提交、钩子失败等同样以 1 退出：只有留下了这种操作停在冲突上的状态文件、且有未合并的文件，才是停在了冲突上。
+    ///
+    /// - Parameters:
+    ///   - operation: 进行中的变基、摘取或反转。
+    ///   - action: `continue` 或 `skip`。
+    func proceedSequence(_ operation: RepositoryOperationState, action: String) async throws {
+        let (command, marker): (String, String) =
+            switch operation {
+            case .rebase: ("rebase", "REBASE_HEAD")
+            case .cherryPick: ("cherry-pick", "CHERRY_PICK_HEAD")
+            case .revert: ("revert", "REVERT_HEAD")
+            case .merge, .squash: throw WorkingCopyError.invalidSelection
+            }
+
+        do {
+            _ = try await runner.run(Self.continuing + [command, "--" + action])
+        } catch let error as GitError where error.exitCode == 1 {
+            guard try await stoppedOnConflicts(marker: marker) else {
+                throw error
+            }
+        }
+    }
+
+    /// 操作是否停在待解决的冲突上：Git 留下了表示停顿的状态文件，且有未合并的文件；须在写事务中调用。
+    ///
+    /// - Parameter marker: 相对 Git 目录的状态文件，如合并的 MERGE_HEAD、摘取的 CHERRY_PICK_HEAD。
+    func stoppedOnConflicts(marker: String) async throws -> Bool {
+        guard try await stateFiles([marker])[marker] != nil else {
+            return false
+        }
+
+        return try await runner.status().entries.contains { $0.kind == .conflicted }
     }
 }
 
@@ -92,6 +129,6 @@ extension WorkingCopyOperations {
 
         // apply 后端自行提交后再 --continue 会报没有改动并停住，改为跳过这一步
         let apply = files["rebase-apply/head-name"] != nil
-        _ = try await runner.run(Self.continuing + ["rebase", apply ? "--skip" : "--continue"])
+        try await proceedSequence(.rebase, action: apply ? "skip" : "continue")
     }
 }

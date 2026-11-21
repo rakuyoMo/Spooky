@@ -46,7 +46,7 @@ extension RepositorySession {
             showsIgnored: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showIgnored),
             showsAssumeUnchanged: UserDefaults.standard.bool(forKey: WorkingCopyPreferences.showAssumeUnchanged),
             conflictPaths: onlyConflicts ? conflictPaths : nil,
-            resolvedPaths: context?.progress?.resolvedPaths ?? [],
+            resolvedPaths: resolvedConflictPaths,
             filter: searchText
         )
     }

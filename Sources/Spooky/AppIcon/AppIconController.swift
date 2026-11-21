@@ -494,7 +494,7 @@ extension AppIconController {
             beginRequest()
         }
 
-        Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { result in
+        Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { [weak self] result in
             let changesIcon = (try? result.get()) ?? false
 
             Task { @MainActor [weak self] in

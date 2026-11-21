@@ -14,7 +14,7 @@ extension HistoryListTests {
         let history = RepositoryHistoryState()
         let sleeper = ManualSleeper()
 
-        history.loadingRowSleep = { try await sleeper.wait($0) }
+        history.loadingRowSleep = { await sleeper.wait($0) }
 
         defer { sleeper.releaseAll() }
 

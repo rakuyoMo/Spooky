@@ -138,6 +138,7 @@ extension RepositorySession {
     /// 读到新的上下文时按编辑模式更新信息：进入进行中操作即进入合并模式，用 Git 准备的信息替换草稿并退出修补，合并成功后信息为空。
     ///
     /// 序列进入下一步或停在另一个提交上时同样换成这一步的信息；同一步里重新读取不覆盖编辑中的内容。
+    /// 操作结束时（含在 App 外中止或提交），没有改过的预填信息随之清空，改过的保留。
     /// edit 停顿结束，或 HEAD 不再是可以修补的提交时，退出已打开的修补。
     /// 仓库刚打开时还没有上一份上下文，只在信息为空时填入，切回仓库时恢复的草稿保留。
     ///
@@ -149,6 +150,7 @@ extension RepositorySession {
             // edit 停顿里打开的修补只针对停顿中的提交，变基结束或中止后退出修补，恢复进入修补前的草稿
             if previous?.progress?.stopsForEdit ?? false { setAmend(false) }
 
+            clearPreparedMessage(of: previous)
             return
         }
 
@@ -292,5 +294,30 @@ extension RepositorySession {
         }
 
         onCommentPrompt?(empty) { completion($0 == .remove ? stripped : message) }
+    }
+}
+
+// MARK: - Private
+
+extension RepositorySession {
+    /// 进行中的操作结束后，清空仍是它预填的信息：预填属于这次操作，操作在 App 外中止或提交时同样不留下；用户改过的信息保留。
+    ///
+    /// 提交成功后等待重置的信息由那次重置清空，这里不提前清。
+    ///
+    /// - Parameter previous: 上一份上下文；其中没有进行中的操作时不处理。
+    private func clearPreparedMessage(of previous: WorkingCopyContext?) {
+        guard
+            let previous,
+            previous.progress != nil,
+            commitResetTask == nil
+        else { return }
+
+        let prepared = CommitMessage.parts(of: previous.preparedMessage)
+
+        guard commitSubject == prepared.subject, commitBody == prepared.body else {
+            return
+        }
+
+        setMessage("")
     }
 }

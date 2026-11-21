@@ -52,6 +52,57 @@ extension RepositorySessionTests {
         try await resolveAndRestore(session)
         try await filterConflicts(session, runner: runner)
     }
+
+    /// 解决冲突后状态先于上下文读到：上下文还没读到 resolve-undo 记录时，横幅已经数出这次解决的冲突，只看冲突的列表也保留它；
+    /// 读到的上下文带上记录后不再重复计算。
+    @Test("解决冲突后第一次显示就带上已解决的计数")
+    func resolvedCountBeforeContext() async throws {
+        let directory = try FileViewsTests.temporaryDirectory()
+        let location = RepositoryLocation.local(path: directory.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+
+        // 闸门与脚本放在仓库之外，它们的变化不触发刷新
+        let tools = try FileViewsTests.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: tools) }
+
+        let gate = try ProcessGate(in: tools)
+        defer { gate.release() }
+
+        try await commitFiles(["x": "base"], message: "base", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commitFiles(["x": "side"], message: "side", in: directory, runner: runner)
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commitFiles(["x": "main"], message: "main", in: directory, runner: runner)
+        _ = try await runner.execute(["merge", "-q", "side"], acceptedExitCodes: [1])
+
+        let gated = try resolveUndoGatedRunner(at: location, gate: gate, tools: tools)
+        let session = RepositorySession(makeRunner: { _ in gated })
+        defer { closeOperationRepository(session, directory) }
+
+        session.display(location)
+        await reload(session) { session.context?.operation == .merge }
+
+        #expect(session.conflictCount == 1 && session.resolvedConflictCount == 0)
+
+        // 解决后的刷新读到 x 不再冲突，随后的上下文读取停在 resolve-undo 上
+        try gate.arm()
+        session.resolve(session.status?.entries ?? [], theirs: true)
+        await session.writeTask?.value
+        await gate.arrival()
+
+        #expect(session.conflictCount == 0)
+        #expect(session.context?.progress?.resolvedPaths.isEmpty ?? false)
+        #expect(session.resolvedConflictCount == 1)
+        #expect(session.conflictPaths == ["x"])
+
+        // 上下文读到 resolve-undo 记录后，暂记的文件交还给它
+        gate.release()
+        await session.waitForRefresh()
+
+        #expect(session.context?.progress?.resolvedPaths == ["x"])
+        #expect(session.pendingResolvedPaths.isEmpty)
+        #expect(session.resolvedConflictCount == 1)
+    }
 }
 
 // MARK: - Steps
@@ -108,6 +159,43 @@ extension RepositorySessionTests {
 
         #expect(session.conflictPaths == nil)
         #expect(conflictListing(session).map(\.path) == ["note.txt"])
+    }
+
+    /// 只拦武装后的一次 resolve-undo 读取：认领后停在闸门上，放行后照常执行；其余命令直接交给系统 Git。
+    ///
+    /// - Parameters:
+    ///   - location: 要读取的仓库。
+    ///   - gate: 认领后停住的闸门。
+    ///   - tools: 放脚本的目录。
+    private func resolveUndoGatedRunner(
+        at location: RepositoryLocation,
+        gate: ProcessGate,
+        tools: URL
+    ) throws -> GitRunner {
+        let script = tools.appending(path: "resolve-undo-git")
+        let source = """
+            #!/bin/sh
+            for arg in "$@"; do
+                if [ "$arg" = --resolve-undo ] && \(gate.claim); then
+                    \(gate.hold)
+                fi
+            done
+            exec /usr/bin/git "$@"
+
+            """
+
+        try Data(source.utf8).write(to: script)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: script.path)
+
+        return GitRunner(
+            location: location,
+            executablePath: script.path,
+            environment: .inherit.updating([
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_CONFIG_SYSTEM": "/dev/null",
+                "GIT_CONFIG_NOSYSTEM": "1",
+            ])
+        )
     }
 
     /// 打开只看冲突时会话列出的条目。

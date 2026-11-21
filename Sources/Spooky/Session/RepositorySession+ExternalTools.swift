@@ -356,7 +356,7 @@ extension RepositorySession {
         versions: (left: FileVersion, right: FileVersion),
         names: (left: String, right: String)
     ) async throws {
-        let application = try await installedApplication(of: tool)
+        let application = try installedApplication(of: tool)
         let compareDirectories = UserDefaults.standard.object(forKey: ExternalTool.compareDirectoryKey) as? Bool ?? true
 
         if files.count > 1, tool.supportsDirectoryDiff, compareDirectories {
@@ -380,7 +380,7 @@ extension RepositorySession {
 
     /// 启动合并工具并等它退出。
     private static func runMergeTool(_ tool: ExternalTool, files: MergeToolFiles) async throws {
-        let application = try await installedApplication(of: tool)
+        let application = try installedApplication(of: tool)
 
         try await launch(
             tool,

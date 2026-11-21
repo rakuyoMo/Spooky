@@ -93,7 +93,7 @@ struct WorkingCopyFileList: NSViewRepresentable {
             showsIgnored: showsIgnored,
             showsAssumeUnchanged: showsAssumeUnchanged,
             conflictPaths: onlyConflicts ? session.conflictPaths : nil,
-            resolvedPaths: session.context?.progress?.resolvedPaths ?? [],
+            resolvedPaths: session.resolvedConflictPaths,
             filter: session.searchText
         )
 

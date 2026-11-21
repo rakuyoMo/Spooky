@@ -294,7 +294,7 @@ private struct RepositorySettingToggle: View {
     let isEnabled: Bool
 
     /// 勾选状态改变。
-    let change: (Bool) -> Void
+    let change: @MainActor (Bool) -> Void
 
     /// 标签与勾选框横向排列。
     var body: some View {

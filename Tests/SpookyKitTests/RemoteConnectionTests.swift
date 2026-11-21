@@ -47,15 +47,18 @@ struct RemoteConnectionTests {
             #expect(childSession.standardOutput == session.standardOutput)
             let wrapper = try await connection.execute(["config", "--get", "core.askPass"])
             let wrapperPath = String(decoding: wrapper.standardOutput.dropLast(), as: UTF8.self)
+            let localDirectory = try await Self.checkSessionPermissions(
+                session: sessionPath,
+                wrapper: wrapperPath,
+                transfer: transfer
+            )
 
-            // stat 的参数在 macOS 与 Linux 上不同，权限用 B 上必备的 Perl 读出
-            let permissions = try await RemoteFixture.raw([
-                "/usr/bin/perl", "-e", #"printf("%o\n", (stat)[2] & 07777) for @ARGV"#,
-                "--", sessionPath, wrapperPath,
-            ])
-            #expect(permissions.standardOutput == Data("700\n700\n".utf8))
             await connection.close()
+
+            // 关闭后两端的会话目录连同里面的 socket 都删掉
             _ = try await RemoteFixture.raw(["/bin/test", "!", "-e", sessionPath])
+            #expect(!FileManager.default.fileExists(atPath: localDirectory.path))
+
             try await fixture.remove()
         } catch {
             await connection.close()
@@ -267,6 +270,45 @@ struct RemoteConnectionTests {
     }
 }
 
+// MARK: - Steps
+
+extension RemoteConnectionTests {
+    /// 两端的会话文件只有登录用户能用：B 上的会话目录与包装器是 0700，中继 socket 在会话目录里、
+    /// 不给同组与其他用户任何权限；本机的会话目录是 0700，控制 socket 与中继 socket 都在里面。返回本机的会话目录。
+    private static func checkSessionPermissions(
+        session: String,
+        wrapper: String,
+        transfer: (executable: String, arguments: [String])
+    ) async throws -> URL {
+        let relay = session + "/relay.sock"
+        _ = try await RemoteFixture.raw(["/bin/test", "-S", relay])
+
+        // stat 的参数在 macOS 与 Linux 上不同，权限用 B 上必备的 Perl 读出
+        let permissions = try await RemoteFixture.raw([
+            "/usr/bin/perl", "-e", #"printf("%o\n", (stat)[2] & 07777) for @ARGV"#,
+            "--", session, wrapper, relay,
+        ])
+
+        let modes = String(decoding: permissions.standardOutput, as: UTF8.self).split(separator: "\n")
+        #expect(modes.prefix(2) == ["700", "700"])
+        #expect(Int(modes.last ?? "", radix: 8).map { $0 & 0o077 == 0 } ?? false)
+
+        // 本机的会话目录取自 sftp 的控制 socket 路径
+        let control = try #require(transfer.arguments.first { $0.hasPrefix("ControlPath=") })
+        let local = URL(fileURLWithPath: String(control.dropFirst("ControlPath=".count)))
+            .deletingLastPathComponent()
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: local.path)
+        #expect(attributes[.posixPermissions] as? Int == 0o700)
+
+        for name in ["master.sock", "relay.sock"] {
+            #expect(FileManager.default.fileExists(atPath: local.appending(path: name).path))
+        }
+
+        return local
+    }
+}
+
 // MARK: - RemoteFixture
 
 /// 每个测试独占 B 上一个目录，所有 Git 配置都限制在该目录中的仓库。
@@ -308,16 +350,24 @@ struct RemoteFixture: Sendable {
         let fixture = Self(root: root)
 
         do {
-            _ = try await raw(["git", "-c", "init.templateDir=", "init", "-q", "-b", "main", fixture.repository])
-            _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "user.name", "Spooky Test"])
-            _ = try await raw([
-                "git", "-C", fixture.repository, "config", "--local", "user.email", "spooky@example.invalid",
-            ])
-            _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "commit.gpgSign", "false"])
+            try await initializeRepository(at: fixture.repository)
             return fixture
         } catch {
             try await fixture.remove()
             throw error
+        }
+    }
+
+    /// 在 B 上新建空仓库，提交身份写进仓库本地配置。
+    static func initializeRepository(at path: String) async throws {
+        _ = try await raw(["git", "-c", "init.templateDir=", "init", "-q", "-b", "main", path])
+
+        for (key, value) in [
+            ("user.name", "Spooky Test"),
+            ("user.email", "spooky@example.invalid"),
+            ("commit.gpgSign", "false"),
+        ] {
+            _ = try await raw(["git", "-C", path, "config", "--local", key, value])
         }
     }
 

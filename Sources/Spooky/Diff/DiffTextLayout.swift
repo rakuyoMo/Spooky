@@ -23,6 +23,7 @@ struct DiffTextLayout {
     let height: CGFloat
 
     /// 从实际布局管理器读取字符范围的全部折行；空 LF 使用正常字体基线。
+    @MainActor
     init(content: DiffTextContent, document: NSTextView, style: TextStyle) {
         guard let manager = document.layoutManager, let container = document.textContainer else {
             rows = []

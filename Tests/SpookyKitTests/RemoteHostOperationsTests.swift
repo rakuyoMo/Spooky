@@ -87,4 +87,103 @@ struct RemoteHostOperationsTests {
         await RemoteConnection.closeHosts()
         try await fixture.remove()
     }
+
+    /// 选了 LFS 的克隆在 B 上执行：B 的 PATH 里找不到 git-lfs 时在克隆前失败，不建出目标目录；
+    /// 找得到 git-lfs、全局配置登记了 LFS 过滤器时，检出的是文件内容。
+    @Test("服务器上带 LFS 的克隆")
+    func lfsCloneOnServer() async throws {
+        let fixture = try await RemoteFixture.create()
+
+        do {
+            let directory = try await RemoteFixture.lfsDirectory()
+            let origin = try await Self.makeLFSOrigin(in: fixture, directory: directory)
+            let destination = fixture.root + "/LFS 克隆"
+
+            let clone = RepositoryClone(
+                url: origin,
+                destination: .remote(host: Self.host, path: destination),
+                options: CloneOptions(lfs: true)
+            )
+
+            // 主机连接按别名登记，换配置前先关掉已有的
+            await RemoteConnection.closeHosts()
+            _ = RemoteConnection.host(
+                Self.host,
+                configuration: RemoteFixture.lfsConfiguration(searchPath: "/usr/bin:/bin")
+            )
+
+            let error = await #expect(throws: HostOperationError.self) {
+                _ = try await clone.start().value
+            }
+
+            #expect({ if case .lfsUnavailable = error { true } else { false } }())
+            _ = try await RemoteFixture.raw(["/bin/test", "!", "-e", destination])
+
+            // 全局配置是测试目录里的文件，只登记 LFS 过滤器
+            let global = fixture.root + "/全局.gitconfig"
+
+            for (key, value) in Self.lfsFilters {
+                _ = try await RemoteFixture.raw(["git", "config", "--file", global, key, value])
+            }
+
+            var configuration = RemoteFixture.lfsConfiguration(searchPath: directory + ":/usr/bin:/bin")
+            configuration.remoteEnvironment["GIT_CONFIG_GLOBAL"] = global
+
+            await RemoteConnection.closeHosts()
+            _ = RemoteConnection.host(Self.host, configuration: configuration)
+            _ = try await clone.start().value
+
+            let content = try await RemoteFixture.raw(["/bin/cat", destination + "/大 文件.bin"])
+            #expect(content.standardOutput == Data("LFS 内容\n".utf8))
+        } catch {
+            await RemoteConnection.closeHosts()
+            try await fixture.remove()
+            throw error
+        }
+
+        await RemoteConnection.closeHosts()
+        try await fixture.remove()
+    }
+}
+
+// MARK: - Steps
+
+extension RemoteHostOperationsTests {
+    /// `git lfs install` 写进全局配置的 LFS 过滤器。
+    private static let lfsFilters = [
+        ("filter.lfs.clean", "git-lfs clean -- %f"),
+        ("filter.lfs.smudge", "git-lfs smudge -- %f"),
+        ("filter.lfs.process", "git-lfs filter-process"),
+        ("filter.lfs.required", "true"),
+    ]
+
+    /// 新建仓库并用 LFS 提交一个文件，推到 B 上新建的裸仓库，pre-push 钩子一并上传 LFS 对象；返回裸仓库的路径。
+    ///
+    /// 仓库路径里不放通配符：git-lfs 推送时把仓库路径当成匹配模式，遇到 `[` 报出语法错误。
+    private static func makeLFSOrigin(in fixture: RemoteFixture, directory: String) async throws -> String {
+        let source = fixture.root + "/LFS 源"
+        let origin = fixture.root + "/origin.git"
+
+        try await RemoteFixture.initializeRepository(at: source)
+
+        _ = try await RemoteFixture.raw([
+            "/usr/bin/env", "PATH=" + directory + ":/usr/bin:/bin",
+            "/bin/sh", "-c",
+            """
+            set -e
+            cd "$1"
+            git lfs install --local >/dev/null
+            git lfs track '*.bin' >/dev/null
+            printf 'LFS 内容\\n' > '大 文件.bin'
+            git add --all
+            git commit -q -m LFS
+            git -c init.templateDir= init -q --bare -b main "$2"
+            git remote add origin "$2"
+            git push -q origin main
+            """,
+            "sh", source, origin,
+        ])
+
+        return origin
+    }
 }
