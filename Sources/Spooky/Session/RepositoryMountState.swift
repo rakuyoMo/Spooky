@@ -143,6 +143,18 @@ final class RepositoryMountState {
         }.value
     }
 
+    /// 本机的这个目录现在在不在；在后台取。
+    ///
+    /// - Parameter url: 本机目录。
+    nonisolated static func directoryExists(_ url: URL) async -> Bool {
+        await Task.detached {
+            var isDirectory: ObjCBool = false
+
+            return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+        }.value
+    }
+
     /// 读入打开的服务器仓库记下的本机位置。
     ///
     /// - Parameters:
@@ -291,26 +303,34 @@ final class RepositoryMountState {
         }
     }
 
-    /// 重新查看方式带的文件夹能不能用：指定的文件夹看在不在；sshfs 挂载的文件夹在后台看是不是一个卷的根，不在主线程上取。
+    /// 重新查看方式带的文件夹能不能用：指定的文件夹看在不在，sshfs 挂载的文件夹看是不是一个卷的根。
+    ///
+    /// 两种查看都在后台进行：文件夹多在网络卷上，卷没有响应时查看要等到系统超时，不能卡住主线程。
     func refreshFolder() {
         let check = UUID()
         folderCheck = check
 
+        let probe: @Sendable () async -> Bool
+
         switch location {
         case .chosenFolder(let folder):
-            setFolderAvailable(Self.directoryExists(folder))
+            probe = { await Self.directoryExists(folder) }
 
         case .sshfsMount(let folder):
-            Task { [weak self] in
-                let mounted = await Self.isVolumeRoot(folder)
-
-                guard let self, folderCheck == check else { return }
-
-                setFolderAvailable(mounted)
-            }
+            probe = { await Self.isVolumeRoot(folder) }
 
         case .automatic, .smbMount:
             setFolderAvailable(false)
+            return
+        }
+
+        Task { [weak self] in
+            let available = await probe()
+
+            // 查看期间改换了本机位置或又查看了一次时，这次的结果不再采用
+            guard let self, folderCheck == check else { return }
+
+            setFolderAvailable(available)
         }
     }
 }
@@ -337,13 +357,6 @@ extension RepositoryMountState {
         }
 
         return lookup == .notMounted ? .notMounted : .unknown
-    }
-
-    /// 本机的这个目录现在在不在。
-    private static func directoryExists(_ url: URL) -> Bool {
-        var isDirectory: ObjCBool = false
-
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
     /// 开始观察这台 Mac 挂载与卸载卷；已在观察时什么也不做。

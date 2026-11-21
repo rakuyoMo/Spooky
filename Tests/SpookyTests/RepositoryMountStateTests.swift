@@ -154,8 +154,9 @@ struct RepositoryMountStateTests {
                 == AppLocalization.text("action.revealFinder.folderMissing", HomePath.abbreviated(missing.path))
         )
 
-        // 指定的文件夹在：能直接打开
+        // 指定的文件夹在：后台查看完后能直接打开
         mounts.apply(.chosenFolder(directory))
+        await until { mounts.status == .available(directory) }
 
         #expect(mounts.unavailableReason == nil)
         #expect(session.finderURL("a b.txt") == directory.appending(path: "a b.txt"))
@@ -278,7 +279,9 @@ extension RepositoryMountStateTests {
         state.apply(.chosenFolder(chosen))
 
         #expect(state.lookups[site.repository] == nil)
-        #expect(state.status == .available(chosen))
+
+        // 文件夹在后台查看，查看完才有位置
+        await until { state.status == .available(chosen) }
         #expect(state.repositoryMount()?.localURL == chosen)
 
         // 卷变化后的重新查找跳过仓库目录
@@ -288,8 +291,8 @@ extension RepositoryMountStateTests {
         // 指定的文件夹不在（如卷没有挂载）
         let unmounted = base.appending(path: "unmounted/仓 库")
         state.apply(.chosenFolder(unmounted))
+        await until { state.status == .folderMissing(unmounted) }
 
-        #expect(state.status == .folderMissing(unmounted))
         #expect(state.repositoryMount() == nil)
 
         state.apply(.automatic)
