@@ -308,16 +308,24 @@ struct RemoteFixture: Sendable {
         let fixture = Self(root: root)
 
         do {
-            _ = try await raw(["git", "-c", "init.templateDir=", "init", "-q", "-b", "main", fixture.repository])
-            _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "user.name", "Spooky Test"])
-            _ = try await raw([
-                "git", "-C", fixture.repository, "config", "--local", "user.email", "spooky@example.invalid",
-            ])
-            _ = try await raw(["git", "-C", fixture.repository, "config", "--local", "commit.gpgSign", "false"])
+            try await initializeRepository(at: fixture.repository)
             return fixture
         } catch {
             try await fixture.remove()
             throw error
+        }
+    }
+
+    /// 在 B 上新建空仓库，提交身份写进仓库本地配置。
+    static func initializeRepository(at path: String) async throws {
+        _ = try await raw(["git", "-c", "init.templateDir=", "init", "-q", "-b", "main", path])
+
+        for (key, value) in [
+            ("user.name", "Spooky Test"),
+            ("user.email", "spooky@example.invalid"),
+            ("commit.gpgSign", "false"),
+        ] {
+            _ = try await raw(["git", "-C", path, "config", "--local", key, value])
         }
     }
 

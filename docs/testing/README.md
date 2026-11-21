@@ -37,6 +37,7 @@ gh run download <运行编号> -n test-events-1
 - `~/.ssh/config` 中有主机别名 `spooky-test`
 - 使用测试专用的密钥 `~/.ssh/spooky-test_ed25519` 认证
 - 可以读写服务器上的 `/Users/wgy/spooky-test/`
+- 服务器的非交互 shell 的 `PATH` 或 Homebrew 的默认位置（`/opt/homebrew/bin`、`/usr/local/bin`）里有 `git-lfs`，LFS 的测试要用
 
 每次运行只在这个目录下新建并清理自己的子目录，不修改双方的 SSH 配置、`known_hosts` 与全局 Git 配置。
 
@@ -67,7 +68,9 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 | `RemoteRewriteTests` | 反转、摘取、重置、交互式变基与修补旧提交 |
 | `RemoteBranchesReviewTests` | 分支比较、分叉点、归档标记与 Update Branch |
 | `RemoteReflogUndoTests` | Reflog 与撤销、重做 |
-| `RemoteHostOperationsTests` | 列目录、新建、扫描与克隆 |
+| `RemoteHostOperationsTests` | 列目录、新建、扫描与克隆，以及带 LFS 的克隆 |
+| `RemoteRepositoryExtensionsTests` | 子模块、工作树与 Git LFS |
+| `RemotePullRequestsTests` | Pull Request 与 Merge Request 的取回与检出 |
 
 ### github.com
 

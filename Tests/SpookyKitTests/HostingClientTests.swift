@@ -76,44 +76,74 @@ struct HostingClientTests {
         #expect(missing.withLock { $0.count } == 1)
     }
 
-    /// 401、403、404、422 与 5xx 各自分类并保留原文；403 与 429 里的速率限制带上解除时间；
-    /// 网络失败分成连不上与证书不受信任两类；响应不是预期的格式算不兼容。
-    @Test("失败分类：状态码、速率限制、网络失败与不兼容的响应")
-    func failures() async throws {
-        let client = HostingClient(instance: .github, token: "t", session: HostingStub.session())
+    /// github.com、GitLab.com 与私有部署的 GitLab 走同一套分类：401、403、404、422 与 5xx 各自分类并保留原文；
+    /// 403 与 429 里的速率限制带上解除时间；网络失败（含超时）分成连不上与证书不受信任两类；响应不是预期的格式算不兼容；
+    /// 各种失败的错误里都没有令牌。
+    @Test(
+        "失败分类：状态码、速率限制、网络失败与不兼容的响应",
+        arguments: [
+            HostingInstance.github,
+            HostingInstance.gitlabCom,
+            HostingInstance.gitlab(address: "https://git.example.com:8443/gitlab"),
+        ]
+    )
+    func failures(on instance: HostingInstance?) async throws {
+        let client = HostingClient(
+            instance: try #require(instance),
+            token: "secret-token",
+            session: HostingStub.session()
+        )
+
+        var errors: [any Error] = []
 
         for (status, headers, body, expected) in Self.failureCases {
             _ = HostingStub.respond { _ in (status, headers, Data(body.utf8)) }
 
-            await #expect(throws: expected, "\(status) \(body)") { try await client.currentUser() }
+            let error = await #expect(throws: expected, "\(status) \(body)") { try await client.owners() }
+            errors += error.map { [$0] } ?? []
         }
 
-        // 网络失败
-        _ = HostingStub.respond { _ in throw URLError(.cannotFindHost) }
+        // 网络失败：找不到主机、超时与 TLS 握手失败都算连不上，证书不受信任单独一类；
+        // 握手失败可能出在代理或网络上，不一定是证书问题
+        let codes: [URLError.Code] = [
+            .cannotFindHost,
+            .timedOut,
+            .secureConnectionFailed,
+            .serverCertificateUntrusted,
+        ]
 
-        let unreachable = await #expect(throws: HostingError.self) { try await client.currentUser() }
+        for code in codes {
+            _ = HostingStub.respond { _ in throw URLError(code) }
 
-        #expect({ if case .unreachable = unreachable { true } else { false } }())
+            let error = await #expect(throws: HostingError.self) { try await client.owners() }
 
-        _ = HostingStub.respond { _ in throw URLError(.serverCertificateUntrusted) }
+            if case .untrustedCertificate = error {
+                #expect(code == .serverCertificateUntrusted)
+            } else {
+                #expect({ if case .unreachable = error { true } else { false } }())
+            }
 
-        let certificate = await #expect(throws: HostingError.self) { try await client.currentUser() }
-
-        #expect({ if case .untrustedCertificate = certificate { true } else { false } }())
-
-        // TLS 握手失败不一定是证书问题，可能是代理或网络
-        _ = HostingStub.respond { _ in throw URLError(.secureConnectionFailed) }
-
-        let handshake = await #expect(throws: HostingError.self) { try await client.currentUser() }
-
-        #expect({ if case .unreachable = handshake { true } else { false } }())
+            errors += error.map { [$0] } ?? []
+        }
 
         // 响应缺少必需的字段
         _ = HostingStub.respond { _ in (200, [:], Data(#"{"id":1}"#.utf8)) }
 
-        let incompatible = await #expect(throws: HostingError.self) { try await client.currentUser() }
+        let incompatible = await #expect(throws: HostingError.self) { try await client.owners() }
 
-        #expect({ if case .incompatible(let text) = incompatible { text.contains("login") } else { false } }())
+        if case .incompatible(let text) = incompatible {
+            #expect(!text.isEmpty)
+        } else {
+            Issue.record("应报出响应不兼容")
+        }
+
+        errors += incompatible.map { [$0] } ?? []
+
+        // 令牌只在请求头里，错误的内容与说明都不带它
+        for error in errors {
+            #expect(!String(reflecting: error).contains("secret-token"))
+            #expect(!error.localizedDescription.contains("secret-token"))
+        }
     }
 
     /// 设备授权：申请验证码后按间隔轮询，等待中与放慢时继续，拿到令牌即返回，表单里带 Client ID；

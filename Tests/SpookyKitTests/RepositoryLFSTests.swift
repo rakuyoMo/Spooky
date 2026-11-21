@@ -278,7 +278,7 @@ private enum LFSProgram {
 // MARK: - OutputLog
 
 /// 收集命令的输出：Git LFS 的传输进度按情形写进标准输出或标准错误。
-private final class OutputLog: Sendable {
+final class OutputLog: Sendable {
     /// 收到的数据。
     private let data = Mutex(Data())
 
