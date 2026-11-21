@@ -276,7 +276,7 @@ extension RepositorySession {
         onActiveViewChange?()
     }
 
-    /// 把全部本地标签推送到远端。
+    /// 把全部本地标签推送到远端；与其它推送一样不进撤销记录。
     func pushAllTags(to remote: String) {
         performGit(
             { runner, output in
@@ -284,7 +284,8 @@ extension RepositorySession {
             },
             title: AppLocalization.text("tag.pushAll", remote),
             target: .push(remote),
-            touchesWorkingCopy: false
+            touchesWorkingCopy: false,
+            undo: .unrecorded
         )
     }
 

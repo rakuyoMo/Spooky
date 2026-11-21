@@ -96,7 +96,9 @@ When a submodule’s configuration is incomplete, its details say :ui[submodule.
 
 You can undo adding, moving, renaming, and deleting a submodule, checking out another revision in it, and changing its URL or options. See [Undo and Recovery](/guide/work/undo/).
 
-Fetching, updating, initializing, synchronizing, and repairing can’t be undone. After one of them, operations before it can’t be undone anymore either.
+Initializing, synchronizing, and repairing can’t be undone. After one of them, operations before it can’t be undone anymore either.
+
+Fetching and updating aren’t recorded, just like fetching and pulling in the repository. Operations before them can still be undone.
 
 :::note[Server repositories]
 All of this runs on the server. When you add a submodule, you pick its folder on the server.
