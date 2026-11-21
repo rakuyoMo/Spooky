@@ -140,6 +140,7 @@ Spooky 由两个 target 组成：
 - 提交信息有普通、修补与合并三种编辑模式，共用一份草稿：进入修补前记下草稿，取消或修补成功后恢复；进入合并或序列的下一步时换成预填的信息
 - 提交与继续都经 `commit -F -` 传入信息，并加 `--cleanup=whitespace`，注释行先按设置处理；继续序列时先用编辑后的信息提交这一步，再让 Git 继续剩下的步骤
 - 合并以 `RepositorySync.merge` 的结果区分是否停在冲突上：退出码为 1 时在同一写事务里核对 `MERGE_HEAD`（压缩合并为 `SQUASH_MSG`）与冲突条目，其余失败照原样抛出
+  - 序列的继续与跳过用同一种核对（变基为 `REBASE_HEAD`，摘取与反转为 `CHERRY_PICK_HEAD`、`REVERT_HEAD`）：停在下一步的冲突上时正常返回，由刷新显示这一步
 - 冲突向导的两侧版本取自索引的 stage，对方的提交在变基时取 `REBASE_HEAD`；选择只在视图里，不写仓库；交给本机程序的版本先写进 `RepositoryFileCache`
 - 旧提交的 Amend 与 Edit 用同一份 todo（目标为 edit、其余为 pick），Amend 停在目标本身；有本地改动时先询问是否储藏，储藏不自动恢复
 

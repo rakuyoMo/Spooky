@@ -176,7 +176,7 @@ struct MergeConflictTests {
         #expect(try await service.context(head: try await runner.status().branch.oid).progress == nil)
     }
 
-    /// 继续之后停在下一步的冲突上，Git 以失败退出，状态文件仍显示进行中，不能当作变基已经完成；
+    /// 继续之后停在下一步的冲突上时正常返回，状态文件显示变基仍在进行、停在下一步，不能当作变基已经完成；
     /// 对方提交是这一步正在重放的提交；空的一步确认保留后，空提交沿用原作者并完成变基。
     @Test("变基冲突：步数、标题与对方提交，继续后停在下一步，空的一步继续时保留空提交")
     func rebaseSteps() async throws {
@@ -217,9 +217,7 @@ struct MergeConflictTests {
 
         #expect(try Data(contentsOf: repository.directory.appending(path: "f")) == Data("f1\n".utf8))
 
-        await #expect(throws: GitError.self) {
-            try await service.finish(.rebase, action: "continue")
-        }
+        try await service.finish(.rebase, action: "continue")
 
         let second = try await currentProgress(repository)
 

@@ -114,6 +114,84 @@ extension MergeConflictTests {
 
         #expect(log == "Original Author|edited\nOriginal Author|first\nSpooky Test|main\n")
     }
+
+    /// 继续与跳过后 Git 停在下一步的冲突上并以 1 退出，这是进入了下一步的冲突，不是失败：两者都正常返回，
+    /// 读到的进度已是下一步；摘取与两种后端的变基相同。
+    @Test("继续与跳过后停在下一步的冲突上", arguments: ["cherry-pick", "rebase", "rebase-apply"])
+    func continueIntoNextConflict(kind: String) async throws {
+        let repository = try TemporaryRepository()
+        defer { repository.remove() }
+
+        try await repository.initialize()
+        let runner = repository.runner
+        let service = WorkingCopyOperations(runner: runner)
+
+        // side 的三个提交各改一个文件，main 把三个文件都改成别的内容，每一步都冲突
+        try await commit(repository, ["x": "base\n", "y": "base\n", "z": "base\n"], message: "base")
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commit(repository, ["x": "side\n"], message: "one")
+        try await commit(repository, ["y": "side\n"], message: "two")
+        try await commit(repository, ["z": "side\n"], message: "three")
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commit(repository, ["x": "main\n", "y": "main\n", "z": "main\n"], message: "main")
+
+        let operation: RepositoryOperationState = kind == "cherry-pick" ? .cherryPick : .rebase
+
+        if operation == .cherryPick {
+            _ = try await runner.execute(["cherry-pick", "side~2", "side~1", "side"], acceptedExitCodes: [1])
+        } else {
+            _ = try await runner.run(["checkout", "-q", "side"])
+            _ = try await runner.execute(
+                ["rebase"] + (kind == "rebase-apply" ? ["--apply"] : []) + ["main"],
+                acceptedExitCodes: [1]
+            )
+        }
+
+        #expect(try await currentProgress(repository).stepSubject == "one")
+
+        // 解决第一步后继续，停在 two 的冲突上
+        try await service.resolve(try await runner.status().entries, theirs: true)
+        try await service.continueSequence(operation, subject: "one", body: "")
+
+        #expect(try await currentProgress(repository).stepSubject == "two")
+        #expect(try await runner.status().entries.filter { $0.kind == .conflicted }.map(\.path) == ["y"])
+
+        // 跳过 two，停在 three 的冲突上
+        try await service.finish(operation, action: "skip")
+
+        #expect(try await currentProgress(repository).stepSubject == "three")
+        #expect(try await runner.status().entries.filter { $0.kind == .conflicted }.map(\.path) == ["z"])
+    }
+
+    /// 继续后下一步变成空提交时 Git 同样以 1 退出，但没有未合并的文件，不是停在冲突上：照原样抛出 Git 的错误，摘取仍在进行。
+    @Test("继续后下一步变成空提交时报告 Git 的错误")
+    func continueIntoEmptyStep() async throws {
+        let repository = try TemporaryRepository()
+        defer { repository.remove() }
+
+        try await repository.initialize()
+        let runner = repository.runner
+        let service = WorkingCopyOperations(runner: runner)
+
+        // one 与 main 冲突；two 的改动 main 已经有了，摘过来是空的一步
+        try await commit(repository, ["x": "base\n", "y": "base\n"], message: "base")
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try await commit(repository, ["x": "side\n"], message: "one")
+        try await commit(repository, ["y": "same\n"], message: "two")
+        _ = try await runner.run(["checkout", "-q", "main"])
+        try await commit(repository, ["x": "main\n", "y": "same\n"], message: "main")
+
+        _ = try await runner.execute(["cherry-pick", "side~1", "side"], acceptedExitCodes: [1])
+        try await service.resolve(try await runner.status().entries, theirs: true)
+
+        let error = await #expect(throws: GitError.self) {
+            try await service.continueSequence(.cherryPick, subject: "one", body: "")
+        }
+
+        #expect(error?.exitCode == 1)
+        #expect(try await currentProgress(repository).stepSubject == "two")
+        #expect(try await runner.status().entries.isEmpty)
+    }
 }
 
 // MARK: - Continue Helpers

@@ -333,6 +333,8 @@ public struct WorkingCopyOperations: Sendable {
     }
 
     /// 中止、继续、跳过都由 Git 维护状态文件，远端不会启动本机编辑器。
+    ///
+    /// 序列继续或跳过后停在下一步的冲突上时正常返回，由读到的状态显示这一步的冲突。
     public func finish(_ operation: RepositoryOperationState, action: String) async throws {
         guard ["abort", "continue", "skip"].contains(action) else { throw WorkingCopyError.invalidSelection }
         let command: String
@@ -350,6 +352,15 @@ public struct WorkingCopyOperations: Sendable {
         case .cherryPick: command = "cherry-pick"
 
         case .revert: command = "revert"
+        }
+
+        // 序列的继续与跳过会接着处理后面的步骤，下一步停在冲突上不算失败
+        if operation != .merge, action != "abort" {
+            try await runner.writeTransaction {
+                try await proceedSequence(operation, action: action)
+            }
+
+            return
         }
 
         _ = try await runner.run(["-c", "core.editor=:", "-c", "core.trustctime=false", command, "--" + action])

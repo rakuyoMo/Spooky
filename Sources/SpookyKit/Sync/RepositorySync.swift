@@ -391,7 +391,9 @@ public struct RepositorySync: Sendable {
                 return .merged
             } catch let error as GitError where error.exitCode == 1 {
                 // 钩子与签名校验失败同样以 1 退出；只有留下合并状态并有未合并的文件才是停在冲突上
-                guard try await stoppedOnConflicts(squash: options.squash) else {
+                let marker = options.squash ? "SQUASH_MSG" : "MERGE_HEAD"
+
+                guard try await WorkingCopyOperations(runner: runner).stoppedOnConflicts(marker: marker) else {
                     throw error
                 }
 
@@ -592,17 +594,5 @@ extension RepositorySync {
             ],
             onOutput: onOutput
         )
-    }
-
-    /// 合并是否停在待解决的冲突上：Git 留下了合并状态（压缩合并是 SQUASH_MSG），且有未合并的文件；须在写事务中调用。
-    private func stoppedOnConflicts(squash: Bool) async throws -> Bool {
-        let name = squash ? "SQUASH_MSG" : "MERGE_HEAD"
-        let state = try await WorkingCopyOperations(runner: runner).stateFiles([name])
-
-        guard state[name] != nil else {
-            return false
-        }
-
-        return try await runner.status().entries.contains { $0.kind == .conflicted }
     }
 }

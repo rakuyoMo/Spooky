@@ -101,7 +101,7 @@ extension RepositorySessionTests {
         _ = try await runner.run(["cherry-pick", "--abort"])
     }
 
-    /// 摘取序列停在第二个提交：空的一步提供 Skip，未跟踪文件让它不再算空；编辑信息后继续，第三个提交同样冲突。
+    /// 摘取序列停在第二个提交：空的一步提供 Skip，未跟踪文件让它不再算空；编辑信息后继续，第三个提交同样冲突，停在它上面不报告错误。
     private func cherryPickSteps(
         _ session: RepositorySession,
         directory: URL,
@@ -143,6 +143,10 @@ extension RepositorySessionTests {
         let three = String(decoding: try await runner.run(["rev-parse", "side"]), as: UTF8.self)
             .trimmingCharacters(in: .newlines)
 
+        // 停在下一步的冲突上是进入冲突，不是失败，不报告错误
+        var failures: [AppFailure] = []
+        session.onFailure = { failures.append($0) }
+
         session.setMessage("编辑后的 “two”\n\n正文")
         session.continueSequence()
         await session.writeTask?.value
@@ -150,6 +154,7 @@ extension RepositorySessionTests {
 
         let message = String(decoding: try await runner.run(["log", "-1", "--format=%B", "HEAD"]), as: UTF8.self)
 
+        #expect(failures.isEmpty)
         #expect(session.conflictCount == 1)
         #expect(message.trimmingCharacters(in: .newlines) == "编辑后的 “two”\n\n正文")
         #expect(session.commitSubject == "three")
