@@ -118,7 +118,7 @@ It does this when you add or re-authenticate an account, and when you use what t
 
 Each of these requests shows up on the :ui[activity.service] page of the :ui[activity.title] window.
 
-Pictures of GitHub and GitLab users come from the addresses those services give. macOS keeps a copy of downloaded pictures in Spooky’s cache folder.
+Pictures of GitHub and GitLab users come from the addresses those services give. Downloaded pictures stay in memory only, and are gone when you quit Spooky.
 
 Git itself connects to the remote from where the repository is. For a server repository, that’s the server. See [Data and Privacy](/reference/data-privacy/#network).
 

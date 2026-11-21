@@ -118,7 +118,7 @@ Spooky 从你的 Mac 访问托管服务，服务器仓库也一样：
 
 这些请求每一个都会出现在 :ui[activity.title] 窗口的 :ui[activity.service] 页里。
 
-GitHub 和 GitLab 用户的头像来自这些服务给出的地址。下载过的头像，macOS 会在 Spooky 的缓存文件夹里留一份。
+GitHub 和 GitLab 用户的头像来自这些服务给出的地址。下载过的头像只留在内存里，退出 Spooky 就没有了。
 
 Git 本身从仓库所在的地方连接远端，服务器仓库就是从服务器上连接。见 [数据与隐私](/reference/data-privacy/#network)。
 

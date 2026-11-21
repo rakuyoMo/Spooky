@@ -16,7 +16,7 @@ Spooky 没有自己的账号，也不收集使用数据。这一页列出它存�
 | :ui[activity.title] 统计增减时用来比较的内容，每个仓库一个文件 | `~/Library/Application Support/Spooky/Baselines/` |
 | 你给服务器上的 Git 存下的用户名与密码 | 钥匙串里名为 `com.rakuyo.spooky.remote.<host alias>` 的项目 |
 | 托管账号的令牌 | 钥匙串里名为 `com.rakuyo.spooky.hosting.<address>` 的项目 |
-| macOS 为 Spooky 的网络请求留下的缓存与 Cookie，比如下载过的头像 | `~/Library/Caches/com.rakuyo.spooky/`，以及 `~/Library/HTTPStorages/` 里名称以 `com.rakuyo.spooky` 开头的项目 |
+| macOS 为 Spooky 的网络请求留下的缓存与 Cookie | `~/Library/Caches/com.rakuyo.spooky/`，以及 `~/Library/HTTPStorages/` 里名称以 `com.rakuyo.spooky` 开头的项目 |
 | 服务器仓库的连接文件 | `/tmp/spooky-*` 文件夹，连接关闭时删除 |
 | 用快速查看或别的 App 打开的文件副本 | 名为 `spooky-files-*` 的临时文件夹，仓库关闭时删除 |
 
@@ -59,7 +59,7 @@ Git 配置不会被推送，所以这些都不会到远端。服务器仓库的�
 
 自动获取默认每 30 分钟一次。想改的话，打开 :ui[app.name > settings.title]，点 :ui[settings.general]，在 :ui[settings.autoFetch] 旁边选一项。选 :ui[settings.autoFetch.never]，就只在你自己操作时获取。
 
-取提交作者的头像时，Gravatar 拿到的是作者邮箱的哈希值，不是邮箱本身。下载过的头像，macOS 会留一份在 Spooky 的缓存文件夹里。GitHub 与 GitLab 用户的头像来自这两个服务。设置里没有关掉头像的选项。
+取提交作者的头像时，Gravatar 拿到的是作者邮箱的哈希值，不是邮箱本身。下载过的头像只留在内存里，退出 Spooky 就没有了。GitHub 与 GitLab 用户的头像来自这两个服务。设置里没有关掉头像的选项。
 
 Spooky 默认每天检查一次更新。想停掉的话，在 :ui[app.name > settings.title] › :ui[settings.updates] 里关掉 :ui[updates.automaticChecks]。见 [保持更新](/guide/start/install/#updates)。
 

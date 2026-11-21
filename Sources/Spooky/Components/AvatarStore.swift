@@ -3,7 +3,7 @@ import CryptoKit
 
 // MARK: - AvatarStore
 
-/// 取头像图片：提交作者按邮箱经 Gravatar 读取，托管服务的用户按服务给出的地址读取；图片在内存里缓存。
+/// 取头像图片：提交作者按邮箱经 Gravatar 读取，托管服务的用户按服务给出的地址读取；图片只在内存里缓存，不写进磁盘。
 ///
 /// 同一地址只读取一次；没有头像、读取失败或不是图片时记下，本次运行里一直用首字母占位。
 @MainActor
@@ -14,9 +14,12 @@ final class AvatarStore {
     /// 向 Gravatar 请求的像素尺寸，所有位置共用一份图片，足够 Retina 屏上最大的 56 pt 头像。
     nonisolated static let pixelSize = 128
 
+    /// 读取头像用的会话：缓存与 Cookie 只留在内存里，响应不进 App 缓存文件夹里的 URL 缓存。
+    private nonisolated static let session = URLSession(configuration: .ephemeral)
+
     /// 读取头像数据；返回 nil 表示没有头像。测试注入不联网的实现。
     var fetch: @Sendable (URL) async throws -> Data? = { url in
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await AvatarStore.session.data(from: url)
         return (response as? HTTPURLResponse)?.statusCode == 200 ? data : nil
     }
 

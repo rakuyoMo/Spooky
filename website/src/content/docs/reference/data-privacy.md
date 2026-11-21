@@ -16,7 +16,7 @@ There’s no Spooky account, and Spooky doesn’t collect usage data. This page 
 | What :ui[activity.title] compares against to count changes, one file per repository | `~/Library/Application Support/Spooky/Baselines/` |
 | User names and passwords you saved for Git on a server | Keychain, items named `com.rakuyo.spooky.remote.<host alias>` |
 | Hosting account tokens | Keychain, items named `com.rakuyo.spooky.hosting.<address>` |
-| Caches and cookies that macOS keeps for Spooky’s network requests, such as pictures it has downloaded | `~/Library/Caches/com.rakuyo.spooky/`, and the items in `~/Library/HTTPStorages/` whose names begin with `com.rakuyo.spooky` |
+| Caches and cookies that macOS keeps for Spooky’s network requests | `~/Library/Caches/com.rakuyo.spooky/`, and the items in `~/Library/HTTPStorages/` whose names begin with `com.rakuyo.spooky` |
 | Connection files for server repositories | `/tmp/spooky-*` folders, removed when the connection closes |
 | Copies of files you open in Quick Look or other apps | Temporary `spooky-files-*` folders, removed when the repository closes |
 
@@ -59,7 +59,7 @@ Git configuration isn’t pushed, so none of this reaches your remotes. For a se
 
 Automatic fetch runs every 30 minutes by default. To change it, open :ui[app.name > settings.title], click :ui[settings.general], and pick an option next to :ui[settings.autoFetch]. Choose :ui[settings.autoFetch.never] to fetch only when you ask.
 
-For a commit author’s picture, Gravatar gets a hash of the author’s email address, not the address itself. macOS keeps a copy of downloaded pictures in Spooky’s cache folder. Pictures of GitHub and GitLab users come from those services. There’s no setting to turn pictures off.
+For a commit author’s picture, Gravatar gets a hash of the author’s email address, not the address itself. Downloaded pictures stay in memory only, and are gone when you quit Spooky. Pictures of GitHub and GitLab users come from those services. There’s no setting to turn pictures off.
 
 Spooky checks for updates once a day by default. To stop it, turn off :ui[updates.automaticChecks] in :ui[app.name > settings.title] › :ui[settings.updates]. See [Keep Spooky up to date](/guide/start/install/#updates).
 
