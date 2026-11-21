@@ -572,6 +572,8 @@ private struct BlameCommitPopover: View {
     }
 
     /// 一行：右对齐的次要色标签，后面是可选中的值。
+    ///
+    /// 值按提议的宽度折行，不加 `fixedSize`：加了之后 Grid 给每行多算高度，弹窗按理想尺寸定高，多出来的内容被上下裁掉。
     private func row(_ key: String, _ value: String) -> some View {
         GridRow {
             Text(AppLocalization.text(key))
@@ -581,7 +583,6 @@ private struct BlameCommitPopover: View {
             Text(value)
                 .textSelection(.enabled)
                 .frame(maxWidth: 311, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

@@ -12,7 +12,7 @@ struct CommitDetailBar: View {
     @Binding
     var showsTree: Bool
 
-    /// 哈希距左 20 pt，分段控件宽 141 pt、距右 20 pt。
+    /// 哈希距左 20 pt，分段控件宽 141 pt、距右 20 pt；标签在 141 pt 里放不下时，控件按标签加宽。
     var body: some View {
         HStack {
             Text(commit.shortID)
@@ -22,14 +22,15 @@ struct CommitDetailBar: View {
 
             Spacer()
 
-            Picker("", selection: $showsTree) {
-                Text(AppLocalization.text("history.changeset")).tag(false)
-                Text(AppLocalization.text("history.tree")).tag(true)
+            MinimumWidthLayout(minimum: 141) {
+                Picker("", selection: $showsTree) {
+                    Text(AppLocalization.text("history.changeset")).tag(false)
+                    Text(AppLocalization.text("history.tree")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel(AppLocalization.text("history.detailMode"))
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 141)
-            .accessibilityLabel(AppLocalization.text("history.detailMode"))
         }
         .padding(.horizontal, 20)
         .frame(height: 40)
@@ -311,5 +312,45 @@ struct ChangesetSummaryBar: View {
     /// 只有数量为一时选用单数，零与其它数量使用复数。
     private static func countText(_ key: String, _ count: Int) -> String {
         AppLocalization.text(count == 1 ? key + ".one" : key, count)
+    }
+}
+
+// MARK: - MinimumWidthLayout
+
+/// 分段控件的排布：宽度至少是给定的宽度，标签放不下时取控件不截断标签的最窄宽度，控件不越出自己的一格。
+private struct MinimumWidthLayout: Layout {
+    /// 最小宽度。
+    let minimum: CGFloat
+
+    /// 控件在 “最小宽度与它最窄宽度中较大的那个” 的提议下排出来的尺寸。
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) -> CGSize {
+        guard let control = subviews.first else {
+            return .zero
+        }
+
+        // 提议零宽时控件收到不截断标签的最窄宽度；不提议宽度时得到的是各段等宽的宽度，比它宽
+        let narrowest = control.sizeThatFits(ProposedViewSize(width: 0, height: proposal.height)).width
+
+        return control.sizeThatFits(
+            ProposedViewSize(width: max(minimum, narrowest), height: proposal.height)
+        )
+    }
+
+    /// 控件占满排好的宽度，纵向居中。
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal _: ProposedViewSize,
+        subviews: Subviews,
+        cache _: inout ()
+    ) {
+        subviews.first?.place(
+            at: CGPoint(x: bounds.minX, y: bounds.midY),
+            anchor: .leading,
+            proposal: ProposedViewSize(bounds.size)
+        )
     }
 }

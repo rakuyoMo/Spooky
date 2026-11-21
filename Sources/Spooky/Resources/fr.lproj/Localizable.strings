@@ -312,7 +312,7 @@
 "working.stageAll" = "Tout indexer";
 "working.unstageAll" = "Tout désindexer";
 "working.commit" = "Valider";
-"working.amend" = "Corriger le dernier commit";
+"working.amend" = "Corriger";
 "working.subject" = "Objet du commit";
 "working.body" = "Description détaillée";
 "working.staging" = "État d’indexation : %@";

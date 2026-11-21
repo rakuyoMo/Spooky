@@ -106,7 +106,7 @@ struct DialogFormRow<Field: View>: View {
 
 /// 表单输入列里的勾选框，说明紧跟在下面一行；没有带标签的行时，勾选框本身就是输入列。
 ///
-/// 勾选框一行高 16 pt，方框占满这一行。
+/// 勾选框一行高 16 pt，方框占满这一行；标题在输入列里放不下时折行，这一行随之加高。
 /// 说明 11 pt，左缘对齐勾选框的标题文字，折行到输入列的右缘；勾选框到说明默认 8 pt，说明到下一行 8 pt。
 /// 说明用正文色，只在勾选框不可用时随之变灰。
 struct DialogFormOption: View {
@@ -132,7 +132,8 @@ struct DialogFormOption: View {
         DialogFormField {
             VStack(alignment: .leading, spacing: spacing) {
                 Toggle(title, isOn: $isOn)
-                    .frame(height: 16)
+                    .frame(minHeight: 16)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if !help.isEmpty {
                     Text(help)
