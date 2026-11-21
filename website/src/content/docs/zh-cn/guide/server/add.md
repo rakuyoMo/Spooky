@@ -62,11 +62,11 @@ description: "逐项填写 “添加服务器仓库” 对话框，看懂连接�
 
 :ui[bookmarks.noRepository.create] 会在那个文件夹里执行 `git init`，文件夹不存在时先建好它。然后 Spooky 重新检查连接，打开新仓库。
 
-不添加仓库，也能看服务器用的 `PATH` 与 Git：打开 :ui[app.name > settings.title] › :ui[settings.environment]，在底部填上主机别名，点 :ui[settings.environment.server.check]。
+不添加仓库，也能看服务器用的 `PATH` 与 Git：打开 :ui[app.name > settings.title] › :ui[settings.environment]，在底部填上主机别名，点 :ui[settings.environment.server.check]，见 [检查服务器](/guide/settings/general/#server-check)。
 
 ## 服务器上的 Git 环境变量 {#environment}
 
-体检之后，Spooky 可能会显示 :ui[remote.environment.title]。这说明服务器的非交互 shell 设置了名字以 `GIT_` 开头的变量。Spooky 在那里执行的每条 Git 命令，查找仓库与读取设置的方式都会受它们影响。
+体检之后，Spooky 可能会显示 :ui[remote.environment.title]。这说明服务器的非交互式 shell 设置了名字以 `GIT_` 开头的变量。Spooky 在那里执行的每条 Git 命令，查找仓库与读取设置的方式都会受它们影响。
 
 点 :ui[action.close]，仓库就会打开。之后 Git 在这个仓库里表现异常的话，从服务器的 shell 启动文件里去掉这些变量。
 

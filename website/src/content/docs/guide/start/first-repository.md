@@ -67,7 +67,7 @@ Pushing sends your commits to the remote. Others can get them from there, and th
 
 ::screenshot[The Push HEAD dialog. It pushes the new commits on the local branch “main” to the destination origin/main. Below are a collapsed Options section and the Cancel and Push HEAD buttons.]{name="sync" frame="dialog"}
 
-When the push is done, the ↑1 next to the branch disappears. [Fetch, Pull, and Push](/guide/branches/sync/) covers :ui[dialog.options] and pushing a branch for the first time.
+When the push is done, the ↑1 next to the branch disappears. [Push](/guide/branches/sync/#push) covers :ui[dialog.options]. To push a branch for the first time, see [Publish a branch](/guide/branches/sync/#publish).
 
 :::tip
 Hold <kbd>⌥</kbd> and click the :ui[sync.push] button. It turns into :ui[sync.quickPush] and pushes the current branch to its tracking branch right away, without the dialog.

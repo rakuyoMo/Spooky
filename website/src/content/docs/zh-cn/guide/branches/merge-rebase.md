@@ -26,7 +26,9 @@ description: "合并与变基分支，开始前预览冲突，用父分支更新
 
 Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.verify]。
 
-合并遇到冲突时，Spooky 会切到工作区并显示一条横幅，见 [解决冲突](/guide/work/conflicts/#banner)。<kbd>⌘Z</kbd> 可以撤销合并，停在冲突上的合并也可以，撤销就是中止它。
+合并遇到冲突时，Spooky 会切到工作区并显示一条横幅，见 [解决冲突](/guide/work/conflicts/#banner)。
+
+<kbd>⌘Z</kbd> 可以撤销合并。合并停在冲突上时，撤销就是中止它。
 
 ## 变基 {#rebase}
 
@@ -58,9 +60,9 @@ Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.v
 - Spooky 比对时显示 :ui[merge.checking]。
 - 有几个文件冲突。把指针停在这一行上，可以看到是哪些文件。
 - :ui[merge.clean] 或 :ui[merge.unchanged]。
-- 检查没能完成时显示 :ui[merge.unavailable]。
+- 检查没能完成时显示 :ui[merge.unavailable]。把指针停在这一行上，可以看到原因。
 
-合并对话框只在有冲突时显示这一行，其它对话框每种结果都会显示。
+合并对话框不显示 :ui[merge.clean] 与 :ui[merge.unchanged]。其它对话框每种结果都会显示。
 
 ## 快速版本 {#quick}
 
@@ -71,7 +73,7 @@ Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.v
 
 快速合并用你上次在合并对话框里选的提交方式与签名选项。两者和对话框一样，会提出先储藏本地改动。
 
-侧边栏菜单里的项也一样会变，比如 :ui[workspace.mergeMenu] 会变成 :ui[sync.quickMergeInto]{1="origin/main" 2="main"}。
+侧边栏菜单里的项也一样会变。比如 :ui[workspace.mergeMenu] 会变成 :ui[sync.quickMergeInto]{1="origin/main" 2="main"}。
 
 ## 用父分支更新分支 {#update}
 
@@ -86,10 +88,10 @@ Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.v
 
 Spooky 会先检出这个分支，再合并或变基。只有父分支有这个分支没有的提交、又没有别的操作在进行时，才能更新。
 
-对当前所在的分支，侧边栏菜单里的 :ui[branch.mergeWith]{1="main"} 与 :ui[branch.rebaseOn]{1="main"} 会打开合并与变基对话框，并且已经选好了父分支。
+对当前所在的分支，侧边栏菜单里的 :ui[branch.mergeWith]{1="main"} 与 :ui[branch.rebaseOn]{1="main"} 会打开合并与变基对话框，父分支已经选好。
 
 :::tip
-打开菜单后按住 <kbd>⌥</kbd>，:ui[branch.updateNamed]{1="feature/units-toggle"} 会变成 :ui[branch.quickUpdateNamed]{1="feature/units-toggle"}，不弹对话框，直接合并父分支。
+打开菜单后按住 <kbd>⌥</kbd>，:ui[branch.updateNamed]{1="feature/units-toggle"} 会变成 :ui[branch.quickUpdateNamed]{1="feature/units-toggle"}。它不弹对话框，直接合并父分支。
 :::
 
 ## 拖放 {#drag-and-drop}

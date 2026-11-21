@@ -40,6 +40,8 @@ These options are in :ui[app.name > settings.title] › :ui[settings.editor]:
 | :ui[editor.stripsComments] | Off. Available when the warning is off. |
 | :ui[editor.completesIssues] | On. See [Autocomplete](#autocomplete). |
 
+See [Editor](/guide/settings/appearance/#editor).
+
 ## Commit {#commit}
 
 When the message is ready, click :ui[working.commit], or press <kbd>⌘↩</kbd> while you’re typing in the message. The button stays dimmed until the subject has some text and some changes are staged.
@@ -60,7 +62,7 @@ Lines that start with `#` count as comments in Git, unless you set a different c
 - :ui[commit.removeComments] commits without those lines.
 - :ui[commit.keepComments] commits them as they are.
 
-Select :ui[commit.doNotAskAgain] to keep your choice for next time. To get the question back, turn on :ui[editor.warnsComments] in :ui[app.name > settings.title] › :ui[settings.editor].
+Select :ui[commit.doNotAskAgain] to keep your choice for next time. To get the question back, turn on :ui[editor.warnsComments] in :ui[app.name > settings.title] › :ui[settings.editor]. See [Editor](/guide/settings/appearance/#editor).
 
 If the message has nothing but comments, Spooky asks :ui[commit.commentsOnly] Click :ui[commit.keepCommentsAndCommit] to commit them anyway.
 
@@ -79,7 +81,7 @@ Type one of these in the subject or the description, and Spooky lists matches as
 
 Press <kbd>↑</kbd> or <kbd>↓</kbd> to choose a match, <kbd>Return</kbd> to insert it, and <kbd>Esc</kbd> to close the list.
 
-Issue numbers need a [hosting account](/guide/hosting/accounts/) for the repository’s remote, and :ui[editor.completesIssues] turned on in :ui[app.name > settings.title] › :ui[settings.editor]. A commit marked with `fixup!` or `squash!` can later be folded into its target, as described in [Rewrite History](/guide/history/rewrite/).
+Issue numbers need a [hosting account](/guide/hosting/accounts/) for the repository’s remote, and :ui[editor.completesIssues] turned on in :ui[app.name > settings.title] › :ui[settings.editor]. See [Editor](/guide/settings/appearance/#editor). A commit marked with `fixup!` or `squash!` can later be folded into its target, as described in [Rewrite History](/guide/history/rewrite/).
 
 ## Amend the last commit {#amend}
 
@@ -94,7 +96,7 @@ Clear the checkbox to go back to the message you were writing before.
 For a quick amend, hold <kbd>⌥</kbd> while neither message field is being edited. The commit area switches to amending the last commit until you let go. Click :ui[working.amend] while you hold the key, or press <kbd>⌥⌘↩</kbd>. The commit keeps its message and takes in the staged changes.
 
 :::caution
-If you already pushed the last commit, amending makes it different from the one on the remote. Pushing it then needs a force push. See [Fetch, Pull, and Push](/guide/branches/sync/).
+If you already pushed the last commit, amending makes it different from the one on the remote. Pushing it then needs a force push. See [Force push](/guide/branches/sync/#force-push).
 :::
 
 To change an older commit, see [Rewrite History](/guide/history/rewrite/).
@@ -111,7 +113,7 @@ To commit as someone else, for example with your work email, use a user profile:
 
 The profile’s name, email, and signing key go into this repository’s own Git settings, so other repositories aren’t affected.
 
-If the current identity isn’t a profile yet, the menu offers :ui[profiles.addCurrent]{1="alex@example.com"} to save it as one. To set up profiles, choose :ui[profiles.manage] from the same menu. See [User Profiles and Git Config](/guide/settings/identity/).
+If the current identity isn’t a profile yet, the menu offers :ui[profiles.addCurrent]{1="alex@example.com"} to save it as one. To set up profiles, choose :ui[profiles.manage] from the same menu. See [User profiles](/guide/settings/identity/#profiles).
 
 :::note[Server repositories]
 The profile goes into the repository’s settings on the server. Other tools that commit in the same repository on the server use it too.
@@ -123,8 +125,8 @@ A signed commit carries proof that it came from the owner of a key. Spooky works
 
 Hold the pointer over the picture in the commit area to see whether the next commit will be signed, and with which key.
 
-- **For all repositories**: turn on :ui[gitConfig.signCommits] and choose :ui[gitConfig.signingKey] in :ui[app.name > settings.title] › :ui[settings.gitConfig].
-- **For one repository**: click :ui[repositorySettings.title] in the sidebar. Under :ui[repositorySettings.signing], set :ui[repositorySettings.signCommits] and :ui[repositorySettings.signingKey].
+- **For all repositories**: turn on :ui[gitConfig.signCommits] and choose :ui[gitConfig.signingKey] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. See [Signing](/guide/settings/identity/#signing).
+- **For one repository**: click :ui[repositorySettings.title] in the sidebar. Under :ui[repositorySettings.signing], set :ui[repositorySettings.signCommits] and :ui[repositorySettings.signingKey]. See [Repository settings](/guide/settings/identity/#repository).
 
 If the key needs a passphrase, Spooky asks for it in a :ui[signing.unlock] dialog.
 

@@ -47,7 +47,7 @@ A few things to know:
 
 ## Disconnects and reconnecting {#reconnect}
 
-When the connection drops, Spooky reconnects on its own. After each failed attempt, the status shows :ui[connection.unavailable], and Spooky tries again 5 seconds later. Once it’s back, Spooky reloads the repository.
+When the connection drops, Spooky reconnects on its own. After each failed attempt, the status shows :ui[connection.unavailable]. Spooky tries again 5 seconds later. To try right away, click :ui[action.reconnect]. Once it’s back, Spooky reloads the repository.
 
 Changes you made don’t get repeated after a disconnect:
 

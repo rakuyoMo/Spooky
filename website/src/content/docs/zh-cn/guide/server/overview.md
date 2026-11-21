@@ -62,9 +62,9 @@ Spooky 不需要管理员权限，也不安装常驻服务。它在服务器上�
 | :ui[action.copyPath] | 复制的路径以主机别名开头，比如 `driftwood-server:/srv/git/driftwood`。 |
 | 用别的 App 打开文件 | 大多数 App 拿到的是文件副本。保存后，Spooky 把改动写回服务器，见 [终端与其它 App](/guide/server/local-location/#terminal)。 |
 | 丢弃或删除文件 | 丢弃改动会覆盖服务器上的文件，Spooky 会先确认。删掉的文件和丢弃的新文件移进服务器的废纸篓。服务器上没有废纸篓时，Spooky 先确认，再永久删除。 |
-| :ui[settings.environment] 设置 | 只对这台 Mac 上的 Git 有效。服务器上的 Git 用服务器自己的环境。 |
+| :ui[settings.environment] 设置 | 只对这台 Mac 上的 Git 有效。服务器上的 Git 用服务器自己的环境，见 [环境](/guide/settings/general/#environment)。 |
 
-丢弃改动、永久删除与恢复文件前的确认，可以在 :ui[app.name > settings.title] › :ui[settings.general] 里关掉。
+丢弃改动、永久删除与恢复文件前的确认，可以在 :ui[app.name > settings.title] › :ui[settings.general] 里关掉，见 [确认](/guide/settings/general/#confirmations)。
 
 ## 相关页面
 

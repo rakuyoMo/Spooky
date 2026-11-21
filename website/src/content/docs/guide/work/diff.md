@@ -14,7 +14,7 @@ A diff is split into chunks. A chunk is a group of changed lines with a few unch
 - The bar below the diff shows the number of chunks and how many lines were added and removed.
 - For an image, the diff shows the old and new picture. :ui[diff.twoUp] puts them side by side. :ui[diff.oneUp] shows one at a time, and you switch between :ui[diff.old] and :ui[diff.new].
 
-A very large diff can make the window slow, so Spooky asks first: :ui[working.largeDiff] Click :ui[working.showDiff] to see it. The size limit is :ui[working.diffThreshold] in :ui[app.name > settings.title] › :ui[settings.general]. It’s 20,000 kB by default.
+A very large diff can make the window slow, so Spooky asks first: :ui[working.largeDiff] Click :ui[working.showDiff] to see it. The size limit is :ui[working.diffThreshold] in :ui[app.name > settings.title] › :ui[settings.general]. It’s 20,000 kB by default. See [History and diffs](/guide/settings/general/#history).
 
 ## Diff options {#options}
 
@@ -36,7 +36,7 @@ More options are in :ui[app.name > settings.title] › :ui[settings.text]:
 | :ui[text.showInvisibles] | Shows spaces, tabs, and line endings as symbols |
 | :ui[text.tabWidth] | How wide a tab is, in spaces |
 
-The colors come from the theme. See [Appearance and Themes](/guide/settings/appearance/).
+[Text](/guide/settings/appearance/#text) has more about these settings. The colors come from the theme. See [Themes](/guide/settings/appearance/#themes).
 
 ## Stage whole files {#stage-file}
 
@@ -79,7 +79,7 @@ Discarding throws away changes you don’t want to keep.
 
 For files, Spooky asks first. Tracked files go back to how they were in the last commit, including any staged changes. New files go to the Trash. Click :ui[working.discard] or :ui[working.discardAll.submit] to go ahead.
 
-For chunks and lines, Spooky asks :ui[working.discardContent.title] Select :ui[dialog.doNotAskAgain] to skip the question next time. To get it back, turn on :ui[settings.warnDiscardingChunks] in :ui[app.name > settings.title] › :ui[settings.general].
+For chunks and lines, Spooky asks :ui[working.discardContent.title] Select :ui[dialog.doNotAskAgain] to skip the question next time. To get it back, turn on :ui[settings.warnDiscardingChunks] in :ui[app.name > settings.title] › :ui[settings.general]. See [Confirmations](/guide/settings/general/#confirmations).
 
 :::caution
 Discarded changes aren’t in any commit. The only way back is :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>), and only until the repository changes again. New files come back from the Trash as long as they’re still there.
@@ -96,7 +96,7 @@ To look at a change in a diff app, such as FileMerge or Kaleidoscope:
 - Hold the pointer over the file name at the top of the right column, and click :ui[externalTool.action.diffTool]. It compares the side you’re looking at.
 - Or right-click the file and choose from the :ui[externalTool.compare] submenu: :ui[externalTool.compare.workingTreeToBase], :ui[externalTool.compare.workingTreeToIndex], or :ui[externalTool.compare.indexToBase].
 
-The first time, Spooky asks which app to use. To change it later, use :ui[externalTool.diffTool] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. Spooky works with Araxis Merge, BBEdit, Beyond Compare, DeltaWalker, FileMerge, Kaleidoscope, P4Merge, TextMate, and Visual Studio Code.
+The first time, Spooky asks which app to use. To change it later, use :ui[externalTool.diffTool] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. Spooky works with Araxis Merge, BBEdit, Beyond Compare, DeltaWalker, FileMerge, Kaleidoscope, P4Merge, TextMate, and Visual Studio Code. See [Diff and merge tools](/guide/settings/integration/#diff-merge-tools).
 
 :::note[Server repositories]
 The diff app gets copies of the files in a temporary folder on your Mac. The folder is removed when you close the repository.

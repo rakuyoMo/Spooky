@@ -62,7 +62,7 @@ The dialog stays open and keeps what you typed. At the bottom, it shows what to 
 
 :ui[bookmarks.noRepository.create] runs `git init` in that folder, and creates the folder first if it’s missing. Spooky then checks the connection again and opens the new repository.
 
-To see the `PATH` and the Git that a server uses without adding a repository, open :ui[app.name > settings.title] › :ui[settings.environment]. Enter the host alias at the bottom, then click :ui[settings.environment.server.check].
+To see the `PATH` and the Git that a server uses without adding a repository, open :ui[app.name > settings.title] › :ui[settings.environment]. Enter the host alias at the bottom, then click :ui[settings.environment.server.check]. See [Check a server](/guide/settings/general/#server-check).
 
 ## Git environment variables on the server {#environment}
 

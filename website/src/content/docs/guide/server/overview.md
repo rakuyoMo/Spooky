@@ -62,9 +62,9 @@ Some things work differently:
 | :ui[action.copyPath] | The copied path starts with the host alias, as in `driftwood-server:/srv/git/driftwood`. |
 | Opening a file in another app | Most apps get a copy of the file. Spooky writes your changes back to the server when you save. See [Terminal and other apps](/guide/server/local-location/#terminal). |
 | Discarding or deleting files | Spooky asks before it discards changes, because that overwrites files on the server. Deleted files and discarded new files go to the server’s Trash. If the server has no Trash, Spooky asks first, then deletes them for good. |
-| :ui[settings.environment] settings | They apply only to Git on your Mac. Git on a server uses the server’s own environment. |
+| :ui[settings.environment] settings | They apply only to Git on your Mac. Git on a server uses the server’s own environment. See [Environment](/guide/settings/general/#environment). |
 
-You can turn off the confirmations for discarding changes, deleting files for good, and restoring files in :ui[app.name > settings.title] › :ui[settings.general].
+You can turn off the confirmations for discarding changes, deleting files for good, and restoring files in :ui[app.name > settings.title] › :ui[settings.general]. See [Confirmations](/guide/settings/general/#confirmations).
 
 ## See also
 

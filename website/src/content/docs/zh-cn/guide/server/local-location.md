@@ -57,7 +57,7 @@ SMB 或 sshfs 挂载的卷被推出后，这一行会出现 :ui[localLocation.mo
 1. 选 :ui[localLocation.method.smbMount]，点 :ui[localLocation.mount]。
 2. macOS 显示服务器上的共享文件夹，或者先请你登录。选含有这个仓库的那个共享。
 
-Spooky 会记住这个共享，下次直接挂载，不再询问。选的共享里没有这个仓库时，表单会写 :ui[localLocation.notInShare] 换一个共享再试。
+Spooky 会记住这个共享，下次直接挂载，不再询问。选的共享里没有这个仓库时，表单会写 :ui[localLocation.notInShare]换一个共享再试。
 
 服务器是一台 Mac 的话，在那台 Mac 的 **苹果菜单 › 系统设置 › 通用 › 共享** 里打开 **文件共享**。
 
@@ -92,7 +92,7 @@ Spooky 从不推出它挂载的卷。之后再打开这个仓库时，Spooky 会
 
 下面这些在服务器仓库里不需要本机位置也能用：
 
-- **:ui[action.openTerminal]** 打开 :ui[app.name > settings.title] › :ui[settings.general] 里选的终端 App，用 `ssh -t` 和主机别名登录，进入仓库文件夹。服务器不给终端的话，Spooky 会不要终端再连一次。命令照样能执行，只是没有行编辑，也用不了全屏程序。它在 :ui[menu.file] 菜单里，也是工具栏上的 :ui[toolbar.terminal]；右键点按工作区或仓库管理窗口里的仓库也能找到。
+- **:ui[action.openTerminal]** 打开 :ui[app.name > settings.title] › :ui[settings.general] 里选的终端 App，用 `ssh -t` 和主机别名登录，进入仓库文件夹。服务器不允许终端的话，Spooky 会不带终端再连一次。命令照样能执行，只是没有行编辑，也用不了全屏程序。它在 :ui[menu.file] 菜单里，也是工具栏上的 :ui[toolbar.terminal]；右键点按工作区或仓库管理窗口里的仓库也能找到。终端 App 的选择见 [终端](/guide/settings/integration/#terminal)。
 - **:ui[action.copyPath]** 复制的路径前面带着主机别名，比如 `driftwood-server:/srv/git/driftwood`。
 - 工作区里的 **:ui[files.open] 与 :ui[files.openWith]** 用别的 App 打开文件。装了 Remote SSH 扩展的 Visual Studio Code、Visual Studio Code Insiders 与 Cursor 会直接打开服务器上的文件。别的 App 拿到的是 Mac 上的副本，保存后 Spooky 把副本写回服务器。
 

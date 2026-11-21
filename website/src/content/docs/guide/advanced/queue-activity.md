@@ -64,6 +64,12 @@ Choose :ui[menu.window > activity.title] (<kbd>⌃⌘0</kbd>). The window has re
 | :ui[activity.repository] | Other Git operations, and loads you start, such as loading commits | The last 100, until you quit |
 | :ui[activity.service] | Requests to GitHub and GitLab | Until you quit |
 
+::screenshot[The Activity window on the Remote page. The list has fetch, pull, and push records for a repository. The push is selected, and its full log is on the right.]{name="advanced-activity" frame="window" markers="55.2,10 32.8,4.6 93.8,4.6"}
+
+1. The pages: :ui[activity.remote], :ui[activity.repository], and :ui[activity.service]
+2. :ui[activity.clear]
+3. The search field
+
 Loads that Spooky does on its own to keep a window up to date aren’t listed.
 
 Select a record to see its full log on the right. You can select and copy the text.

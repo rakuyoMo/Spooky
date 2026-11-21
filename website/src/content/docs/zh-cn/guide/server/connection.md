@@ -47,7 +47,7 @@ Spooky 登录服务器时什么都不问。不过服务器上的 Git 有时要�
 
 ## 断线与重连 {#reconnect}
 
-连接断了，Spooky 会自己重连。每次尝试失败后，状态显示 :ui[connection.unavailable]，过 5 秒再试。连上之后，Spooky 会重新读取整个仓库。
+连接断了，Spooky 会自己重连。每次尝试失败后，状态显示 :ui[connection.unavailable]，过 5 秒再试。想马上重试，点 :ui[action.reconnect]。连上之后，Spooky 会重新读取整个仓库。
 
 断线之后，你做过的操作不会被重复执行：
 

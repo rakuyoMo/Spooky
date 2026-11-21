@@ -44,7 +44,7 @@ Undo puts the repository back the way it was. Some changes are outside what Spoo
 
 After one of these, the menu item says that the operation can’t be undone. Operations before it can’t be undone anymore either.
 
-Fetch, pull, push, and sync aren’t recorded, so they can’t be undone. The same goes for fetching and updating submodules, and for fetching, pulling, and pushing LFS content.
+Fetch, pull, push, and sync aren’t recorded. They can’t be undone. The same goes for fetching and updating submodules, and for fetching, pulling, and pushing LFS content.
 
 ## When undo is blocked {#blocked}
 

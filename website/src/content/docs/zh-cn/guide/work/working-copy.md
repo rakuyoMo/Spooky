@@ -23,7 +23,7 @@ description: "查看改动文件的状态，用平铺或树形显示文件列表
 文件有变化时，Spooky 会自己更新列表。想全部重新读一遍，点 :ui[action.refresh] 或按 <kbd>⌘R</kbd>。
 
 :::note[服务器仓库]
-仓库窗口在最前面时，Spooky 每 2 秒查一次服务器上的变化，其余时候每 10 秒查一次。所以在服务器上做的改动，可能要过这么久才显示出来。见 [服务器仓库有哪些不同](/guide/server/overview/#differences)。
+仓库窗口在最前面时，Spooky 每 2 秒查一次服务器上的变化，其余时候每 10 秒查一次。在服务器上做的改动，可能要过这么久才显示出来。见 [服务器仓库有哪些不同](/guide/server/overview/#differences)。
 :::
 
 ## 平铺或树形显示 {#view}
@@ -75,12 +75,12 @@ description: "查看改动文件的状态，用平铺或树形显示文件列表
 
 右键点按文件，就能看到它的各种操作。右键点按的这一行在所选范围之内时，操作作用于所有选中的文件；在所选范围之外时，只作用于点的这一行。
 
-::screenshot[在工作区里右键点按 src/readings.ts 弹出的菜单。从上往下依次是打开文件与拷贝路径、快速查看、暂存与移到废纸篓、冲突、丢弃与储藏、Blame 与文件历史、忽略，以及比较。]{name="work-file-menu" frame="closeup"}
+::screenshot[在工作区里右键点按 src/readings.ts 弹出的菜单。从上往下依次是打开文件与复制路径、快速查看、暂存与移到废纸篓、冲突、丢弃与储藏、Blame 与文件历史、忽略，以及比较。]{name="work-file-menu" frame="closeup"}
 
 | 想要 | 选 |
 |---|---|
 | 打开文件 | :ui[files.open]，或从 :ui[files.openWith] 里选一个 App。也可以直接连按文件 |
-| 拷贝路径 | :ui[workspace.copyPathMenu] 或 :ui[working.copyRelative] |
+| 复制路径 | :ui[workspace.copyPathMenu] 或 :ui[working.copyRelative] |
 | 在访达或终端里查看 | :ui[action.revealFinder] 或 :ui[action.openTerminal] |
 | 移动或改名 | :ui[files.move.menu] |
 | 移到废纸篓 | :ui[files.trash]，或按 <kbd>⌘⌫</kbd> |
@@ -100,7 +100,7 @@ description: "查看改动文件的状态，用平铺或树形显示文件列表
 
 不打开 App 也想看看文件的内容，右键点按它，选 :ui[files.quickLook.single]{1="README.md"}。
 
-常用快速查看的话，可以让空格键打开它：选 :ui[app.name > settings.title] › :ui[settings.general]，把 :ui[files.spacebar] 设为 :ui[files.spacebar.quickLook]。默认情况下，空格键暂存或取消暂存所选的文件。
+常用快速查看的话，可以让空格键打开它：选 :ui[app.name > settings.title] › :ui[settings.general]，把 :ui[files.spacebar] 设为 :ui[files.spacebar.quickLook]。默认情况下，空格键暂存或取消暂存所选的文件。见 [文件列表](/guide/settings/general/#file-list)。
 
 :::note[服务器仓库]
 Spooky 先把文件下载到这台 Mac 上的一个临时文件夹里。关掉仓库时，这个文件夹会被删掉。
@@ -116,6 +116,8 @@ Spooky 先把文件下载到这台 Mac 上的一个临时文件夹里。关掉�
 | :ui[files.spacebar] | :ui[files.spacebar.toggleStaging]（默认）或 :ui[files.spacebar.quickLook] |
 | :ui[files.fontSize] | :ui[files.fontSize.regular] 或 :ui[files.fontSize.medium]（默认） |
 | :ui[files.truncation] | :ui[files.truncation.beginning]（默认）或 :ui[files.truncation.middle] |
+
+见 [文件列表](/guide/settings/general/#file-list)。
 
 ## 相关页面
 

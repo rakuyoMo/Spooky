@@ -10,7 +10,7 @@ This page walks you from downloading Spooky to opening it for the first time. It
 - macOS 26 or later
 - Git 2.41 or later
 
-Spooky uses the Git at `/usr/bin/git` unless you pick another one. To pick one, open :ui[app.name > settings.title] (<kbd>⌘,</kbd>), click :ui[settings.gitConfig], and choose a program from the :ui[settings.gitProgram] menu. The menu lists the Git programs Spooky found that are new enough. Choose :ui[settings.gitProgram.choose] to use one from somewhere else. The minimum version is shown below the menu.
+Spooky uses the Git at `/usr/bin/git` unless you pick another one. To pick one, open :ui[app.name > settings.title] (<kbd>⌘,</kbd>), click :ui[settings.gitConfig], and choose a program from the :ui[settings.gitProgram] menu. The menu lists the Git programs Spooky found that are new enough. Choose :ui[settings.gitProgram.choose] to use one from somewhere else. The minimum version is shown below the menu. See [Git program](/guide/settings/identity/#git-program).
 
 :::note[Server repositories]
 The server needs Git 2.41 or later too. Spooky reaches it over SSH with a host alias from `~/.ssh/config`. The Git you pick in Settings only applies to repositories on your Mac. Server repositories use the Git on the server. See [System Requirements](/reference/requirements/) and [Prepare SSH](/guide/server/prepare-ssh/).

@@ -67,7 +67,7 @@ Git 只提交你暂存的改动，不是你改过的全部内容。暂存就是�
 
 ::screenshot[“推送 HEAD” 对话框：把本地分支 “main” 上的新提交推送到目标 origin/main。下面是收起的 “选项” 一节，以及 “取消” 与 “推送 HEAD” 按钮。]{name="sync" frame="dialog"}
 
-推送完成后，分支旁边的 ↑1 就消失了。:ui[dialog.options] 里的设置和第一次推送一个分支的做法，见 [获取、拉取与推送](/guide/branches/sync/)。
+推送完成后，分支旁边的 ↑1 就消失了。:ui[dialog.options] 里的设置见 [推送](/guide/branches/sync/#push)。第一次推送一个分支，见 [发布分支](/guide/branches/sync/#publish)。
 
 :::tip
 按住 <kbd>⌥</kbd> 再点 :ui[sync.push] 按钮，它会变成 :ui[sync.quickPush]。这样不弹出对话框，直接把当前分支推送到它的跟踪分支。

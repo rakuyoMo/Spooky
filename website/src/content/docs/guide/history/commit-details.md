@@ -7,7 +7,7 @@ Select a commit in [History](/guide/history/browse/) and the right column shows 
 
 ## The header {#header}
 
-The bar at the top shows the commit’s short hash, which you can select and copy, and the :ui[history.changeset] and :ui[history.tree] buttons. Below it, the header lists:
+The bar at the top shows the commit’s short hash and the :ui[history.changeset] and :ui[history.tree] buttons. You can select and copy the hash. Below the bar, the header lists:
 
 - :ui[history.author] and :ui[history.committer], with their dates. The avatar on the right is the author’s. If someone else committed it, the committer’s avatar sits to its left.
 - :ui[history.refs], the branches and tags that point at the commit
@@ -32,8 +32,8 @@ Hold the pointer over the details, and a row of buttons fades in on the line bet
 
 :ui[history.changeset] lists the files the commit changed, sorted by path. The line above the list counts the files, additions, and deletions.
 
-- Click the arrow next to a file to show its changes. The button at the start of the line, :ui[history.expandAll] or :ui[history.collapseAll], does it for every file. So do <kbd>⌃⌘→</kbd> and <kbd>⌃⌘←</kbd>.
-- Click a file to select it. <kbd>⇧</kbd>-click or <kbd>⌘</kbd>-click selects several, and <kbd>↑</kbd> <kbd>↓</kbd> move the selection.
+- Click the arrow next to a file to show its changes. To show or hide the changes of every file, click :ui[history.expandAll] or :ui[history.collapseAll] at the start of the line above the list, or press <kbd>⌃⌘→</kbd> or <kbd>⌃⌘←</kbd>.
+- Click a file to select it. <kbd>⇧</kbd>-click or <kbd>⌘</kbd>-click selects several. <kbd>↑</kbd> <kbd>↓</kbd> move the selection.
 
 Files start collapsed. To have them open on their own, choose a number under :ui[history.autoExpand.title] in :ui[menu.view > history.diffs]. A commit that changes no more files than that opens every diff. :ui[history.autoExpand.always] opens them all the time.
 
@@ -43,12 +43,14 @@ For a merge commit, :ui[history.mergeDiff] in :ui[app.name > settings.title] ›
 - :ui[history.mergeDiff.mergedFilePaths] shows only the files that differ from every parent.
 - :ui[history.mergeDiff.off] shows no changes.
 
+See [History and diffs](/guide/settings/general/#history).
+
 Right-click a file to:
 
 - Copy its path, or its path inside the repository
 - View the file as it was in this commit, its Blame, or its history. See [File History and Blame](/guide/history/file-views/).
 - Open it in your diff tool, compared with the commit’s first parent
-- Restore it in the working copy to this commit’s version. See [Restore a file from a revision](/guide/history/file-views/#restore).
+- Restore it in the Working Copy to this commit’s version. See [Restore a file from a revision](/guide/history/file-views/#restore).
 - Save this commit’s version of it on your Mac
 
 With several files selected, you can open them in your diff tool, restore them, or export them together.
@@ -61,7 +63,7 @@ Right-click a file or folder to:
 
 - Open the file in its default app, or in an app you choose
 - View the file, its Blame, or its history
-- Restore it in the working copy to this commit’s version
+- Restore it in the Working Copy to this commit’s version
 - Export it, or save it as a zip archive
 
 Opening and viewing work on files only. With several items selected, you can open, restore, export, or archive them together. Exported items go into a folder you choose. If items with the same names are already there, Spooky asks before it overwrites them.
@@ -77,7 +79,7 @@ To go back to the history, choose :ui[menu.view > navigation.back] (<kbd>⌘[</k
 
 ## Several commits {#multiple}
 
-Select more than one commit, and the right column shows how many. Below it are two buttons:
+Select more than one commit, and the right column shows how many. Below that are these buttons:
 
 - :ui[rewrite.cherryPick.button] applies the commits to the branch you’re on. While the list shows that branch, the button is :ui[rewrite.revert.button] instead. See [Rewrite History](/guide/history/rewrite/).
 - :ui[compare.submit] appears when exactly two commits are selected. It shows what changed from the older commit to the newer one. Hold <kbd>⌥</kbd> to compare the other way.
@@ -99,7 +101,7 @@ Click the dot to see the key and the status.
 To see what changed between any two commits, branches, or tags:
 
 1. Choose :ui[menu.repository > compare.menu] in the menu bar. Or right-click a commit and choose :ui[compare.menuFrom]{1="e2dda2bc"} to start from it.
-2. Fill in :ui[compare.base] and :ui[compare.target]. The menus list your branches, remote branches, and tags, and you can type a hash.
+2. Fill in :ui[compare.base] and :ui[compare.target]. The menus list your branches, remote branches, and tags. You can also type a hash.
 3. Click :ui[compare.submit].
 
 The right column shows the comparison. :ui[compare.commits] lists the commits that the second revision has and the first doesn’t. :ui[history.changeset] shows the changes from the first to the second. To close it, click × at the top right, or select another commit.
@@ -120,7 +122,7 @@ The export shows up in the [Activity window](/guide/advanced/queue-activity/), w
 
 ## Save a patch {#patch}
 
-A patch is a text file with a commit’s changes, which `git am` can apply in another repository.
+A patch is a text file with a commit’s changes. You can apply it in another repository with `git am`.
 
 1. Right-click a commit and choose :ui[patch.menu]{1="e2dda2bc"} in the menu. With several commits selected, the item saves a patch for each.
 2. Select :ui[patch.omitPrefixes] to leave out the `a/` and `b/` before each path.

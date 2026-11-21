@@ -22,24 +22,24 @@ When you look at a local branch with an upstream, the header shows both, as in `
 
 ## The commit list {#list}
 
-Each row shows the author’s avatar and name, the date, the short hash, and the first line of the message. Commits are grouped by month.
+Each row shows the author’s avatar and name, the date, the short hash, and the first line of the message. By default, commits are grouped by month.
 
 When the list shows a local branch with an upstream:
 
 - ↑ marks a commit you haven’t pushed.
 - ↓ marks a commit you haven’t pulled. These rows are dimmed.
 
-Spooky loads the first 100 commits, and loads the next 100 when you scroll to the end. To load more at a time, change :ui[history.pageSize] in :ui[app.name > settings.title] › :ui[settings.general]. The same page sets :ui[settings.dateFormat].
+Spooky loads the first 100 commits. It loads the next 100 when you scroll to the end. To load more at a time, change :ui[history.pageSize] in :ui[app.name > settings.title] › :ui[settings.general]. On the same page, :ui[settings.dateFormat] sets how dates in the list look. See [History and diffs](/guide/settings/general/#history).
 
 Click a commit to select it. <kbd>⇧</kbd>-click or <kbd>⌘</kbd>-click selects several. <kbd>⌘C</kbd> copies the full hashes of the selected commits. Double-click a commit to open its details as a full page.
 
-Right-click a commit for everything you can do with it. If the commit isn’t selected, the menu acts on that one commit only, and your selection stays as it is.
+Right-click a commit for everything you can do with it. If the commit isn’t selected, the menu acts on that one commit only. Your selection stays as it is.
 
 ## The commit graph {#graph}
 
 The graph on the left draws each commit as a dot, with lines down to its parents. A merge commit has more than one line going down.
 
-To hide it, turn off :ui[history.showGraph] in the [view options](#view-options) (<kbd>⌃⌘G</kbd>). :ui[history.firstParentOnly] follows only the first parent of each merge, so commits that came in through a merge are left out.
+To hide it, turn off :ui[history.showGraph] in the [view options](#view-options) (<kbd>⌃⌘G</kbd>). :ui[history.firstParentOnly] follows only the first parent of each merge. Commits that came in through a merge are left out.
 
 ## Reference badges {#badges}
 
@@ -71,35 +71,40 @@ How each kind matches:
 - A file matches the commits that changed it. A folder matches the commits that changed anything inside it.
 - A commit hash needs at least the first 4 characters.
 
-The search shows up as a line below the header. Click :ui[history.search.add] (+) to add another condition, and choose its kind from the menu at the start of the row. Conditions of the same kind match any of them; conditions of different kinds must all match. For a date, choose :ui[history.search.after], :ui[history.search.before], or :ui[history.search.range]. Click − to remove a condition.
+The search shows up as a line below the header. To add another condition, click the add button and choose its kind from the menu at the start of the new line. For a date, choose :ui[history.search.after], :ui[history.search.before], or :ui[history.search.range]. To remove a condition, click its remove button.
+
+With several conditions:
+
+- Conditions of different kinds must all match.
+- Of several conditions of the same kind, a commit needs to match only one. Dates are the exception: a commit must match every date condition.
 
 The search ends when you switch to another view.
 
 ## View options {#view-options}
 
-Click :ui[history.viewOptions] at the right end of the header, or choose :ui[menu.view > history.title]:
+Click the view options button at the right end of the header, or choose :ui[menu.view > history.title]:
 
 | Option | What it does |
 |---|---|
 | :ui[history.showGraph] | Shows the commit graph. On by default. |
 | :ui[history.firstParentOnly] | Follows only the first parent of each merge |
-| :ui[history.sortBy] | :ui[history.sort.topo] keeps the commits of each line of work together, and :ui[history.sort.date] orders them by date. While the graph is shown, :ui[history.sort.topo] stays on. When both are on, the date order is used. |
+| :ui[history.sortBy] | :ui[history.sort.topo] keeps the commits of each line of work together. :ui[history.sort.date] orders them by date. While the graph is shown, :ui[history.sort.topo] stays on. When both are on, the date order is used. |
 | :ui[history.groupBy] | Groups commits by day, week, or month under headings, or not at all. Only applies while sorting by date. |
 | :ui[history.medium] / :ui[history.small] | Two lines per commit, or one. Small rows only apply while the graph is shown. |
 | :ui[signature.verify] | Marks signed commits. See [Signatures](/guide/history/commit-details/#signatures). |
 | :ui[history.compareBranches] | See [Compare with another branch](#compare-branches) |
 
-These options apply to every window and every repository, and Spooky remembers them.
+These options apply to every window and every repository. Spooky remembers them.
 
 ## Compare with another branch {#compare-branches}
 
 To see how a local branch relates to another one:
 
 1. Click the branch in the sidebar.
-2. Click :ui[history.compareBranches] in the header, or turn it on in the view options (<kbd>⌃⌥⌘C</kbd>).
-3. Choose the other branch in the :ui[history.compareTo] menu. Spooky starts with the branch’s parent branch if it has one.
+2. Click the compare button in the header. You can also turn on :ui[history.compareBranches] in the view options, or press <kbd>⌃⌥⌘C</kbd>.
+3. Next to :ui[history.compareTo], choose the other branch from the menu. Spooky starts with the branch’s parent branch if it has one.
 
-A row in the list marks where the two branches split. The commits below it also belong to the other branch, and are dimmed. If the branch has no commits of its own yet, the list says :ui[history.noNewCommits].
+A row in the list marks where the two branches split. The commits below it also belong to the other branch. They’re dimmed. If the branch has no commits of its own yet, the list says :ui[history.noNewCommits].
 
 The header can also show two badges. One counts the commits on the other branch that this branch doesn’t have yet. The other appears when merging the other branch would cause conflicts. Click it to list the files.
 

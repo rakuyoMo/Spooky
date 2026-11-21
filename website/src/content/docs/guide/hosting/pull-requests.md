@@ -19,7 +19,7 @@ Choose a remote from the menu at the top of the list. Each row shows:
 
 Scroll to the bottom to load more. Closed and merged requests aren’t listed.
 
-If the list can’t load, it says why, and keeps the requests it already loaded below. When the account’s token is rejected or lacks a scope, you can click :ui[accounts.reauthenticate] right there.
+If the list can’t load, it says why. The requests it already loaded stay below. When the account’s token is rejected or lacks a scope, you can click :ui[accounts.reauthenticate] right there.
 
 When the list can’t tell which account to use, see [Which account a remote uses](/guide/hosting/accounts/#remotes).
 
@@ -37,7 +37,7 @@ In the conversation, double-click a commit or press <kbd>Return</kbd> to open it
 
 ## Create a request {#create}
 
-The source branch has to be on a remote already, so push it first. Then do one of these:
+The source branch has to be on a remote already. Push it first, then do one of these:
 
 - Click the add button at the top of the list.
 - Choose :ui[menu.repository > pr.create.menu] (<kbd>⌃⌘P</kbd>).
@@ -76,29 +76,29 @@ Spooky first gets the request’s commits, then checks out the branch:
 - If it points somewhere else, the dialog says so. Choose another name.
 - Otherwise Spooky creates the branch. For a request from the same project, it tracks the source branch on the remote, as long as that’s at the same commit.
 
-When you have changes to tracked files, Spooky asks whether to stash them first; see [Auto stash](/guide/work/stash/#auto-stash).
+When you have changes to tracked files, Spooky asks whether to stash them first. See [Auto stash](/guide/work/stash/#auto-stash).
 
 Checking out isn’t available when the local branch that tracks the source branch has commits you haven’t pushed. It isn’t available either when that branch is the current branch and already at the request’s commit.
 
 ## Merge a request {#merge}
 
-Click :ui[pullRequests.merge] at the bottom of the details. The merge happens on the hosting service, and can’t be undone.
+Click :ui[pullRequests.merge] at the bottom of the details. The merge happens on the hosting service. It can’t be undone.
 
 - **GitHub**: choose a :ui[pullRequests.mergeType] from the ones the repository allows: :ui[pullRequests.method.merge], :ui[pullRequests.method.rebase], or :ui[pullRequests.method.squash]. Spooky picks the one you used last time.
-- **GitLab**: the dialog shows the project’s :ui[pullRequests.mergeStrategy]. Select :ui[pullRequests.squash] to squash. If the project requires squashing, it stays on.
+- **GitLab**: the dialog shows the project’s :ui[pullRequests.mergeStrategy]. Select :ui[pullRequests.squash] to squash. The option is missing when the project doesn’t allow squashing. It stays on when the project requires it.
 
 :ui[pullRequests.deleteBranch] removes the source branch on the service. It starts as the project’s setting.
 
 If the request can’t be merged, the dialog says why. For example, it’s a draft, it has conflicts, your account isn’t allowed to merge, or the service is still checking.
 
-After the merge, Spooky fetches from the remote, so its branches catch up with the result.
+After the merge, Spooky fetches from the remote to bring its branches up to date.
 
 ## Close a request {#close}
 
 Click :ui[pullRequests.close] at the bottom of the details, and confirm. To reopen it, go to the hosting service.
 
 :::note[Server repositories]
-The list and everything you do on the service go from your Mac. Fetching a request’s commits, checking it out, and the fetch after a merge run on the server, as do the comparisons in :ui[pullRequests.commits] and :ui[pullRequests.changeset].
+The list and everything you do on the service go from your Mac. Fetching a request’s commits, checking it out, and the fetch after a merge run on the server. So do the comparisons in :ui[pullRequests.commits] and :ui[pullRequests.changeset].
 :::
 
 Each request to the service shows up on the :ui[activity.service] page of the :ui[activity.title] window.

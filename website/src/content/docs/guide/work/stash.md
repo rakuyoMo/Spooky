@@ -82,7 +82,7 @@ When you switch branches with changes to tracked files, Spooky asks before it st
 
 If anything goes wrong along the way, your changes stay on the stash, and Spooky tells you what happened.
 
-To stop being asked, turn off :ui[stash.offerAutoStash] in :ui[app.name > settings.title] › :ui[settings.general].
+To stop being asked, turn off :ui[stash.offerAutoStash] in :ui[app.name > settings.title] › :ui[settings.general]. See [Operations](/guide/settings/general/#operations).
 
 ## See also
 

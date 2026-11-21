@@ -100,7 +100,7 @@ Right-click a file for its actions. If you right-click a row inside the selectio
 
 To preview a file without opening an app, right-click it and choose :ui[files.quickLook.single]{1="README.md"}.
 
-If you use Quick Look often, have the Space bar open it: choose :ui[app.name > settings.title] › :ui[settings.general], then set :ui[files.spacebar] to :ui[files.spacebar.quickLook]. By default, Space stages or unstages the selected files.
+If you use Quick Look often, have the Space bar open it: choose :ui[app.name > settings.title] › :ui[settings.general], then set :ui[files.spacebar] to :ui[files.spacebar.quickLook]. By default, Space stages or unstages the selected files. See [File list](/guide/settings/general/#file-list).
 
 :::note[Server repositories]
 Spooky first downloads the file to a temporary folder on your Mac. The folder is removed when you close the repository.
@@ -116,6 +116,8 @@ These are in :ui[app.name > settings.title] › :ui[settings.general]:
 | :ui[files.spacebar] | :ui[files.spacebar.toggleStaging] (default) or :ui[files.spacebar.quickLook] |
 | :ui[files.fontSize] | :ui[files.fontSize.regular] or :ui[files.fontSize.medium] (default) |
 | :ui[files.truncation] | :ui[files.truncation.beginning] (default) or :ui[files.truncation.middle] |
+
+See [File list](/guide/settings/general/#file-list).
 
 ## See also
 

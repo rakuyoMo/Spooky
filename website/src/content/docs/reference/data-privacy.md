@@ -43,7 +43,7 @@ Spooky saves a few things in the repository’s own Git configuration, as `branc
 - The parent branch of each branch
 - Marks used for automatic archiving
 
-These entries move with a branch when you rename it, and go away when you delete it. Git settings you change in the repository’s :ui[repositorySettings.title], such as signing, go to the same configuration.
+These entries move with a branch when you rename it, and go away when you delete it. Git settings you change in the repository’s :ui[repositorySettings.title], such as signing, go to the same configuration. See [Repository settings](/guide/settings/identity/#repository).
 
 Git configuration isn’t pushed, so none of this reaches your remotes. For a server repository, it’s stored on the server.
 
@@ -57,7 +57,7 @@ Git configuration isn’t pushed, so none of this reaches your remotes. For a se
 | `gravatar.com` | To show pictures of commit authors |
 | `github.com`, for Spooky’s releases | To check for updates |
 
-Automatic fetch runs every 30 minutes by default. To change it, open :ui[app.name > settings.title], click :ui[settings.general], and pick an option next to :ui[settings.autoFetch]. Choose :ui[settings.autoFetch.never] to fetch only when you ask.
+Automatic fetch runs every 30 minutes by default. To change it, open :ui[app.name > settings.title], click :ui[settings.general], and pick an option next to :ui[settings.autoFetch]. Choose :ui[settings.autoFetch.never] to fetch only when you ask. See [Operations](/guide/settings/general/#operations).
 
 For a commit author’s picture, Gravatar gets a hash of the author’s email address, not the address itself. Downloaded pictures stay in memory only, and are gone when you quit Spooky. Pictures of GitHub and GitLab users come from those services. There’s no setting to turn pictures off.
 
@@ -74,7 +74,7 @@ If Spooky quit unexpectedly last time, it reads the crash report that macOS save
 
 The summary has the Spooky version and build, the macOS version, the type of crash, and up to 30 lines of the call stack of the thread that crashed. Before it leaves your Mac, Spooky replaces your home folder, user name, email addresses, IP addresses, tokens, and passwords in web addresses with placeholders.
 
-The issue is created only when you submit it in the browser. You can edit the text first, or close the page.
+The summary is part of the page’s web address. GitHub receives it as soon as the page opens. The issue is created only when you submit it in the browser. You can edit the text first, or close the page.
 
 To skip the question next time, select :ui[settings.crashReports.always] in the dialog. Spooky then opens the issue page right away. The same option is in :ui[app.name > settings.title] › :ui[settings.integration].
 

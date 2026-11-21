@@ -11,7 +11,7 @@ description: "用冲突向导或外部合并工具解决合并、变基等进行
 2. 一个有冲突的文件。选中它，就打开冲突向导。
 3. 文件的两个版本，两边各一个。
 4. 结果：文件最后的样子。
-5. 解决这个文件、或打开合并工具的按钮。
+5. 解决这个文件或打开合并工具的按钮。
 
 ## 进行中的操作 {#banner}
 
@@ -58,7 +58,7 @@ Spooky 把结果写进文件，标记为已解决。App 没有保存结果的话
 
 FileMerge 稍有不同。它打开期间，Spooky 显示 :ui[externalTool.finishMerge]{1="FileMerge"}。在 FileMerge 里保存结果，再点 :ui[externalTool.done]。
 
-Spooky 支持 Araxis Merge、Beyond Compare、DeltaWalker、FileMerge、Kaleidoscope、P4Merge 与 Visual Studio Code。想换一个，改 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里的 :ui[externalTool.mergeTool]。在同一处打开 :ui[externalTool.keepBackups]，合并前的文件会留下来，比如存成 `src/units.ts.orig`。
+Spooky 支持 Araxis Merge、Beyond Compare、DeltaWalker、FileMerge、Kaleidoscope、P4Merge 与 Visual Studio Code。想换一个，改 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里的 :ui[externalTool.mergeTool]。在同一处打开 :ui[externalTool.keepBackups]，合并前的文件会留下来，比如存成 `src/units.ts.orig`。见 [比较与合并工具](/guide/settings/integration/#diff-merge-tools)。
 
 合并期间文件在别处被改过的话，Spooky 会先问，再覆盖它。
 
@@ -91,7 +91,7 @@ Spooky 支持 Araxis Merge、Beyond Compare、DeltaWalker、FileMerge、Kaleidos
 - **变基，或者摘取、反转好几个提交**：检查信息，点 :ui[working.continue]。Spooky 提交这一步，接着做下一步。下一步也可能再停在冲突上。
 - **变基停下来编辑某个提交**：做好你的提交，再点横幅上的 :ui[working.endEditing]。
 
-有时已经没有可提交的改动，比如你留下的正是原来的版本。这时点 :ui[working.commit] 或 :ui[working.continue]，Spooky 会问 :ui[commit.empty.title] 点 :ui[commit.empty.use] 就做一个空提交。另一个按钮会中止合并；在变基或一连串提交里，是跳过这一步。变基或一连串提交里，也可以点横幅上的 :ui[working.skip]。
+有时已经没有可提交的改动，比如你留下的正是原来的版本。这时点 :ui[working.commit] 或 :ui[working.continue]，Spooky 会问 :ui[commit.empty.title]点 :ui[commit.empty.use] 就做一个空提交。另一个按钮会中止合并；在变基或一连串提交里，是跳过这一步。变基或一连串提交里，也可以点横幅上的 :ui[working.skip]。
 
 想放弃，点横幅上的 :ui[working.abort]。仓库会回到操作开始之前的样子。
 

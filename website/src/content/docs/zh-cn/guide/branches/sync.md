@@ -118,6 +118,10 @@ Spooky 只做安全强推：只有远端分支还停在你上次获取时的位�
    - 两边是同一个提交时，没有可推送的内容。
 4. 点 :ui[sync.forcePush]。
 
+::screenshot[安全强推对话框。本地分支是 feature/units-toggle，远端分支是 origin/feature/units-toggle。下方带绿色对勾的一行说明远端分支正是这个分支改写前的版本。]{name="branches-force-push" frame="dialog" markers="16.4,67.5"}
+
+1. 比对
+
 推送对话框里的 :ui[sync.forcePush] 选项用的是同样的保护。
 
 :::tip
@@ -139,7 +143,7 @@ Spooky 只做安全强推：只有远端分支还停在你上次获取时的位�
 
 ## 自动获取 {#auto-fetch}
 
-Spooky 可以在后台获取，让远端分支和 ↓ 的数字保持最新。到 :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.autoFetch] 里选多久一次：:ui[settings.autoFetch.never]、每 5、10 或 30 分钟，或者 :ui[settings.autoFetch.hour]。一开始是每 30 分钟。
+Spooky 可以在后台获取，让远端分支和 ↓ 的数字保持最新。到 :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.autoFetch] 里选多久一次：:ui[settings.autoFetch.never]、每 5、10 或 30 分钟，或者 :ui[settings.autoFetch.hour]。一开始是每 30 分钟，见 [操作](/guide/settings/general/#operations)。
 
 - 仓库打开约 10 秒后，Spooky 会看一遍哪些远端到期了，之后每隔几分钟看一次。从没获取过的远端，或者距上次获取已经过了设定间隔的远端，就算到期。
 - 只有窗口显示着这个仓库、又没有打开对话框时才获取。Spooky 在后台时照常进行。

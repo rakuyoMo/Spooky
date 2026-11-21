@@ -7,7 +7,7 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 
 ## 头部 {#header}
 
-顶上一条写着提交的短哈希，可以选中拷贝；旁边是 :ui[history.changeset] 与 :ui[history.tree] 两个按钮。下面的头部列出：
+顶上一条写着提交的短哈希，右边是 :ui[history.changeset] 与 :ui[history.tree] 两个按钮。短哈希可以选中复制。这一条下面的头部列出：
 
 - :ui[history.author] 与 :ui[history.committer]，以及各自的日期。右边的头像是作者的；提交人另有其人时，提交人的头像在它左边。
 - :ui[history.refs]：指向这个提交的分支与标签
@@ -32,8 +32,8 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 
 :ui[history.changeset] 按路径列出这个提交改动的文件。列表上方一行写着文件数、新增与删除的行数。
 
-- 点文件旁边的箭头，展开它的改动。这一行开头的按钮（:ui[history.expandAll] 或 :ui[history.collapseAll]）对所有文件都这样做，<kbd>⌃⌘→</kbd> 与 <kbd>⌃⌘←</kbd> 也一样。
-- 点一个文件就选中它；按住 <kbd>⇧</kbd> 或 <kbd>⌘</kbd> 再点，可以选中多个。<kbd>↑</kbd> <kbd>↓</kbd> 移动选择。
+- 点文件旁边的箭头，展开它的改动。想展开或收起所有文件的改动，点列表上方那一行开头的 :ui[history.expandAll] 或 :ui[history.collapseAll]，或者按 <kbd>⌃⌘→</kbd> 或 <kbd>⌃⌘←</kbd>。
+- 点一个文件就选中它。按住 <kbd>⇧</kbd> 或 <kbd>⌘</kbd> 再点，可以选中多个。<kbd>↑</kbd> <kbd>↓</kbd> 移动选择。
 
 文件一开始都是收起的。想让它们自动展开，在 :ui[menu.view > history.diffs] 里的 :ui[history.autoExpand.title] 下面选一个数。提交改动的文件不超过这个数时，所有改动都会展开。:ui[history.autoExpand.always] 则每次都展开。
 
@@ -43,9 +43,11 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 - :ui[history.mergeDiff.mergedFilePaths] 只显示与每个父提交都不同的文件。
 - :ui[history.mergeDiff.off] 不显示改动。
 
+见 [历史与 Diff](/guide/settings/general/#history)。
+
 右键点按一个文件，可以：
 
-- 拷贝它的路径，或它在仓库里的路径
+- 复制它的路径，或它在仓库里的路径
 - 查看文件在这个提交时的原文、它的 Blame 或它的历史，见 [文件历史与 Blame](/guide/history/file-views/)
 - 用比较工具打开它，与这个提交的第一父提交比较
 - 在工作区里把它恢复成这个提交里的版本，见 [从某个版本恢复文件](/guide/history/file-views/#restore)
@@ -64,11 +66,11 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 - 在工作区里把它恢复成这个提交里的版本
 - 导出它，或者存成 zip 归档
 
-打开与查看只适用于文件。选中多个项目时，可以一起打开、恢复、导出或归档。导出的项目放进你选的文件夹；那里已有同名项目时，Spooky 会先问你要不要覆盖。
+打开与查看只适用于文件。选中多个项目时，可以一起打开、恢复、导出或归档。导出的项目放进你选的文件夹。那里已有同名项目时，Spooky 会先问你要不要覆盖。
 
 ## 整页详情 {#full-page}
 
-在列表里连按一个提交，它的详情就占满整个窗口。左边一栏是这个提交，下面是改动的文件列表；右边一栏显示所选文件的改动。
+在列表里连按一个提交，它的详情就占满整个窗口。左边一栏是这个提交，下面是改动的文件列表。右边一栏显示所选文件的改动。
 
 - 点左上角的短哈希，可以换一个提交：在列表里连按一个提交就换成它。
 - 连按一个文件，或者按 <kbd>Return</kbd>，用默认的 App 打开这个提交里的版本。
@@ -77,7 +79,7 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 
 ## 多个提交 {#multiple}
 
-选中不止一个提交时，右边一栏显示选中的个数，下面有两个按钮：
+选中不止一个提交时，右边一栏显示选中的个数，下面是这些按钮：
 
 - :ui[rewrite.cherryPick.button] 把这些提交应用到你所在的分支。列表显示的就是这个分支时，按钮换成 :ui[rewrite.revert.button]，见 [改写历史](/guide/history/rewrite/)。
 - 恰好选中两个提交时才有 :ui[compare.submit]，显示从较早的提交到较新的提交改了什么。按住 <kbd>⌥</kbd> 就反过来比较。
@@ -102,7 +104,7 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 2. 填好 :ui[compare.base] 与 :ui[compare.target]。菜单里列出本地分支、远端分支与标签，也可以输入哈希。
 3. 点 :ui[compare.submit]。
 
-右边一栏显示比较的结果。:ui[compare.commits] 列出第二个版本有、第一个版本没有的提交；:ui[history.changeset] 显示从第一个版本到第二个版本的改动。想关掉它，点右上角的 ×，或者选中别的提交。
+右边一栏显示比较的结果。:ui[compare.commits] 列出第二个版本有、第一个版本没有的提交。:ui[history.changeset] 显示从第一个版本到第二个版本的改动。想关掉它，点右上角的 ×，或者选中别的提交。
 
 选中两个提交时，菜单里直接有 :ui[compare.menuPair]{1="e2dda2bc" 2="f6b437e0"}。
 
@@ -120,7 +122,7 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 
 ## 保存补丁 {#patch}
 
-补丁是一个写着提交改动的文本文件，可以用 `git am` 应用到别的仓库。
+补丁是一个写着提交改动的文本文件。在别的仓库里可以用 `git am` 应用它。
 
 1. 右键点按一个提交，在菜单里选 :ui[patch.menu]{1="e2dda2bc"}。选中多个提交时，这一项为每个提交各存一个补丁。
 2. 选中 :ui[patch.omitPrefixes]，路径前面就不带 `a/` 与 `b/`。
@@ -134,9 +136,9 @@ description: "查看提交的详情、变更集、文件树与签名状态，比
 导出的文件和用 :ui[patch.save] 存的补丁都放在你的 Mac 上。快速保存的补丁放在服务器上的仓库文件夹里。
 :::
 
-## 拷贝提交信息 {#copy}
+## 复制提交信息 {#copy}
 
-右键点按一个提交，可以拷贝：
+右键点按一个提交，可以复制：
 
 - :ui[history.copyHash]：完整哈希
 - :ui[history.copyInfo]：短哈希与提交信息的第一行

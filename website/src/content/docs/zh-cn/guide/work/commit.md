@@ -40,6 +40,8 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 | :ui[editor.stripsComments] | 关闭。提示关闭时可用 |
 | :ui[editor.completesIssues] | 打开。见 [自动补全](#autocomplete) |
 
+见 [编辑器](/guide/settings/appearance/#editor)。
+
 ## 提交 {#commit}
 
 信息写好以后，点 :ui[working.commit]，或者在输入信息时按 <kbd>⌘↩</kbd>。标题里有文字、并且暂存了改动以后，这个按钮才能点。
@@ -60,9 +62,9 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 - :ui[commit.removeComments] 去掉这些行再提交。
 - :ui[commit.keepComments] 原样提交。
 
-勾选 :ui[commit.doNotAskAgain]，下次就按这次的选择处理。想恢复这个提问，在 :ui[app.name > settings.title] › :ui[settings.editor] 里打开 :ui[editor.warnsComments]。
+勾选 :ui[commit.doNotAskAgain]，下次就按这次的选择处理。想恢复这个提问，在 :ui[app.name > settings.title] › :ui[settings.editor] 里打开 :ui[editor.warnsComments]，见 [编辑器](/guide/settings/appearance/#editor)。
 
-信息里只有注释时，Spooky 会问 :ui[commit.commentsOnly] 点 :ui[commit.keepCommentsAndCommit] 照样提交。
+信息里只有注释时，Spooky 会问 :ui[commit.commentsOnly]点 :ui[commit.keepCommentsAndCommit] 照样提交。
 
 ## 自动补全 {#autocomplete}
 
@@ -79,7 +81,7 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 
 按 <kbd>↑</kbd> 或 <kbd>↓</kbd> 选一项，按 <kbd>Return</kbd> 插入，按 <kbd>Esc</kbd> 关掉列表。
 
-补全 Issue 编号需要仓库的远端有对应的 [托管账号](/guide/hosting/accounts/)，并且在 :ui[app.name > settings.title] › :ui[settings.editor] 里打开了 :ui[editor.completesIssues]。标了 `fixup!` 或 `squash!` 的提交，之后可以并进它修正的那个提交，见 [改写历史](/guide/history/rewrite/)。
+补全 Issue 编号需要仓库的远端有对应的 [托管账号](/guide/hosting/accounts/)，并且在 :ui[app.name > settings.title] › :ui[settings.editor] 里打开了 :ui[editor.completesIssues]，见 [编辑器](/guide/settings/appearance/#editor)。标了 `fixup!` 或 `squash!` 的提交，之后可以并进它修正的那个提交，见 [改写历史](/guide/history/rewrite/)。
 
 ## 修补上一次提交 {#amend}
 
@@ -94,7 +96,7 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 想快速修补，在没有编辑任何信息框时按住 <kbd>⌥</kbd>。松开之前，提交区都处在修补上一次提交的状态。按住的同时点 :ui[working.amend]，或者按 <kbd>⌥⌘↩</kbd>，提交会保留原来的信息，并加入已暂存的改动。
 
 :::caution
-上一次提交已经推送过的话，修补以后它就和远端上的那个不一样了，推送时需要强制推送。见 [获取、拉取与推送](/guide/branches/sync/)。
+上一次提交已经推送过的话，修补以后它就和远端上的那个不一样了，推送时需要强制推送。见 [安全强推](/guide/branches/sync/#force-push)。
 :::
 
 想修改更早的提交，见 [改写历史](/guide/history/rewrite/)。
@@ -111,7 +113,7 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 
 档案里的姓名、邮箱与签名密钥写进这个仓库自己的 Git 设置，不影响别的仓库。
 
-当前身份还不是档案时，菜单里有 :ui[profiles.addCurrent]{1="alex@example.com"}，可以把它存成档案。想管理档案，在同一个菜单里选 :ui[profiles.manage]。见 [身份档案与 Git 配置](/guide/settings/identity/)。
+当前身份还不是档案时，菜单里有 :ui[profiles.addCurrent]{1="alex@example.com"}，可以把它存成档案。想管理档案，在同一个菜单里选 :ui[profiles.manage]。见 [身份档案](/guide/settings/identity/#profiles)。
 
 :::note[服务器仓库]
 档案写进服务器上这个仓库的设置。服务器上在这个仓库里提交的其它工具也会用它。
@@ -123,8 +125,8 @@ description: "写提交的标题与正文，使用自动补全，修补上一次
 
 把指针停在提交区的头像上，可以看到下一个提交会不会签名，用的是哪把密钥。
 
-- **所有仓库**：在 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里打开 :ui[gitConfig.signCommits]，选好 :ui[gitConfig.signingKey]。
-- **单个仓库**：点侧边栏里的 :ui[repositorySettings.title]，在 :ui[repositorySettings.signing] 一组里设置 :ui[repositorySettings.signCommits] 与 :ui[repositorySettings.signingKey]。
+- **所有仓库**：在 :ui[app.name > settings.title] › :ui[settings.gitConfig] 里打开 :ui[gitConfig.signCommits]，选好 :ui[gitConfig.signingKey]，见 [签名](/guide/settings/identity/#signing)。
+- **单个仓库**：点侧边栏里的 :ui[repositorySettings.title]，在 :ui[repositorySettings.signing] 一组里设置 :ui[repositorySettings.signCommits] 与 :ui[repositorySettings.signingKey]，见 [仓库设置](/guide/settings/identity/#repository)。
 
 密钥需要口令时，Spooky 会弹出 :ui[signing.unlock] 对话框来问。
 

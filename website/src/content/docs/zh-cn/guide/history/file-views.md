@@ -40,7 +40,7 @@ description: "查看一个文件的历史，用 Blame 看每一行由谁改动�
 
 ## Blame {#blame}
 
-Blame 显示整个文件，右边有一栏写着每一块行最后是哪个提交改的。每一块显示作者的头像、提交信息、作者，以及是多久以前。
+Blame 显示整个文件，右边有一栏写着每一块最后是哪个提交改的。每一块显示作者的头像、提交信息的第一行、作者，以及是多久以前。
 
 - 在工作区里右键点按一个文件，选 :ui[blame.show]{1="units.ts"}。或者把指针移到右边一栏顶上的文件名上，点 :ui[blame.title]。
 - 在一个提交的变更集或文件树里，选 :ui[fileHistory.blameAt]{1="units.ts" 2="e2dda2bc"}，看文件在那时的样子。
@@ -48,9 +48,9 @@ Blame 显示整个文件，右边有一栏写着每一块行最后是哪个提�
 ::screenshot[src/units.ts 的 Blame。左边是文件，右边一栏写着每一块最后由哪个提交改动：头像、提交信息、作者和多久以前。Drop trailing zeros from temperatures 的几块亮着。]{name="history-blame" frame="window" markers="84,22 84,82.5"}
 
 1. 写着每一块由哪个提交改的那一栏
-2. 点中的提交的几块，亮了起来
+2. 点中的提交亮起来的几块
 
-点一块，可以看到它的提交的摘要，同一个提交的所有块都会亮起来。连按一块，就用整页详情打开它的提交。想把这一栏调宽或调窄，拖它的左边缘，Spooky 会记住宽度。
+点一块，可以看到它的提交的摘要。同一个提交的所有块都会亮起来。连按一块，就用整页详情打开它的提交。想把这一栏调宽或调窄，拖它的左边缘。Spooky 会记住宽度。
 
 Blame 只能看已经提交过的文件。新文件、未跟踪的文件、二进制文件与子模块都没法看。
 
@@ -68,7 +68,7 @@ Blame 只能看已经提交过的文件。新文件、未跟踪的文件、二�
 - :ui[showFile.raw] 与 :ui[blame.title] 在原文与 [Blame](#blame) 之间切换。
 - 把指针移到头部上，还有 :ui[fileHistory.title] 与 :ui[fileHistory.showCommit]。
 
-头部下面写着改过这个文件的人数，以及他们的头像。正文用你的主题，以及 :ui[app.name > settings.title] › :ui[settings.text] 里的设置。
+头部下面写着改过这个文件的人数，以及他们的头像。正文用你的主题，以及 :ui[app.name > settings.title] › :ui[settings.text] 里的设置，见 [文本](/guide/settings/appearance/#text)。
 
 这个视图与 Blame 一样，没法看新文件、未跟踪的文件、二进制文件与子模块。
 
@@ -86,7 +86,7 @@ Blame 只能看已经提交过的文件。新文件、未跟踪的文件、二�
 在变更集或文件树里，可以一次恢复多个文件或文件夹。
 
 :::note[服务器仓库]
-服务器上的文件会被覆盖。选中 :ui[dialog.doNotAskAgain]，下次就不再问。想重新被问，在 :ui[app.name > settings.title] › :ui[settings.general] 里打开 :ui[settings.warnRestoringOnServer]。
+服务器上的文件会被覆盖。选中 :ui[dialog.doNotAskAgain]，下次就不再问。想重新被问，在 :ui[app.name > settings.title] › :ui[settings.general] 里打开 :ui[settings.warnRestoringOnServer]，见 [确认](/guide/settings/general/#confirmations)。
 :::
 
 ## 相关页面

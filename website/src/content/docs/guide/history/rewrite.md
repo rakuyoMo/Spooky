@@ -6,7 +6,7 @@ description: "Revert, cherry-pick, and reset commits, rebase interactively, and 
 Most commands here start from the [History](/guide/history/browse/) list: right-click a commit, or select several first. Reverting and cherry-picking add new commits. The rest rewrite commits that already exist.
 
 :::caution
-Rewritten commits get new hashes. If you already pushed them, your branch and its upstream diverge, and pushing again needs a force push. Anyone who already has the old commits has to reconcile their history. See [Fetch, Pull, and Push](/guide/branches/sync/).
+Rewritten commits get new hashes. If you already pushed them, your branch and its upstream diverge, and pushing again needs a force push. Anyone who already has the old commits has to reconcile their history. See [Force push](/guide/branches/sync/#force-push).
 :::
 
 Apart from cherry-picking and resetting, these commands only appear in a commit’s menu while the list shows just the branch you’re on. To get there, choose :ui[menu.view > history.showHead] (<kbd>⌘0</kbd>), or click the branch in the sidebar.
@@ -18,7 +18,7 @@ Apart from cherry-picking and resetting, these commands only appear in a commit�
 Reverting adds a commit that undoes the changes of an earlier one. The earlier commit stays in the history, so this is the safe way to take back something you already pushed.
 
 1. Right-click the commit and choose :ui[rewrite.menu.revert]{1="e2dda2bc"} in the menu. With several commits selected, the item is :ui[rewrite.menu.revertMany]{1="3"} instead.
-2. :ui[rewrite.revert.commit] is on by default, so each reverted commit gets a commit of its own. Turn it off to leave the changes in the working copy. Spooky remembers this choice.
+2. :ui[rewrite.revert.commit] is on by default, so each reverted commit gets a commit of its own. Turn it off to leave the changes in the Working Copy. Spooky remembers this choice.
 3. Click :ui[rewrite.revert.button].
 
 Several commits are reverted from newest to oldest. To revert a merge commit, choose its :ui[rewrite.mainline]: the parent whose side counts as the main line. A merge commit can only be reverted on its own.
@@ -32,7 +32,7 @@ Cherry-picking copies the changes of commits from another branch onto the branch
 1. Click the other branch in the sidebar to see its history.
 2. Right-click the commit and choose :ui[rewrite.menu.cherryPick]{1="e2dda2bc"} in the menu. With several commits selected, the item is :ui[rewrite.menu.cherryPickMany]{1="3"}, and you can also click :ui[rewrite.cherryPick.button] on the right.
 3. Choose the options. Spooky remembers them:
-   - :ui[rewrite.cherryPick.commit] (on by default) commits each one. Turn it off to only apply the changes to the working copy.
+   - :ui[rewrite.cherryPick.commit] (on by default) commits each one. Turn it off to only apply the changes to the Working Copy.
    - :ui[rewrite.cherryPick.fastForward] moves your branch to the commit instead of copying it, when your branch is at the commit’s parent. It only applies while the first option is on.
 4. Click :ui[rewrite.cherryPick.button].
 
@@ -49,8 +49,8 @@ Resetting moves the branch you’re on to another commit. The commits after it l
 1. Right-click the commit and choose :ui[rewrite.menu.reset]{1="e2dda2bc"} in the menu. You can also click :ui[history.rollback] in the commit details, or choose :ui[workspace.title > rewrite.reset.menu] in the menu bar.
 2. Check :ui[rewrite.revision]. You can pick a branch, remote branch, or tag, or type a hash. The dialog lists the commits that will leave the branch.
 3. Choose a :ui[rewrite.reset.mode]:
-   - :ui[rewrite.reset.soft] keeps the staging area and the working copy as they are. The changes from the commits that leave stay staged.
-   - :ui[rewrite.reset.mixed] resets the staging area and keeps the working copy. Those changes become unstaged.
+   - :ui[rewrite.reset.soft] keeps the staging area and the Working Copy as they are. The changes from the commits that leave stay staged.
+   - :ui[rewrite.reset.mixed] resets the staging area and keeps the Working Copy. Those changes become unstaged.
    - :ui[rewrite.reset.hard] resets both. Uncommitted changes, and the changes from the commits that leave, are discarded.
 4. Click :ui[rewrite.reset.button].
 
@@ -69,7 +69,7 @@ The dialog starts at :ui[rewrite.reset.soft] every time. Resetting doesn’t off
 
 Neither base can be the commit you have checked out. The dialog lists the commits that will be rewritten, and warns you when some are already pushed or in other branches. :ui[sync.skipHooks] skips the repository’s pre-rebase hook this time. Click :ui[rewrite.rebaseOnto.button] to start.
 
-To rebase a branch onto another branch, see [Merge and Rebase](/guide/branches/merge-rebase/).
+To rebase a branch onto another branch, see [Rebase](/guide/branches/merge-rebase/#rebase).
 
 ## Squash, fixup, delete, and move {#interactive}
 
@@ -98,10 +98,10 @@ The commits after it are rewritten too, and the list then selects the commit und
 
 ## Edit a commit {#edit}
 
-Editing stops at a commit and puts its changes back in the working copy, so you can split it up or redo it.
+Editing stops at a commit and puts its changes back in the Working Copy, so you can split it up or redo it.
 
 1. Right-click the commit and choose :ui[rewrite.menu.edit]{1="e2dda2bc"}. Confirm with :ui[rewrite.edit.button].
-2. The banner reads :ui[conflict.title.edit]{1="e2dda2bc" 2="main"}. The commit’s changes are in the working copy, unstaged.
+2. The banner reads :ui[conflict.title.edit]{1="e2dda2bc" 2="main"}. The commit’s changes are in the Working Copy, unstaged.
 3. Stage and commit them as usual, in as many commits as you like.
 4. Click :ui[working.endEditing] in the banner. The commits after it are replayed on top.
 
@@ -145,7 +145,7 @@ Spooky checks the commits before it rewrites anything. If something is off, it e
 
 ## Local changes and conflicts {#local-changes}
 
-Reverting, cherry-picking, and rebasing need a working copy that doesn’t get in the way. When your local changes block one of them, Spooky offers to [stash them first](/guide/work/stash/#auto-stash). Amending an older commit asks before it starts.
+Reverting, cherry-picking, and rebasing need a Working Copy that doesn’t get in the way. When your local changes block one of them, Spooky offers to [stash them first](/guide/work/stash/#auto-stash). Amending an older commit asks before it starts.
 
 If a commit conflicts along the way, Spooky stops and shows the [operation banner](/guide/work/conflicts/#banner). Resolve the conflicts, then continue or abort there.
 

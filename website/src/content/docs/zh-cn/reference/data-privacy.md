@@ -43,7 +43,7 @@ Spooky 在仓库自己的 Git 配置里存几样东西，写成 `branch.<name>.s
 - 每个分支的父分支
 - 自动归档用的标记
 
-给分支改名时，这些项跟着分支走；删除分支时，它们一起删掉。在仓库的 :ui[repositorySettings.title] 里改的 Git 设置，比如签名，也写进同一份配置。
+给分支改名时，这些项跟着分支走；删除分支时，它们一起删掉。在仓库的 :ui[repositorySettings.title] 里改的 Git 设置，比如签名，也写进同一份配置，见 [仓库设置](/guide/settings/identity/#repository)。
 
 Git 配置不会被推送，所以这些都不会到远端。服务器仓库的这些内容存在服务器上。
 
@@ -57,7 +57,7 @@ Git 配置不会被推送，所以这些都不会到远端。服务器仓库的�
 | `gravatar.com` | 显示提交作者的头像 |
 | `github.com` 上 Spooky 的发布页 | 检查更新 |
 
-自动获取默认每 30 分钟一次。想改的话，打开 :ui[app.name > settings.title]，点 :ui[settings.general]，在 :ui[settings.autoFetch] 旁边选一项。选 :ui[settings.autoFetch.never]，就只在你自己操作时获取。
+自动获取默认每 30 分钟一次。想改的话，打开 :ui[app.name > settings.title]，点 :ui[settings.general]，在 :ui[settings.autoFetch] 旁边选一项。选 :ui[settings.autoFetch.never]，就只在你自己操作时获取。见 [操作](/guide/settings/general/#operations)。
 
 取提交作者的头像时，Gravatar 拿到的是作者邮箱的哈希值，不是邮箱本身。下载过的头像只留在内存里，退出 Spooky 就没有了。GitHub 与 GitLab 用户的头像来自这两个服务。设置里没有关掉头像的选项。
 
@@ -74,7 +74,7 @@ Spooky 上次意外退出的话，会读取 macOS 存在这台 Mac 上的崩溃�
 
 摘要里有 Spooky 的版本与构建号、macOS 版本、崩溃的类型，以及崩溃线程最多 30 行的调用栈。离开 Mac 之前，Spooky 会把你的个人文件夹、用户名、邮箱、IP 地址、令牌，以及网址里的密码换成占位文字。
 
-要等你在浏览器里提交，问题才会建出来。提交前可以先改文字，也可以直接关掉页面。
+摘要就在新问题页的网址里，页面一打开，GitHub 就会收到它。要等你在浏览器里提交，问题才会建出来。提交前可以先改文字，也可以直接关掉页面。
 
 下次不想再被问，在对话框里勾选 :ui[settings.crashReports.always]。之后 Spooky 会直接打开新问题页。同一个选项也在 :ui[app.name > settings.title] › :ui[settings.integration] 里。
 

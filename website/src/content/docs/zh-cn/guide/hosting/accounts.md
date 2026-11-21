@@ -15,6 +15,11 @@ description: "连接 GitHub、GitLab.com 与私有部署的 GitLab 账号，了�
 | :ui[accounts.add.gitlab] | GitLab.com | 个人访问令牌 |
 | :ui[accounts.add.gitlabSelfManaged] | 你自己服务器上的 GitLab | 个人访问令牌，或用户名和密码 |
 
+::screenshot[添加私有部署 GitLab 账号的对话框。主机地址是 https://gitlab.example.com，认证方式是用户名和密码。]{name="hosting-add-account" frame="dialog" markers="79.2,57.4 83.3,48.2"}
+
+1. 主机地址
+2. 认证方式
+
 Spooky 核对账号时，对话框底部写着 :ui[accounts.validating]。点 :ui[action.cancel] 会停止核对，对话框留着，方便你改填的内容。核对失败时会弹出提示说明原因，填过的内容都还在。
 
 添加好的账号列在表里，写着服务、实例和用户名。同一个服务上可以添加多个账号。

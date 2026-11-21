@@ -58,7 +58,7 @@ Spooky writes the result into the file and marks it as resolved. If the app didn
 
 FileMerge works a bit differently. Spooky shows :ui[externalTool.finishMerge]{1="FileMerge"} while it’s open. Save the result in FileMerge, then click :ui[externalTool.done].
 
-Spooky supports Araxis Merge, Beyond Compare, DeltaWalker, FileMerge, Kaleidoscope, P4Merge, and Visual Studio Code. To switch apps, change :ui[externalTool.mergeTool] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. Turn on :ui[externalTool.keepBackups] there to keep the file as it was before the merge, for example as `src/units.ts.orig`.
+Spooky supports Araxis Merge, Beyond Compare, DeltaWalker, FileMerge, Kaleidoscope, P4Merge, and Visual Studio Code. To switch apps, change :ui[externalTool.mergeTool] in :ui[app.name > settings.title] › :ui[settings.gitConfig]. Turn on :ui[externalTool.keepBackups] there to keep the file as it was before the merge, for example as `src/units.ts.orig`. See [Diff and merge tools](/guide/settings/integration/#diff-merge-tools).
 
 If the file was changed somewhere else while you merged, Spooky asks before it overwrites it.
 

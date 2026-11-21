@@ -46,7 +46,7 @@ Cloning copies a repository and its history from a remote into a new folder.
 
 Spooky first checks that it can reach the remote. If it can’t, the dialog stays open and shows why. Fix the address and try again. If it can, the dialog closes and the clone runs in the background. Its progress shows in the repository’s row in the list. When the clone finishes, Spooky posts a :ui[clone.notification.title] notification.
 
-On your Mac, the folder starts at your home folder, or at the folder set in :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.cloneDirectory].
+On your Mac, the folder starts at your home folder, or at the folder set in :ui[app.name > settings.title] › :ui[settings.general] › :ui[settings.cloneDirectory]. See [Cloning and Terminal](/guide/settings/general/#cloning).
 
 While you have recent clones, :ui[toolbar.clone] appears in the toolbar. Click it to see :ui[clone.recent.title]. There you can stop a running clone, start a failed or cancelled one again with :ui[clone.retry], or :ui[clone.remove] it from the list. Double-click a finished clone to open it. :ui[clone.recent.clear] empties the list.
 
@@ -54,7 +54,7 @@ While you have recent clones, :ui[toolbar.clone] appears in the toolbar. Click i
 When you clone to a server, Spooky checks the connection and runs the clone there. The new repository is added as a server repository. For the folder, type an absolute path on the server, or click :ui[clone.browse] to pick one. Spooky remembers the last folder you used on each server.
 :::
 
-You can also drag a repository’s address into the list to start a clone. A link can start one too; see [Windows and Navigation](/guide/repositories/navigation/).
+You can also drag a repository’s address into the list to start a clone. A link can start one too. See [Windows and Navigation](/guide/repositories/navigation/).
 
 ### Search for repositories {#scan}
 
@@ -69,24 +69,26 @@ Repositories already in the list aren’t shown again. You can search several fo
 
 - To add a group, choose :ui[bookmarks.newGroup] from the add button’s menu, then type a name.
 - To reorder entries or move them into another group, drag them.
-- To rename an entry, Control-click it and choose :ui[bookmarks.rename]. Renaming a repository in the list doesn’t rename its folder.
-- To sort by name, Control-click and choose :ui[bookmarks.sortChildren] to sort the entries of a group, or :ui[bookmarks.sortParent] to sort the group an entry is in.
+- To rename an entry, right-click it and choose :ui[bookmarks.rename]. Renaming a repository in the list doesn’t rename its folder.
+- To sort by name, right-click and choose :ui[bookmarks.sortChildren] to sort the entries of a group, or :ui[bookmarks.sortParent] to sort the group an entry is in.
 
 Two options in :ui[app.name > settings.title] › :ui[settings.general] change what the list shows:
 
 - :ui[settings.showWorktreesInRepositoryList]: a repository with other worktrees can be expanded to list them. You open a worktree the same way as a repository. Off by default.
 - :ui[settings.showHostAliasesInRepositoryList]: the names of server repositories start with their host alias. On by default.
 
+See [Windows and the Repositories list](/guide/settings/general/#windows).
+
 ## Open a repository {#open}
 
 Double-click a repository, or select it and press <kbd>↩</kbd>. It opens in the same window, in place of the list. If the repository is already open in another window, Spooky brings that window to the front instead.
 
-Control-click a repository for more choices:
+Right-click a repository for more choices:
 
 - :ui[bookmarks.open]{1="driftwood"} and :ui[bookmarks.openNewWindow]{1="driftwood"}
 - :ui[action.revealFinder], :ui[action.copyPath], and :ui[action.openTerminal]
 
-The details on the right also have :ui[action.open] and :ui[bookmarks.multiple.delete] buttons. Click :ui[bookmarks.detail.edit] there to change the :ui[bookmarks.detail.description] and the :ui[bookmarks.detail.identity]. :ui[bookmarks.detail.unset] removes the identity set just for this repository. Next to each remote, :ui[bookmarks.detail.viewInBrowser] opens its web page.
+The details on the right also have :ui[action.open] and :ui[bookmarks.multiple.delete] buttons. Click :ui[bookmarks.detail.edit] there to change the :ui[bookmarks.detail.description] and the :ui[bookmarks.detail.identity]. :ui[bookmarks.detail.unset] removes the identity set just for this repository. Next to each remote, :ui[bookmarks.detail.viewInBrowser] opens its web page. The description and identity are the same ones you see in [Repository settings](/guide/settings/identity/#repository).
 
 :::note[Server repositories]
 :ui[action.copyPath] copies the path with the host alias in front, as in `alias:/path/to/repository`. Spooky reads a server repository’s details only when you select it. Selecting one may connect to the server.
@@ -109,7 +111,7 @@ Spooky checks a server repository only when you select or open it. If Spooky can
 Select one or more entries, then do one of the following:
 
 - Press <kbd>⌫</kbd>.
-- Control-click and choose :ui[bookmarks.delete]{1="driftwood"}, :ui[bookmarks.deleteFolder] for a group, or :ui[bookmarks.deleteMultiple]{1="2"} for several entries.
+- Right-click and choose :ui[bookmarks.delete]{1="driftwood"}, :ui[bookmarks.deleteFolder] for a group, or :ui[bookmarks.deleteMultiple]{1="2"} for several entries.
 - Click :ui[bookmarks.multiple.delete] in the details.
 
 If the repository folder still exists, Spooky asks :ui[bookmarks.delete.title]{1="driftwood"} first. Only the bookmarks are removed. The folders stay where they are. To move them to the Trash too, select :ui[bookmarks.delete.trash]. Click :ui[bookmarks.delete.submit] to confirm.

@@ -6,7 +6,7 @@ description: "反转、摘取与重置提交，交互式变基，以及修补更
 这里的大多数操作都从 [历史](/guide/history/browse/) 列表开始：右键点按一个提交，或者先选中几个。反转与摘取会新增提交，其余的操作则改写已有的提交。
 
 :::caution
-改写后的提交会换成新的哈希。如果它们已经推送过，你的分支就会和上游分叉，再推送需要强制推送；已经拿到旧提交的人，也得自己理顺历史。见 [获取、拉取与推送](/guide/branches/sync/)。
+改写后的提交会换成新的哈希。如果它们已经推送过，你的分支就会和上游分叉，再推送需要强制推送；已经拿到旧提交的人，也得自己理顺历史。见 [安全强推](/guide/branches/sync/#force-push)。
 :::
 
 除了摘取与重置，下面这些操作只在列表只显示你所在的分支时，才会出现在提交的菜单里。要切过去，选 :ui[menu.view > history.showHead]（<kbd>⌘0</kbd>），或者点侧边栏里的这个分支。
@@ -69,7 +69,7 @@ description: "反转、摘取与重置提交，交互式变基，以及修补更
 
 两个基点都不能是当前检出的提交。对话框会列出将被改写的提交，其中有已经推送或已经在别的分支里的，会给出警告。:ui[sync.skipHooks] 让这一次跳过仓库的 pre-rebase 钩子。点 :ui[rewrite.rebaseOnto.button] 开始。
 
-想把一个分支变基到另一个分支上，见 [合并与变基](/guide/branches/merge-rebase/)。
+想把一个分支变基到另一个分支上，见 [变基](/guide/branches/merge-rebase/#rebase)。
 
 ## 压缩、Fixup、删除与移动 {#interactive}
 
@@ -109,7 +109,7 @@ description: "反转、摘取与重置提交，交互式变基，以及修补更
 
 ## 修补更早的提交 {#amend}
 
-修补更早的提交，就是把改动加进那个提交里，和 [修补最近一次提交](/guide/work/commit/#amend) 一样。
+修补更早的提交，就是把改动加进那个提交里，和 [修补上一次提交](/guide/work/commit/#amend) 一样。
 
 1. 右键点按这个提交，选 :ui[rewrite.menu.amend]{1="e2dda2bc"}。Spooky 直接开始，不先确认。
 2. 变基停在这个提交上。做好改动并暂存。

@@ -10,7 +10,7 @@ description: "查看系统要求、下载并第一次打开 Spooky、保持更�
 - macOS 26 或更新版本
 - Git 2.41 或更新版本
 
-Spooky 默认用 `/usr/bin/git`。想换成别的 Git，打开 :ui[app.name > settings.title]（<kbd>⌘,</kbd>），点 :ui[settings.gitConfig]，在 :ui[settings.gitProgram] 菜单里选一个。菜单里列的是 Spooky 找到的、版本够新的 Git。Git 装在别处的话，选 :ui[settings.gitProgram.choose] 自己挑。菜单下方写着要求的最低版本。
+Spooky 默认用 `/usr/bin/git`。想换成别的 Git，打开 :ui[app.name > settings.title]（<kbd>⌘,</kbd>），点 :ui[settings.gitConfig]，在 :ui[settings.gitProgram] 菜单里选一个。菜单里列的是 Spooky 找到的、版本够新的 Git。Git 装在别处的话，选 :ui[settings.gitProgram.choose] 自己挑。菜单下方写着要求的最低版本。见 [Git 程序](/guide/settings/identity/#git-program)。
 
 :::note[服务器仓库]
 服务器上也要装 Git 2.41 或更新版本。Spooky 经 SSH 连服务器，用的是 `~/.ssh/config` 里的主机别名。设置里选的 Git 只管这台 Mac 上的仓库，服务器仓库用服务器上的 Git。详见 [系统要求](/reference/requirements/) 与 [准备 SSH](/guide/server/prepare-ssh/)。

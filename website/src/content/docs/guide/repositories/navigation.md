@@ -13,7 +13,7 @@ Each window or tab shows either the Repositories view or one repository.
 - :ui[menu.file > menu.newWindow] (<kbd>⌘N</kbd>) opens a new window with the Repositories view.
 - :ui[menu.view > menu.showRepositories] (<kbd>⌃⌘R</kbd>) shows the Repositories view in the current window.
 
-If a repository is already open, opening it again switches to the window that shows it. To open it in a second window anyway, Control-click it in the Repositories list and choose :ui[bookmarks.openNewWindow]{1="driftwood"}.
+If a repository is already open, opening it again switches to the window that shows it. To open it in a second window anyway, right-click it in the Repositories list and choose :ui[bookmarks.openNewWindow]{1="driftwood"}.
 
 ### Switch views {#views}
 
@@ -78,7 +78,7 @@ Only actions you can run right now are listed.
 
 If a restored repository can’t be found anymore, its window shows that it’s missing. See [Missing repositories](/guide/repositories/manager/#missing).
 
-Turn on :ui[settings.showLaunchWindow] to get a window at startup that lists your recent repositories. Double-click one, or select it and press <kbd>↩</kbd>, to open it. The window closes by itself once a repository window comes to the front.
+Turn on :ui[settings.showLaunchWindow] to get a window at startup that lists your recent repositories. Double-click one, or select it and press <kbd>↩</kbd>, to open it. The window closes by itself once a repository window comes to the front. See [Windows and the Repositories list](/guide/settings/general/#windows) for both settings.
 
 :::note[Server repositories]
 Restored server repositories connect to their servers again when Spooky starts.
@@ -88,7 +88,7 @@ Restored server repositories connect to their servers again when Spooky starts.
 
 :ui[menu.file > menu.openRecent] lists the repositories you opened recently, on your Mac and on servers. :ui[menu.clearRecent] at the bottom empties the list. Your bookmarks in the Repositories window stay.
 
-Control-click Spooky’s icon in the **Dock** to get a menu with :ui[menu.newWindow] and your recent repositories. Choose a repository to open it. This works even when Spooky isn’t running yet.
+Right-click Spooky’s icon in the **Dock** to get a menu with :ui[menu.newWindow] and your recent repositories. Choose a repository to open it. This works even when Spooky isn’t running yet.
 
 You can also drop a folder on Spooky’s icon in the Dock to open the repository it’s in. If the folder isn’t in a Git repository, Spooky offers to create one.
 
@@ -136,7 +136,7 @@ spooky://clone?url=<address>
 
 This opens the clone dialog with the address filled in. Nothing is cloned until you choose where to put it and click :ui[clone.submit]. See [Clone a repository](/guide/repositories/manager/#clone).
 
-Set :ui[app.name > settings.title] › :ui[settings.integration] › :ui[settings.github] to Spooky, and the links on github.com that open a repository in a desktop app open this clone dialog too.
+Set :ui[app.name > settings.title] › :ui[settings.integration] › :ui[settings.github] to Spooky, and the links on github.com that open a repository in a desktop app open this clone dialog too. See [Links from github.com](/guide/settings/integration/#github-links).
 
 Some links can’t be used, for example one that names an unknown view or gives a relative path. For those, Spooky shows :ui[link.invalid.title] and does nothing else.
 
