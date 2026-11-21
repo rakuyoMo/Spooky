@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "Nach Stash-Beschreibung suchen";
 "stash.subtitle" = "Stashes (%ld Stashes)";
+"stash.subtitle.one" = "Stashes (1 Stash)";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "Version aus angewendetem Patch oder Stash";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "Laden";
 "history.reveal.slow.message" = "Commit %1$@ liegt nach den ersten %2$ld Commits dieses Verlaufs. Das Laden des Verlaufs bis zu diesem Commit kann eine Weile dauern.";
 "history.subtitle" = "%@ (%ld Commits)";
+"history.subtitle.one" = "%@ (1 Commit)";
 "history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld Commits oder mehr)";
 "working.subtitle" = "Arbeitskopie (%ld geänderte Dateien)";

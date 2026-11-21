@@ -13,7 +13,9 @@ extension RepositoryWindowController {
             historySubtitle
 
         case .stashes:
-            AppLocalization.text("stash.subtitle", session.stashes.entries.count)
+            session.stashes.entries.count == 1
+                ? AppLocalization.text("stash.subtitle.one")
+                : AppLocalization.text("stash.subtitle", session.stashes.entries.count)
 
         case .reflog:
             session.reflog.reference == "HEAD"
@@ -82,7 +84,8 @@ extension RepositoryWindowController {
         return AppLocalization.text("working.subtitle.branch", WorkingCopyListView.branchTitle(branch), count)
     }
 
-    /// 历史的副标题：整页详情是 “Commit 短哈希”；所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；后面是提交数，数到上限时写 “or more”。
+    /// 历史的副标题：整页详情是 “Commit 短哈希”；所选引用以 “, ” 相连，没有选引用时是 “History”，与基准分支比较时是 “分支 → 基准”；
+    /// 后面是提交数，只有 1 个时用单数，数到上限时写 “or more”。
     private var historySubtitle: String {
         let history = session.history
 
@@ -101,7 +104,13 @@ extension RepositoryWindowController {
             return name
         }
 
-        let key = count >= RepositoryHistoryState.countLimit ? "history.subtitle.more" : "history.subtitle"
+        let key =
+            switch count {
+            case RepositoryHistoryState.countLimit...: "history.subtitle.more"
+            case 1: "history.subtitle.one"
+            default: "history.subtitle"
+            }
+
         return AppLocalization.text(key, name, count)
     }
 

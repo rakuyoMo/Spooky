@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "스태시 메시지 검색";
 "stash.subtitle" = "스태시 (스태시 %ld개)";
+"stash.subtitle.one" = "스태시 (스태시 1개)";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "적용한 패치 또는 스태시의 버전";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "불러오기";
 "history.reveal.slow.message" = "커밋 %1$@은(는) 이 기록의 처음 %2$ld개 커밋 뒤에 있습니다. 해당 커밋까지 불러오는 데 시간이 걸릴 수 있습니다.";
 "history.subtitle" = "%@ (커밋 %ld개)";
+"history.subtitle.one" = "%@ (커밋 1개)";
 "history.commitPage.subtitle" = "커밋 %@";
 "history.subtitle.more" = "%@ (커밋 %ld개 이상)";
 "working.subtitle" = "작업 사본 (변경된 파일 %ld개)";

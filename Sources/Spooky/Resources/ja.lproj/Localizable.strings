@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "スタッシュのメッセージを検索";
 "stash.subtitle" = "スタッシュ（%ld 個のスタッシュ）";
+"stash.subtitle.one" = "スタッシュ（1 個のスタッシュ）";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "適用したパッチまたはスタッシュのバージョン";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "読み込む";
 "history.reveal.slow.message" = "コミット %1$@ はこの履歴の最初の %2$ld 件のコミットより後にあります。そこまで読み込むには時間がかかることがあります。";
 "history.subtitle" = "%@（%ld 件のコミット）";
+"history.subtitle.one" = "%@（1 件のコミット）";
 "history.commitPage.subtitle" = "コミット %@";
 "history.subtitle.more" = "%@（%ld 件以上のコミット）";
 "working.subtitle" = "作業コピー（変更されたファイル %ld 件）";

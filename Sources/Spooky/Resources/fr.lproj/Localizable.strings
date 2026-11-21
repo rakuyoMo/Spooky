@@ -1005,6 +1005,7 @@
 /* 储藏视图。 */
 "stash.search" = "Rechercher un message de remisage";
 "stash.subtitle" = "Remisages (%ld remisages)";
+"stash.subtitle.one" = "Remisages (1 remisage)";
 
 /* 冲突向导。 */
 "conflict.version.applied" = "Version du patch ou remisage appliqué";
@@ -1066,6 +1067,7 @@
 "history.reveal.slow.submit" = "Charger";
 "history.reveal.slow.message" = "Le commit %1$@ se trouve après les %2$ld premiers commits de cet historique. Charger l’historique jusqu’à ce commit peut prendre un moment.";
 "history.subtitle" = "%@ (%ld commits)";
+"history.subtitle.one" = "%@ (1 commit)";
 "history.commitPage.subtitle" = "Commit %@";
 "history.subtitle.more" = "%@ (%ld commits ou plus)";
 "working.subtitle" = "Copie de travail (%ld fichiers modifiés)";
