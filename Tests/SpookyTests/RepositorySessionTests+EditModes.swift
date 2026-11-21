@@ -85,6 +85,48 @@ extension RepositorySessionTests {
         #expect(try await lastMessage(runner) == "改过的合并说明")
         #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
     }
+
+    /// 合并在 App 外中止后，没改过的合并说明随合并一起清空；改过的信息保留。
+    @Test("合并在 App 外中止后清空没改过的合并说明")
+    func externalAbortClearsPreparedMessage() async throws {
+        let (session, runner, directory) = try await commitSession()
+
+        defer {
+            session.close()
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        session.commitResetDelay = .zero
+        try await commitFirst(in: session, directory: directory)
+
+        _ = try await runner.run(["checkout", "-q", "-b", "side"])
+        try Data("side\n".utf8).write(to: directory.appending(path: "side.txt"))
+        _ = try await runner.run(["add", "-A"])
+        _ = try await runner.run(["commit", "-q", "-m", "side"])
+        _ = try await runner.run(["checkout", "-q", "main"])
+
+        // 没改过的合并说明：命令行中止后清空
+        _ = try await runner.run(["merge", "-q", "--no-ff", "--no-commit", "side"])
+        await reload(session) { session.context?.operation == .merge }
+
+        #expect(session.commitSubject == "Merge branch 'side'")
+
+        _ = try await runner.run(["merge", "--abort"])
+        await reload(session) { session.context != nil && session.context?.operation == nil }
+
+        #expect(session.commitSubject.isEmpty && session.commitBody.isEmpty)
+
+        // 改过的信息：命令行中止后保留
+        _ = try await runner.run(["merge", "-q", "--no-ff", "--no-commit", "side"])
+        await reload(session) { session.context?.operation == .merge }
+
+        session.commitBody = "补充的说明"
+
+        _ = try await runner.run(["merge", "--abort"])
+        await reload(session) { session.context != nil && session.context?.operation == nil }
+
+        #expect(session.commitSubject == "Merge branch 'side'" && session.commitBody == "补充的说明")
+    }
 }
 
 // MARK: - Steps
