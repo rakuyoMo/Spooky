@@ -24,34 +24,63 @@ final class DiffGutterElement: NSAccessibilityElement {
 
     /// 按下走鼠标和键盘同一入口。
     override func accessibilityPerformPress() -> Bool {
-        owner?.select(lineID) ?? false
+        // 辅助功能的回调都在主线程上进来；闭包只带走行号栏与行号，下同
+        let (owner, lineID) = (owner, lineID)
+
+        return MainActor.assumeIsolated {
+            owner?.select(lineID) ?? false
+        }
     }
 
     /// 加载或写入期间按钮仍可读，但不能改变选择。
-    override func isAccessibilityEnabled() -> Bool { owner?.enabled ?? false }
+    override func isAccessibilityEnabled() -> Bool {
+        let owner = owner
+
+        return MainActor.assumeIsolated {
+            owner?.enabled ?? false
+        }
+    }
 
     /// 选择状态由行号栏持有。
     override func accessibilityValue() -> Any? {
-        (owner?.selected.contains(lineID) ?? false) ? AppLocalization.text("working.selected") : ""
+        let (owner, lineID) = (owner, lineID)
+
+        let selected = MainActor.assumeIsolated {
+            owner?.selected.contains(lineID) ?? false
+        }
+
+        return selected ? AppLocalization.text("working.selected") : ""
     }
 
     /// 虚拟按钮的屏幕范围涵盖该逻辑行的全部折行。
     override func accessibilityFrame() -> NSRect {
-        guard let owner, let window = owner.window else { return .zero }
+        let (owner, lineID) = (owner, lineID)
 
-        return window.convertToScreen(owner.convert(owner.frame(for: lineID), to: nil))
+        return MainActor.assumeIsolated {
+            guard let owner, let window = owner.window else { return .zero }
+
+            return window.convertToScreen(owner.convert(owner.frame(for: lineID), to: nil))
+        }
     }
 
     /// VoiceOver 聚焦只移动焦点，不改变正文或行号选区。
     override func setAccessibilityFocused(_ focused: Bool) {
-        guard focused, let owner, owner.enabled else { return }
+        let (owner, lineID) = (owner, lineID)
 
-        owner.window?.makeFirstResponder(owner)
-        owner.focus(lineID)
+        MainActor.assumeIsolated {
+            guard focused, let owner, owner.enabled else { return }
+
+            owner.window?.makeFirstResponder(owner)
+            owner.focus(lineID)
+        }
     }
 
     /// 键盘焦点与辅助功能焦点使用同一逻辑行。
     override func isAccessibilityFocused() -> Bool {
-        owner?.focusedID == lineID && owner?.window?.firstResponder === owner
+        let (owner, lineID) = (owner, lineID)
+
+        return MainActor.assumeIsolated {
+            owner?.focusedID == lineID && owner?.window?.firstResponder === owner
+        }
     }
 }

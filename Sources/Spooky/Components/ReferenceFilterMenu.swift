@@ -109,7 +109,10 @@ extension ReferenceFilterMenu: NSMenuDelegate {
     /// 打开菜单时让过滤框拿到键盘输入；菜单跟踪期间只跑事件跟踪模式。
     func menuWillOpen(_: NSMenu) {
         RunLoop.main.perform(inModes: [.eventTracking]) { [field] in
-            field.window?.makeFirstResponder(field)
+            // `RunLoop.main` 的块总在主线程上执行
+            MainActor.assumeIsolated {
+                _ = field.window?.makeFirstResponder(field)
+            }
         }
     }
 

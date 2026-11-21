@@ -18,7 +18,7 @@ struct AppIconSettingsRow: View {
     private static let spacing: CGFloat = 12
 
     /// 标签的基线到这一行顶边的距离：与第一个系列名的基线排齐。
-    private static let labelBaseline: CGFloat = 11
+    private nonisolated static let labelBaseline: CGFloat = 11
 
     /// App 图标的控制器；App 不是经 `SpookyApplicationController` 启动时为 nil，这一行不显示。
     let controller: AppIconController?

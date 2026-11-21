@@ -17,7 +17,7 @@ enum DiffPresentation {
 /// 块头的不透明系统底色与内部边线，不参与内容命中。
 struct DiffHeaderBackground: NSViewRepresentable {
     /// 块头与正文自然位置之间的固定高度。
-    static let height: CGFloat = 32
+    nonisolated static let height: CGFloat = 32
 
     /// 同一文件内已有上一块，且当前没有浮动时显示顶线。
     let showsTopBorder: Bool

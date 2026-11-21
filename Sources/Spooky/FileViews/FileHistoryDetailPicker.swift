@@ -6,6 +6,7 @@ import SwiftUI
 /// Diff / Raw 分段选择：对象能力未知或为目录时禁用 Raw。
 struct FileHistoryDetailPicker: NSViewRepresentable {
     /// 将原生动作传回最新绑定。
+    @MainActor
     final class Coordinator: NSObject {
         /// 当前模式绑定。
         var parent: FileHistoryDetailPicker
