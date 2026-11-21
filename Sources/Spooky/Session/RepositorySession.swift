@@ -91,6 +91,9 @@ final class RepositorySession {
     /// Git 返回的身份和进行中操作。
     private(set) var context: WorkingCopyContext? = nil
 
+    /// 进行中的操作里刚解决、上下文还没重读到的冲突文件：解决先出现在状态里，resolve-undo 记录随之后读到的上下文才有。
+    private(set) var pendingResolvedPaths: Set<String> = []
+
     /// 当前文件的补丁快照。
     var diffSnapshot: DiffSnapshot? = nil
 
@@ -563,6 +566,7 @@ extension RepositorySession {
         workspaceProgress = nil
         isLoadingDiff = false
         context = nil
+        pendingResolvedPaths = []
         diffSnapshot = nil
         diffFailure = nil
         contentHash = nil
@@ -861,6 +865,14 @@ extension RepositorySession {
     ///
     /// - Parameter records: 文件视图因 HEAD 移动而重读时是否记进 Activity，与引起它的刷新相同。
     private func replaceStatus(_ status: WorkingCopyStatus, records: Bool) {
+        // 进行中的操作里不再冲突的文件先记下，重读到的上下文带上它们的 resolve-undo 记录之前就算作已解决
+        if context?.progress != nil {
+            let resolved = Self.conflictedPaths(in: self.status)
+                .subtracting(Self.conflictedPaths(in: status))
+
+            pendingResolvedPaths.formUnion(resolved)
+        }
+
         self.status = status
 
         // 跟随 HEAD 的文件视图只在 HEAD 移动后重读
@@ -1082,6 +1094,9 @@ extension RepositorySession {
         let head = status?.branch.oid
         let service = WorkingCopyOperations(runner: makeRunner(repository))
 
+        // 这次读取开始前已经解决的冲突都会出现在读到的 resolve-undo 记录里
+        let covered = pendingResolvedPaths
+
         contextTask = Task { [weak self] in
             do {
                 let context = try await service.context(head: head)
@@ -1090,6 +1105,7 @@ extension RepositorySession {
 
                 let previous = self.context
                 self.context = context
+                pendingResolvedPaths.subtract(covered)
                 updateMessage(for: context, previous: previous)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
