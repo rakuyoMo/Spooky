@@ -134,7 +134,7 @@ extension RepositoryMountState {
 
     /// 记下用户设置或挂载成功的本机位置：写进偏好，并改换这次运行里的本机位置。
     ///
-    /// sshfs 挂载只在挂上并核对过之后记下，文件夹此刻就能用。
+    /// sshfs 挂载只在挂上并核对过之后记下，指定文件夹只在核对过之后记下：文件夹此刻就能用，不等后台的查看。
     ///
     /// - Parameter location: 要记下的本机位置。
     func save(_ location: ServerLocalLocation) {
@@ -145,7 +145,7 @@ extension RepositoryMountState {
         ServerLocalLocation.store(location, for: repository, defaults: defaults)
         apply(location)
 
-        if location.method == .sshfsMount {
+        if location.folder != nil {
             setFolderAvailable(true)
         }
     }

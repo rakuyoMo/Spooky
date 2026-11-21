@@ -58,20 +58,23 @@ extension RepositoryMountState {
     ///
     /// 不经连接 B，仓库管理与最近克隆据此决定能否直接打开 Finder。
     func checkFolder() async {
+        let location = location
+        let available: Bool
+
         switch location {
-        case .chosenFolder:
-            refreshFolder()
+        case .chosenFolder(let folder):
+            available = await Self.directoryExists(folder)
 
         case .sshfsMount(let folder):
-            let mounted = await Self.isVolumeRoot(folder)
-
-            // 查看期间改换了本机位置时，结果不再采用
-            if location == .sshfsMount(folder: folder) {
-                setFolderAvailable(mounted)
-            }
+            available = await Self.isVolumeRoot(folder)
 
         case .automatic, .smbMount:
             return
+        }
+
+        // 查看期间改换了本机位置时，结果不再采用
+        if self.location == location {
+            setFolderAvailable(available)
         }
     }
 }
