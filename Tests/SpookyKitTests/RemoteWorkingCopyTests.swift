@@ -80,15 +80,17 @@ struct RemoteWorkingCopyTests {
         }
     }
 
-    /// 写入经包装器在服务器上替换文件：可执行权限照旧，经符号链接写到它指向的文件，目录里不留临时文件。
-    @Test("服务器替换写入保留权限与符号链接")
+    /// 写入经包装器在服务器上替换文件：可执行权限照旧，经符号链接写到它指向的文件，目录里不留临时文件；
+    /// 替换写入新建的文件、Git 新建的文件与登录会话里新建的文件权限相同。
+    @Test("服务器替换写入保留权限与符号链接，新文件按登录时的 umask")
     func fileReplacement() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
 
         do {
             let location = try await remote.open().location
-            let files = RepositoryFiles(runner: GitRunner(location: location, remote: remote))
+            let runner = GitRunner(location: location, remote: remote)
+            let files = RepositoryFiles(runner: runner)
             let script = fixture.repository + "/脚 本'[*]?.sh"
             let link = fixture.repository + "/link"
 
@@ -106,6 +108,24 @@ struct RemoteWorkingCopyTests {
             // 改名替换之后目录里没有留下临时文件
             let listing = try await RemoteFixture.raw(["/bin/ls", "-A", fixture.repository])
             #expect(!String(decoding: listing.standardOutput, as: UTF8.self).contains(".spooky-"))
+
+            // 登录会话里新建的文件作对照：替换写入新建的文件与它的权限相同
+            let baseline = fixture.repository + "/baseline"
+            let created = fixture.repository + "/created.txt"
+
+            _ = try await RemoteFixture.raw(["/usr/bin/touch", baseline])
+            try await files.write(Data("created\n".utf8), to: created)
+
+            let loginMode = try await mode(of: baseline)
+
+            #expect(try await mode(of: created) == loginMode)
+
+            // Git 检出时新建的文件同样与它的权限相同
+            _ = try await runner.run(["add", "--", "created.txt"])
+            _ = try await RemoteFixture.raw(["/bin/rm", "--", created])
+            _ = try await runner.run(["restore", "--", "created.txt"])
+
+            #expect(try await mode(of: created) == loginMode)
 
             await remote.close()
             try await fixture.remove()
@@ -152,5 +172,15 @@ struct RemoteWorkingCopyTests {
             try await fixture.remove()
             throw error
         }
+    }
+
+    /// 服务器上文件的权限位，写成四位八进制。
+    /// - Parameter path: 服务器上的绝对路径
+    private func mode(of path: String) async throws -> String {
+        let result = try await RemoteFixture.raw([
+            "/usr/bin/perl", "-e", "printf '%04o', (stat shift)[2] & 07777", path,
+        ])
+
+        return String(decoding: result.standardOutput, as: UTF8.self)
     }
 }
