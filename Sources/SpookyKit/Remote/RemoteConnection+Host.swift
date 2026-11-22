@@ -23,7 +23,9 @@ enum HostCommand: Sendable {
 
 extension RemoteConnection {
     /// App 内按主机别名登记的主机连接，与工作区连接分开登记。
-    private static let hosts = Mutex<[String: RemoteConnection]>([:])
+    ///
+    /// 别名按 UTF-8 字节区分：ssh 收到的是别名的原始字节，规范等价、字节不同的两个别名可能对应不同的主机。
+    private static let hosts = Mutex<[[UInt8]: RemoteConnection]>([:])
 
     /// 取得某台主机不绑定仓库的连接；同一别名在 App 内共用一条专属主连接，第一次执行命令时才建立。
     ///
@@ -37,7 +39,9 @@ extension RemoteConnection {
     /// 以指定的 SSH 配置登记主机连接，测试据此使用专用密钥；别名已登记时返回已有的连接。
     nonisolated static func host(_ alias: String, configuration: SSHConfiguration) -> RemoteConnection {
         hosts.withLock { hosts in
-            if let connection = hosts[alias] { return connection }
+            let key = Array(alias.utf8)
+
+            if let connection = hosts[key] { return connection }
 
             let connection = RemoteConnection(
                 host: alias,
@@ -45,7 +49,7 @@ extension RemoteConnection {
                 hostScoped: true,
                 configuration: configuration
             )
-            hosts[alias] = connection
+            hosts[key] = connection
             return connection
         }
     }

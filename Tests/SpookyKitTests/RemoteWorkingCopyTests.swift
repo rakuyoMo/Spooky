@@ -80,6 +80,43 @@ struct RemoteWorkingCopyTests {
         }
     }
 
+    /// 写入经包装器在服务器上替换文件：可执行权限照旧，经符号链接写到它指向的文件，目录里不留临时文件。
+    @Test("服务器替换写入保留权限与符号链接")
+    func fileReplacement() async throws {
+        let fixture = try await RemoteFixture.create()
+        let remote = fixture.connection()
+
+        do {
+            let location = try await remote.open().location
+            let files = RepositoryFiles(runner: GitRunner(location: location, remote: remote))
+            let script = fixture.repository + "/脚 本'[*]?.sh"
+            let link = fixture.repository + "/link"
+
+            try await files.write(Data("old\n".utf8), to: script)
+            _ = try await RemoteFixture.raw(["/bin/chmod", "755", script])
+            _ = try await RemoteFixture.raw(["/bin/ln", "-s", "脚 本'[*]?.sh", link])
+
+            // 经符号链接写入：链接仍在，指向的文件换成新内容并仍可执行
+            try await files.write(Data("#!/bin/sh\n".utf8), to: link)
+
+            _ = try await RemoteFixture.raw(["/bin/test", "-L", link])
+            _ = try await RemoteFixture.raw(["/bin/test", "-x", script])
+            #expect(try await files.read([script])[script] == Data("#!/bin/sh\n".utf8))
+
+            // 改名替换之后目录里没有留下临时文件
+            let listing = try await RemoteFixture.raw(["/bin/ls", "-A", fixture.repository])
+            #expect(!String(decoding: listing.standardOutput, as: UTF8.self).contains(".spooky-"))
+
+            await remote.close()
+            try await fixture.remove()
+        } catch {
+            if let git = error as? GitError { Issue.record(Comment(rawValue: git.message)) }
+            await remote.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
+
     /// 断线后的写入必须失败，重连核对不能制造成功提交。
     @Test("服务器旧 Diff 与断线提交拒绝")
     func disconnectedWrite() async throws {

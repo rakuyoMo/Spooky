@@ -4,7 +4,7 @@ import Foundation
 
 /// 一次 Git 调用的输出与结束状态，不包含进程环境或标准输入。
 public struct GitCommandResult: Sendable, Equatable {
-    /// 调用方传入的子命令及参数。
+    /// 调用方传入的子命令及参数；地址里的口令已换成 `[REDACTED]`。
     public let arguments: [String]
 
     /// 标准输出的原始字节。
@@ -26,6 +26,94 @@ public struct GitCommandResult: Sendable, Equatable {
         }
 
         return code
+    }
+
+    /// 建立结果；参数里地址带的口令在这里换掉，结果与错误都不保留口令，真正执行的参数不受影响。
+    init(
+        arguments: [String],
+        standardOutput: Data,
+        standardError: Data,
+        terminationStatus: GitTerminationStatus?,
+        isCancelled: Bool
+    ) {
+        self.arguments = arguments.map(Self.redactingPasswords)
+        self.standardOutput = standardOutput
+        self.standardError = standardError
+        self.terminationStatus = terminationStatus
+        self.isCancelled = isCancelled
+    }
+}
+
+// MARK: - URL Passwords
+
+extension GitCommandResult {
+    /// 参数里地址带的口令，原样的写法与百分号解码后的写法都算；输出脱敏据此替换 Git 原样打出的地址。
+    static func passwords(in arguments: [String]) -> [Data] {
+        var passwords: [Data] = []
+
+        for argument in arguments {
+            let bytes = Array(argument.utf8)
+
+            for range in passwordRanges(in: bytes) {
+                let password = String(decoding: bytes[range], as: UTF8.self)
+                passwords.append(Data(password.utf8))
+
+                // Git 认证时用的是解码后的口令
+                if let decoded = password.removingPercentEncoding, decoded != password {
+                    passwords.append(Data(decoded.utf8))
+                }
+            }
+        }
+
+        return passwords
+    }
+
+    /// 把一个参数里地址带的口令换成 `[REDACTED]`，其余字节原样保留。
+    private static func redactingPasswords(_ argument: String) -> String {
+        let bytes = Array(argument.utf8)
+        let ranges = passwordRanges(in: bytes)
+
+        guard !ranges.isEmpty else {
+            return argument
+        }
+
+        var result: [UInt8] = []
+        var position = 0
+
+        for range in ranges {
+            result += bytes[position ..< range.lowerBound]
+            result += Array("[REDACTED]".utf8)
+            position = range.upperBound
+        }
+
+        result += bytes[position...]
+        return String(decoding: result, as: UTF8.self)
+    }
+
+    /// 每个 `scheme://user:password@host` 里口令的字节范围：账号信息到主机前的最后一个 “@” 为止，口令从其中第一个冒号之后开始。
+    private static func passwordRanges(in bytes: [UInt8]) -> [Range<Int>] {
+        let terminators = Array("/?#".utf8) + [UInt8(ascii: " "), UInt8(ascii: "\t"), UInt8(ascii: "\n")]
+        var ranges: [Range<Int>] = []
+        var position = 0
+
+        while let scheme = bytes[position...].firstRange(of: Array("://".utf8)) {
+            let start = scheme.upperBound
+
+            // 账号信息与主机到路径、查询、片段或空白为止
+            let end = bytes[start...].firstIndex { terminators.contains($0) } ?? bytes.count
+
+            if
+                let at = bytes[start ..< end].lastIndex(of: UInt8(ascii: "@")),
+                let colon = bytes[start ..< at].firstIndex(of: UInt8(ascii: ":")),
+                colon + 1 < at
+            {
+                ranges.append(colon + 1 ..< at)
+            }
+
+            position = end
+        }
+
+        return ranges
     }
 }
 

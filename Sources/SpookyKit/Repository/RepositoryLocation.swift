@@ -59,4 +59,31 @@ public enum RepositoryLocation: Hashable, Sendable, Codable {
                 + " || { [ $? -eq 255 ] && " + ssh(["-T"] + options + [enter + " -i"]) + "; }"
         }
     }
+
+    /// 服务器上的位置按别名与路径的 UTF-8 字节区分：服务器的文件系统可以并存规范等价、字节不同的两个目录；
+    /// 本机路径按字符串比较，与 macOS 文件系统不区分 Unicode 规范化一致。
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.local(let left), .local(let right)):
+            left == right
+
+        case (.remote(let leftHost, let leftPath), .remote(let rightHost, let rightPath)):
+            leftHost.utf8.elementsEqual(rightHost.utf8) && leftPath.utf8.elementsEqual(rightPath.utf8)
+
+        default:
+            false
+        }
+    }
+
+    /// 与相等判断的区分方式一致：服务器上的位置按 UTF-8 字节取哈希。
+    public func hash(into hasher: inout Hasher) {
+        switch self {
+        case .local(let path):
+            hasher.combine(path)
+
+        case .remote(let host, let path):
+            hasher.combine(Array(host.utf8))
+            hasher.combine(Array(path.utf8))
+        }
+    }
 }

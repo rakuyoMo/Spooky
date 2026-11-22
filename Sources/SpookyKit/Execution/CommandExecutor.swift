@@ -14,12 +14,18 @@ enum CommandExecutor {
     static var streamsStandardOutput = false
 
     /// 同时排空两条管道；公开结果只包含业务参数，不记录环境和输入。
+    ///
+    /// - Parameters:
+    ///   - input: 写进标准输入的内容。
+    ///   - inputFile: 标准输入改从这个本机文件读取，`input` 不再使用；大段内容经它交给子进程，
+    ///     子进程提前退出时本进程没有写到一半的管道，不会收到 SIGPIPE。
     static func execute(
         executable: String,
         processArguments: [String],
         arguments: [String] = [],
         environment: Environment = .inherit,
         input: Data? = nil,
+        inputFile: URL? = nil,
         acceptedExitCodes: Set<Int32> = [0],
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> GitCommandResult {
@@ -40,27 +46,28 @@ enum CommandExecutor {
             platform.teardownSequence = [
                 .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: cancellationGrace),
             ]
-            let result = try await Subprocess.run(
-                .path(FilePath(command.executable)),
-                arguments: Arguments(command.arguments),
-                environment: environment,
-                platformOptions: platform,
-                input: .data(input ?? Data()),
-                output: .sequence,
-                error: .sequence
-            ) { execution in
-                async let output: Void = collector.consume(execution.standardOutput, isError: false)
-                async let error: Void = collector.consume(execution.standardError, isError: true)
-                _ = try await (output, error)
-            }
 
-            switch result.terminationStatus {
-            case .exited(let code):
-                termination = .exited(code)
-
-            case .signaled(let signal):
-                termination = .signaled(signal)
-            }
+            termination =
+                if let inputFile {
+                    try await run(
+                        command,
+                        environment: environment,
+                        platform: platform,
+                        input: .fileDescriptor(
+                            try FileDescriptor.open(FilePath(inputFile.path), .readOnly),
+                            closeAfterSpawningProcess: true
+                        ),
+                        collector: collector
+                    )
+                } else {
+                    try await run(
+                        command,
+                        environment: environment,
+                        platform: platform,
+                        input: .data(input ?? Data()),
+                        collector: collector
+                    )
+                }
         } catch {
             let cancelled = Task.isCancelled || error is CancellationError
             let result = await collector.result(
@@ -176,5 +183,40 @@ private actor GitOutputCollector {
             terminationStatus: termination,
             isCancelled: cancelled
         )
+    }
+}
+
+// MARK: - Private
+
+extension CommandExecutor {
+    /// 以给定的标准输入启动进程，同时消费两条输出管道，返回结束状态。
+    private static func run(
+        _ command: (executable: String, arguments: [String]),
+        environment: Environment,
+        platform: PlatformOptions,
+        input: some InputProtocol,
+        collector: GitOutputCollector
+    ) async throws -> GitTerminationStatus {
+        let result = try await Subprocess.run(
+            .path(FilePath(command.executable)),
+            arguments: Arguments(command.arguments),
+            environment: environment,
+            platformOptions: platform,
+            input: input,
+            output: .sequence,
+            error: .sequence
+        ) { execution in
+            async let output: Void = collector.consume(execution.standardOutput, isError: false)
+            async let error: Void = collector.consume(execution.standardError, isError: true)
+            _ = try await (output, error)
+        }
+
+        switch result.terminationStatus {
+        case .exited(let code):
+            return .exited(code)
+
+        case .signaled(let signal):
+            return .signaled(signal)
+        }
     }
 }

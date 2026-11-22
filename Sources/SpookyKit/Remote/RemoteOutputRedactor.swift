@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-/// 对中继交付的口令做跨块脱敏；Git 的其它输出保持原始字节。
+/// 对中继交付的口令与命令参数里地址带的口令做跨块脱敏；Git 的其它输出保持原始字节。
 final class RemoteOutputRedactor: Sendable {
     /// 当前操作已取得的敏感值，只存在内存中。
     private let values: @Sendable () -> [Data]
@@ -13,8 +13,18 @@ final class RemoteOutputRedactor: Sendable {
     private let buffers = Mutex((stdout: Data(), stderr: Data()))
 
     /// 用当前操作的凭据集合建立过滤器。
-    init(values: @escaping @Sendable () -> [Data], output: @escaping @Sendable (GitOutputEvent) -> Void) {
-        self.values = values
+    ///
+    /// - Parameters:
+    ///   - arguments: 命令的业务参数，其中地址带的口令一并替换。
+    ///   - values: 中继交付的口令，命令执行期间可能增加。
+    ///   - output: 脱敏后的输出订阅者。
+    init(
+        arguments: [String],
+        values: @escaping @Sendable () -> [Data],
+        output: @escaping @Sendable (GitOutputEvent) -> Void
+    ) {
+        let passwords = GitCommandResult.passwords(in: arguments)
+        self.values = { values() + passwords }
         self.output = output
     }
 
@@ -61,6 +71,13 @@ final class RemoteOutputRedactor: Sendable {
     /// 优先替换完整匹配，再保留最长的可能口令前缀。
     private func consume(_ data: inout Data, final: Bool) -> Data {
         let secrets = values().filter { !$0.isEmpty }
+
+        // 没有要替换的值时原样交出，不复制大段输出
+        guard !secrets.isEmpty else {
+            defer { data = Data() }
+            return data
+        }
+
         var result = Data()
 
         while !data.isEmpty {

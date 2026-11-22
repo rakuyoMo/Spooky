@@ -34,6 +34,7 @@ enum LocalGitAuthentication {
         ]
 
         let redactor = RemoteOutputRedactor(
+            arguments: arguments,
             values: { relay.sensitiveValues(for: operation) },
             output: onOutput
         )

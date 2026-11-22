@@ -277,15 +277,28 @@ public struct GitRunner: Sendable {
             )
         }
 
-        return try await CommandExecutor.execute(
-            executable: process.executable,
-            processArguments: ["-C", location.path] + Self.globalOptions + arguments,
-            arguments: arguments,
-            environment: process.environment,
-            input: input,
-            acceptedExitCodes: acceptedExitCodes,
-            onOutput: onOutput
-        )
+        // 不经中继的命令同样把参数里地址带的口令从输出、结果与错误里替换掉
+        let redactor = RemoteOutputRedactor(arguments: arguments, values: { [] }, output: onOutput)
+        defer { redactor.finish() }
+
+        do {
+            let result = try await CommandExecutor.execute(
+                executable: process.executable,
+                processArguments: ["-C", location.path] + Self.globalOptions + arguments,
+                arguments: arguments,
+                environment: process.environment,
+                input: input,
+                acceptedExitCodes: acceptedExitCodes,
+                onOutput: { redactor.receive($0) }
+            )
+            return redactor.result(result)
+        } catch let error as GitError {
+            throw GitError(
+                result: redactor.result(error.result),
+                category: error.category,
+                diagnostic: error.diagnostic
+            )
+        }
     }
 
     /// 本机这条命令的程序与环境：继承的环境之上依次叠加设置里的变量与 SSH agent，最后固定语言与仓库定位相关的变量。
