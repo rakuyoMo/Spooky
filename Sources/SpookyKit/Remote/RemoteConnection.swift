@@ -549,7 +549,7 @@ extension RemoteConnection {
         startMonitoring()
     }
 
-    /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外。
+    /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外；安装包装器与新建会话在一次往返里完成。
     private func deployRelay(in directory: URL) async throws {
         guard let resource = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl") else {
             throw RemoteConnectionError(.deployment)
@@ -558,16 +558,6 @@ extension RemoteConnection {
         let source = try Data(contentsOf: resource)
         let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
         let filename = "spooky-remote-v1-" + String(version.prefix(16))
-        let install = Self.installScript(filename: filename)
-        let installed = try await probe(["/bin/sh", "-c", install], input: source, kind: .deployment)
-        guard
-            let path = String(data: installed.standardOutput, encoding: .utf8),
-            path.hasPrefix("/"), path.hasSuffix("\n")
-        else { throw RemoteConnectionError(.deployment, result: installed) }
-
-        let wrapper = String(path.dropLast())
-        self.wrapper = wrapper
-        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
 
         // 处理器在请求到达时才取：主机连接为多种操作共用，连接建立后才安装的处理器同样生效
         let relay = try CallbackRelay(
@@ -580,15 +570,30 @@ extension RemoteConnection {
         )
         try relay.start()
         self.relay = relay
-        let input = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
-        let created = try await probe([wrapper, "create-session"], input: input, kind: .deployment)
-        guard
-            let path = String(data: created.standardOutput, encoding: .utf8),
-            path.hasPrefix("/tmp/spooky-"), path.hasSuffix("\n"),
-            !path.dropLast().contains("\n")
-        else { throw RemoteConnectionError(.deployment, result: created) }
 
-        let remoteDirectory = String(path.dropLast())
+        // 包装器源码与会话令牌先后经标准输入交给 B；输出的第一行是包装器路径，最后一行是会话目录
+        let token = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
+        let deployed = try await probe(
+            ["/bin/sh", "-c", Self.deploymentScript(filename: filename, length: source.count)],
+            input: source + token,
+            kind: .deployment
+        )
+
+        guard
+            let output = String(data: deployed.standardOutput, encoding: .utf8),
+            output.hasSuffix("\n"),
+            let separator = output.dropLast().lastIndex(of: "\n")
+        else { throw RemoteConnectionError(.deployment, result: deployed) }
+
+        let wrapper = String(output[..<separator])
+        let remoteDirectory = String(output[output.index(after: separator)...].dropLast())
+
+        guard wrapper.hasPrefix("/"), remoteDirectory.hasPrefix("/tmp/spooky-") else {
+            throw RemoteConnectionError(.deployment, result: deployed)
+        }
+
+        self.wrapper = wrapper
+        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
         self.remoteDirectory = remoteDirectory
         let forward = try await ssh([
             "-O", "forward",
