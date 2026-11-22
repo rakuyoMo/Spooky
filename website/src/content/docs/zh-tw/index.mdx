@@ -1,0 +1,169 @@
+---
+title: "原生的 macOS Git 用戶端"
+description: "Spooky 是原生的 macOS Git 用戶端，它能讓伺服器上的 Git 儲存庫用起來就像本機儲存庫一樣順手，還不用複製到本機！"
+template: splash
+hero:
+  title: "<ruby>遠<rp>（</rp><rt>儲存庫</rt><rp>）</rp></ruby>在天邊，<ruby>近<rp>（</rp><rt>操作</rt><rp>）</rp></ruby>在眼前"
+  tagline: "Spooky 是原生的 macOS Git 用戶端，<br class='tagline-break'>它能讓伺服器上的 Git 儲存庫用起來就像本機儲存庫一樣順手，還不用複製到本機！"
+---
+
+import Closing from '~/components/home/Closing.astro';
+import Feature from '~/components/home/Feature.astro';
+import Grid from '~/components/home/Grid.astro';
+import HeroDemo from '~/components/home/HeroDemo.astro';
+import More from '~/components/home/More.astro';
+import Point from '~/components/home/Point.astro';
+import Section from '~/components/home/Section.astro';
+import ServerDiagram from '~/components/home/ServerDiagram.astro';
+
+<HeroDemo
+  actions={[
+    { text: '下載', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: '閱讀手冊', link: '/guide/', variant: 'secondary' },
+  ]}
+  note="免費開源 · macOS 26 或以上版本"
+/>
+
+<Section
+  id="server"
+  kicker="伺服器儲存庫"
+  title="鬼魅般的超距作用"
+  lead="工作區留在伺服器上，Git 也在那裡執行；你在 Mac 上的 Spooky 視窗裡操作它。"
+>
+
+<ServerDiagram
+  mac={{ title: '你的 Mac', items: ['Spooky 的視窗', '~/.ssh/config 與 SSH 金鑰'] }}
+  link={{ title: 'SSH', items: ['Git 指令與它們的輸出', '經 SFTP 讀寫的檔案'] }}
+  server={{ title: '你的伺服器', items: ['工作區與 Git', '~/.spooky/bin/ 裡的小指令碼'] }}
+/>
+
+<More>[伺服器儲存庫如何運作](/guide/server/overview/)</More>
+
+<Grid columns={4}>
+
+<Point icon="server" title="不用複製到本機">
+
+工作區留在伺服器上，不用先複製到本機。
+
+</Point>
+
+<Point icon="terminal" title="Git 在伺服器上執行">
+
+Spooky 用伺服器上的 Git，檔案經 SFTP 讀寫。
+
+</Point>
+
+<Point icon="key" title="用你現有的 SSH">
+
+連線用系統內建的 SSH 和 `~/.ssh/config` 裡的主機別名，認證、主機指紋與連線共用都交給 OpenSSH。
+
+</Point>
+
+<Point icon="script" title="不要 root，不裝常駐服務">
+
+伺服器上不需要 root，也不裝常駐服務；Spooky 只在 `~/.spooky/bin/` 放一個小指令碼。
+
+</Point>
+
+</Grid>
+
+<Feature
+  title="一個主機別名，一個路徑"
+  shots={[
+    {
+      name: 'add-server',
+      alt: '加入伺服器儲存庫的對話框，填好了主機別名 spooky-test 與路徑 /srv/git/driftwood。',
+      frame: 'dialog',
+    },
+  ]}
+>
+
+選 :ui[action.addRemote]，填上 `~/.ssh/config` 裡的主機別名，再輸入或瀏覽到伺服器上儲存庫的路徑。
+
+Spooky 檢查連線之後開啟儲存庫。
+
+</Feature>
+
+</Section>
+
+<Section
+  id="workflow"
+  kicker="完整的 Git 工作流程"
+  title="從第一處變更，到合併分支"
+  lead="暫存、提交、看歷史、同步、解決衝突，儲存庫在本機還是在伺服器上，做法都一樣。"
+>
+
+<Feature
+  title="分支、同步、合併與變基"
+  reverse
+  shots={[
+    { name: 'branches', alt: '側邊欄的分支一節。', frame: 'closeup' },
+    { name: 'sync', alt: '推送對話框：把 main 推到 origin/main。', frame: 'dialog' },
+  ]}
+>
+
+在工具列上擷取、拉取、推送。
+
+把分支拖到目前分支上就是合併，拖的時候按住 <kbd>⌥</kbd> 就是變基。
+
+</Feature>
+
+<Feature
+  title="衝突精靈"
+  reveal
+  shots={[
+    {
+      name: 'conflict',
+      alt: '合併之後的衝突精靈，擺出 src/units.ts 兩邊的版本。',
+      frame: 'window',
+    },
+  ]}
+>
+
+每個衝突的檔案，Spooky 都把兩邊的版本擺出來。
+
+選一個，就用它解決；兩個都選，就交給合併工具。
+
+</Feature>
+
+<Grid columns={4}>
+
+<Point icon="history" title="歷史與搜尋">
+
+在提交圖裡看每條分支的走向，按提交訊息、作者、提交者、檔案、提交雜湊或日期搜尋。
+
+</Point>
+
+<Point icon="undo" title="還原與重做">
+
+提交、反轉、儲藏等操作，按 <kbd>⌘Z</kbd> 還原，按 <kbd>⇧⌘Z</kbd> 重做。
+
+</Point>
+
+<Point icon="pullRequest" title="Pull Request 與 Merge Request">
+
+在 GitHub、GitLab.com 與<mark>自行架設的 GitLab</mark> 上列出、新增、討論、簽出、合併和關閉。
+
+</Point>
+
+<Point icon="layers" title="儲藏、子模組、<mark>工作樹</mark>與 Git LFS">
+
+伺服器儲存庫裡也都能用。
+
+</Point>
+
+</Grid>
+
+</Section>
+
+<Closing
+  title="儲存庫在哪裡，Spooky 就在哪裡。"
+  actions={[
+    { text: '下載', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: '閱讀手冊', link: '/guide/', variant: 'secondary' },
+  ]}
+>
+
+需要 macOS 26 或以上版本，本機與伺服器上的 Git 需要 2.41 或以上版本。詳見 [系統需求](/reference/requirements/)。
+
+</Closing>

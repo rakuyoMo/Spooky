@@ -1,0 +1,83 @@
+---
+title: "Découvrir Spooky"
+description: "Faites connaissance avec la fenêtre Dépôts et la fenêtre de dépôt : la barre latérale, la barre d’outils, les trois colonnes et les Actions rapides."
+---
+
+Les fenêtres de Spooky affichent l’une de ces deux choses. La vue Dépôts liste vos dépôts. Une fenêtre de dépôt est l’endroit où vous faites le travail proprement dit. Cette page nomme les parties de l’une et de l’autre. Le reste du guide utilise ces noms.
+
+## La fenêtre Dépôts {#repositories-window}
+
+Quand vous ouvrez Spooky pour la première fois, il affiche la vue Dépôts. La barre latérale liste vos dépôts sous :ui[repositories.title]. Vous pouvez les ranger dans des groupes.
+
+- Sélectionnez un dépôt pour voir ses détails à droite : son emplacement, sa dernière ouverture, son dernier commit, sa branche actuelle, ses modifications et ses dépôts distants.
+- Sélectionnez un groupe, ou rien du tout, pour voir une zone qui indique :ui[bookmarks.dropZone.title], avec les boutons :ui[bookmarks.dropZone.add], :ui[action.addRemote], :ui[bookmarks.dropZone.create] et :ui[bookmarks.dropZone.clone].
+- Le bouton d’ajout en bas de la barre latérale ajoute des groupes et des dépôts.
+
+Double-cliquez sur un dépôt pour l’ouvrir. Il s’ouvre dans la même fenêtre, à la place de la vue Dépôts. Pour retrouver la liste, cliquez sur :ui[toolbar.bookmarks] en haut de la barre latérale. [La fenêtre Dépôts](/guide/repositories/manager/) décrit la liste en détail.
+
+## La fenêtre de dépôt {#repository-window}
+
+Une fois un dépôt ouvert, le titre de la fenêtre affiche son nom. Sous le nom figure la vue actuelle avec un bref résumé, comme la branche et le nombre de fichiers modifiés.
+
+::screenshot[Une fenêtre de dépôt. La barre latérale, à gauche, liste les vues, les branches, les tags et les dépôts distants du dépôt. La barre d’outils occupe le haut. La colonne du milieu affiche la zone de commit au-dessus d’une liste de fichiers modifiés, et la colonne de droite affiche les modifications du fichier sélectionné.]{name="tour-window" frame="window" markers="16.5,47 50,3.25 36,72 85,31"}
+
+1. La barre latérale
+2. La barre d’outils
+3. La colonne du milieu : la liste de la vue actuelle
+4. La colonne de droite : les détails de ce qui est sélectionné dans la colonne du milieu
+
+:::note[Dépôts sur un serveur]
+Le titre de la fenêtre commence par l’alias d’hôte, sous la forme `alias:name`. La barre d’outils affiche aussi l’alias d’hôte dans un élément :ui[toolbar.host]. [État de la connexion et reconnexion](/guide/server/connection/) explique ce que la fenêtre affiche quand la connexion est coupée.
+:::
+
+### Barre latérale {#sidebar}
+
+La section :ui[workspace.group], en haut, permet de passer d’une vue du dépôt à l’autre :
+
+| Vue | Ce qu’elle affiche |
+|---|---|
+| :ui[workspace.title] | Vos modifications non validées. Le nombre affiché à côté compte les fichiers modifiés. |
+| :ui[history.title] | Les commits |
+| :ui[stash.title] | Les modifications que vous avez mises de côté |
+| :ui[pr.title] | Les pull requests ou merge requests du service d’hébergement |
+| :ui[review.title] | Vos branches, pour repérer celles que vous pouvez nettoyer |
+| :ui[reflog.title] | Les positions successives de HEAD. Affiché une fois :ui[sidebar.showReflog] activé dans :ui[sidebar.viewSettings]. |
+| :ui[repositorySettings.title] | Les réglages de ce dépôt. Consultez [Réglages du dépôt](/guide/settings/identity/#repository). |
+
+Viennent ensuite :ui[sidebar.pinned] (dès que vous épinglez une branche), :ui[branch.group], :ui[sidebar.archived], :ui[sidebar.tags], :ui[remote.group], :ui[submodule.group] et :ui[worktree.group]. Dans :ui[branch.group], une pastille HEAD marque la branche sur laquelle vous êtes. Une flèche avec un nombre, comme ↑3, compte les commits que vous n’avez pas encore poussés.
+
+La barre en bas de la barre latérale contient un champ :ui[sidebar.filter], un bouton :ui[reference.addMenu] pour créer des branches et d’autres références, et :ui[sidebar.viewSettings] pour choisir ce que la barre latérale affiche.
+
+### Barre d’outils {#toolbar}
+
+De gauche à droite, la barre d’outils contient ces boutons :
+
+- :ui[toolbar.bookmarks] : revenir à la vue Dépôts
+- :ui[toolbar.previous] et :ui[toolbar.next] : reculer et avancer parmi les vues visitées
+- :ui[toolbar.quickActions] : consultez [Actions rapides](#quick-actions)
+- :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] : échanger des commits avec les dépôts distants
+- :ui[toolbar.synchronize] : récupérer, tirer et pousser la branche actuelle en une seule fois
+- :ui[sync.merge] et :ui[sync.rebaseHead] : combiner la branche actuelle avec une autre branche
+- :ui[toolbar.applyStash] et :ui[toolbar.saveStash] : reprendre des modifications mises de côté, ou mettre de côté vos modifications actuelles
+- :ui[action.refresh] : relire le dépôt
+- :ui[action.search] : filtrer la liste de la vue actuelle
+
+Maintenez <kbd>⌥</kbd> enfoncée et les boutons de :ui[sync.fetch] à :ui[sync.rebaseHead] passent en version rapide, comme :ui[sync.quickPush]. Une version rapide agit tout de suite sur la branche amont, sans ouvrir de zone de dialogue.
+
+:ui[toolbar.clone] apparaît tant que vous avez des clones récents. Consultez [La fenêtre Dépôts](/guide/repositories/manager/). Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter ou retirer des boutons. En plus des boutons ci-dessus, vous pouvez ajouter :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder] et :ui[toolbar.terminal].
+
+### Les trois colonnes {#columns}
+
+La colonne de gauche est la barre latérale. La colonne du milieu affiche la liste de la vue choisie. Dans :ui[workspace.title], ce sont la zone de commit et les fichiers modifiés. Dans :ui[history.title], ce sont les commits.
+
+La colonne de droite affiche les détails de ce que vous sélectionnez au milieu. Dans :ui[workspace.title], ce sont les modifications du fichier sélectionné. Quand un fichier a à la fois des modifications indexées et non indexées, utilisez :ui[working.staged] et :ui[working.unstaged], en haut, pour passer des unes aux autres. Si rien n’est sélectionné, la colonne affiche :ui[detail.empty.title].
+
+### Actions rapides {#quick-actions}
+
+Cliquez sur :ui[toolbar.quickActions] ou appuyez sur <kbd>⇧⌘A</kbd> pour ouvrir un panneau. Tapez pour trouver une vue, une branche, un fichier ou un commit, puis lancez une action dessus sans quitter le clavier. [Fenêtres et navigation](/guide/repositories/navigation/) explique ce qu’il trouve et quelles touches il utilise.
+
+## Voir aussi
+
+- [Votre premier dépôt](/guide/start/first-repository/)
+- [La fenêtre Dépôts](/guide/repositories/manager/)
+- [Fenêtres et navigation](/guide/repositories/navigation/)

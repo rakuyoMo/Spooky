@@ -1,0 +1,110 @@
+---
+title: "Pull Request 與 Merge Request"
+description: "列出、新增、討論、簽出、合併與關閉 GitHub 的 Pull Request 和 GitLab 的 Merge Request。"
+---
+
+Spooky 會列出儲存庫遠端上開啟著的 GitHub Pull Request 和 GitLab Merge Request。閱讀、討論、簽出、合併和新增，都不用離開儲存庫視窗。
+
+這需要為遠端加入 [託管帳號](/guide/hosting/accounts/)。遠端在 GitLab 上時，側邊欄、選單和對話框裡的叫法都換成 Merge Request。
+
+## 開啟列表 {#list}
+
+按一下側邊欄的 :ui[pr.title]，或者選 :ui[menu.view > pr.show.menu]（<kbd>⌘4</kbd>）。
+
+在列表頂部的選單裡選遠端。每一列寫著：
+
+- 標題，草稿另外標著 :ui[pullRequests.state.draft]
+- 編號、作者和開啟的時間
+- 來源分支和要併入的分支。來自 Fork 的請求，來源分支前會寫出它所在的專案。
+
+捲到底部會接著讀取更多。已關閉和已合併的請求不列出。
+
+列表讀取失敗時會說明原因，已經讀到的請求留在下面。帳號的權杖被拒絕或缺少權限範圍時，可以直接在那裡按一下 :ui[accounts.reauthenticate]。
+
+列表不知道該用哪個帳號時，見 [遠端用哪個帳號](/guide/hosting/accounts/#remotes)。
+
+## 檢視請求 {#details}
+
+選取一個請求，右邊會顯示它。頂部可以在三個視圖間切換：
+
+- :ui[pullRequests.conversation]：標題和狀態、描述、留言，以及按天分組的提交，按時間從早到晚排列。
+- :ui[pullRequests.commits]：請求裡的提交。上方一欄列出參與者和提交的數量。
+- :ui[pullRequests.changeset]：請求改了什麼，比較的是來源分支分出來的位置。
+
+在討論裡按兩下一個提交，或者按 <kbd>Return</kbd>，可以開啟它。在提交上按右鍵可以拷貝它的雜湊。按一下內文裡的連結可以開啟它。
+
+:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 需要請求的提交已經在你的儲存庫裡。還沒有時，按一下 :ui[pullRequests.fetch]。Spooky 會從遠端取回這些提交，不變更你的分支。
+
+## 新增請求 {#create}
+
+來源分支必須已經在遠端上，要先推送它。然後任選一種方式：
+
+- 按一下列表頂部的新增按鈕。
+- 選 :ui[menu.repository > pr.create.menu]（<kbd>⌃⌘P</kbd>）。
+- 在側邊欄裡對一個分支按右鍵，選 :ui[pr.forBranch.create]{1="feature/units-toggle"}。這個分支已經有開啟著的請求時，這一項換成 :ui[pr.forBranch.show]{1="feature/units-toggle"}。
+
+在對話框裡：
+
+1. 在 :ui[pullRequests.source] 和 :ui[pullRequests.target] 兩行各選一個遠端和它上面的分支。來源一開始是你按右鍵的分支或目前分支，目標是遠端的預設分支。只列出和帳號在同一個實例上的遠端。來源選了另一個專案，就是來自 Fork 的請求。
+2. 標題一開始是來源分支的名稱。描述可以不填。
+3. 按一下 :ui[pr.create.submit]。
+
+來源和目標不能是同一個分支。
+
+## 討論 {#discuss}
+
+想發表留言，按一下討論末尾的 :ui[pullRequests.addComment]，或者按 <kbd>⌘S</kbd>。
+
+自己的留言，可以用留言上的 :ui[pullRequests.comment.edit] 和 :ui[pullRequests.comment.delete]，也可以在它上面按右鍵。按兩下自己的留言同樣會開啟編輯。刪除留言不能還原。
+
+在 GitLab 上，還可以用 :ui[pullRequests.comment.reply] 回覆任何一則留言。回覆會放進 GitLab 上的同一個討論裡。
+
+自己的請求，還可以：
+
+- 修改描述：按一下描述旁邊的 :ui[pullRequests.edit]，或者在它上面按右鍵，選 :ui[pullRequests.editDescription.menu]。
+- 修改標題、描述和目標分支：在列表裡按兩下這個請求，或者在它上面按右鍵，選 :ui[pr.edit.menu]{1="#12"}。來源和目標專案不能改。
+
+## 簽出請求 {#checkout}
+
+想在本機處理請求的程式碼，按一下詳細資訊底部的 :ui[pullRequests.checkout]，或者在請求上按右鍵，選 :ui[pr.checkout.menu]{1="#12"}。
+
+填本機分支的名稱，按一下 :ui[pullRequests.checkout]。名稱一開始是來源分支的名稱。來自 Fork 的請求是 `pullrequests/<author>/<branch>`。
+
+Spooky 先取回請求的提交，再簽出分支：
+
+- 已有同名的本機分支、又指向這些提交時，直接簽出它。
+- 同名分支指向別處時，對話框會提示。換個名稱即可。
+- 否則新增這個分支。同一個專案裡的請求，只要遠端上的來源分支在同一個提交上，新分支就追蹤它。
+
+已追蹤的檔案有變更時，Spooky 會先問要不要儲藏，見 [自動儲藏](/guide/work/stash/#auto-stash)。
+
+追蹤來源分支的本機分支有還沒推送的提交時，不能簽出。這個分支就是目前分支、而且已經在請求的提交上時，也不能簽出。
+
+## 合併請求 {#merge}
+
+按一下詳細資訊底部的 :ui[pullRequests.merge]。合併在託管服務上進行，不能還原。
+
+- **GitHub**：在儲存庫允許的方式裡選 :ui[pullRequests.mergeType]：:ui[pullRequests.method.merge]、:ui[pullRequests.method.rebase] 或 :ui[pullRequests.method.squash]。Spooky 會預先選好你上次用的方式。
+- **GitLab**：對話框寫出專案的 :ui[pullRequests.mergeStrategy]。想壓縮就勾選 :ui[pullRequests.squash]。專案不允許壓縮時，沒有這一項。專案要求壓縮時，這一項一直勾著。
+
+:ui[pullRequests.deleteBranch] 會刪除服務上的來源分支。一開始按專案的設定勾選。
+
+請求不能合併時，對話框會說明原因，例如它是草稿、有衝突、你的帳號沒有合併權限，或者服務還在檢查。
+
+合併之後，Spooky 會從這個遠端擷取一次，讓它的分支跟上合併的結果。
+
+## 關閉請求 {#close}
+
+按一下詳細資訊底部的 :ui[pullRequests.close] 並確認。想重新開啟，到託管服務上操作。
+
+:::note[伺服器儲存庫]
+列表和在服務上做的操作都從你的 Mac 送出。取回請求的提交、簽出請求和合併後的擷取在伺服器上執行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比較也在伺服器上進行。
+:::
+
+對服務的每一次請求都會出現在 :ui[activity.title] 視窗的 :ui[activity.service] 頁裡。
+
+## 相關頁面
+
+- [託管帳號](/guide/hosting/accounts/)
+- [分支](/guide/branches/branches/)
+- [分支整理](/guide/branches/review/)

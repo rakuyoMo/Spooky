@@ -1,0 +1,110 @@
+---
+title: "풀 리퀘스트와 머지 리퀘스트"
+description: "GitHub의 풀 리퀘스트와 GitLab의 머지 리퀘스트를 나열하고, 만들고, 토론하고, 체크아웃하고, 병합하고, 닫습니다."
+---
+
+Spooky는 저장소의 원격에 열려 있는 GitHub 풀 리퀘스트와 GitLab 머지 리퀘스트를 보여 줍니다. 개별 저장소 윈도우를 벗어나지 않고 읽고, 토론하고, 체크아웃하고, 병합하고, 새로 만들 수 있습니다.
+
+원격의 [호스팅 계정](/guide/hosting/accounts/)이 필요합니다. 원격이 GitLab에 있으면 사이드바, 메뉴, 대화상자에 풀 리퀘스트 대신 머지 리퀘스트라고 표시됩니다.
+
+## 목록 열기 {#list}
+
+사이드바에서 :ui[pr.title]를 클릭하거나 :ui[menu.view > pr.show.menu](<kbd>⌘4</kbd>)를 선택합니다.
+
+목록 맨 위의 메뉴에서 원격을 선택합니다. 각 행에는 다음이 표시됩니다.
+
+- 제목. 초안에는 :ui[pullRequests.state.draft]이라고 표시됩니다
+- 번호, 작성자, 열린 때
+- 소스 브랜치와 병합될 브랜치. 포크에서 온 리퀘스트는 소스 브랜치에 프로젝트가 함께 표시됩니다.
+
+맨 아래까지 스크롤하면 더 로드합니다. 닫히거나 병합된 리퀘스트는 나열되지 않습니다.
+
+목록을 로드할 수 없으면 이유가 표시됩니다. 이미 로드한 리퀘스트는 아래에 그대로 남습니다. 계정의 토큰이 거부되었거나 범위가 부족하면 바로 거기에서 :ui[accounts.reauthenticate]을 클릭할 수 있습니다.
+
+목록이 어느 계정을 써야 할지 알 수 없으면 [원격이 사용하는 계정](/guide/hosting/accounts/#remotes)을 참고하세요.
+
+## 리퀘스트 읽기 {#details}
+
+리퀘스트를 선택하면 오른쪽에 표시됩니다. 맨 위에서 세 가지 보기를 전환합니다.
+
+- :ui[pullRequests.conversation]: 제목과 상태, 설명, 댓글, 그리고 날짜별로 묶어 오래된 것부터 나열한 커밋입니다.
+- :ui[pullRequests.commits]: 리퀘스트의 커밋입니다. 위의 막대에 기여자와 커밋 수가 나옵니다.
+- :ui[pullRequests.changeset]: 리퀘스트가 바꾸는 내용이며, 소스 브랜치가 갈라진 지점과 비교합니다.
+
+대화에서 커밋을 이중 클릭하거나 <kbd>Return</kbd>을 누르면 커밋이 열립니다. 커밋을 오른쪽 클릭하면 해시를 복사할 수 있습니다. 본문의 링크를 클릭하면 링크가 열립니다.
+
+:ui[pullRequests.commits]과 :ui[pullRequests.changeset]은 리퀘스트의 커밋이 내 저장소에 있어야 합니다. 아직 없으면 :ui[pullRequests.fetch]를 클릭합니다. Spooky가 내 브랜치를 바꾸지 않고 원격에서 커밋을 받아 옵니다.
+
+## 리퀘스트 만들기 {#create}
+
+소스 브랜치가 이미 원격에 있어야 합니다. 먼저 푸시한 다음 아래 중 하나를 합니다.
+
+- 목록 맨 위의 추가 버튼을 클릭합니다.
+- :ui[menu.repository > pr.create.menu](<kbd>⌃⌘P</kbd>)를 선택합니다.
+- 사이드바에서 브랜치를 오른쪽 클릭하고 메뉴에서 :ui[pr.forBranch.create]{1="feature/units-toggle"}를 선택합니다. 브랜치에 이미 열린 리퀘스트가 있으면 항목이 :ui[pr.forBranch.show]{1="feature/units-toggle"}로 바뀝니다.
+
+대화상자에서 다음과 같이 합니다.
+
+1. :ui[pullRequests.source]와 :ui[pullRequests.target] 옆에서 원격과 그 원격의 브랜치를 선택합니다. 소스는 처음에 오른쪽 클릭한 브랜치나 현재 브랜치이고, 대상은 원격의 기본 브랜치입니다. 계정과 같은 인스턴스에 있는 원격만 나열됩니다. 소스가 다른 프로젝트에 있으면 포크에서 온 리퀘스트가 됩니다.
+2. 제목은 처음에 소스 브랜치 이름입니다. 설명은 선택 사항입니다.
+3. :ui[pr.create.submit]를 클릭합니다.
+
+소스와 대상은 같은 브랜치일 수 없습니다.
+
+## 토론하기 {#discuss}
+
+댓글을 추가하려면 대화 끝의 :ui[pullRequests.addComment]를 클릭하거나 <kbd>⌘S</kbd>를 누릅니다.
+
+내가 쓴 댓글은 댓글에 있는 :ui[pullRequests.comment.edit]과 :ui[pullRequests.comment.delete]를 사용하거나 오른쪽 클릭합니다. 내 댓글을 이중 클릭해도 편집할 수 있게 열립니다. 댓글 삭제는 실행 취소할 수 없습니다.
+
+GitLab에서는 :ui[pullRequests.comment.reply]로 어느 댓글에나 답글을 달 수도 있습니다. 답글은 GitLab의 같은 토론에 들어갑니다.
+
+내가 만든 리퀘스트에서는 다음도 할 수 있습니다.
+
+- 설명 바꾸기: 설명 옆의 :ui[pullRequests.edit]을 클릭하거나, 설명을 오른쪽 클릭하고 메뉴에서 :ui[pullRequests.editDescription.menu]을 선택합니다.
+- 제목, 설명, 대상 브랜치 바꾸기: 목록에서 리퀘스트를 이중 클릭하거나, 오른쪽 클릭하고 메뉴에서 :ui[pr.edit.menu]{1="#12"}을 선택합니다. 소스와 대상 프로젝트는 그대로입니다.
+
+## 리퀘스트 체크아웃하기 {#checkout}
+
+리퀘스트의 코드로 작업하려면 세부사항 맨 아래의 :ui[pullRequests.checkout]을 클릭하거나, 리퀘스트를 오른쪽 클릭하고 메뉴에서 :ui[pr.checkout.menu]{1="#12"}을 선택합니다.
+
+로컬 브랜치의 이름을 입력하고 :ui[pullRequests.checkout]을 클릭합니다. 이름은 처음에 소스 브랜치 이름입니다. 포크에서 온 리퀘스트라면 `pullrequests/<author>/<branch>`입니다.
+
+Spooky는 먼저 리퀘스트의 커밋을 받아 온 다음 브랜치를 체크아웃합니다.
+
+- 그 이름의 로컬 브랜치가 이미 그 커밋을 가리키고 있으면 Spooky가 그 브랜치를 체크아웃합니다.
+- 다른 곳을 가리키고 있으면 대화상자에 그렇게 표시됩니다. 다른 이름을 선택합니다.
+- 둘 다 아니면 Spooky가 브랜치를 만듭니다. 같은 프로젝트에서 온 리퀘스트라면, 원격의 소스 브랜치가 같은 커밋에 있는 한 그 브랜치를 추적합니다.
+
+추적 중인 파일에 변경 사항이 있으면 Spooky가 먼저 스태시할지 물어봅니다. [자동 스태시](/guide/work/stash/#auto-stash)를 참고하세요.
+
+소스 브랜치를 추적하는 로컬 브랜치에 푸시하지 않은 커밋이 있으면 체크아웃할 수 없습니다. 그 브랜치가 현재 브랜치이고 이미 리퀘스트의 커밋에 있을 때도 체크아웃할 수 없습니다.
+
+## 리퀘스트 병합하기 {#merge}
+
+세부사항 맨 아래의 :ui[pullRequests.merge]을 클릭합니다. 병합은 호스팅 서비스에서 이루어집니다. 실행 취소할 수 없습니다.
+
+- **GitHub**: 저장소가 허용하는 것 중에서 :ui[pullRequests.mergeType]을 선택합니다. :ui[pullRequests.method.merge], :ui[pullRequests.method.rebase], :ui[pullRequests.method.squash]가 있습니다. Spooky는 지난번에 사용한 것을 골라 둡니다.
+- **GitLab**: 대화상자에 프로젝트의 :ui[pullRequests.mergeStrategy]이 표시됩니다. 스쿼시하려면 :ui[pullRequests.squash]를 선택합니다. 프로젝트가 스쿼시를 허용하지 않으면 이 옵션이 없습니다. 프로젝트가 스쿼시를 요구하면 켜진 채로 고정됩니다.
+
+:ui[pullRequests.deleteBranch]는 서비스에서 소스 브랜치를 제거합니다. 처음에는 프로젝트의 설정을 따릅니다.
+
+리퀘스트를 병합할 수 없으면 대화상자에 이유가 표시됩니다. 예를 들어 초안이거나, 충돌이 있거나, 계정에 병합 권한이 없거나, 서비스가 아직 확인하는 중인 경우입니다.
+
+병합한 뒤에는 Spooky가 원격에서 가져와서 원격의 브랜치를 최신 상태로 만듭니다.
+
+## 리퀘스트 닫기 {#close}
+
+세부사항 맨 아래의 :ui[pullRequests.close]를 클릭하고 확인합니다. 다시 열려면 호스팅 서비스로 갑니다.
+
+:::note[서버 저장소]
+목록과 서비스에서 하는 모든 일은 Mac에서 나갑니다. 리퀘스트의 커밋 가져오기, 체크아웃, 병합 뒤의 가져오기는 서버에서 실행됩니다. :ui[pullRequests.commits]과 :ui[pullRequests.changeset]의 비교도 마찬가지입니다.
+:::
+
+서비스로 보내는 요청은 모두 :ui[activity.title] 윈도우의 :ui[activity.service] 페이지에 나타납니다.
+
+## 함께 보기
+
+- [호스팅 계정](/guide/hosting/accounts/)
+- [브랜치](/guide/branches/branches/)
+- [브랜치 검토](/guide/branches/review/)

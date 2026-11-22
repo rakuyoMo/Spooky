@@ -1,0 +1,169 @@
+---
+title: "macOS ネイティブの Git クライアント"
+description: "Spooky は macOS ネイティブの Git クライアントです。サーバー上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
+template: splash
+hero:
+  title: "Git に、遠隔作用を。"
+  tagline: "Spooky は macOS ネイティブの Git クライアントです。サーバー上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
+---
+
+import Closing from '~/components/home/Closing.astro';
+import Feature from '~/components/home/Feature.astro';
+import Grid from '~/components/home/Grid.astro';
+import HeroDemo from '~/components/home/HeroDemo.astro';
+import More from '~/components/home/More.astro';
+import Point from '~/components/home/Point.astro';
+import Section from '~/components/home/Section.astro';
+import ServerDiagram from '~/components/home/ServerDiagram.astro';
+
+<HeroDemo
+  actions={[
+    { text: 'ダウンロード', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'ガイドを読む', link: '/guide/', variant: 'secondary' },
+  ]}
+  note="無料のオープンソース · macOS 26 以降"
+/>
+
+<Section
+  id="server"
+  kicker="サーバーリポジトリ"
+  title="不気味な遠隔作用"
+  lead="作業ツリーはサーバーに置いたまま、Git もサーバーで動きます。操作は Mac の Spooky ウインドウから行います。"
+>
+
+<ServerDiagram
+  mac={{ title: 'あなたの Mac', items: ['Spooky のウインドウ', '~/.ssh/config と SSH 鍵'] }}
+  link={{ title: 'SSH', items: ['Git コマンドとその出力', 'SFTP で読み書きするファイル'] }}
+  server={{ title: 'あなたのサーバー', items: ['作業ツリーと Git', '~/.spooky/bin/ の小さなヘルパー'] }}
+/>
+
+<More> [サーバーリポジトリの仕組み](/guide/server/overview/) </More>
+
+<Grid columns={4}>
+
+<Point icon="server" title="Mac にクローンしない">
+
+作業ツリーはサーバーに置いたままです。先に Mac へクローンする必要はありません。
+
+</Point>
+
+<Point icon="terminal" title="Git はサーバーで動く">
+
+Spooky はサーバーの Git を使い、ファイルは SFTP で読み書きします。
+
+</Point>
+
+<Point icon="key" title="いつもの SSH をそのまま">
+
+接続にはシステムの SSH と `~/.ssh/config` のホストエイリアスを使います。認証、ホスト鍵、接続の共有は OpenSSH に任せます。
+
+</Point>
+
+<Point icon="script" title="root もバックグラウンドサービスも不要">
+
+サーバーの root 権限は要りません。バックグラウンドサービスもインストールしません。Spooky が置くのは `~/.spooky/bin/` の小さなヘルパースクリプトだけです。
+
+</Point>
+
+</Grid>
+
+<Feature
+  title="ホストエイリアスとパスだけ"
+  shots={[
+    {
+      name: 'add-server',
+      alt: 'サーバーリポジトリを追加するダイアログ。ホストエイリアス spooky-test とパス /srv/git/driftwood が入力されています。',
+      frame: 'dialog',
+    },
+  ]}
+>
+
+:ui[action.addRemote] を選び、`~/.ssh/config` のホストエイリアスを入力して、サーバー上のリポジトリのパスを入力するかブラウズして選びます。
+
+Spooky が接続を確認して、リポジトリを開きます。
+
+</Feature>
+
+</Section>
+
+<Section
+  id="workflow"
+  kicker="Git のワークフローをまるごと"
+  title="最初の変更から、ブランチのマージまで"
+  lead="ステージ、コミット、履歴の確認、同期、競合の解決。リポジトリが Mac にあってもサーバーにあっても、やり方は同じです。"
+>
+
+<Feature
+  title="ブランチ、同期、マージ、リベース"
+  reverse
+  shots={[
+    { name: 'branches', alt: 'サイドバーのブランチのセクション。', frame: 'closeup' },
+    { name: 'sync', alt: 'プッシュのダイアログ。main を origin/main にプッシュします。', frame: 'dialog' },
+  ]}
+>
+
+フェッチ、プル、プッシュはツールバーから行えます。
+
+ブランチを現在のブランチにドラッグするとマージ、<kbd>⌥</kbd> を押しながらドラッグするとそのブランチへのリベースになります。
+
+</Feature>
+
+<Feature
+  title="競合はウィザードで"
+  reveal
+  shots={[
+    {
+      name: 'conflict',
+      alt: 'マージ後の競合ウィザード。src/units.ts の両側のバージョンが並んでいます。',
+      frame: 'window',
+    },
+  ]}
+>
+
+競合したファイルごとに、Spooky が両側のバージョンを並べて表示します。
+
+片方を選べばそのバージョンで解決し、両方を選べばマージツールで開けます。
+
+</Feature>
+
+<Grid columns={4}>
+
+<Point icon="history" title="履歴と検索">
+
+コミットグラフですべてのブランチの流れを追えます。メッセージ、作成者、コミッター、ファイル、コミットハッシュ、日付で検索できます。
+
+</Point>
+
+<Point icon="undo" title="取り消しとやり直し">
+
+コミット、リバート、スタッシュなどの操作は <kbd>⌘Z</kbd> で取り消し、<kbd>⇧⌘Z</kbd> でやり直せます。
+
+</Point>
+
+<Point icon="pullRequest" title="プルリクエストとマージリクエスト">
+
+GitHub、GitLab.com、<mark>セルフマネージドの GitLab</mark> で、一覧、作成、議論、チェックアウト、マージ、クローズができます。
+
+</Point>
+
+<Point icon="layers" title="スタッシュ、サブモジュール、<mark>ワークツリー</mark>、Git LFS">
+
+どれもサーバーリポジトリでも使えます。
+
+</Point>
+
+</Grid>
+
+</Section>
+
+<Closing
+  title="リポジトリがどこにあっても。"
+  actions={[
+    { text: 'ダウンロード', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'ガイドを読む', link: '/guide/', variant: 'secondary' },
+  ]}
+>
+
+macOS 26 以降と、Mac とサーバーの両方に Git 2.41 以降が必要です。詳しくは [システム要件](/reference/requirements/) を参照してください。
+
+</Closing>
