@@ -311,7 +311,7 @@ final class AppIconController {
 
     /// 换成另一组：在后台写入或清除 App 包的自定义图标，写完后存进偏好，立即重画运行时图标，并按需重启 Dock。
     ///
-    /// 写入按调用的顺序排队，后选的组排在后面、最后写完；等待期间重新套用了偏好时，这一次不再存进偏好。
+    /// 写入按调用的顺序排队，结算按写完的先后进行：后选的组最后写完、最后落定；等待期间重新套用了偏好时，这一次不再存进偏好。
     /// 写完按 `finishRequest(changesIcon:)` 决定是否重启 Dock：选的就是当前的组时照写，包上没变，不重启。
     /// - Parameter group: 要换成的组
     /// - Throws: 写不进 App 包，或取不到这一组的图标资源或系统图标时抛出 `AppIconWriteError`，偏好与图标都保持原来的组
@@ -324,34 +324,25 @@ final class AppIconController {
 
         let reloadCount = reloadCount
         let request = beginRequest()
-        var changesIcon = false
 
         requestedGroup = group
 
-        // 成败都要结算；成功时排在存偏好与重画之后，Dock 重启后保留的是新的运行时图标
-        defer {
-            finishRequest(changesIcon: changesIcon)
-        }
+        // 写完时把结算排进主队列，主队列按排进的先后执行，几次换组按写完的先后结算；
+        // 结算不能放在 await 之后：几个任务经 await 回到主线程的先后不一定是写完的先后，先选的组可能最后落定
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            Self.enqueueWrite(iconData, ofApp: bundle.bundleURL) { result in
+                DispatchQueue.main.async {
+                    self.settleSelection(
+                        of: group,
+                        request: request,
+                        reloadCount: reloadCount,
+                        result: result
+                    )
 
-        do {
-            changesIcon = try await Self.setCustomIcon(iconData, ofApp: bundle.bundleURL)
-        } catch {
-            // 之后又有请求时，由最近的一次决定退不退回
-            if request == latestRequest {
-                requestedGroup = self.group
+                    continuation.resume(with: result.map { _ in })
+                }
             }
-
-            throw error
         }
-
-        // 写入期间重新套用了偏好：所选的组以偏好为准
-        guard reloadCount == self.reloadCount else {
-            return
-        }
-
-        defaults.set(group.rawValue, forKey: AppIconGroup.key)
-        self.group = group
-        updateIcon()
     }
 
     /// 设置页图标选择区里这一组的小图标：当前深浅下指示灯灭着的一版，即包里的原图；取不到资源时为 nil。
@@ -514,6 +505,42 @@ extension AppIconController {
         latestRequest += 1
         pendingRequests += 1
         return latestRequest
+    }
+
+    /// 结算一次换组的写入：失败时按需退回 `requestedGroup`；成功时存进偏好、换成这一组并重画；最后结算是否重启 Dock。
+    /// - Parameters:
+    ///   - group: 这次换成的组
+    ///   - request: 这次请求的序号
+    ///   - reloadCount: 发出这次换组时重新套用偏好的次数
+    ///   - result: 写入的结果：包上有没有自定义图标是否因此变了
+    private func settleSelection(
+        of group: AppIconGroup,
+        request: Int,
+        reloadCount: Int,
+        result: Result<Bool, any Error>
+    ) {
+        // 成败都要结算；成功时排在存偏好与重画之后，Dock 重启后保留的是新的运行时图标
+        defer {
+            finishRequest(changesIcon: (try? result.get()) ?? false)
+        }
+
+        guard case .success = result else {
+            // 之后又有请求时，由最近的一次决定退不退回
+            if request == latestRequest {
+                requestedGroup = self.group
+            }
+
+            return
+        }
+
+        // 写入期间重新套用了偏好：所选的组以偏好为准
+        guard reloadCount == self.reloadCount else {
+            return
+        }
+
+        defaults.set(group.rawValue, forKey: AppIconGroup.key)
+        self.group = group
+        updateIcon()
     }
 
     /// 一次换组或重新套用偏好的写入结束：记下包上有没有自定义图标是否因此变了；
