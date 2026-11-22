@@ -599,7 +599,11 @@ extension RemoteConnection {
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
 
         _ = try await probe(
-            [wrapper, "watch", remoteDirectory, String(configuration.heartbeatTolerance)],
+            [
+                wrapper, "watch", remoteDirectory,
+                String(configuration.heartbeatTolerance),
+                String(configuration.operationRetention),
+            ],
             kind: .deployment
         )
     }

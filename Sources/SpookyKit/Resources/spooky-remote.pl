@@ -149,9 +149,13 @@ sub clean_session {
     opendir my $directory, $session or return;
     my @operations = grep { /\A[a-f0-9-]{36}\z/ } readdir($directory);
     closedir $directory;
+
     my $confirmed = 1;
 
     for my $operation (@operations) {
+        # 已结束的操作，以及目录已被看守过期删掉的操作不用取消：跳过它们，不留取消标记，也不空等确认
+        next if -f "$session/$operation/done" || !-d "$session/$operation";
+
         $confirmed = cancel_operation($session, $operation, 2) && $confirmed;
     }
 
@@ -163,12 +167,46 @@ sub clean_session {
     return $confirmed;
 }
 
-# 看守经中继的心跳确认 A 仍连着，心跳失败时返回。
+# 删掉结束超过保留期的操作目录与过期的取消标记，会话开得再久，其中的文件也不会越积越多；
+# 保留期内对已结束操作的取消照样直接得到确认，执行中的操作与它的取消标记不动。
+sub prune_operations {
+    my ($session, $retention) = @_;
+    my $expired = time() - $retention;
+    opendir my $directory, $session or return;
+    my @names = readdir($directory);
+    closedir $directory;
+
+    for my $operation (grep { /\A[a-f0-9-]{36}\z/ } @names) {
+        my $finished = (stat("$session/$operation/done"))[9];
+        next unless defined($finished) && $finished < $expired;
+
+        unlink(
+            "$session/cancel-$operation",
+            "$session/$operation/control.sock",
+            "$session/$operation/done"
+        );
+        rmdir("$session/$operation");
+    }
+
+    # 没有操作目录的取消标记属于没开始执行或目录已删掉的操作
+    for my $marker (grep { /\Acancel-[a-f0-9-]{36}\z/ } @names) {
+        my $created = (stat("$session/$marker"))[9];
+
+        next if !defined($created)
+            || $created >= $expired
+            || -d "$session/" . substr($marker, length('cancel-'));
+
+        unlink("$session/$marker");
+    }
+}
+
+# 看守经中继的心跳确认 A 仍连着，心跳失败时返回；第一轮先清理一遍过期的操作，之后每过保留期的五分之一清理一遍。
 # 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
 # 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
 sub watch_session {
-    my ($session, $tolerance) = @_;
+    my ($session, $tolerance, $retention) = @_;
     my $answered = time();
+    my $pruned = 0;
 
     while (-d $session) {
         my $alive = eval {
@@ -180,6 +218,11 @@ sub watch_session {
             $answered = time();
         } elsif ($@ ne "relay request timed out\n" || time() - $answered > $tolerance) {
             return;
+        }
+
+        if (time() - $pruned >= $retention / 5) {
+            prune_operations($session, $retention);
+            $pruned = time();
         }
 
         sleep(0.5);
@@ -436,9 +479,10 @@ if ($mode eq 'create-session') {
     close $file;
     print "$session\n";
 } elsif ($mode eq 'watch') {
-    my ($session, $tolerance) = @ARGV;
+    my ($session, $tolerance, $retention) = @ARGV;
     check_session($session);
     die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
+    die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
     my $pid = fork();
     die "cannot watch session\n" unless defined $pid;
     exit 0 if $pid;
@@ -448,7 +492,7 @@ if ($mode eq 'create-session') {
     open STDERR, '>', '/dev/null';
     $SIG{HUP} = 'IGNORE';
 
-    watch_session($session, $tolerance);
+    watch_session($session, $tolerance, $retention);
     clean_session($session);
 } elsif ($mode eq 'close') {
     my $session = shift @ARGV;

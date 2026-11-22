@@ -22,6 +22,9 @@ struct SSHConfiguration: Sendable {
     /// 长于 SSH 按 `ServerAliveInterval` 与 `ServerAliveCountMax` 判定断线所需的时间：连接撑得住的网络停顿不结束会话。
     var heartbeatTolerance: Double = 20
 
+    /// 操作结束后，B 上的会话看守保留它的结束标记的秒数：这期间对它的取消直接得到确认，过后看守删掉它的目录与取消标记。
+    var operationRetention: Double = 300
+
     /// 按参数边界传递配置路径，认证失败快速返回且绝不静默接受指纹。
     var options: [String] {
         var options = [
