@@ -14,7 +14,7 @@ A native Git client for macOS that works with repositories on your Mac and on yo
 </div>
 
 > [!NOTE]
-> Spooky is still in development and hasn't been released yet. Its features and interface may still change.
+> To use Spooky, download it from [GitHub Releases](https://github.com/rakuyoMo/Spooky/releases/latest). Before you open it for the first time, read [Install Spooky](https://spooky.rakuyo.dev/guide/start/install/) in the user guide.
 
 ## About
 
