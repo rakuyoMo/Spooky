@@ -54,6 +54,9 @@ public actor RemoteConnection {
     /// B 上的 0700 会话目录。
     private var remoteDirectory: String? = nil
 
+    /// 没能经当时的主连接关掉的旧会话目录，其中的操作可能仍在 B 上执行；重新连接后先关掉它们。
+    private var unclosedSessions: [String] = []
+
     /// 已原子部署的版本化包装器。
     private(set) var wrapper: String? = nil
 
@@ -500,6 +503,9 @@ extension RemoteConnection {
         if isHostScoped {
             try await verifyHost()
             try await deployRelay(in: directory)
+
+            // 先关掉上一个会话里的操作，再算连上
+            try await closeUnclosedSessions()
             try Task.checkCancellation()
             failure = nil
             updateState(.connected)
@@ -531,6 +537,9 @@ extension RemoteConnection {
         }
 
         try await deployRelay(in: directory)
+
+        // 先关掉上一个会话里的操作再核对仓库，读到的才不会再被它们改动
+        try await closeUnclosedSessions()
         try Task.checkCancellation()
         self.repository = repository
         failure = nil
@@ -588,7 +597,11 @@ extension RemoteConnection {
             "-R", remoteDirectory + "/relay.sock:" + relay.path,
         ], arguments: ["relay-forward"])
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
-        _ = try await probe([wrapper, "watch", remoteDirectory], kind: .deployment)
+
+        _ = try await probe(
+            [wrapper, "watch", remoteDirectory, String(configuration.heartbeatTolerance)],
+            kind: .deployment
+        )
     }
 
     /// 在本工作区执行 Git：带上全局选项与回调配置，交给包装器在独立进程组里运行。
@@ -860,13 +873,43 @@ extension RemoteConnection {
         return true
     }
 
+    /// 经新的主连接尽力关掉没能经旧连接关掉的会话：包装器取消其中全部操作并等待确认，会话目录已不在也算关掉。
+    ///
+    /// 只有连接本身失败时这次连接才失败，会话留到下次重连再关；包装器确认不了操作结束时记下错误、不再重试，
+    /// 旧操作的监管进程已不在时永远等不到确认，不能因此一直连不上。
+    private func closeUnclosedSessions() async throws {
+        guard let wrapper else { throw RemoteConnectionError(.unavailable) }
+
+        for session in unclosedSessions {
+            let result = try await commandChannel([wrapper, "close", session], arguments: ["session-close"])
+            if result.exitCode == 255 { throw RemoteConnectionError.ssh(result) }
+
+            // 包装器已执行完关闭，确认与否都移出列表：后面的会话连接失败时，这一个不再重试
+            unclosedSessions.removeAll { $0 == session }
+
+            let host = host
+            let closed = result.exitCode == 0
+            Self.logger.log(
+                level: closed ? .info : .error,
+                "\(closed ? "已关闭上一个远端会话" : "上一个远端会话里的操作未能确认结束，不再重试", privacy: .public)：\(host, privacy: .private)"
+            )
+        }
+    }
+
     /// 清理顺序保证远端进程仍可通过主连接收到取消，然后才移除本机中继。
     private func tearDown() async {
         monitor?.cancel()
         monitor = nil
 
         if let wrapper, let remoteDirectory {
-            _ = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])
+            let closed = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])
+
+            // 主连接已断或取消没能确认时，会话里的操作可能仍在 B 上执行，看守可能要过了心跳容忍期才清理；记下来，重新连接后先关掉它
+            if closed?.exitCode != 0 {
+                let host = host
+                Self.logger.error("远端会话未能关闭，重新连接后再关闭：\(host, privacy: .private)")
+                unclosedSessions.append(remoteDirectory)
+            }
         }
 
         if localDirectory != nil {

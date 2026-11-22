@@ -7,7 +7,7 @@ import Testing
 /// 不访问网络的传输协议回归测试。
 struct RemoteTransportTests {
     /// 仓库里的远端包装器，包装器的模式直接在本机运行。
-    private static let wrapper = URL(fileURLWithPath: #filePath)
+    static let wrapper = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()

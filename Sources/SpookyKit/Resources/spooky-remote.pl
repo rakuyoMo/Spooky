@@ -6,7 +6,7 @@ use warnings;
 # 每条 Git 命令都经 run 启动一次包装器，这里只加载 run 用到的模块；其余模块在用到它们的地方 require。
 use IO::Select;
 use IO::Socket::UNIX;
-use POSIX qw(EINTR setsid WNOHANG);
+use POSIX qw(EINTR ENOENT setsid WNOHANG);
 use Time::HiRes qw(time sleep);
 
 # 登录时的 umask：run 启动的命令按它运行，替换写入的新文件按它取权限。
@@ -161,6 +161,29 @@ sub clean_session {
     }
 
     return $confirmed;
+}
+
+# 看守经中继的心跳确认 A 仍连着，心跳失败时返回。
+# 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
+# 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
+sub watch_session {
+    my ($session, $tolerance) = @_;
+    my $answered = time();
+
+    while (-d $session) {
+        my $alive = eval {
+            relay_request($session, { kind => 'heartbeat', operation => '' }, 3);
+            1;
+        };
+
+        if ($alive) {
+            $answered = time();
+        } elsif ($@ ne "relay request timed out\n" || time() - $answered > $tolerance) {
+            return;
+        }
+
+        sleep(0.5);
+    }
 }
 
 # 子进程独占一个进程组，控制连接只终止这组中的进程。
@@ -413,8 +436,9 @@ if ($mode eq 'create-session') {
     close $file;
     print "$session\n";
 } elsif ($mode eq 'watch') {
-    my $session = shift @ARGV;
+    my ($session, $tolerance) = @ARGV;
     check_session($session);
+    die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
     my $pid = fork();
     die "cannot watch session\n" unless defined $pid;
     exit 0 if $pid;
@@ -424,15 +448,14 @@ if ($mode eq 'create-session') {
     open STDERR, '>', '/dev/null';
     $SIG{HUP} = 'IGNORE';
 
-    while (-d $session) {
-        my $alive = eval { relay_request($session, { kind => 'heartbeat', operation => '' }, 3); 1 };
-        last unless $alive;
-        sleep(0.5);
-    }
-
+    watch_session($session, $tolerance);
     clean_session($session);
 } elsif ($mode eq 'close') {
     my $session = shift @ARGV;
+
+    # 会话目录已经不在时算关闭成功：删除会话目录之前已确认其中的操作全部结束
+    exit 0 if !lstat($session) && $! == ENOENT;
+
     check_session($session);
     exit(clean_session($session) ? 0 : 1);
 } elsif ($mode eq 'cancel') {
