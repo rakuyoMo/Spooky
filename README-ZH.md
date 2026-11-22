@@ -14,7 +14,7 @@ macOS 原生 Git 客户端，本机仓库和服务器上的仓库都能直接操
 </div>
 
 > [!NOTE]
-> Spooky 仍在开发中，尚未发布正式版本，功能和界面都可能调整。
+> 想直接使用 Spooky 的话，从 [GitHub Releases](https://github.com/rakuyoMo/Spooky/releases/latest) 下载；第一次打开前，先看使用手册里的 [安装 Spooky](https://spooky.rakuyo.dev/zh-cn/guide/start/install/)。
 
 ## 简介
 
