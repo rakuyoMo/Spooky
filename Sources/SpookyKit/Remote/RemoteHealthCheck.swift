@@ -200,7 +200,7 @@ extension RemoteHealthCheck {
 
         case .status:
             "git -C \"$1\" "
-                + (GitRunner.globalOptions + ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"])
+                + (GitRunner.globalOptions + ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=normal"])
                 .map(GitRunner.shellQuoted)
                 .joined(separator: " ")
 
