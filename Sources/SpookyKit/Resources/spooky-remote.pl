@@ -14,8 +14,8 @@ use POSIX qw(setsid WNOHANG);
 use Socket qw(SOCK_STREAM);
 use Time::HiRes qw(time sleep);
 
-# 登录时的 umask 经 SPOOKY_UMASK 交给 run 启动的子命令，替换写入的新文件按它取权限。
-my $login_umask = ($ENV{SPOOKY_UMASK} // '') =~ /\A[0-7]{1,4}\z/ ? oct($ENV{SPOOKY_UMASK}) : umask;
+# 登录时的 umask：run 启动的命令按它运行，替换写入的新文件按它取权限。
+my $login_umask = umask;
 
 # 包装器只管理本会话的操作与临时文件，凭据只在内存和 socket 中传递。
 umask 0077;
@@ -185,8 +185,10 @@ sub run_operation {
         $ENV{GIT_TERMINAL_PROMPT} = '0';
         $ENV{SPOOKY_SESSION} = $session;
         $ENV{SPOOKY_OPERATION} = $operation;
-        $ENV{SPOOKY_UMASK} = sprintf('%04o', $login_umask);
         $ENV{GIT_SSH_VARIANT} = 'ssh';
+
+        # 命令按登录时的 umask 运行，Git 新建的文件与直接登录执行时权限相同
+        umask $login_umask;
         exec { $command[0] } @command or POSIX::_exit(127);
     }
 
