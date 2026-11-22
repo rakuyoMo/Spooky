@@ -55,7 +55,7 @@ Some things work differently:
 
 | What | In a server repository |
 |---|---|
-| Changes made on the server | Spooky checks the server for changes every 2 seconds while the repository’s window is in front, and every 10 seconds otherwise. |
+| Changes made on the server | Spooky checks the server for changes every 2 seconds while the repository’s window is in front, and every 10 seconds otherwise. When the server is slow to answer, it checks less often. |
 | Losing the connection | You can still look at what Spooky last read, but you can’t change anything until it reconnects. |
 | :ui[action.revealFinder] | Finder needs a folder on your Mac that shows the server’s files. See [Location on This Mac](/guide/server/local-location/). |
 | :ui[action.openTerminal] | Terminal logs in to the server with `ssh` and goes to the repository folder. |

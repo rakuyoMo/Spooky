@@ -37,7 +37,7 @@ public actor RemoteConnection {
     public private(set) var state = RemoteConnectionState.unavailable
 
     /// 上次连接错误。
-    public private(set) var failure: RemoteConnectionError? = nil
+    public internal(set) var failure: RemoteConnectionError? = nil
 
     /// 最近一次体检确认的仓库身份。
     public private(set) var repository: RemoteRepository? = nil
@@ -53,6 +53,9 @@ public actor RemoteConnection {
 
     /// B 上的 0700 会话目录。
     private var remoteDirectory: String? = nil
+
+    /// 没能经当时的主连接关掉的旧会话目录，其中的操作可能仍在 B 上执行；重新连接后先关掉它们。
+    private var unclosedSessions: [String] = []
 
     /// 已原子部署的版本化包装器。
     private(set) var wrapper: String? = nil
@@ -326,24 +329,6 @@ public actor RemoteConnection {
         }
     }
 
-    /// 一次往返检查多个远端路径是否存在，状态文件读取据此跳过不存在的文件。
-    func inspect(_ paths: [String]) async throws -> [Bool] {
-        try Task.checkCancellation()
-
-        if repository == nil {
-            _ = try await open()
-        }
-
-        if let canonical {
-            return try await canonical.inspect(paths)
-        }
-
-        let location = RepositoryLocation.remote(host: host, path: repository?.path ?? requestedPath)
-        return try await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
-            try await self.inspectConnected(paths)
-        }
-    }
-
     /// 用于断线验收：仅关闭 Spooky 自己的 SSH 主连接。
     func interruptMaster() async throws {
         if let canonical {
@@ -406,6 +391,8 @@ extension RemoteConnection {
     }
 
     /// 获得执行槽后再次检查连接和核对状态，排队期间的断线不能被忽略。
+    ///
+    /// 读取不另外确认主连接：主连接失效时命令通道以 SSH 的 255 结束，同样记下失败、转为不可用状态。
     private func runConnected(
         _ arguments: [String],
         input: Data?,
@@ -418,7 +405,9 @@ extension RemoteConnection {
             throw RemoteConnectionError(.interruptedWrite)
         }
 
-        try await check()
+        // 写入之前确认主连接还在：主连接已经失效时写入不开始，重连后不必为它核对仓库
+        if writing { try await check() }
+
         event(.started)
         return try await runWrapped(
             arguments,
@@ -427,20 +416,6 @@ extension RemoteConnection {
             writing: writing,
             onOutput: { event(.output($0)) }
         )
-    }
-
-    /// 获得主机槽后再确认连接；主连接失效时与命令通道一样转为不可用状态。
-    private func inspectConnected(_ paths: [String]) async throws -> [Bool] {
-        guard state == .connected else { throw failure ?? RemoteConnectionError(.unavailable) }
-        try await check()
-
-        do {
-            return try await inspectFlags(paths)
-        } catch let error as RemoteConnectionError where error.kind == .unavailable {
-            failure = error
-            updateState(.unavailable)
-            throw error
-        }
     }
 
     /// 活跃传输阻止空闲回收，失败后检查主连接以区分文件错误与断线。
@@ -532,6 +507,9 @@ extension RemoteConnection {
         if isHostScoped {
             try await verifyHost()
             try await deployRelay(in: directory)
+
+            // 先关掉上一个会话里的操作，再算连上
+            try await closeUnclosedSessions()
             try Task.checkCancellation()
             failure = nil
             updateState(.connected)
@@ -563,6 +541,9 @@ extension RemoteConnection {
         }
 
         try await deployRelay(in: directory)
+
+        // 先关掉上一个会话里的操作再核对仓库，读到的才不会再被它们改动
+        try await closeUnclosedSessions()
         try Task.checkCancellation()
         self.repository = repository
         failure = nil
@@ -572,7 +553,7 @@ extension RemoteConnection {
         startMonitoring()
     }
 
-    /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外。
+    /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外；安装包装器与新建会话在一次往返里完成。
     private func deployRelay(in directory: URL) async throws {
         guard let resource = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl") else {
             throw RemoteConnectionError(.deployment)
@@ -581,16 +562,6 @@ extension RemoteConnection {
         let source = try Data(contentsOf: resource)
         let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
         let filename = "spooky-remote-v1-" + String(version.prefix(16))
-        let install = Self.installScript(filename: filename)
-        let installed = try await probe(["/bin/sh", "-c", install], input: source, kind: .deployment)
-        guard
-            let path = String(data: installed.standardOutput, encoding: .utf8),
-            path.hasPrefix("/"), path.hasSuffix("\n")
-        else { throw RemoteConnectionError(.deployment, result: installed) }
-
-        let wrapper = String(path.dropLast())
-        self.wrapper = wrapper
-        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
 
         // 处理器在请求到达时才取：主机连接为多种操作共用，连接建立后才安装的处理器同样生效
         let relay = try CallbackRelay(
@@ -603,15 +574,30 @@ extension RemoteConnection {
         )
         try relay.start()
         self.relay = relay
-        let input = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
-        let created = try await probe([wrapper, "create-session"], input: input, kind: .deployment)
-        guard
-            let path = String(data: created.standardOutput, encoding: .utf8),
-            path.hasPrefix("/tmp/spooky-"), path.hasSuffix("\n"),
-            !path.dropLast().contains("\n")
-        else { throw RemoteConnectionError(.deployment, result: created) }
 
-        let remoteDirectory = String(path.dropLast())
+        // 包装器源码与会话令牌先后经标准输入交给 B；输出的第一行是包装器路径，最后一行是会话目录
+        let token = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
+        let deployed = try await probe(
+            ["/bin/sh", "-c", Self.deploymentScript(filename: filename, length: source.count)],
+            input: source + token,
+            kind: .deployment
+        )
+
+        guard
+            let output = String(data: deployed.standardOutput, encoding: .utf8),
+            output.hasSuffix("\n"),
+            let separator = output.dropLast().lastIndex(of: "\n")
+        else { throw RemoteConnectionError(.deployment, result: deployed) }
+
+        let wrapper = String(output[..<separator])
+        let remoteDirectory = String(output[output.index(after: separator)...].dropLast())
+
+        guard wrapper.hasPrefix("/"), remoteDirectory.hasPrefix("/tmp/spooky-") else {
+            throw RemoteConnectionError(.deployment, result: deployed)
+        }
+
+        self.wrapper = wrapper
+        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
         self.remoteDirectory = remoteDirectory
         let forward = try await ssh([
             "-O", "forward",
@@ -620,7 +606,15 @@ extension RemoteConnection {
             "-R", remoteDirectory + "/relay.sock:" + relay.path,
         ], arguments: ["relay-forward"])
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
-        _ = try await probe([wrapper, "watch", remoteDirectory], kind: .deployment)
+
+        _ = try await probe(
+            [
+                wrapper, "watch", remoteDirectory,
+                String(configuration.heartbeatTolerance),
+                String(configuration.operationRetention),
+            ],
+            kind: .deployment
+        )
     }
 
     /// 在本工作区执行 Git：带上全局选项与回调配置，交给包装器在独立进程组里运行。
@@ -765,22 +759,6 @@ extension RemoteConnection {
         return confirmed
     }
 
-    /// 包装器逐行返回存在标记，行数必须与输入路径一一对应，只检查存在性、不读内容。
-    func inspectFlags(_ paths: [String]) async throws -> [Bool] {
-        guard let wrapper else {
-            throw RemoteConnectionError(.unavailable)
-        }
-
-        let inspected = try await probe([wrapper, "inspect"] + paths, kind: .protocolFailure)
-        let flags = String(decoding: inspected.standardOutput, as: UTF8.self).split(separator: "\n")
-
-        guard flags.count == paths.count, flags.allSatisfy({ $0 == "0" || $0 == "1" }) else {
-            throw RemoteConnectionError(.protocolFailure, result: inspected)
-        }
-
-        return flags.map { $0 == "1" }
-    }
-
     /// 每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
     ///
     /// - Parameter inputFile: 标准输入改从这个本机文件读取。
@@ -908,13 +886,43 @@ extension RemoteConnection {
         return true
     }
 
+    /// 经新的主连接尽力关掉没能经旧连接关掉的会话：包装器取消其中全部操作并等待确认，会话目录已不在也算关掉。
+    ///
+    /// 只有连接本身失败时这次连接才失败，会话留到下次重连再关；包装器确认不了操作结束时记下错误、不再重试，
+    /// 旧操作的监管进程已不在时永远等不到确认，不能因此一直连不上。
+    private func closeUnclosedSessions() async throws {
+        guard let wrapper else { throw RemoteConnectionError(.unavailable) }
+
+        for session in unclosedSessions {
+            let result = try await commandChannel([wrapper, "close", session], arguments: ["session-close"])
+            if result.exitCode == 255 { throw RemoteConnectionError.ssh(result) }
+
+            // 包装器已执行完关闭，确认与否都移出列表：后面的会话连接失败时，这一个不再重试
+            unclosedSessions.removeAll { $0 == session }
+
+            let host = host
+            let closed = result.exitCode == 0
+            Self.logger.log(
+                level: closed ? .info : .error,
+                "\(closed ? "已关闭上一个远端会话" : "上一个远端会话里的操作未能确认结束，不再重试", privacy: .public)：\(host, privacy: .private)"
+            )
+        }
+    }
+
     /// 清理顺序保证远端进程仍可通过主连接收到取消，然后才移除本机中继。
     private func tearDown() async {
         monitor?.cancel()
         monitor = nil
 
         if let wrapper, let remoteDirectory {
-            _ = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])
+            let closed = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])
+
+            // 主连接已断或取消没能确认时，会话里的操作可能仍在 B 上执行，看守可能要过了心跳容忍期才清理；记下来，重新连接后先关掉它
+            if closed?.exitCode != 0 {
+                let host = host
+                Self.logger.error("远端会话未能关闭，重新连接后再关闭：\(host, privacy: .private)")
+                unclosedSessions.append(remoteDirectory)
+            }
         }
 
         if localDirectory != nil {

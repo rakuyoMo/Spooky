@@ -110,7 +110,7 @@ Spooky 是一个 Swift Package，主要有两个 target，都按功能分目录�
 
 - **回调**：Git 需要密码、口令或编辑器时，请求经 `CallbackRelay` 回到本机：服务器仓库经主连接上的反向 Unix socket，本机仓库经私有的 Unix socket
 
-- **刷新**：本机仓库在 FSEvents 报告文件变化时刷新；服务器仓库在前台每 2 秒、后台每 10 秒轮询一次
+- **刷新**：本机仓库在 FSEvents 报告文件变化时刷新；服务器仓库在前台每 2 秒、后台每 10 秒轮询一次，服务器持续回得慢时间隔拉长
 
 - **交给其它程序的文件**：Quick Look、外部工具与拖出的文件一律经 `RepositoryFileCache` 取得，服务器上的路径不会交给本机的文件 API
 

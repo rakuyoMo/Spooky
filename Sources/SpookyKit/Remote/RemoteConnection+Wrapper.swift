@@ -6,17 +6,36 @@ extension RemoteConnection {
     /// 包装器的回调入口：与包装器同一文件的硬链接，包装器按调用名的后缀区分模式。
     static let callbackLinks = ["askpass", "git-askpass", "gpg", "ssh-keygen"]
 
-    /// 在 B 上原子安装包装器与全部回调入口，最后输出包装器的绝对路径；脚本内容经标准输入写入。
+    /// 在 B 上原子安装包装器与全部回调入口并输出包装器的绝对路径，再由包装器新建会话、输出会话目录。
     ///
-    /// - Parameter filename: 按脚本内容摘要生成的版本化文件名。
-    static func installScript(filename: String) -> String {
+    /// 标准输入先是包装器源码，紧接着是会话令牌的报文：安装只读走源码的字节数，余下的报文留给新建会话。
+    ///
+    /// - Parameters:
+    ///   - filename: 按脚本内容摘要生成的版本化文件名。
+    ///   - length: 包装器源码的字节数。
+    static func deploymentScript(filename: String, length: Int) -> String {
         let links = callbackLinks.map { "\"$spooky_install_file-\($0)\"" }.joined(separator: " ")
+
         let linking = callbackLinks
             .map { "ln \"$spooky_install_file\" \"$spooky_install_file-\($0)\"" }
             .joined(separator: "\n")
+
         let moving = callbackLinks
             .map { "mv -f \"$spooky_install_file-\($0)\" \"$HOME/.spooky/bin/\(filename)-\($0)\"" }
             .joined(separator: "\n")
+
+        // 按字节数逐块读取，不多读一个字节；源码不足时失败
+        let copying = """
+            binmode STDIN;
+            binmode STDOUT;
+            my $left = $ARGV[0];
+
+            while ($left > 0) {
+                my $count = sysread(STDIN, my $chunk, $left < 65536 ? $left : 65536) or exit 1;
+                print $chunk;
+                $left -= $count;
+            }
+            """
 
         return """
             set -eu
@@ -28,12 +47,13 @@ extension RemoteConnection {
             chmod 700 "$HOME/.spooky" "$HOME/.spooky/bin"
             spooky_install_file=$(mktemp "$HOME/.spooky/bin/.install-XXXXXXXX")
             trap 'rm -f "$spooky_install_file" \(links)' EXIT HUP INT TERM
-            cat > "$spooky_install_file"
+            /usr/bin/perl -e \(GitRunner.shellQuoted(copying)) \(length) > "$spooky_install_file"
             chmod 700 "$spooky_install_file"
             \(linking)
             mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
             \(moving)
             printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
+            exec "$HOME/.spooky/bin/\(filename)" create-session
             """
     }
 
