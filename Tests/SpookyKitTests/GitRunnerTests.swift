@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import Synchronization
 import Testing
 
 @testable import SpookyKit
@@ -47,6 +48,66 @@ struct GitRunnerTests {
 
         #expect(messages.contains { $0.contains("show") && $0.contains("128") })
         #expect(!messages.contains { $0.contains(secret) })
+    }
+
+    /// 服务器上规范等价、字节不同的两个仓库各用各的连接，命令不会送进另一个仓库；本机路径与 macOS 文件系统一样不区分规范化。
+    @Test("服务器位置按字节区分仓库与连接")
+    func remoteIdentityByBytes() {
+        let composed = RepositoryLocation.remote(host: "spooky-identity", path: "/srv/caf\u{e9}")
+        let decomposed = RepositoryLocation.remote(host: "spooky-identity", path: "/srv/cafe\u{301}")
+
+        // 仓库身份，以及写队列与连接表的键
+        #expect(composed != decomposed)
+        #expect(Set([composed, decomposed]).count == 2)
+
+        // 字节不同的各用各的连接，字节相同的共用一条
+        let connection = GitRunner(location: composed).remote
+
+        #expect(connection !== GitRunner(location: decomposed).remote)
+        #expect(connection === GitRunner(location: .remote(host: "spooky-identity", path: "/srv/caf\u{e9}")).remote)
+
+        // 主机连接的别名同样按字节区分
+        #expect(RemoteConnection.host("spooky-caf\u{e9}") !== RemoteConnection.host("spooky-cafe\u{301}"))
+
+        // 本机路径按字符串比较
+        #expect(RepositoryLocation.local(path: "/srv/caf\u{e9}") == .local(path: "/srv/cafe\u{301}"))
+    }
+
+    /// 地址里的口令不进入错误与流式输出：经凭据中继与不经中继的两条本机路径都替换 Git 原样打出的地址。
+    @Test("地址口令不进入错误与输出")
+    func urlPasswordStaysOutOfFailures() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        try await temporary.initialize()
+
+        // 回环上没有服务的端口立即拒绝连接；子模块克隆失败时 Git 在 stderr 里原样打出带口令的地址
+        let secret = "spooky-secret-" + UUID().uuidString
+        let address = "https://review:" + secret + "@127.0.0.1:1/repository"
+        var relayed = temporary.runner
+        relayed.credentialHandler = { _ in nil }
+
+        for runner in [temporary.runner, relayed] {
+            let output = Mutex(Data())
+
+            let failure = await #expect(throws: GitError.self) {
+                try await runner.execute(["submodule", "add", "--", address, "sub"]) { event in
+                    switch event {
+                    case .standardOutput(let data), .standardError(let data):
+                        output.withLock { $0.append(data) }
+                    }
+                }
+            }
+
+            let error = try #require(failure)
+            let streamed = String(decoding: output.withLock { $0 }, as: UTF8.self)
+
+            #expect(error.arguments.contains("https://review:[REDACTED]@127.0.0.1:1/repository"))
+            #expect(error.message.contains("https://review:[REDACTED]@127.0.0.1:1/repository"))
+            #expect(!error.arguments.joined().contains(secret))
+            #expect(!error.message.contains(secret))
+            #expect(!streamed.contains(secret))
+        }
     }
 
     /// 读取本进程在指定时间之后写入的应用日志，出现目标条目或重试用尽为止。

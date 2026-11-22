@@ -471,8 +471,13 @@ extension RemoteConnection {
             let result = (error as? GitError)?.result
 
             if Task.isCancelled {
-                if writing { requiresReconciliation = true }
-                throw original
+                guard writing else { throw original }
+
+                // SFTP 没有可确认退出的远端进程组：写入被取消时按取消未确认报告，会话据此重连核对，核对之前不能继续写入
+                requiresReconciliation = true
+                let host = host
+                Self.logger.error("SFTP 写入已取消，未能确认服务器上已停止：\(host, privacy: .private)")
+                throw RemoteConnectionError(.cancellationUnconfirmed, result: result)
             }
 
             do { try await check() }
@@ -646,11 +651,13 @@ extension RemoteConnection {
     /// - Parameters:
     ///   - command: 在 B 上执行的完整命令，由包装器放进独立进程组。
     ///   - arguments: 记进结果与错误的业务参数。
+    ///   - inputFile: 标准输入改从这个本机文件读取，大段内容经它传给 B。
     ///   - writing: 中断后是否要求重连核对；主机级命令没有可核对的仓库，传 false。
     func runOperation(
         _ command: [String],
         arguments: [String],
         input: Data? = nil,
+        inputFile: URL? = nil,
         acceptedExitCodes: Set<Int32> = [0],
         writing: Bool,
         onOutput: @escaping @Sendable (GitOutputEvent) -> Void
@@ -666,6 +673,7 @@ extension RemoteConnection {
             wrapper, "run", remoteDirectory, operation, String(configuration.cancellationGrace),
         ] + command
         let redactor = RemoteOutputRedactor(
+            arguments: arguments,
             values: { relay.sensitiveValues(for: operation) },
             output: onOutput
         )
@@ -673,7 +681,7 @@ extension RemoteConnection {
         defer { redactor.finish() }
 
         do {
-            let raw = try await commandChannel(command, input: input, arguments: arguments) {
+            let raw = try await commandChannel(command, input: input, inputFile: inputFile, arguments: arguments) {
                 output.receive($0)
             }
             let result = redactor.result(try output.completed(raw))
@@ -774,9 +782,12 @@ extension RemoteConnection {
     }
 
     /// 每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
+    ///
+    /// - Parameter inputFile: 标准输入改从这个本机文件读取。
     func commandChannel(
         _ command: [String],
         input: Data? = nil,
+        inputFile: URL? = nil,
         arguments: [String],
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> GitCommandResult {
@@ -791,16 +802,20 @@ extension RemoteConnection {
             ["-o", "ControlMaster=no", "-o", "ProxyCommand=/usr/bin/false"],
             command: shell,
             input: input,
+            inputFile: inputFile,
             arguments: arguments,
             onOutput: onOutput
         )
     }
 
     /// 本机 SSH 进程固定 locale，原始输出与业务参数分开收集。
+    ///
+    /// - Parameter inputFile: 标准输入改从这个本机文件读取。
     private func ssh(
         _ options: [String],
         command: String? = nil,
         input: Data? = nil,
+        inputFile: URL? = nil,
         arguments: [String],
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> GitCommandResult {
@@ -845,6 +860,7 @@ extension RemoteConnection {
                 .updating(LocalExecutionSettings.current.sshOverrides)
                 .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
             input: input,
+            inputFile: inputFile,
             acceptedExitCodes: Set(0 ... 255),
             onOutput: onOutput
         )

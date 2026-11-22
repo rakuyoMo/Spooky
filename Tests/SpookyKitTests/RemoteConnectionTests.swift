@@ -250,6 +250,17 @@ struct RemoteConnectionTests {
             ])
             #expect(sshAskpass.standardOutput == Data("[REDACTED]\n".utf8))
 
+            // 地址里的口令不进入错误的参数与输出：回环上没有服务的端口立即拒绝连接，子模块克隆失败时 Git 原样打出地址
+            let urlFailure = try await #require(throws: GitError.self) {
+                try await connection.execute([
+                    "submodule", "add", "--", "https://review:url-secret-never-log@127.0.0.1:1/repository", "sub",
+                ])
+            }
+            let redactedAddress = "https://review:[REDACTED]@127.0.0.1:1/repository"
+            #expect(urlFailure.arguments.contains(redactedAddress))
+            #expect(urlFailure.message.contains(redactedAddress))
+            #expect(!urlFailure.message.contains("url-secret-never-log"))
+
             _ = try await connection.execute(["commit", "--allow-empty"])
             let message = try await connection.execute(["log", "-1", "--format=%B"])
             #expect(message.standardOutput == Data("edited on A\n\n".utf8))

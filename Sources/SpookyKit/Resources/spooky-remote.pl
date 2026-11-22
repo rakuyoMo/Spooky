@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 use Encode qw(decode encode);
-use Fcntl qw(F_SETFD);
+use Fcntl qw(F_SETFD O_CREAT O_EXCL O_WRONLY);
+use File::Basename qw(dirname);
 use File::Path qw(remove_tree);
 use File::Temp qw(tempdir);
 use IO::Select;
@@ -12,6 +13,9 @@ use JSON::PP;
 use POSIX qw(setsid WNOHANG);
 use Socket qw(SOCK_STREAM);
 use Time::HiRes qw(time sleep);
+
+# 登录时的 umask 经 SPOOKY_UMASK 交给 run 启动的子命令，替换写入的新文件按它取权限。
+my $login_umask = ($ENV{SPOOKY_UMASK} // '') =~ /\A[0-7]{1,4}\z/ ? oct($ENV{SPOOKY_UMASK}) : umask;
 
 # 包装器只管理本会话的操作与临时文件，凭据只在内存和 socket 中传递。
 umask 0077;
@@ -181,6 +185,7 @@ sub run_operation {
         $ENV{GIT_TERMINAL_PROMPT} = '0';
         $ENV{SPOOKY_SESSION} = $session;
         $ENV{SPOOKY_OPERATION} = $operation;
+        $ENV{SPOOKY_UMASK} = sprintf('%04o', $login_umask);
         $ENV{GIT_SSH_VARIANT} = 'ssh';
         exec { $command[0] } @command or POSIX::_exit(127);
     }
@@ -462,6 +467,55 @@ if ($mode eq 'create-session') {
     for my $path (@ARGV) {
         print((-e $path ? '1' : '0'), "\n");
     }
+} elsif ($mode eq 'replace') {
+    # 标准输入的内容先写进目标所在目录里独占的临时文件，读满声明的字节数后再改名替换；
+    # 出错、输入提前结束或被结束时删掉临时文件，原文件不变。
+    my ($target, $size) = @ARGV;
+    die "invalid replacement\n" unless defined($size) && length($target) && $size =~ /\A\d+\z/;
+
+    # 目标是符号链接时替换它最终指向的文件，相对链接按链接所在的目录解析
+    for (1 .. 40) {
+        last unless -l $target;
+
+        my $link = readlink($target) // die "cannot read symbolic link: $!\n";
+        $target = $link =~ m{\A/} ? $link : dirname($target) . "/$link";
+    }
+
+    die "too many levels of symbolic links\n" if -l $target;
+
+    # 已有的文件要可写，新内容沿用它的权限位；新文件按登录时的 umask
+    my $permissions = 0666 & ~$login_umask;
+
+    if (-e $target) {
+        die "not a regular file\n" unless -f _;
+        die "permission denied\n" unless -w _;
+        $permissions = (stat _)[2] & 07777;
+    }
+
+    my $temporary = dirname($target) . '/.spooky-' . identifier();
+    my $fail = sub { unlink $temporary; die "$_[0]\n" };
+
+    # 取消时包装器先发 TERM，被结束前同样删掉临时文件
+    $SIG{$_} = sub { unlink $temporary; POSIX::_exit(1) } for qw(HUP INT TERM);
+
+    sysopen(my $file, $temporary, O_WRONLY | O_CREAT | O_EXCL, 0600) or die "cannot create temporary file: $!\n";
+    binmode $file;
+    binmode STDIN;
+    chmod($permissions, $temporary) or $fail->("cannot set permissions: $!");
+
+    my $remaining = $size;
+
+    while ($remaining > 0) {
+        my $read = sysread(STDIN, my $buffer, $remaining < 65536 ? $remaining : 65536);
+        $fail->("cannot read content: $!") unless defined $read;
+        $fail->("incomplete content") unless $read;
+
+        print {$file} $buffer or $fail->("cannot write content: $!");
+        $remaining -= $read;
+    }
+
+    close($file) or $fail->("cannot write content: $!");
+    rename($temporary, $target) or $fail->("cannot replace file: $!");
 } else {
     die "unknown wrapper operation\n";
 }

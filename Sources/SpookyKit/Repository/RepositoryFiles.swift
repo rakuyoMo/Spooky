@@ -158,22 +158,24 @@ public struct RepositoryFiles: Sendable {
         return contents
     }
 
-    /// 经私有临时文件上传内容；本机写入沿用原文件的权限。
+    /// 写入文件；本机写入沿用原文件的权限。
+    ///
+    /// 服务器上先写进目标所在目录的临时文件，写完再改名替换，中途出错、断线或取消时原文件不变；
+    /// 目标是符号链接时替换它最终指向的文件，已有文件的权限位照旧。
     public func write(_ data: Data, to path: String) async throws {
         try await runner.writeTransaction {
-            guard runner.remote != nil else {
+            guard let remote = runner.remote else {
                 try data.write(to: URL(fileURLWithPath: path))
                 return
             }
 
+            // 内容先落到私有临时文件，ssh 直接读它：连接中途断开时本进程没有写到一半的管道
             let directory = try Self.temporaryDirectory()
             defer { try? FileManager.default.removeItem(at: directory) }
             let file = directory.appending(path: "content")
             try data.write(to: file)
 
-            _ = try await transfer([
-                "put " + (try Self.quoted(file.path)) + " " + (try Self.quoted(path)),
-            ], writing: true)
+            try await remote.replaceFile(path, from: file, size: data.count)
         }
     }
 
