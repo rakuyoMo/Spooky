@@ -391,6 +391,8 @@ extension RemoteConnection {
     }
 
     /// 获得执行槽后再次检查连接和核对状态，排队期间的断线不能被忽略。
+    ///
+    /// 读取不另外确认主连接：主连接失效时命令通道以 SSH 的 255 结束，同样记下失败、转为不可用状态。
     private func runConnected(
         _ arguments: [String],
         input: Data?,
@@ -403,7 +405,9 @@ extension RemoteConnection {
             throw RemoteConnectionError(.interruptedWrite)
         }
 
-        try await check()
+        // 写入之前确认主连接还在：主连接已经失效时写入不开始，重连后不必为它核对仓库
+        if writing { try await check() }
+
         event(.started)
         return try await runWrapped(
             arguments,

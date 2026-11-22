@@ -37,10 +37,9 @@ extension RemoteConnection {
         return flags.map { $0 == "1" }
     }
 
-    /// 获得主机槽后再确认连接；主连接失效时与命令通道一样转为不可用状态。
+    /// 获得主机槽后再确认连接状态；不另外确认主连接，主连接失效时检查以 SSH 的 255 结束，同样转为不可用状态。
     private func inspectConnected(_ paths: [String]) async throws -> [Bool] {
         guard state == .connected else { throw failure ?? RemoteConnectionError(.unavailable) }
-        try await check()
 
         do {
             return try await inspectFlags(paths)

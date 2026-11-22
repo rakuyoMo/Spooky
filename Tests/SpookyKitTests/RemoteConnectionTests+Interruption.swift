@@ -199,6 +199,42 @@ extension RemoteConnectionTests {
         }
     }
 
+    /// 读取与路径检查之前不另外确认主连接；主连接断掉之后，它们经命令通道报告不可用，连接随之转为不可用状态。
+    @Test("主连接断开后的读取与路径检查")
+    func readsAfterMasterLoss() async throws {
+        let fixture = try await RemoteFixture.create()
+        let connection = fixture.connection()
+
+        do {
+            // 读取
+            _ = try await connection.open()
+            try await connection.interruptMaster()
+
+            let readError = await #expect(throws: RemoteConnectionError.self) {
+                try await connection.execute(["status", "--porcelain=v2"])
+            }
+            #expect(readError?.kind == .unavailable)
+            #expect(await connection.state == .unavailable)
+
+            // 路径检查
+            _ = try await connection.reconnect()
+            try await connection.interruptMaster()
+
+            let inspectError = await #expect(throws: RemoteConnectionError.self) {
+                try await connection.inspect([fixture.repository + "/.git"])
+            }
+            #expect(inspectError?.kind == .unavailable)
+            #expect(await connection.state == .unavailable)
+
+            await connection.close()
+            try await fixture.remove()
+        } catch {
+            await connection.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
+
     /// 被取消的命令在 B 上结束之前仍占着会话；同时取消占满主机名额的读取时，每个取消都得到确认，随后的写入照常执行。
     @Test("同时取消占满主机名额的读取")
     func cancellingFullHostCapacity() async throws {
