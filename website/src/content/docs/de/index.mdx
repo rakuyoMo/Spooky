@@ -1,0 +1,169 @@
+---
+title: "Nativer Git-Client für macOS"
+description: "Spooky ist ein nativer Git-Client für macOS. Mit ihm arbeiten Sie mit Git-Repositorys auf Ihrem Server so einfach wie mit lokalen. Ganz ohne Klonen."
+template: splash
+hero:
+  title: "Git mit Fernwirkung."
+  tagline: "Spooky ist ein nativer Git-Client für macOS. Mit ihm arbeiten Sie mit Git-Repositorys auf Ihrem Server so einfach wie mit lokalen. Ganz ohne Klonen."
+---
+
+import Closing from '~/components/home/Closing.astro';
+import Feature from '~/components/home/Feature.astro';
+import Grid from '~/components/home/Grid.astro';
+import HeroDemo from '~/components/home/HeroDemo.astro';
+import More from '~/components/home/More.astro';
+import Point from '~/components/home/Point.astro';
+import Section from '~/components/home/Section.astro';
+import ServerDiagram from '~/components/home/ServerDiagram.astro';
+
+<HeroDemo
+  actions={[
+    { text: 'Herunterladen', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'Handbuch lesen', link: '/guide/', variant: 'secondary' },
+  ]}
+  note="Kostenlos und Open Source · macOS 26 oder neuer"
+/>
+
+<Section
+  id="server"
+  kicker="Server-Repositorys"
+  title="Spukhafte Fernwirkung"
+  lead="Das Arbeitsverzeichnis bleibt auf Ihrem Server, und Git läuft dort. Sie arbeiten damit in einem Spooky-Fenster auf Ihrem Mac."
+>
+
+<ServerDiagram
+  mac={{ title: 'Ihr Mac', items: ['Das Spooky-Fenster', '~/.ssh/config und Ihre SSH-Schlüssel'] }}
+  link={{ title: 'SSH', items: ['Git-Befehle und ihre Ausgabe', 'Dateien, per SFTP gelesen und geschrieben'] }}
+  server={{ title: 'Ihr Server', items: ['Arbeitsverzeichnis und Git', 'Ein kleines Hilfsskript in ~/.spooky/bin/'] }}
+/>
+
+<More>[So funktionieren Server-Repositorys](/guide/server/overview/)</More>
+
+<Grid columns={4}>
+
+<Point icon="server" title="Kein Klon auf Ihrem Mac">
+
+Das Arbeitsverzeichnis bleibt auf dem Server. Sie müssen es nicht erst auf Ihren Mac klonen.
+
+</Point>
+
+<Point icon="terminal" title="Git läuft auf dem Server">
+
+Spooky verwendet das Git des Servers und liest und schreibt Dateien per SFTP.
+
+</Point>
+
+<Point icon="key" title="Das SSH, das Sie schon nutzen">
+
+Verbindungen laufen über das SSH des Systems und die Host-Aliasse in `~/.ssh/config`. OpenSSH übernimmt Authentifizierung, Host-Schlüssel und die gemeinsame Nutzung von Verbindungen.
+
+</Point>
+
+<Point icon="script" title="Kein Root, kein Hintergrunddienst">
+
+Spooky braucht auf dem Server keinen Root-Zugriff und installiert keinen Hintergrunddienst. Es legt nur ein kleines Hilfsskript in `~/.spooky/bin/` ab.
+
+</Point>
+
+</Grid>
+
+<Feature
+  title="Ein Host-Alias und ein Pfad"
+  shots={[
+    {
+      name: 'add-server',
+      alt: 'Das Dialogfenster zum Hinzufügen eines Server-Repositorys mit dem Host-Alias spooky-test und dem Pfad /srv/git/driftwood.',
+      frame: 'dialog',
+    },
+  ]}
+>
+
+Wählen Sie :ui[action.addRemote], geben Sie einen Host-Alias aus `~/.ssh/config` ein und tippen Sie dann den Pfad des Repositorys auf dem Server ein oder suchen Sie ihn dort aus.
+
+Spooky prüft die Verbindung und öffnet das Repository.
+
+</Feature>
+
+</Section>
+
+<Section
+  id="workflow"
+  kicker="Der ganze Git-Workflow"
+  title="Von der ersten Änderung bis zum zusammengeführten Branch"
+  lead="Stagen, committen, den Verlauf durchsuchen, synchronisieren und Konflikte lösen – immer auf dieselbe Weise, ob das Repository auf Ihrem Mac liegt oder auf einem Server."
+>
+
+<Feature
+  title="Branches, Synchronisation, Zusammenführen und Rebase"
+  reverse
+  shots={[
+    { name: 'branches', alt: 'Der Abschnitt mit den Branches in der Seitenleiste.', frame: 'closeup' },
+    { name: 'sync', alt: 'Das Dialogfenster zum Pushen: main wird nach origin/main gepusht.', frame: 'dialog' },
+  ]}
+>
+
+Abrufen, Pullen und Pushen erledigen Sie über die Symbolleiste.
+
+Ziehen Sie einen Branch auf den aktuellen, um ihn zusammenzuführen, oder halten Sie beim Ziehen <kbd>⌥</kbd> gedrückt, um ein Rebase darauf auszuführen.
+
+</Feature>
+
+<Feature
+  title="Ein Assistent für Konflikte"
+  reveal
+  shots={[
+    {
+      name: 'conflict',
+      alt: 'Der Konfliktassistent nach einem Merge mit beiden Versionen von src/units.ts.',
+      frame: 'window',
+    },
+  ]}
+>
+
+Für jede Datei mit Konflikten zeigt Spooky die Version jeder Seite.
+
+Wählen Sie eine aus, um die Datei damit zu lösen, oder wählen Sie beide und öffnen Sie ein Zusammenführungswerkzeug.
+
+</Feature>
+
+<Grid columns={4}>
+
+<Point icon="history" title="Verlauf und Suche">
+
+Verfolgen Sie jeden Branch im Commit-Graphen. Suchen Sie nach Nachricht, Autor, Committer, Datei, Commit-Hash oder Datum.
+
+</Point>
+
+<Point icon="undo" title="Widerrufen und Wiederholen">
+
+Commits, Reverts, Stashes und mehr lassen sich mit <kbd>⌘Z</kbd> widerrufen und mit <kbd>⇧⌘Z</kbd> wiederholen.
+
+</Point>
+
+<Point icon="pullRequest" title="Pull Requests und Merge Requests">
+
+Auflisten, erstellen, diskutieren, auschecken, zusammenführen und schließen – auf GitHub, GitLab.com und <mark>selbst verwaltetem GitLab</mark>.
+
+</Point>
+
+<Point icon="layers" title="Stashes, Submodule, <mark>Worktrees</mark> und Git LFS">
+
+Alles funktioniert auch in Server-Repositorys.
+
+</Point>
+
+</Grid>
+
+</Section>
+
+<Closing
+  title="Ihre Repositorys, wo immer sie liegen."
+  actions={[
+    { text: 'Herunterladen', link: 'https://github.com/rakuyoMo/Spooky/releases', variant: 'primary' },
+    { text: 'Handbuch lesen', link: '/guide/', variant: 'secondary' },
+  ]}
+>
+
+Erfordert macOS 26 oder neuer sowie Git 2.41 oder neuer auf Ihrem Mac und Ihren Servern. Details finden Sie unter [Systemanforderungen](/reference/requirements/).
+
+</Closing>
