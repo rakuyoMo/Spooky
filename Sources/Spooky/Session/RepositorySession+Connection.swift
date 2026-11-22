@@ -4,6 +4,24 @@ import SpookyKit
 // MARK: - Connection
 
 extension RepositorySession {
+    /// 轮询间隔参考的读取次数：轮询任务只留最近这么多次读取用时，记满之后才按用时拉长间隔。
+    nonisolated static let pollReadWindow = 3
+
+    /// 两次轮询开始之间的间隔：没记满 ``pollReadWindow`` 次读取时是基础间隔；
+    /// 记满之后至少是基础间隔，也至少是其中最短一次用时的五倍：服务器持续地慢时轮询才变稀，读取用时稳定时轮询占用服务器的时间不超过五分之一。
+    ///
+    /// - Parameters:
+    ///   - base: 前台或后台的基础间隔。
+    ///   - recentReads: 最近几次轮询的读取用时，每次从轮询开始算到它发起的刷新结束。
+    nonisolated static func pollInterval(base: Duration, recentReads: [Duration]) -> Duration {
+        guard
+            recentReads.count >= pollReadWindow,
+            let shortest = recentReads.min()
+        else { return base }
+
+        return max(base, shortest * 5)
+    }
+
     /// 窗口重新激活后立即完整刷新一次；前后台切换重新计算下一次轮询时间。
     func setActive(_ active: Bool) {
         let wasActive = isActive
@@ -105,20 +123,38 @@ extension RepositorySession {
         RepositoryWriteQueue.shared.disconnected(repository)
     }
 
-    /// 轮询只读状态，任何失败都不重放写操作。
+    /// 轮询只读状态，任何失败都不重放写操作；两次轮询开始之间的间隔由 ``pollInterval(base:recentReads:)`` 决定，读取用时的记录只属于这一个轮询任务。
     func startPolling() {
         pollingTask?.cancel()
-        let interval = isActive
+        let base = isActive
             ? RemoteConnection.foregroundPollInterval
             : RemoteConnection.backgroundPollInterval
 
         pollingTask = Task { [weak self] in
+            let clock = ContinuousClock()
+            var started = clock.now
+            var reads: [Duration] = []
+
             while !Task.isCancelled {
-                do { try await Task.sleep(for: interval) }
+                let interval = Self.pollInterval(base: base, recentReads: reads)
+
+                do { try await clock.sleep(until: started + interval) }
                 catch { return }
 
                 guard let self, repository?.host != nil else { return }
-                if connectionState == .connected { autoReload() }
+
+                started = clock.now
+                guard connectionState == .connected else { continue }
+
+                // 等这次轮询发起的刷新结束，记下读取用时，只留最近几次；没有发起新的刷新时不记
+                let previous = refreshTask
+                autoReload()
+
+                guard let reading = refreshTask, reading != previous else { continue }
+
+                await reading.value
+                reads.append(started.duration(to: clock.now))
+                reads = Array(reads.suffix(Self.pollReadWindow))
             }
         }
     }

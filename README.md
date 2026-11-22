@@ -110,7 +110,7 @@ A few designs run through the whole codebase:
 
 - **Callbacks**: when Git asks for a password, a passphrase, or an editor, `CallbackRelay` brings the request back to the Mac, through a reverse Unix socket for server repositories and a private Unix socket for local ones
 
-- **Refreshing**: local repositories refresh when FSEvents reports a change. Server repositories are polled every 2 seconds in the foreground and every 10 seconds in the background
+- **Refreshing**: local repositories refresh when FSEvents reports a change. Server repositories are polled every 2 seconds in the foreground and every 10 seconds in the background, and less often while the server stays slow to answer
 
 - **Files for other apps**: Quick Look, external tools, and dragged-out files get their files through `RepositoryFileCache`, so server paths never reach local file APIs
 

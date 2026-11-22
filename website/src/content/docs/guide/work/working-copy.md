@@ -23,7 +23,7 @@ The line above the list shows the current branch, followed by the remote branch 
 Spooky updates the list on its own when files change. To read everything again, click :ui[action.refresh] or press <kbd>⌘R</kbd>.
 
 :::note[Server repositories]
-Spooky checks the server for changes every 2 seconds while the repository’s window is in front, and every 10 seconds otherwise. A change made on the server can take that long to show up. See [How server repositories differ](/guide/server/overview/#differences).
+Spooky checks the server for changes every 2 seconds while the repository’s window is in front, and every 10 seconds otherwise. When the server is slow to answer, it checks less often. A change made on the server can take that long to show up. See [How server repositories differ](/guide/server/overview/#differences).
 :::
 
 ## Show a list or a tree {#view}
