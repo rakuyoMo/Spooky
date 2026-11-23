@@ -6,11 +6,14 @@ use warnings;
 # 每条 Git 命令都经 run 启动一次包装器，这里只加载 run 用到的模块；其余模块在用到它们的地方 require。
 use IO::Select;
 use IO::Socket::UNIX;
-use POSIX qw(EINTR ENOENT setsid WNOHANG);
+use POSIX qw(EAGAIN EINTR ENOENT setsid WNOHANG);
 use Time::HiRes qw(time sleep);
 
 # 登录时的 umask：run 启动的命令按它运行，替换写入的新文件按它取权限。
 my $login_umask = umask;
+
+# 包装器自己的路径；常驻通道里的请求会改写进程标题，回调入口的路径从这里取。
+my $wrapper = $0;
 
 # 包装器只管理本会话的操作与临时文件，凭据只在内存和 socket 中传递。
 umask 0077;
@@ -487,193 +490,489 @@ sub sign_with_relay {
     return $? & 127 ? 128 + ($? & 127) : $? >> 8;
 }
 
-if ($mode eq 'create-session') {
-    require File::Temp;
-    require JSON::PP;
-    my $request = read_message(\*STDIN);
-    die "invalid session token\n" unless ($request->{token} // '') =~ /\A[a-f0-9]{64}\z/;
-    my $session = File::Temp::tempdir('spooky-XXXXXXXX', DIR => '/tmp', CLEANUP => 0);
-    chmod 0700, $session;
-    open my $file, '>:raw', "$session/session.json" or die "cannot initialize session\n";
-    print {$file} JSON::PP::encode_json({ token => $request->{token} });
-    close $file;
-    print "$session\n";
-} elsif ($mode eq 'watch') {
-    my ($session, $tolerance, $retention) = @ARGV;
+# 常驻通道的帧，两个方向相同：长度（其后的字节数）、类型、请求标识、负载，整数都是大端。
+# A 发来的类型：1 执行，负载是参数个数、逐个参数的长度与内容，其余字节是标准输入；2 放弃，不再要这个请求的输出。
+# 发给 A 的类型：0 就绪，标识是协议版本；1、2 是标准输出、标准错误的一块；3 退出，负载是 1 字节退出码。
+use constant {
+    SERVE_VERSION => 1,
+    SERVE_REQUEST_LIMIT => 8 * 1024 * 1024,
+    SERVE_CHUNK => 64 * 1024,
+};
+
+# 命令退出之后，每个输出管道最多再转发的字节数。
+# 命令退出时管道里它写下的内容不超过管道容量：macOS 上最大 64 KiB，Linux 上非特权进程默认最多调到 1 MiB，转发这么多足以送完；
+# 脱离进程组的后代之后不停写进来的内容随管道关闭丢弃，收尾不会一直转发下去。
+use constant SERVE_DRAIN_LIMIT => 1024 * 1024;
+
+# 一个会话的命令都经这一条 SSH 会话执行：每个请求在自己的子进程里照单独启动包装器的方式执行，输出与退出码逐帧发回。
+# 标准输入结束、标准输出写不出去，或会话目录已经不在时退出；执行中的请求不结束，照常执行完。
+sub serve {
+    my ($session) = @_;
     check_session($session);
-    die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
-    die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
+
+    # 子进程一退出，CHLD 处理就往自唤醒管道写一个字节，等在 select 上的循环随即醒来回收它
+    pipe(my $wake_read, my $wake_write) or die "process monitor unavailable\n";
+    IO::Handle::blocking($_, 0) for $wake_read, $wake_write;
+    $SIG{CHLD} = sub { local $!; syswrite($wake_write, '1') };
+
+    my $state = {
+        wake => [$wake_read, $wake_write],
+        requests => {},
+        processes => {},
+        pending => ''
+    };
+    my $checked = time();
+    write_frame(0, SERVE_VERSION, '');
+
+    while (1) {
+        my $selector = IO::Select->new(\*STDIN, $wake_read, serve_outputs($state));
+
+        # 有请求在执行时用 50 ms 的步长兜底：CHLD 恰好落在回收与 select 之间时，信号处理要等 select 返回才执行，
+        # 结束帧最多晚一个步长
+        my $timeout = %{$state->{requests}} ? 0.05 : 1;
+        my %readable = map { fileno($_) => 1 } $selector->can_read($timeout);
+
+        # 唤醒的字节只用来打断 select，读掉即可
+        if ($readable{fileno($wake_read)}) {
+            sysread($wake_read, my $bytes, 4096);
+        }
+
+        reap_requests($state);
+        relay_outputs($state, \%readable);
+        finish_requests($state);
+        return if $readable{fileno(STDIN)} && !read_requests($state);
+
+        next if time() - $checked < 1;
+        $checked = time();
+
+        # close 删掉会话目录之后，要等它的退出帧发出去再退出
+        return if !-d $session && !%{$state->{requests}};
+    }
+}
+
+# 回收退出的子进程，记下请求的退出状态；标准输入的写入进程与放弃了的请求不再记着。
+sub reap_requests {
+    my ($state) = @_;
+
+    while ((my $pid = waitpid(-1, WNOHANG)) > 0) {
+        my $id = delete $state->{processes}{$pid};
+        $state->{requests}{$id}{status} = $? if defined $id;
+    }
+}
+
+# 每个可读的输出管道每轮只转发一块，输出多的请求不会挡住别的请求。
+sub relay_outputs {
+    my ($state, $readable) = @_;
+
+    for my $id (keys %{$state->{requests}}) {
+        for my $stream ('output', 'error') {
+            my $handle = $state->{requests}{$id}{$stream};
+            relay_chunk($state, $id, $stream) if defined($handle) && $readable->{fileno($handle)};
+        }
+    }
+}
+
+# 子进程已回收的请求：不等管道读到末尾，转发完管道里已有的输出就发出退出帧。
+# 脱离进程组的后代仍可能拿着管道，读到末尾要等它们全部退出；每个管道最多再转发 SERVE_DRAIN_LIMIT 字节。
+sub finish_requests {
+    my ($state) = @_;
+
+    for my $id (grep { defined $state->{requests}{$_}{status} } keys %{$state->{requests}}) {
+        for my $stream ('output', 'error') {
+            my $left = SERVE_DRAIN_LIMIT;
+
+            while ($left > 0 && defined($state->{requests}{$id}{$stream})) {
+                my $count = relay_chunk($state, $id, $stream) or last;
+                $left -= $count;
+            }
+        }
+
+        my $request = delete $state->{requests}{$id};
+        my $status = $request->{status};
+        close $_ for grep { defined } @{$request}{qw(output error)};
+        write_frame(3, $id, pack('C', $status & 127 ? 128 + ($status & 127) : $status >> 8));
+    }
+}
+
+# 从请求的一个输出管道读一块转发给 A，读到末尾时关掉管道；返回转发的字节数。
+sub relay_chunk {
+    my ($state, $id, $stream) = @_;
+    my $request = $state->{requests}{$id};
+    my $count;
+
+    do {
+        $count = sysread($request->{$stream}, my $chunk, SERVE_CHUNK);
+        write_frame($stream eq 'output' ? 1 : 2, $id, $chunk) if $count;
+    } while (!defined($count) && $! == EINTR);
+
+    return $count if $count;
+    return 0 if !defined($count) && $! == EAGAIN;
+
+    close $request->{$stream};
+    $request->{$stream} = undef;
+    return 0;
+}
+
+# 读一块标准输入，处理其中完整的请求帧；标准输入结束时返回假。
+sub read_requests {
+    my ($state) = @_;
+    my $count = sysread(STDIN, $state->{pending}, SERVE_CHUNK, length($state->{pending}));
+    return 1 if !defined($count) && $! == EINTR;
+    return 0 unless $count;
+
+    while (length($state->{pending}) >= 4) {
+        my $length = unpack('N', $state->{pending});
+        die "invalid request frame\n" if $length < 5 || $length > SERVE_REQUEST_LIMIT;
+        last if length($state->{pending}) < 4 + $length;
+
+        my ($type, $id) = unpack('x4 C N', $state->{pending});
+        my $payload = substr($state->{pending}, 9, $length - 5);
+        substr($state->{pending}, 0, 4 + $length, '');
+
+        if ($type == 1) {
+            start_request($state, $id, request_arguments($payload));
+        } elsif ($type == 2) {
+            abort_request($state, $id);
+        } else {
+            die "invalid request frame\n";
+        }
+    }
+
+    return 1;
+}
+
+# 解开执行帧的负载：参数个数，逐个参数的长度与内容，其余字节是标准输入。
+sub request_arguments {
+    my ($payload) = @_;
+    die "invalid request frame\n" if length($payload) < 4;
+    my $count = unpack('N', $payload);
+    my $offset = 4;
+    my @arguments;
+
+    for (1 .. $count) {
+        die "invalid request frame\n" if $offset + 4 > length($payload);
+        my $length = unpack("x$offset N", $payload);
+        $offset += 4;
+        die "invalid request frame\n" if $offset + $length > length($payload);
+        push @arguments, substr($payload, $offset, $length);
+        $offset += $length;
+    }
+
+    return (\@arguments, substr($payload, $offset));
+}
+
+# 在子进程里执行一个请求；有标准输入时另起一个进程写入，命令不读输入也不会卡住通道。
+sub start_request {
+    my ($state, $id, $arguments, $input) = @_;
+    die "duplicate request\n" if $state->{requests}{$id};
+    pipe(my $output_read, my $output_write) or die "cannot start request\n";
+    pipe(my $error_read, my $error_write) or die "cannot start request\n";
+    my ($input_read, $input_write);
+
+    if (length $input) {
+        pipe($input_read, $input_write) or die "cannot start request\n";
+    }
+
     my $pid = fork();
-    die "cannot watch session\n" unless defined $pid;
-    exit 0 if $pid;
-    setsid();
-    open STDIN, '<', '/dev/null';
-    open STDOUT, '>', '/dev/null';
-    open STDERR, '>', '/dev/null';
-    $SIG{HUP} = 'IGNORE';
+    die "cannot start request\n" unless defined $pid;
 
-    watch_session($session, $tolerance, $retention);
-    clean_session($session);
-} elsif ($mode eq 'close') {
-    my $session = shift @ARGV;
-
-    # 会话目录已经不在时算关闭成功：删除会话目录之前已确认其中的操作全部结束
-    exit 0 if !lstat($session) && $! == ENOENT;
-
-    check_session($session);
-    exit(clean_session($session) ? 0 : 1);
-} elsif ($mode eq 'cancel') {
-    my ($session, $operation, $grace) = @ARGV;
-    check_session($session);
-    exit(cancel_operation($session, $operation, $grace) ? 0 : 1);
-} elsif ($mode eq 'run') {
-    exit run_operation(@ARGV);
-} elsif ($mode eq 'askpass' || $mode eq 'ssh-askpass' || $mode eq 'editor') {
-    require Encode;
-    my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
-    my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
-    my $argument = shift(@ARGV) // '';
-    my $request = {
-        kind => $mode eq 'ssh-askpass' && $ENV{SPOOKY_SIGNING} ? 'signing' : $mode,
-        operation => $operation,
-        prompt => Encode::decode('UTF-8', $argument)
-    };
-
-    if ($mode eq 'editor') {
-        open my $file, '<:raw', $argument or die "editor input unavailable\n";
-        read($file, my $content, 4 * 1024 * 1024 + 1);
-        close $file;
-        die "editor input too large\n" if length($content) > 4 * 1024 * 1024;
-        $request->{content} = Encode::decode('UTF-8', $content);
+    if ($pid == 0) {
+        run_request(
+            $state,
+            $arguments,
+            [$output_read, $error_read, $input_write],
+            [$input_read, $output_write, $error_write]
+        );
     }
 
-    my $value = relay_request($session, $request, 120);
+    close $_ for $output_write, $error_write;
+    IO::Handle::blocking($_, 0) for $output_read, $error_read;
+    $state->{requests}{$id} = { pid => $pid, output => $output_read, error => $error_read };
+    $state->{processes}{$pid} = $id;
+    return unless defined $input_read;
 
-    if ($mode eq 'editor') {
-        open my $file, '>:raw', $argument or die "editor output unavailable\n";
-        print {$file} Encode::encode('UTF-8', $value);
-        close $file;
+    close $input_read;
+    my $writer = fork();
+    die "cannot start request\n" unless defined $writer;
+    write_input($state, $input_write, $input) if $writer == 0;
+    close $input_write;
+}
+
+# A 不再要这个请求的输出：关掉它的输出管道，之后不再为它发帧；子进程照常执行，退出后回收。
+sub abort_request {
+    my ($state, $id) = @_;
+    my $request = delete $state->{requests}{$id} or return;
+    delete $state->{processes}{$request->{pid}};
+    close $_ for grep { defined } @{$request}{qw(output error)};
+}
+
+# 请求的子进程：只留这个请求自己的管道作标准输入、输出与错误，再按单独启动包装器的方式执行模式。
+sub run_request {
+    my ($state, $arguments, $unused, $streams) = @_;
+    my ($input, $output, $error) = @$streams;
+    $SIG{CHLD} = 'DEFAULT';
+    close $_ for @{$state->{wake}}, serve_outputs($state), grep { defined } @$unused;
+
+    if (defined $input) {
+        open(STDIN, '<&', $input) or POSIX::_exit(126);
+        close $input;
     } else {
-        print Encode::encode('UTF-8', $value), "\n";
-    }
-} elsif ($mode eq 'credential') {
-    # Git 的凭据助手协议：get 与 erase 只把地址交给 A，令牌只经中继回到标准输出；store 等动作不交给 A，凭据不另存。
-    my $action = shift(@ARGV) // '';
-    exit 0 unless $action eq 'get' || $action eq 'erase';
-
-    require Encode;
-    my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
-    my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
-    my %fields;
-
-    # 只取协议、主机与路径；erase 带来的密码与新版 Git 的 capability、wwwauth 等行都丢掉。
-    while (my $line = <STDIN>) {
-        $line =~ s/\r?\n\z//;
-        last if $line eq '';
-
-        my ($key, $value) = split(/=/, $line, 2);
-        $fields{$key} = $value if defined $value && $key =~ /\A(?:protocol|host|path)\z/;
+        open(STDIN, '<', '/dev/null') or POSIX::_exit(126);
     }
 
-    exit 0 unless defined $fields{protocol} && defined $fields{host};
+    open(STDOUT, '>&', $output) or POSIX::_exit(126);
+    open(STDERR, '>&', $error) or POSIX::_exit(126);
+    close $_ for $output, $error;
 
-    my $address = "$fields{protocol}://$fields{host}/" . ($fields{path} // '');
-    my $request = {
-        kind => 'credential',
-        operation => $operation,
-        prompt => $action,
-        content => Encode::decode('UTF-8', $address)
-    };
+    # 进程标题照单独启动时的命令行写，按命令行查找 run、watch 等进程的办法照样适用
+    $0 = join(' ', $wrapper, @$arguments);
+    @ARGV = @$arguments;
+    my $mode = shift(@ARGV) // '';
 
-    # A 不回答、拒绝或超时时什么都不输出，Git 接着问 askpass。
-    my $value = eval { relay_request($session, $request, 120) } // '';
-    print Encode::encode('UTF-8', $value) if $action eq 'get';
-} elsif ($mode eq 'ssh') {
-    $ENV{SSH_ASKPASS} = "$0-askpass";
-    $ENV{SSH_ASKPASS_REQUIRE} = 'force';
-    $ENV{DISPLAY} = 'spooky:0';
-    exec '/usr/bin/ssh', '-o', 'ForwardAgent=no', '-o', 'StrictHostKeyChecking=yes', @ARGV;
-    die "cannot launch remote ssh\n";
-} elsif ($mode eq 'gpg') {
-    my $program = configured_program('^gpg\.(openpgp\.)?program$', 'gpg');
+    # die 按 $! 与 $? 取退出码，先清掉通道循环里留下的值
+    $! = 0;
+    $? = 0;
+    dispatch($mode);
+    exit 0;
+}
 
-    # 校验签名时不访问网络：关闭按需从密钥服务器取钥与自动检查信任库。
-    exec_program($program, '--no-auto-key-retrieve', '--no-auto-check-trustdb', @ARGV)
-        if grep { $_ eq '--verify' } @ARGV;
+# 标准输入的写入进程：只留管道的写入端，写完或命令关掉了输入就退出。
+sub write_input {
+    my ($state, $handle, $input) = @_;
+    $SIG{CHLD} = 'DEFAULT';
+    close $_ for @{$state->{wake}}, serve_outputs($state);
+    open(STDIN, '<', '/dev/null') or POSIX::_exit(1);
+    open(STDOUT, '>', '/dev/null') or POSIX::_exit(1);
+    open(STDERR, '>', '/dev/null') or POSIX::_exit(1);
 
-    # Git 签名固定使用 -bsau；其它调用不会索取口令，原样交给 gpg。
-    exec_program($program, @ARGV) unless grep { $_ eq '-bsau' } @ARGV;
-    exit sign_with_relay($program, @ARGV);
-} elsif ($mode eq 'ssh-keygen') {
-    # ssh-keygen 解锁私钥时经 SSH_ASKPASS 回到中继，不会等待不存在的终端；agent 里的密钥不需要口令。
-    my $program = configured_program('^gpg\.ssh\.program$', 'ssh-keygen');
-    (my $base = $0) =~ s/-ssh-keygen\z//;
-    $ENV{SSH_ASKPASS} = "$base-askpass";
-    $ENV{SSH_ASKPASS_REQUIRE} = 'force';
-    $ENV{DISPLAY} = 'spooky:0';
-    $ENV{SPOOKY_SIGNING} = '1';
-    exec_program($program, @ARGV);
-} elsif ($mode eq 'inspect') {
-    # 路径由 git rev-parse --git-path 提供，只检查存在性，不读取元数据内容。
-    for my $path (@ARGV) {
-        print((-e $path ? '1' : '0'), "\n");
-    }
-} elsif ($mode eq 'replace') {
-    # 标准输入的内容先写进目标所在目录里独占的临时文件，读满声明的字节数后再改名替换；
-    # 出错、输入提前结束或被结束时删掉临时文件，原文件不变。
-    my ($target, $size) = @ARGV;
-    die "invalid replacement\n" unless defined($size) && length($target) && $size =~ /\A\d+\z/;
-    require File::Basename;
-    require Fcntl;
-
-    # 目标是符号链接时替换它最终指向的文件，相对链接按链接所在的目录解析
-    for (1 .. 40) {
-        last unless -l $target;
-
-        my $link = readlink($target) // die "cannot read symbolic link: $!\n";
-        $target = $link =~ m{\A/} ? $link : File::Basename::dirname($target) . "/$link";
+    while (length $input) {
+        my $count = syswrite($handle, $input);
+        next if !defined($count) && $! == EINTR;
+        last unless $count;
+        substr($input, 0, $count, '');
     }
 
-    die "too many levels of symbolic links\n" if -l $target;
+    POSIX::_exit(0);
+}
 
-    # 已有的文件要可写，新内容沿用它的权限位；新文件按登录时的 umask
-    my $permissions = 0666 & ~$login_umask;
+# 执行中请求的输出管道。
+sub serve_outputs {
+    my ($state) = @_;
+    return grep { defined } map { @{$_}{qw(output error)} } values %{$state->{requests}};
+}
 
-    if (-e $target) {
-        die "not a regular file\n" unless -f _;
-        die "permission denied\n" unless -w _;
-        $permissions = (stat _)[2] & 07777;
+# 写出一整帧；标准输出写不出去说明 A 已经断开，通道随即退出。
+sub write_frame {
+    my ($type, $id, $payload) = @_;
+    my $data = pack('NCN', 5 + length($payload), $type, $id) . $payload;
+
+    while (length $data) {
+        my $count = syswrite(STDOUT, $data);
+        next if !defined($count) && $! == EINTR;
+        exit 1 unless $count;
+        substr($data, 0, $count, '');
     }
+}
 
-    my $temporary = File::Basename::dirname($target) . '/.spooky-' . identifier();
-    my $fail = sub { unlink $temporary; die "$_[0]\n" };
+# 按模式执行一次包装器；单独启动与常驻通道里的请求都从这里进入，模式的参数在 @ARGV 里。
+sub dispatch {
+    my ($mode) = @_;
 
-    # 取消时包装器先发 TERM，被结束前同样删掉临时文件
-    $SIG{$_} = sub { unlink $temporary; POSIX::_exit(1) } for qw(HUP INT TERM);
+    if ($mode eq 'create-session') {
+        require File::Temp;
+        require JSON::PP;
+        my $request = read_message(\*STDIN);
+        die "invalid session token\n" unless ($request->{token} // '') =~ /\A[a-f0-9]{64}\z/;
+        my $session = File::Temp::tempdir('spooky-XXXXXXXX', DIR => '/tmp', CLEANUP => 0);
+        chmod 0700, $session;
+        open my $file, '>:raw', "$session/session.json" or die "cannot initialize session\n";
+        print {$file} JSON::PP::encode_json({ token => $request->{token} });
+        close $file;
+        print "$session\n";
+    } elsif ($mode eq 'watch') {
+        my ($session, $tolerance, $retention) = @ARGV;
+        check_session($session);
+        die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
+        die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
+        my $pid = fork();
+        die "cannot watch session\n" unless defined $pid;
+        exit 0 if $pid;
+        setsid();
+        open STDIN, '<', '/dev/null';
+        open STDOUT, '>', '/dev/null';
+        open STDERR, '>', '/dev/null';
+        $SIG{HUP} = 'IGNORE';
 
-    sysopen(
-        my $file,
-        $temporary,
-        Fcntl::O_WRONLY() | Fcntl::O_CREAT() | Fcntl::O_EXCL(),
-        0600
-    ) or die "cannot create temporary file: $!\n";
-    binmode $file;
-    binmode STDIN;
-    chmod($permissions, $temporary) or $fail->("cannot set permissions: $!");
+        watch_session($session, $tolerance, $retention);
+        clean_session($session);
+    } elsif ($mode eq 'close') {
+        my $session = shift @ARGV;
 
-    my $remaining = $size;
+        # 会话目录已经不在时算关闭成功：删除会话目录之前已确认其中的操作全部结束
+        exit 0 if !lstat($session) && $! == ENOENT;
 
-    while ($remaining > 0) {
-        my $read = sysread(STDIN, my $buffer, $remaining < 65536 ? $remaining : 65536);
-        $fail->("cannot read content: $!") unless defined $read;
-        $fail->("incomplete content") unless $read;
+        check_session($session);
+        exit(clean_session($session) ? 0 : 1);
+    } elsif ($mode eq 'cancel') {
+        my ($session, $operation, $grace) = @ARGV;
+        check_session($session);
+        exit(cancel_operation($session, $operation, $grace) ? 0 : 1);
+    } elsif ($mode eq 'run') {
+        exit run_operation(@ARGV);
+    } elsif ($mode eq 'askpass' || $mode eq 'ssh-askpass' || $mode eq 'editor') {
+        require Encode;
+        my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
+        my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
+        my $argument = shift(@ARGV) // '';
+        my $request = {
+            kind => $mode eq 'ssh-askpass' && $ENV{SPOOKY_SIGNING} ? 'signing' : $mode,
+            operation => $operation,
+            prompt => Encode::decode('UTF-8', $argument)
+        };
 
-        print {$file} $buffer or $fail->("cannot write content: $!");
-        $remaining -= $read;
+        if ($mode eq 'editor') {
+            open my $file, '<:raw', $argument or die "editor input unavailable\n";
+            read($file, my $content, 4 * 1024 * 1024 + 1);
+            close $file;
+            die "editor input too large\n" if length($content) > 4 * 1024 * 1024;
+            $request->{content} = Encode::decode('UTF-8', $content);
+        }
+
+        my $value = relay_request($session, $request, 120);
+
+        if ($mode eq 'editor') {
+            open my $file, '>:raw', $argument or die "editor output unavailable\n";
+            print {$file} Encode::encode('UTF-8', $value);
+            close $file;
+        } else {
+            print Encode::encode('UTF-8', $value), "\n";
+        }
+    } elsif ($mode eq 'credential') {
+        # Git 的凭据助手协议：get 与 erase 只把地址交给 A，令牌只经中继回到标准输出；store 等动作不交给 A，凭据不另存。
+        my $action = shift(@ARGV) // '';
+        exit 0 unless $action eq 'get' || $action eq 'erase';
+
+        require Encode;
+        my $session = $ENV{SPOOKY_SESSION} // die "callback session missing\n";
+        my $operation = $ENV{SPOOKY_OPERATION} // die "callback operation missing\n";
+        my %fields;
+
+        # 只取协议、主机与路径；erase 带来的密码与新版 Git 的 capability、wwwauth 等行都丢掉。
+        while (my $line = <STDIN>) {
+            $line =~ s/\r?\n\z//;
+            last if $line eq '';
+
+            my ($key, $value) = split(/=/, $line, 2);
+            $fields{$key} = $value if defined $value && $key =~ /\A(?:protocol|host|path)\z/;
+        }
+
+        exit 0 unless defined $fields{protocol} && defined $fields{host};
+
+        my $address = "$fields{protocol}://$fields{host}/" . ($fields{path} // '');
+        my $request = {
+            kind => 'credential',
+            operation => $operation,
+            prompt => $action,
+            content => Encode::decode('UTF-8', $address)
+        };
+
+        # A 不回答、拒绝或超时时什么都不输出，Git 接着问 askpass。
+        my $value = eval { relay_request($session, $request, 120) } // '';
+        print Encode::encode('UTF-8', $value) if $action eq 'get';
+    } elsif ($mode eq 'ssh') {
+        $ENV{SSH_ASKPASS} = "$wrapper-askpass";
+        $ENV{SSH_ASKPASS_REQUIRE} = 'force';
+        $ENV{DISPLAY} = 'spooky:0';
+        exec '/usr/bin/ssh', '-o', 'ForwardAgent=no', '-o', 'StrictHostKeyChecking=yes', @ARGV;
+        die "cannot launch remote ssh\n";
+    } elsif ($mode eq 'gpg') {
+        my $program = configured_program('^gpg\.(openpgp\.)?program$', 'gpg');
+
+        # 校验签名时不访问网络：关闭按需从密钥服务器取钥与自动检查信任库。
+        exec_program($program, '--no-auto-key-retrieve', '--no-auto-check-trustdb', @ARGV)
+            if grep { $_ eq '--verify' } @ARGV;
+
+        # Git 签名固定使用 -bsau；其它调用不会索取口令，原样交给 gpg。
+        exec_program($program, @ARGV) unless grep { $_ eq '-bsau' } @ARGV;
+        exit sign_with_relay($program, @ARGV);
+    } elsif ($mode eq 'ssh-keygen') {
+        # ssh-keygen 解锁私钥时经 SSH_ASKPASS 回到中继，不会等待不存在的终端；agent 里的密钥不需要口令。
+        my $program = configured_program('^gpg\.ssh\.program$', 'ssh-keygen');
+        (my $base = $wrapper) =~ s/-ssh-keygen\z//;
+        $ENV{SSH_ASKPASS} = "$base-askpass";
+        $ENV{SSH_ASKPASS_REQUIRE} = 'force';
+        $ENV{DISPLAY} = 'spooky:0';
+        $ENV{SPOOKY_SIGNING} = '1';
+        exec_program($program, @ARGV);
+    } elsif ($mode eq 'inspect') {
+        # 路径由 git rev-parse --git-path 提供，只检查存在性，不读取元数据内容。
+        for my $path (@ARGV) {
+            print((-e $path ? '1' : '0'), "\n");
+        }
+    } elsif ($mode eq 'replace') {
+        # 标准输入的内容先写进目标所在目录里独占的临时文件，读满声明的字节数后再改名替换；
+        # 出错、输入提前结束或被结束时删掉临时文件，原文件不变。
+        my ($target, $size) = @ARGV;
+        die "invalid replacement\n" unless defined($size) && length($target) && $size =~ /\A\d+\z/;
+        require File::Basename;
+        require Fcntl;
+
+        # 目标是符号链接时替换它最终指向的文件，相对链接按链接所在的目录解析
+        for (1 .. 40) {
+            last unless -l $target;
+
+            my $link = readlink($target) // die "cannot read symbolic link: $!\n";
+            $target = $link =~ m{\A/} ? $link : File::Basename::dirname($target) . "/$link";
+        }
+
+        die "too many levels of symbolic links\n" if -l $target;
+
+        # 已有的文件要可写，新内容沿用它的权限位；新文件按登录时的 umask
+        my $permissions = 0666 & ~$login_umask;
+
+        if (-e $target) {
+            die "not a regular file\n" unless -f _;
+            die "permission denied\n" unless -w _;
+            $permissions = (stat _)[2] & 07777;
+        }
+
+        my $temporary = File::Basename::dirname($target) . '/.spooky-' . identifier();
+        my $fail = sub { unlink $temporary; die "$_[0]\n" };
+
+        # 取消时包装器先发 TERM，被结束前同样删掉临时文件
+        $SIG{$_} = sub { unlink $temporary; POSIX::_exit(1) } for qw(HUP INT TERM);
+
+        sysopen(
+            my $file,
+            $temporary,
+            Fcntl::O_WRONLY() | Fcntl::O_CREAT() | Fcntl::O_EXCL(),
+            0600
+        ) or die "cannot create temporary file: $!\n";
+        binmode $file;
+        binmode STDIN;
+        chmod($permissions, $temporary) or $fail->("cannot set permissions: $!");
+
+        my $remaining = $size;
+
+        while ($remaining > 0) {
+            my $read = sysread(STDIN, my $buffer, $remaining < 65536 ? $remaining : 65536);
+            $fail->("cannot read content: $!") unless defined $read;
+            $fail->("incomplete content") unless $read;
+
+            print {$file} $buffer or $fail->("cannot write content: $!");
+            $remaining -= $read;
+        }
+
+        close($file) or $fail->("cannot write content: $!");
+        rename($temporary, $target) or $fail->("cannot replace file: $!");
+    } else {
+        die "unknown wrapper operation\n";
     }
+}
 
-    close($file) or $fail->("cannot write content: $!");
-    rename($temporary, $target) or $fail->("cannot replace file: $!");
+# 常驻通道只由单独启动的包装器打开，通道里的请求不能再开通道
+if ($mode eq 'serve') {
+    serve(@ARGV);
 } else {
-    die "unknown wrapper operation\n";
+    dispatch($mode);
 }
