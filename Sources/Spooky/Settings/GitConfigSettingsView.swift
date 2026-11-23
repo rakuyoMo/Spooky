@@ -28,7 +28,7 @@ struct GitConfigSettingsView: View {
 
             // 说明与分隔线左右对齐
             if let failure = model.failure {
-                GitConfigFailureView(failure: failure)
+                SettingsFailureView(title: failure.title, details: failure.details, isOutput: true)
                     .padding(.top, 16)
                     .padding(.horizontal, SettingsFormLayout.separatorInset)
             }
@@ -37,36 +37,5 @@ struct GitConfigSettingsView: View {
             await model.reload()
             await model.reloadKeys()
         }
-    }
-}
-
-// MARK: - GitConfigFailureView
-
-/// 读写全局配置失败时的说明：黄色警告图标、标题与可选中的 Git 原文。
-struct GitConfigFailureView: View {
-    /// 失败的标题与原文。
-    let failure: GlobalGitConfigModel.Failure
-
-    /// 图标挂在左侧，标题与原文上下排列。
-    var body: some View {
-        HStack(alignment: .top, spacing: 4) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.yellow)
-                .frame(width: 18, height: 18)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(failure.title)
-                    .font(.system(size: 12, weight: .semibold))
-
-                Text(failure.details)
-                    .font(.system(size: 11).monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
     }
 }
