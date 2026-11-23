@@ -584,23 +584,6 @@ extension RemoteConnection {
         self.relay = relay
     }
 
-    /// 体检没能复用已安装的包装器时安装它并新建会话，再把本机中继转发进会话目录、启动会话看守。
-    private func startSession() async throws {
-        if wrapper == nil { try await deployWrapper() }
-
-        guard let relay, let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
-
-        let forward = try await ssh([
-            "-O", "forward",
-            "-o", "ExitOnForwardFailure=yes",
-            "-o", "StreamLocalBindUnlink=yes",
-            "-R", remoteDirectory + "/relay.sock:" + relay.path,
-        ], arguments: ["relay-forward"])
-        guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
-
-        try await startWatcher(wrapper: wrapper, remoteDirectory: remoteDirectory)
-    }
-
     /// 记下包装器路径与新建的会话目录：输出的第一行是包装器路径，最后一行是会话目录。
     ///
     /// 记下之后，连接建立到一半失败时，关闭连接的流程会关掉这个会话。
@@ -816,7 +799,7 @@ extension RemoteConnection {
     /// 本机 SSH 进程固定 locale，原始输出与业务参数分开收集。
     ///
     /// - Parameter inputFile: 标准输入改从这个本机文件读取。
-    private func ssh(
+    func ssh(
         _ options: [String],
         command: String? = nil,
         input: Data? = nil,
