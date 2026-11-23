@@ -130,4 +130,74 @@ extension RemoteTransportTests {
         #expect(blocked.exitCode == 1)
         #expect(String(decoding: blocked.standardError, as: UTF8.self) == moved.path + ": File exists\n")
     }
+
+    /// run 要执行的是包装器自己的模式时，在分出的子进程里直接执行，不再启动一次包装器：
+    /// 没有执行权限的包装器副本照样建出目录，新目录按登录时的 umask 取权限，失败时的报错与退出码与单独启动时相同。
+    @Test("run 在子进程里直接执行包装器自己的模式")
+    func wrapperModeInRun() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-run-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        let session = try await createSession()
+
+        defer {
+            try? FileManager.default.removeItem(at: directory)
+            try? FileManager.default.removeItem(atPath: session)
+        }
+
+        // 副本没有执行权限：run 另外启动它时 exec 失败，以 127 退出
+        let copy = directory.appending(path: "wrapper")
+        try FileManager.default.copyItem(at: Self.wrapper, to: copy)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: copy.path)
+
+        // 建目录：逐级建出，按登录时的 umask 取权限，run 照常写出完成帧
+        let nested = directory.appending(path: "a/b")
+        let operation = UUID().uuidString.lowercased()
+        let created = try await runWrapperMode(copy, in: session, operation: operation, mode: ["mkdir", nested.path])
+
+        #expect(created.exitCode == 0)
+        #expect(String(decoding: created.standardError, as: UTF8.self) == "\u{1E}SPOOKY:\(operation):0:0:0\u{1F}")
+
+        for level in [directory.appending(path: "a"), nested] {
+            #expect(try FileManager.default.attributesOfItem(atPath: level.path)[.posixPermissions] as? Int == 0o775)
+        }
+
+        // 某一级是文件时失败：报错在完成帧之前，退出码照样传出
+        let file = directory.appending(path: "file")
+        try Data().write(to: file)
+
+        let failure = UUID().uuidString.lowercased()
+        let blocked = try await runWrapperMode(copy, in: session, operation: failure, mode: ["mkdir", file.path + "/child"])
+        let report = file.path + ": File exists\n" + "\u{1E}SPOOKY:\(failure):1:0:0\u{1F}"
+
+        #expect(blocked.exitCode == 1)
+        #expect(String(decoding: blocked.standardError, as: UTF8.self) == report)
+    }
+}
+
+// MARK: - Private
+
+extension RemoteTransportTests {
+    /// 以 umask 002 登录的情形下，经包装器的 run 在会话里执行同一个包装器的一个模式，接受任何退出码。
+    ///
+    /// - Parameters:
+    ///   - wrapper: 运行的包装器，run 要执行的程序也是它。
+    ///   - session: 会话目录。
+    ///   - operation: 操作标识。
+    ///   - mode: 模式与它的参数。
+    /// - Returns: run 的输出与退出状态。
+    private func runWrapperMode(
+        _ wrapper: URL,
+        in session: String,
+        operation: String,
+        mode: [String]
+    ) async throws -> GitCommandResult {
+        try await CommandExecutor.execute(
+            executable: "/bin/sh",
+            processArguments: [
+                "-c", #"umask 002 && exec /usr/bin/perl "$0" run "$@""#,
+                wrapper.path, session, operation, "2", wrapper.path,
+            ] + mode,
+            acceptedExitCodes: Set(0 ... 255)
+        )
+    }
 }

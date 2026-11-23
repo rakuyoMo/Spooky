@@ -379,6 +379,10 @@ sub start_process {
         $ENV{SPOOKY_OPERATION} = $operation;
         $ENV{GIT_SSH_VARIANT} = 'ssh';
 
+        # 包装器自己的模式直接在这个子进程里执行；serve 只由单独启动的包装器打开，照旧 exec
+        my ($program, @arguments) = @command;
+        execute_mode(@arguments) if $program eq $wrapper && ($arguments[0] // '') ne 'serve';
+
         # 命令按登录时的 umask 运行，Git 新建的文件与直接登录执行时权限相同
         umask $login_umask;
         exec { $command[0] } @command or POSIX::_exit(127);
@@ -848,13 +852,24 @@ sub run_request {
     open(STDOUT, '>&', $output) or POSIX::_exit(126);
     open(STDERR, '>&', $error) or POSIX::_exit(126);
     close $_ for $output, $error;
+    execute_mode(@$arguments);
+}
+
+# 在分出的子进程里照单独启动包装器时的状态执行一个模式，执行完退出，不再启动一次 Perl；
+# 常驻通道的请求与 run 要执行的包装器自己的模式都经它执行。
+sub execute_mode {
+    my (@arguments) = @_;
+
+    # 单独启动时包装器一开始就设好的状态：会话文件按 0077 建立，写不出去的管道按错误返回
+    umask 0077;
+    $SIG{PIPE} = 'IGNORE';
 
     # 进程标题照单独启动时的命令行写，按命令行查找 run 等进程的办法照样适用
-    $0 = join(' ', $wrapper, @$arguments);
-    @ARGV = @$arguments;
+    $0 = join(' ', $wrapper, @arguments);
+    @ARGV = @arguments;
     my $mode = shift(@ARGV) // '';
 
-    # die 按 $! 与 $? 取退出码，先清掉通道循环里留下的值
+    # die 按 $! 与 $? 取退出码，先清掉分出子进程之前留下的值
     $! = 0;
     $? = 0;
     dispatch($mode);
