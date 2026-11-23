@@ -748,13 +748,11 @@ extension RemoteConnection {
         let host = host
         let grace = String(configuration.cancellationGrace)
 
-        // 被取消的命令在 B 上结束之前仍占着会话，取消通道按主机限量，B 才不会拒绝开新会话
-        let result = try? await RepositoryOperationQueue.shared.performCancellation(on: host) {
-            try await self.commandChannel(
-                [wrapper, "cancel", directory, operation, grace],
-                arguments: ["cancel"]
-            )
-        }
+        let result = try? await commandChannel(
+            [wrapper, "cancel", directory, operation, grace],
+            arguments: ["cancel"],
+            cancelling: true
+        )
         let confirmed = result?.exitCode == 0
 
         // 未确认的取消要等重连核对后才能继续写入，记为错误便于事后排查
@@ -768,12 +766,15 @@ extension RemoteConnection {
 
     /// 能经常驻通道执行时经它执行，否则另开会话；每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
     ///
-    /// - Parameter inputFile: 标准输入改从这个本机文件读取。
+    /// - Parameters:
+    ///   - inputFile: 标准输入改从这个本机文件读取。
+    ///   - cancelling: 这条命令是取消：经常驻通道执行时直接发出，另开会话时先取得主机的取消名额。
     func commandChannel(
         _ command: [String],
         input: Data? = nil,
         inputFile: URL? = nil,
         arguments: [String],
+        cancelling: Bool = false,
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> GitCommandResult {
         activeChannels += 1
@@ -790,17 +791,25 @@ extension RemoteConnection {
             onOutput: onOutput
         )
 
+        // 通道执行过的命令以通道的结果为准，执行中途通道断开时同样不另开会话重发
         if let channeled { return channeled }
 
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
-        return try await ssh(
-            ["-o", "ControlMaster=no", "-o", "ProxyCommand=/usr/bin/false"],
-            command: shell,
-            input: input,
-            inputFile: inputFile,
-            arguments: arguments,
-            onOutput: onOutput
-        )
+        let separate: @Sendable () async throws -> GitCommandResult = {
+            try await self.ssh(
+                ["-o", "ControlMaster=no", "-o", "ProxyCommand=/usr/bin/false"],
+                command: shell,
+                input: input,
+                inputFile: inputFile,
+                arguments: arguments,
+                onOutput: onOutput
+            )
+        }
+
+        guard cancelling else { return try await separate() }
+
+        // 被取消的命令在 B 上结束之前仍占着会话，另开会话的取消按主机限量，B 才不会拒绝开新会话
+        return try await RepositoryOperationQueue.shared.performCancellation(on: host, action: separate)
     }
 
     /// 本机 SSH 进程固定 locale，原始输出与业务参数分开收集。

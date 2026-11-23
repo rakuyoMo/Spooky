@@ -3,7 +3,7 @@ import Testing
 
 @testable import SpookyKit
 
-/// 主连接上的常驻通道：命令经它执行，通道断开后另开会话执行并重新打开；关掉通道时逐条执行的流程照常可用。
+/// 主连接上的常驻通道：命令与取消经它执行，通道断开后另开会话执行并重新打开；关掉通道时逐条执行的流程照常可用。
 extension RemoteConnectionTests {
     /// 连上后命令经常驻通道执行；通道被结束后，下一条命令另开会话照常完成，通道随后重新打开。
     @Test("命令经常驻通道执行，通道断开后重新打开")
@@ -60,6 +60,51 @@ extension RemoteConnectionTests {
             await connection.close()
             try await fixture.remove()
         } catch {
+            await connection.close()
+            try await fixture.remove()
+            throw error
+        }
+    }
+
+    /// 这台主机的取消名额被占着时，经常驻通道发出的取消照常得到确认；取消要是等名额，这项测试会一直等下去。
+    @Test("经常驻通道的取消不等取消名额")
+    func channelCancellation() async throws {
+        let fixture = try await RemoteFixture.create()
+        let connection = fixture.connection()
+        let (released, release) = AsyncStream<Void>.makeStream()
+
+        do {
+            _ = try await connection.open()
+
+            let operation = connection.operation(["-c", "alias.wait=!printf ready; sleep 60", "wait"])
+
+            for await event in operation.events {
+                if case .output(.standardOutput(let data)) = event, data == Data("ready".utf8) { break }
+            }
+
+            // 命令开始执行之后再占住名额，取消得到确认之后才放开
+            let (held, hold) = AsyncStream<Void>.makeStream()
+
+            let holder = Task {
+                try await RepositoryOperationQueue.shared.performCancellation(on: connection.host) {
+                    hold.finish()
+
+                    for await _ in released { }
+                }
+            }
+
+            for await _ in held { }
+
+            operation.cancel()
+            await #expect(throws: CancellationError.self) { try await operation.value }
+
+            release.finish()
+            try await holder.value
+
+            await connection.close()
+            try await fixture.remove()
+        } catch {
+            release.finish()
             await connection.close()
             try await fixture.remove()
             throw error
