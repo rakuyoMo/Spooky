@@ -3,7 +3,7 @@ title: "Pull requests et merge requests"
 description: "Listez, créez, commentez, extrayez, fusionnez et fermez des pull requests sur GitHub et des merge requests sur GitLab."
 ---
 
-Spooky affiche les pull requests ouvertes sur GitHub et les merge requests ouvertes sur GitLab pour le dépôt distant d’un dépôt. Vous pouvez les lire et en discuter, les extraire, les fusionner et en créer, sans quitter la fenêtre du dépôt.
+Spooky affiche les pull requests sur GitHub et les merge requests sur GitLab pour le dépôt distant d’un dépôt. Vous pouvez les lire et en discuter, voir leur statut CI/CD, les extraire, les fusionner et en créer, sans quitter la fenêtre du dépôt.
 
 Il faut pour cela un [compte d’hébergement](/guide/hosting/accounts/) pour le dépôt distant. Quand le dépôt distant est sur GitLab, la barre latérale, les menus et les zones de dialogue indiquent merge request au lieu de pull request.
 
@@ -16,8 +16,12 @@ Choisissez un dépôt distant dans le menu en haut de la liste. Chaque ligne aff
 - Le titre, marqué :ui[pullRequests.state.draft] pour les brouillons
 - Le numéro, l’auteur et la date d’ouverture
 - La branche source et la branche de destination. Pour une requête venant d’un fork, la branche source est accompagnée de son projet.
+- Ses étiquettes, chacune dans sa couleur. Placez le pointeur sur une étiquette pour voir sa description. Les étiquettes qui ne tiennent pas sur une ligne ne sont pas affichées.
+- À droite, une icône pour son [statut CI/CD](#checks), quand elle en a un
 
-Faites défiler jusqu’en bas pour en charger d’autres. Les requêtes fermées et fusionnées ne sont pas listées.
+Faites défiler jusqu’en bas pour en charger d’autres.
+
+La liste n’affiche d’abord que les requêtes ouvertes. Pour voir aussi les requêtes fermées et fusionnées, cliquez sur le bouton de filtre en haut de la liste et choisissez :ui[pullRequests.filter.all]. Chaque ligne indique alors l’état de la requête : :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged] ou :ui[pullRequests.state.closed]. Les requêtes fermées et fusionnées ne peuvent être ni fusionnées ni fermées. À la prochaine ouverture de la fenêtre, la liste revient à :ui[pullRequests.filter.open].
 
 Si la liste ne peut pas se charger, elle indique pourquoi. Les requêtes déjà chargées restent en dessous. Quand le jeton du compte est rejeté ou qu’il lui manque une portée, vous pouvez cliquer sur :ui[accounts.reauthenticate] directement à cet endroit.
 
@@ -25,15 +29,29 @@ Quand la liste ne sait pas quel compte utiliser, consultez [Quel compte un dép�
 
 ## Lire une requête {#details}
 
-Sélectionnez une requête pour l’afficher à droite. Passez d’une vue à l’autre en haut, parmi trois :
+Sélectionnez une requête pour l’afficher à droite. Passez d’une vue à l’autre en haut, parmi quatre :
 
-- :ui[pullRequests.conversation] : le titre et l’état, la description, les commentaires, et les commits groupés par jour, du plus ancien au plus récent.
+- :ui[pullRequests.conversation] : le titre et l’état, les étiquettes, la description, les commentaires, et les commits groupés par jour, du plus ancien au plus récent.
 - :ui[pullRequests.commits] : les commits de la requête. La barre du dessus liste les contributeurs et le nombre de commits.
 - :ui[pullRequests.changeset] : ce que la requête modifie, par rapport à l’endroit où sa branche source s’est séparée.
+- :ui[pullRequests.checks] : les vérifications de la requête ou les jobs de son pipeline. Consultez [Statut CI/CD](#checks).
 
 Dans la conversation, double-cliquez sur un commit ou appuyez sur <kbd>Retour</kbd> pour l’ouvrir. Cliquez avec le bouton droit sur un commit pour copier son hash. Cliquez sur un lien dans le texte pour l’ouvrir.
 
 :ui[pullRequests.commits] et :ui[pullRequests.changeset] ont besoin des commits de la requête dans votre dépôt. S’ils n’y sont pas encore, cliquez sur :ui[pullRequests.fetch]. Spooky les récupère depuis le dépôt distant sans modifier vos branches.
+
+GitLab ne conserve les commits d’une merge request que 14 jours après sa fermeture ou sa fusion. Ensuite, :ui[pullRequests.fetch] ne peut plus les récupérer, et Spooky indique que les commits ne sont plus disponibles. Cela ne vous concerne que si les commits ne sont pas encore dans votre dépôt.
+
+## Statut CI/CD {#checks}
+
+:ui[pullRequests.checks] montre où en est le dernier commit de la requête :
+
+- **GitHub** : les vérifications et les statuts de commit de ce commit
+- **GitLab** : les jobs du dernier pipeline de la requête
+
+Le statut global est en haut, et chaque vérification ou job figure en dessous avec le sien. Tant que quelque chose est en attente ou en cours, Spooky met la vue à jour tout seul.
+
+Dans la liste, l’icône sur la ligne d’une requête représente son statut global. Placez le pointeur dessus pour voir le nom du statut. Une requête sans vérification ni pipeline n’a pas d’icône.
 
 ## Créer une requête {#create}
 
@@ -80,6 +98,8 @@ Si des fichiers suivis sont modifiés, Spooky demande s’il faut d’abord les 
 
 L’extraction n’est pas disponible quand la branche locale qui suit la branche source a des commits que vous n’avez pas poussés. Elle ne l’est pas non plus quand cette branche est la branche actuelle et se trouve déjà sur le commit de la requête.
 
+Une merge request dont GitLab ne conserve plus les commits ne peut être extraite que si les commits sont déjà dans votre dépôt.
+
 ## Fusionner une requête {#merge}
 
 Cliquez sur :ui[pullRequests.merge] en bas des détails. La fusion se fait sur le service d’hébergement. Elle ne peut pas être annulée.
@@ -98,10 +118,10 @@ Après la fusion, Spooky récupère depuis le dépôt distant pour mettre ses br
 Cliquez sur :ui[pullRequests.close] en bas des détails, puis confirmez. Pour la rouvrir, rendez-vous sur le service d’hébergement.
 
 :::note[Dépôts sur un serveur]
-La liste et tout ce que vous faites sur le service partent de votre Mac. La récupération des commits d’une requête, son extraction et la récupération après une fusion s’exécutent sur le serveur. Il en va de même pour les comparaisons dans :ui[pullRequests.commits] et :ui[pullRequests.changeset].
+La liste, le statut CI/CD et tout ce que vous faites sur le service partent de votre Mac. La récupération des commits d’une requête, son extraction et la récupération après une fusion s’exécutent sur le serveur. Il en va de même pour les comparaisons dans :ui[pullRequests.commits] et :ui[pullRequests.changeset].
 :::
 
-Chaque requête envoyée au service apparaît sur la page :ui[activity.service] de la fenêtre :ui[activity.title].
+Chaque requête envoyée au service apparaît sur la page :ui[activity.service] de la fenêtre :ui[activity.title]. Les mises à jour automatiques du statut CI/CD n’y apparaissent pas.
 
 ## Voir aussi
 

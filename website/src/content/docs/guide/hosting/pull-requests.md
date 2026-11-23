@@ -3,7 +3,7 @@ title: "Pull Requests and Merge Requests"
 description: "List, create, discuss, check out, merge, and close pull requests on GitHub and merge requests on GitLab."
 ---
 
-Spooky shows the open pull requests on GitHub and merge requests on GitLab for a repository’s remote. You can read and discuss them, check them out, merge them, and create new ones, without leaving the repository window.
+Spooky shows the pull requests on GitHub and merge requests on GitLab for a repository’s remote. You can read and discuss them, see their CI/CD status, check them out, merge them, and create new ones, without leaving the repository window.
 
 This needs a [hosting account](/guide/hosting/accounts/) for the remote. When the remote is on GitLab, the sidebar, menus, and dialogs say merge request instead of pull request.
 
@@ -16,8 +16,12 @@ Choose a remote from the menu at the top of the list. Each row shows:
 - The title, marked :ui[pullRequests.state.draft] for drafts
 - The number, the author, and when it was opened
 - The source branch and the branch it goes into. For a request from a fork, the source branch comes with its project.
+- Its labels, each in its own color. Hold the pointer over a label to see its description. Labels that don’t fit on one line are left out.
+- On the right, an icon for its [CI/CD status](#checks), when it has one
 
-Scroll to the bottom to load more. Closed and merged requests aren’t listed.
+Scroll to the bottom to load more.
+
+The list starts with open requests only. To see closed and merged ones too, click the filter button at the top of the list and choose :ui[pullRequests.filter.all]. Each row then shows the request’s state: :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged], or :ui[pullRequests.state.closed]. Closed and merged requests can’t be merged or closed. The next time you open the window, the list is back to :ui[pullRequests.filter.open].
 
 If the list can’t load, it says why. The requests it already loaded stay below. When the account’s token is rejected or lacks a scope, you can click :ui[accounts.reauthenticate] right there.
 
@@ -25,15 +29,29 @@ When the list can’t tell which account to use, see [Which account a remote use
 
 ## Read a request {#details}
 
-Select a request to see it on the right. Switch between three views at the top:
+Select a request to see it on the right. Switch between four views at the top:
 
-- :ui[pullRequests.conversation]: the title and state, the description, the comments, and the commits grouped by day, oldest first.
+- :ui[pullRequests.conversation]: the title and state, the labels, the description, the comments, and the commits grouped by day, oldest first.
 - :ui[pullRequests.commits]: the request’s commits. The bar above lists the contributors and how many commits there are.
 - :ui[pullRequests.changeset]: what the request changes, compared with where its source branch split off.
+- :ui[pullRequests.checks]: the request’s checks or pipeline jobs. See [CI/CD status](#checks).
 
 In the conversation, double-click a commit or press <kbd>Return</kbd> to open it. Right-click a commit to copy its hash. Click a link in the text to open it.
 
 :ui[pullRequests.commits] and :ui[pullRequests.changeset] need the request’s commits in your repository. If they aren’t there yet, click :ui[pullRequests.fetch]. Spooky gets them from the remote without changing your branches.
+
+GitLab stops keeping a merge request’s commits 14 days after it’s closed or merged. From then on, :ui[pullRequests.fetch] can’t get them, and Spooky says the commits are no longer available. This only matters when your repository doesn’t have the commits yet.
+
+## CI/CD status {#checks}
+
+:ui[pullRequests.checks] shows how the request’s latest commit is doing:
+
+- **GitHub**: the checks and commit statuses on that commit
+- **GitLab**: the jobs of the request’s latest pipeline
+
+The overall status is at the top, and each check or job is listed below with its own. While anything is pending or running, Spooky keeps the view up to date by itself.
+
+In the list, the icon on a request’s row is its overall status. Hold the pointer over it to see the status by name. A request without checks or a pipeline has no icon.
 
 ## Create a request {#create}
 
@@ -80,6 +98,8 @@ When you have changes to tracked files, Spooky asks whether to stash them first.
 
 Checking out isn’t available when the local branch that tracks the source branch has commits you haven’t pushed. It isn’t available either when that branch is the current branch and already at the request’s commit.
 
+A merge request whose commits GitLab no longer keeps can only be checked out when your repository already has them.
+
 ## Merge a request {#merge}
 
 Click :ui[pullRequests.merge] at the bottom of the details. The merge happens on the hosting service. It can’t be undone.
@@ -98,10 +118,10 @@ After the merge, Spooky fetches from the remote to bring its branches up to date
 Click :ui[pullRequests.close] at the bottom of the details, and confirm. To reopen it, go to the hosting service.
 
 :::note[Server repositories]
-The list and everything you do on the service go from your Mac. Fetching a request’s commits, checking it out, and the fetch after a merge run on the server. So do the comparisons in :ui[pullRequests.commits] and :ui[pullRequests.changeset].
+The list, the CI/CD status, and everything you do on the service go from your Mac. Fetching a request’s commits, checking it out, and the fetch after a merge run on the server. So do the comparisons in :ui[pullRequests.commits] and :ui[pullRequests.changeset].
 :::
 
-Each request to the service shows up on the :ui[activity.service] page of the :ui[activity.title] window.
+Each request to the service shows up on the :ui[activity.service] page of the :ui[activity.title] window. The automatic CI/CD updates don’t.
 
 ## See also
 

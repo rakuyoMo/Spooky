@@ -3,7 +3,7 @@ title: "Pull Request 與 Merge Request"
 description: "列出、新增、討論、簽出、合併與關閉 GitHub 的 Pull Request 和 GitLab 的 Merge Request。"
 ---
 
-Spooky 會列出儲存庫遠端上開啟著的 GitHub Pull Request 和 GitLab Merge Request。閱讀、討論、簽出、合併和新增，都不用離開儲存庫視窗。
+Spooky 會列出儲存庫遠端上的 GitHub Pull Request 和 GitLab Merge Request。閱讀、討論、看 CI/CD 狀態、簽出、合併和新增，都不用離開儲存庫視窗。
 
 這需要為遠端加入 [託管帳號](/guide/hosting/accounts/)。遠端在 GitLab 上時，側邊欄、選單和對話框裡的叫法都換成 Merge Request。
 
@@ -16,8 +16,12 @@ Spooky 會列出儲存庫遠端上開啟著的 GitHub Pull Request 和 GitLab Me
 - 標題，草稿另外標著 :ui[pullRequests.state.draft]
 - 編號、作者和開啟的時間
 - 來源分支和要併入的分支。來自 Fork 的請求，來源分支前會寫出它所在的專案。
+- 標籤，底色是標籤自己的顏色。把指標停在標籤上，可以看到它的說明。一行放不下的標籤不顯示。
+- 有 [CI/CD 狀態](#checks) 時，右邊有一個表示狀態的圖示
 
-捲到底部會接著讀取更多。已關閉和已合併的請求不列出。
+捲到底部會接著讀取更多。
+
+列表一開始只列開啟著的請求。想連已關閉和已合併的一起看，按一下列表頂部的篩選按鈕，選 :ui[pullRequests.filter.all]。這時每一列會標出請求的狀態：:ui[pullRequests.state.open]、:ui[pullRequests.state.draft]、:ui[pullRequests.state.merged] 或 :ui[pullRequests.state.closed]。已關閉和已合併的請求不能再合併或關閉。下次開啟視窗時，列表回到 :ui[pullRequests.filter.open]。
 
 列表讀取失敗時會說明原因，已經讀到的請求留在下面。帳號的權杖被拒絕或缺少權限範圍時，可以直接在那裡按一下 :ui[accounts.reauthenticate]。
 
@@ -25,15 +29,29 @@ Spooky 會列出儲存庫遠端上開啟著的 GitHub Pull Request 和 GitLab Me
 
 ## 檢視請求 {#details}
 
-選取一個請求，右邊會顯示它。頂部可以在三個視圖間切換：
+選取一個請求，右邊會顯示它。頂部可以在四個視圖間切換：
 
-- :ui[pullRequests.conversation]：標題和狀態、描述、留言，以及按天分組的提交，按時間從早到晚排列。
+- :ui[pullRequests.conversation]：標題和狀態、標籤、描述、留言，以及按天分組的提交，按時間從早到晚排列。
 - :ui[pullRequests.commits]：請求裡的提交。上方一欄列出參與者和提交的數量。
 - :ui[pullRequests.changeset]：請求改了什麼，比較的是來源分支分出來的位置。
+- :ui[pullRequests.checks]：請求的各項檢查或流水線裡的作業，見 [CI/CD 狀態](#checks)。
 
 在討論裡按兩下一個提交，或者按 <kbd>Return</kbd>，可以開啟它。在提交上按右鍵可以拷貝它的雜湊。按一下內文裡的連結可以開啟它。
 
 :ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 需要請求的提交已經在你的儲存庫裡。還沒有時，按一下 :ui[pullRequests.fetch]。Spooky 會從遠端取回這些提交，不變更你的分支。
+
+GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這之後 :ui[pullRequests.fetch] 取不回來，Spooky 會說明提交已無法取回。只有你的儲存庫裡還沒有這些提交時才受影響。
+
+## CI/CD 狀態 {#checks}
+
+:ui[pullRequests.checks] 顯示請求最新的提交跑得怎麼樣：
+
+- **GitHub**：這個提交上的檢查和提交狀態
+- **GitLab**：請求最新一條流水線裡的作業
+
+頂部是整體狀態，下面逐項列出每個檢查或作業和它的狀態。還有等待中或執行中的項目時，Spooky 會自己更新這個視圖。
+
+列表裡，請求那一列的圖示是它的整體狀態，把指標停在上面，可以看到狀態的名稱。沒有檢查或流水線的請求沒有圖示。
 
 ## 新增請求 {#create}
 
@@ -80,6 +98,8 @@ Spooky 先取回請求的提交，再簽出分支：
 
 追蹤來源分支的本機分支有還沒推送的提交時，不能簽出。這個分支就是目前分支、而且已經在請求的提交上時，也不能簽出。
 
+GitLab 不再保留提交的 Merge Request，只有你的儲存庫裡已經有這些提交時才能簽出。
+
 ## 合併請求 {#merge}
 
 按一下詳細資訊底部的 :ui[pullRequests.merge]。合併在託管服務上進行，不能還原。
@@ -98,10 +118,10 @@ Spooky 先取回請求的提交，再簽出分支：
 按一下詳細資訊底部的 :ui[pullRequests.close] 並確認。想重新開啟，到託管服務上操作。
 
 :::note[伺服器儲存庫]
-列表和在服務上做的操作都從你的 Mac 送出。取回請求的提交、簽出請求和合併後的擷取在伺服器上執行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比較也在伺服器上進行。
+列表、CI/CD 狀態和在服務上做的操作都從你的 Mac 送出。取回請求的提交、簽出請求和合併後的擷取在伺服器上執行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比較也在伺服器上進行。
 :::
 
-對服務的每一次請求都會出現在 :ui[activity.title] 視窗的 :ui[activity.service] 頁裡。
+對服務的每一次請求都會出現在 :ui[activity.title] 視窗的 :ui[activity.service] 頁裡。CI/CD 狀態的自動更新不記在裡面。
 
 ## 相關頁面
 

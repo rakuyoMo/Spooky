@@ -3,7 +3,7 @@ title: "Pull Request 与 Merge Request"
 description: "列出、新建、讨论、检出、合并与关闭 GitHub 的 Pull Request 和 GitLab 的 Merge Request。"
 ---
 
-Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge Request。阅读、讨论、检出、合并和新建，都不用离开仓库窗口。
+Spooky 会列出仓库远端上的 GitHub Pull Request 和 GitLab Merge Request。阅读、讨论、看 CI/CD 状态、检出、合并和新建，都不用离开仓库窗口。
 
 这需要为远端添加 [托管账号](/guide/hosting/accounts/)。远端在 GitLab 上时，侧边栏、菜单和对话框里的叫法都换成 Merge Request。
 
@@ -16,8 +16,12 @@ Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge
 - 标题，草稿另外标着 :ui[pullRequests.state.draft]
 - 编号、作者和打开的时间
 - 源分支和要并入的分支。来自 Fork 的请求，源分支前会写出它所在的项目。
+- 标签，底色是标签自己的颜色。把指针停在标签上，可以看到它的说明。一行放不下的标签不显示。
+- 有 [CI/CD 状态](#checks) 时，右边有一个表示状态的图标
 
-滚到底部会接着读取更多。已关闭和已合并的请求不列出。
+滚到底部会接着读取更多。
+
+列表一开始只列打开着的请求。想连已关闭和已合并的一起看，点列表顶部的筛选按钮，选 :ui[pullRequests.filter.all]。这时每一行会标出请求的状态：:ui[pullRequests.state.open]、:ui[pullRequests.state.draft]、:ui[pullRequests.state.merged] 或 :ui[pullRequests.state.closed]。已关闭和已合并的请求不能再合并或关闭。下次打开窗口时，列表回到 :ui[pullRequests.filter.open]。
 
 列表读取失败时会说明原因，已经读到的请求留在下面。账号的令牌被拒绝或缺少权限范围时，可以直接在那里点 :ui[accounts.reauthenticate]。
 
@@ -25,15 +29,29 @@ Spooky 会列出仓库远端上打开着的 GitHub Pull Request 和 GitLab Merge
 
 ## 查看请求 {#details}
 
-选中一个请求，右边会显示它。顶部可以在三个视图间切换：
+选中一个请求，右边会显示它。顶部可以在四个视图间切换：
 
-- :ui[pullRequests.conversation]：标题和状态、描述、评论，以及按天分组的提交，按时间从早到晚排列。
+- :ui[pullRequests.conversation]：标题和状态、标签、描述、评论，以及按天分组的提交，按时间从早到晚排列。
 - :ui[pullRequests.commits]：请求里的提交。上方一栏列出参与者和提交的数量。
 - :ui[pullRequests.changeset]：请求改了什么，比较的是源分支分出来的位置。
+- :ui[pullRequests.checks]：请求的各项检查或流水线里的作业，见 [CI/CD 状态](#checks)。
 
 在讨论里连按一个提交，或者按 <kbd>Return</kbd>，可以打开它。右键点按提交可以复制它的哈希。点正文里的链接可以打开它。
 
 :ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 需要请求的提交已经在你的仓库里。还没有时，点 :ui[pullRequests.fetch]。Spooky 会从远端取回这些提交，不改动你的分支。
+
+GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这之后 :ui[pullRequests.fetch] 取不回来，Spooky 会说明提交已无法取回。只有你的仓库里还没有这些提交时才受影响。
+
+## CI/CD 状态 {#checks}
+
+:ui[pullRequests.checks] 显示请求最新的提交跑得怎么样：
+
+- **GitHub**：这个提交上的检查和提交状态
+- **GitLab**：请求最新一条流水线里的作业
+
+顶部是整体状态，下面逐项列出每个检查或作业和它的状态。还有等待中或运行中的项时，Spooky 会自己更新这个视图。
+
+列表里，请求那一行的图标是它的整体状态，把指针停在上面，可以看到状态的名称。没有检查或流水线的请求没有图标。
 
 ## 新建请求 {#create}
 
@@ -80,6 +98,8 @@ Spooky 先取回请求的提交，再检出分支：
 
 跟踪源分支的本地分支有还没推送的提交时，不能检出。这个分支就是当前分支、而且已经在请求的提交上时，也不能检出。
 
+GitLab 不再保留提交的 Merge Request，只有你的仓库里已经有这些提交时才能检出。
+
 ## 合并请求 {#merge}
 
 点详情底部的 :ui[pullRequests.merge]。合并在托管服务上进行，不能撤销。
@@ -98,10 +118,10 @@ Spooky 先取回请求的提交，再检出分支：
 点详情底部的 :ui[pullRequests.close] 并确认。想重新打开，到托管服务上操作。
 
 :::note[服务器仓库]
-列表和在服务上做的操作都从你的 Mac 发出。取回请求的提交、检出请求和合并后的获取在服务器上执行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比较也在服务器上进行。
+列表、CI/CD 状态和在服务上做的操作都从你的 Mac 发出。取回请求的提交、检出请求和合并后的获取在服务器上执行。:ui[pullRequests.commits] 和 :ui[pullRequests.changeset] 的比较也在服务器上进行。
 :::
 
-对服务的每一次请求都会出现在 :ui[activity.title] 窗口的 :ui[activity.service] 页里。
+对服务的每一次请求都会出现在 :ui[activity.title] 窗口的 :ui[activity.service] 页里。CI/CD 状态的自动更新不记在里面。
 
 ## 相关页面
 
