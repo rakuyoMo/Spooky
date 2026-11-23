@@ -27,6 +27,7 @@ extension RemoteConnection {
     /// 在 B 上原子安装包装器与全部回调入口并输出包装器的绝对路径，再由包装器新建会话、输出会话目录。
     ///
     /// 标准输入先是包装器源码，紧接着是会话令牌的报文：安装只读走源码的字节数，余下的报文留给新建会话。
+    /// 位置参数依次是会话看守的心跳容忍期与操作保留期。
     /// 安装之后删掉 ``wrapperRetentionDays`` 天里没有新建过会话的旧版本。
     ///
     /// - Parameters:
@@ -78,7 +79,7 @@ extension RemoteConnection {
             \(moving)
             \(cleaning)
             printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
-            exec "$HOME/.spooky/bin/\(filename)" create-session
+            exec "$HOME/.spooky/bin/\(filename)" create-session "$1" "$2"
             """
     }
 
@@ -110,7 +111,12 @@ extension RemoteConnection {
         guard let bundled = Self.bundledWrapper else { throw RemoteConnectionError(.deployment) }
 
         let deployed = try await probe(
-            ["/bin/sh", "-c", Self.deploymentScript(filename: bundled.filename, length: bundled.source.count)],
+            [
+                "/bin/sh", "-c", Self.deploymentScript(filename: bundled.filename, length: bundled.source.count),
+                "spooky-deploy",
+                String(configuration.heartbeatTolerance),
+                String(configuration.operationRetention),
+            ],
             input: bundled.source + sessionRequest(),
             kind: .deployment
         )

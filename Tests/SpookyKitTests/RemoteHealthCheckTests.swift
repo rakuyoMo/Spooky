@@ -108,7 +108,7 @@ struct RemoteHealthCheckTests {
 
         let result = try await CommandExecutor.execute(
             executable: "/bin/sh",
-            processArguments: ["-c", RemoteHealthCheck.script(steps), "spooky-check", path],
+            processArguments: ["-c", RemoteHealthCheck.script(steps, entersChannel: false), "spooky-check", path],
             environment: .inherit.updating([
                 "GIT_CONFIG_GLOBAL": "/dev/null",
                 "GIT_CONFIG_SYSTEM": "/dev/null",

@@ -56,29 +56,52 @@ extension RemoteConnection {
     /// 在一次往返里执行体检脚本的 `steps`，按本次随机的分隔标记切开各步骤的输出。
     ///
     /// 会话步骤新建了会话时立即记下，之后任何一步失败，关闭连接的流程都会关掉这个会话。
+    /// 使用常驻通道时，体检的会话在会话步骤成功之后转成常驻通道，记作还没启用的通道，由 ``startSession()`` 启用。
     private func runHealthCheck(_ steps: [RemoteHealthCheck.Step]) async throws -> RemoteHealthCheck {
         guard let bundled = Self.bundledWrapper else { throw RemoteConnectionError(.deployment) }
 
         let marker = UUID().uuidString
+        let entersChannel = configuration.usesResidentChannel
 
-        // 分隔标记与新建会话的报文经标准输入交给脚本，包装器的文件名与字节数是位置参数
-        let result = try await commandChannel(
-            [
-                "/bin/sh", "-c", RemoteHealthCheck.script(steps), "spooky-check",
-                requestedPath, bundled.filename, String(bundled.source.count),
-            ],
-            input: Data((marker + "\n").utf8) + sessionRequest(),
-            arguments: ["health-check"]
-        )
+        // 分隔标记与新建会话的报文经标准输入交给脚本；包装器的文件名与字节数、看守的容忍期与保留期是位置参数
+        let command = [
+            "/bin/sh", "-c", RemoteHealthCheck.script(steps, entersChannel: entersChannel), "spooky-check",
+            requestedPath, bundled.filename, String(bundled.source.count),
+            String(configuration.heartbeatTolerance),
+            String(configuration.operationRetention),
+        ]
+        let input = try Data((marker + "\n").utf8) + sessionRequest()
+
+        let result = try await entersChannel
+            ? runChannelHealthCheck(command, input: input, marker: marker)
+            : commandChannel(command, input: input, arguments: ["health-check"])
 
         let checks = RemoteHealthCheck(result, marker: marker, steps: steps)
         let session = checks.completed(.session, argument: RemoteConnectionError.Kind.deployment.rawValue)
 
-        if let session, session.exitCode == 0 {
-            try recordSession(session)
+        guard let session, session.exitCode == 0 else {
+            // 会话步骤没有成功时脚本已经结束，体检的会话没有转成通道
+            pendingChannel?.close()
+            pendingChannel = nil
+            return checks
         }
 
+        try recordSession(session)
         return checks
+    }
+
+    /// 体检的会话直接开成常驻通道：先记下还没启用的通道，再等体检脚本写完前导。
+    private func runChannelHealthCheck(_ command: [String], input: Data, marker: String) async throws -> GitCommandResult {
+        let preamble = RemoteCommandChannel.Preamble(
+            input: input,
+            marker: RemoteHealthCheck.channelMarker(marker),
+            arguments: ["health-check"]
+        )
+
+        guard let channel = makeChannel(command, preamble: preamble) else { throw RemoteConnectionError(.unavailable) }
+
+        pendingChannel = channel
+        return try await channel.preambleResult()
     }
 
     /// 确认非交互环境能找到 Git；找不到时把这个环境的 PATH 写进诊断，修复方向一目了然。

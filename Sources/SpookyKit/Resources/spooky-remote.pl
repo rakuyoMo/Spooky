@@ -228,11 +228,20 @@ sub record_use {
 }
 
 # 看守经中继的心跳确认 A 仍连着，心跳失败时返回；
+# 会话刚建好时 A 还没把中继转发进来：转发的 socket 出现之前不发心跳，等满容忍期仍没有出现按心跳失败处理。
 # 第一轮先清理一遍过期的操作并记下包装器的使用，之后每过保留期的五分之一做一遍。
 # 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
 # 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
 sub watch_session {
     my ($session, $tolerance, $retention) = @_;
+    my $started = time();
+
+    until (-S "$session/relay.sock") {
+        return if !-d $session || time() - $started > $tolerance;
+
+        sleep(0.5);
+    }
+
     my $answered = time();
     my $pruned = 0;
 
@@ -256,6 +265,39 @@ sub watch_session {
 
         sleep(0.5);
     }
+}
+
+# 分出会话的看守进程，看守结束后清理会话；分不出来时删掉刚建的会话目录再报错。
+# 看守脱离调用方的进程组，不留调用方的标准输入输出与其它描述符：调用方读到输出结束就能继续，不被看守拖住。
+sub start_watcher {
+    my ($session, $tolerance, $retention) = @_;
+    my $pid = fork();
+
+    if (!defined $pid) {
+        unlink "$session/session.json";
+        rmdir $session;
+        die "cannot watch session\n";
+    }
+
+    return if $pid;
+
+    setsid();
+    open STDIN, '<', '/dev/null';
+    open STDOUT, '>', '/dev/null';
+    open STDERR, '>', '/dev/null';
+
+    # 调用方可能把别的管道留在 3 号及以后的描述符上，逐个关掉
+    my $limit = POSIX::sysconf(POSIX::_SC_OPEN_MAX()) // 256;
+    POSIX::close($_) for 3 .. ($limit < 4096 ? $limit : 4096) - 1;
+
+    $SIG{HUP} = 'IGNORE';
+
+    # 进程标题写成 “包装器 watch 会话目录”，按命令行能找到某个会话的看守
+    $0 = "$wrapper watch $session";
+
+    watch_session($session, $tolerance, $retention);
+    clean_session($session);
+    exit 0;
 }
 
 # 子进程独占一个进程组，控制连接只终止这组中的进程。
@@ -733,7 +775,7 @@ sub run_request {
     open(STDERR, '>&', $error) or POSIX::_exit(126);
     close $_ for $output, $error;
 
-    # 进程标题照单独启动时的命令行写，按命令行查找 run、watch 等进程的办法照样适用
+    # 进程标题照单独启动时的命令行写，按命令行查找 run 等进程的办法照样适用
     $0 = join(' ', $wrapper, @$arguments);
     @ARGV = @$arguments;
     my $mode = shift(@ARGV) // '';
@@ -788,6 +830,10 @@ sub dispatch {
     my ($mode) = @_;
 
     if ($mode eq 'create-session') {
+        my ($tolerance, $retention) = @ARGV;
+        die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
+        die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
+
         require File::Temp;
         require JSON::PP;
         my $request = read_message(\*STDIN);
@@ -799,23 +845,8 @@ sub dispatch {
         close $file;
 
         record_use();
+        start_watcher($session, $tolerance, $retention);
         print "$session\n";
-    } elsif ($mode eq 'watch') {
-        my ($session, $tolerance, $retention) = @ARGV;
-        check_session($session);
-        die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
-        die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
-        my $pid = fork();
-        die "cannot watch session\n" unless defined $pid;
-        exit 0 if $pid;
-        setsid();
-        open STDIN, '<', '/dev/null';
-        open STDOUT, '>', '/dev/null';
-        open STDERR, '>', '/dev/null';
-        $SIG{HUP} = 'IGNORE';
-
-        watch_session($session, $tolerance, $retention);
-        clean_session($session);
     } elsif ($mode eq 'close') {
         my $session = shift @ARGV;
 

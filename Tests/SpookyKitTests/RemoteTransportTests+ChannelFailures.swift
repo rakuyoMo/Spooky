@@ -230,8 +230,8 @@ extension RemoteTransportTests {
         }
     }
 
-    /// 通道进程没有发出就绪帧就退出：等待就绪得到失败，已经写进去的请求不执行。
-    @Test("常驻通道没有就绪时请求不执行")
+    /// 通道进程没有发出就绪帧就退出时，等待就绪得到失败，已经写进去的请求不执行；等待就绪期间被取消时关闭通道。
+    @Test("常驻通道没有就绪时请求不执行，等待就绪可以取消")
     func channelNeverReady() async throws {
         // 读到请求的第一个字节就退出
         let channel = RemoteCommandChannel(
@@ -247,6 +247,23 @@ extension RemoteTransportTests {
         #expect(await !channel.waitUntilReady())
         #expect(!channel.isReady)
         await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await pending.value }
+
+        // 带前导的通道在分隔标记之前不计就绪期限，通道进程也一直不退出：等待被取消时关闭通道，等待随之结束
+        let waiting = RemoteCommandChannel(
+            executable: "/bin/sh",
+            arguments: ["-c", "exec /bin/cat > /dev/null"],
+            environment: .inherit,
+            preamble: RemoteCommandChannel.Preamble(
+                input: Data(),
+                marker: RemoteHealthCheck.channelMarker("marker"),
+                arguments: []
+            ),
+            onDisconnect: { _ in }
+        )
+        let wait = Task { await waiting.waitUntilReady() }
+        wait.cancel()
+
+        #expect(await !wait.value)
     }
 
     /// 经通道发出一条一直执行的请求，等它的命令打印出第一行后返回。

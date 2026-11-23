@@ -11,6 +11,8 @@ import System
 /// 请求的执行语义与 ``CommandExecutor`` 接受全部退出码时相同：输出上限、取消与超限的错误一致。
 /// 通道断开时，已经写完的请求以 255 结束，结果带上通道进程自己的诊断；还没写完的请求抛出 ``NotExecuted``，
 /// 调用方改为逐条开会话执行。
+///
+/// 由连接体检的会话转成的通道，帧之前先是体检脚本的输出，见 ``Preamble``。
 final class RemoteCommandChannel: Sendable {
     /// 请求没有交给 B 执行：通道没有就绪、已经关闭，或请求编码后超出上限。
     struct NotExecuted: Error { }
@@ -99,6 +101,9 @@ final class RemoteCommandChannel: Sendable {
     /// 通道不是由 ``close()`` 关掉时的通知。
     private let onDisconnect: @Sendable (RemoteCommandChannel) -> Void
 
+    /// 帧之前的前导；通道进程一开始就是 serve 模式时为 nil。
+    let preamble: Preamble?
+
     /// 通道已就绪且没有关闭。
     var isReady: Bool {
         state.withLock { $0.isReady && !$0.isClosed }
@@ -110,14 +115,17 @@ final class RemoteCommandChannel: Sendable {
     ///   - executable: 通道进程的可执行文件。
     ///   - arguments: 通道进程的参数。
     ///   - environment: 通道进程的环境变量。
+    ///   - preamble: 帧之前的前导；它的输入先于任何帧写进标准输入，就绪的期限从前导结束时算起。
     ///   - onDisconnect: 通道自行断开时的通知，``close()`` 关掉时不通知。
     init(
         executable: String,
         arguments: [String],
         environment: Environment,
+        preamble: Preamble? = nil,
         onDisconnect: @escaping @Sendable (RemoteCommandChannel) -> Void
     ) {
         self.onDisconnect = onDisconnect
+        self.preamble = preamble
 
         // 两端都不让其它子进程继承；写入端关掉 SIGPIPE，进程退出后写入只会得到 EPIPE
         var descriptors: [Int32] = [-1, -1]
@@ -126,6 +134,10 @@ final class RemoteCommandChannel: Sendable {
 
         guard created else {
             state.withLock { $0.isClosed = true }
+
+            // 进程没有启动，前导以管道的错误结束
+            let failure = POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            Task { await preamble?.finish(.failure(failure), cancelled: false) }
             return
         }
 
@@ -146,29 +158,35 @@ final class RemoteCommandChannel: Sendable {
 
         state.withLock { $0.process = process }
 
-        // 期限内没有就绪就结束通道进程，进程结束后通道随之关闭
-        Task { [weak self] in
-            try? await Task.sleep(for: Self.readinessTimeout)
-            self?.stopIfStarting()
+        guard let preamble else {
+            armReadinessTimeout()
+            return
         }
+
+        // 前导的输入先于任何帧写进去：脚本读完它才会转成 serve 模式
+        writer.async { [self] in _ = writeAll(preamble.input) }
     }
 
-    /// 等到通道就绪或关闭。
+    /// 等到通道就绪或关闭；等待期间任务被取消时关闭通道，不等满就绪期限。
     ///
     /// - Returns: 通道是否就绪。
     func waitUntilReady() async -> Bool {
-        await withCheckedContinuation { continuation in
-            let ready: Bool? = state.withLock { state in
-                if state.isClosed { return false }
-                if state.isReady { return true }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                let ready: Bool? = state.withLock { state in
+                    if state.isClosed { return false }
+                    if state.isReady { return true }
 
-                state.readinessWaiters.append(continuation)
-                return nil
-            }
+                    state.readinessWaiters.append(continuation)
+                    return nil
+                }
 
-            if let ready {
-                continuation.resume(returning: ready)
+                if let ready {
+                    continuation.resume(returning: ready)
+                }
             }
+        } onCancel: {
+            close()
         }
     }
 
@@ -224,12 +242,20 @@ final class RemoteCommandChannel: Sendable {
     func close() {
         shutDown(byOwner: true)
     }
+
+    /// 开始等待就绪帧：期限内没有就绪就结束通道进程，进程结束后通道随之关闭。
+    func armReadinessTimeout() {
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.readinessTimeout)
+            self?.stopIfStarting()
+        }
+    }
 }
 
 // MARK: - Private
 
 extension RemoteCommandChannel {
-    /// 运行通道进程，边读边切开它发回的帧；进程结束后关闭通道。
+    /// 运行通道进程，边读边切开它发回的帧；进程结束后先结束还没结束的前导，再关闭通道。
     private func run(
         executable: String,
         arguments: [String],
@@ -243,32 +269,53 @@ extension RemoteCommandChannel {
             .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: CommandExecutor.cancellationGrace),
         ]
 
-        _ = try? await Subprocess.run(
-            .path(FilePath(executable)),
-            arguments: Arguments(arguments),
-            environment: environment,
-            platformOptions: platform,
-            input: .fileDescriptor(input, closeAfterSpawningProcess: true),
-            output: .sequence,
-            error: .sequence
-        ) { execution in
-            async let diagnostic: Void = collectDiagnostic(execution.standardError)
-            try await readFrames(execution.standardOutput)
-            try await diagnostic
+        let outcome: Result<GitTerminationStatus, any Error>
+
+        do {
+            let execution = try await Subprocess.run(
+                .path(FilePath(executable)),
+                arguments: Arguments(arguments),
+                environment: environment,
+                platformOptions: platform,
+                input: .fileDescriptor(input, closeAfterSpawningProcess: true),
+                output: .sequence,
+                error: .sequence
+            ) { execution in
+                async let diagnostic: Void = collectDiagnostic(execution.standardError)
+                try await readFrames(execution.standardOutput)
+                try await diagnostic
+            }
+
+            switch execution.terminationStatus {
+            case .exited(let code):
+                outcome = .success(.exited(code))
+
+            case .signaled(let signal):
+                outcome = .success(.signaled(signal))
+            }
+        } catch {
+            outcome = .failure(error)
         }
 
+        // 没写完前导就结束时，体检的结果按进程的结果建立；前导已经结束时不再改动
+        await preamble?.finish(outcome, cancelled: Task.isCancelled)
         shutDown(byOwner: false)
     }
 
-    /// 读通道进程的标准输出，切出的事件立即交给对应的请求；分发不等待请求的消费者。
+    /// 读通道进程的标准输出，前导之后切出的事件立即交给对应的请求；分发不等待请求的消费者。
     private func readFrames(_ output: SubprocessOutputSequence) async throws {
         var reader = FrameReader()
+        var stream = PreambleStream()
 
         for try await buffer in output {
-            for event in try reader.receive(Data(buffer: buffer)) {
+            let data = try await passPreamble(Data(buffer: buffer), isError: false, stream: &stream)
+
+            for event in try reader.receive(data) {
                 try deliver(event)
             }
         }
+
+        try await endPreamble(stream, isError: false)
     }
 
     /// 把一个事件交给对应的请求；就绪帧的协议版本不对时结束通道。
@@ -297,15 +344,19 @@ extension RemoteCommandChannel {
         }
     }
 
-    /// 收下通道进程自己的标准错误，只留开头一段作诊断。
+    /// 收下通道进程前导之后的标准错误，只留开头一段作诊断。
     private func collectDiagnostic(_ errors: SubprocessOutputSequence) async throws {
+        var stream = PreambleStream()
+
         for try await buffer in errors {
-            let data = Data(buffer: buffer)
+            let data = try await passPreamble(Data(buffer: buffer), isError: true, stream: &stream)
 
             state.withLock { state in
                 state.diagnostic.append(data.prefix(max(0, Self.diagnosticLimit - state.diagnostic.count)))
             }
         }
+
+        try await endPreamble(stream, isError: true)
     }
 
     /// 消费一个请求的事件，结束时按逐条执行的规则建立结果。

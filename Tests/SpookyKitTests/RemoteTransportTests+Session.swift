@@ -38,7 +38,7 @@ extension RemoteTransportTests {
     @Test("会话看守容忍网络停顿，通道关闭时立即清理")
     func watcherTolerance() async throws {
         // 通道一被关闭就清理会话，不再发心跳
-        let closing = try await createSession()
+        let closing = try await createSession(tolerance: "6")
         defer { try? FileManager.default.removeItem(atPath: closing) }
 
         let closingSteps = try await watch(closing, plan: ["close"])
@@ -47,7 +47,7 @@ extension RemoteTransportTests {
         _ = try await runWrapper(["close", closing])
 
         // 停顿短于容忍期时看守接着发心跳；得到回应后重新计时，之后连续两次没有回应才超过容忍期
-        let stalled = try await createSession()
+        let stalled = try await createSession(tolerance: "6")
         defer { try? FileManager.default.removeItem(atPath: stalled) }
 
         let operation = UUID().uuidString.lowercased()
@@ -69,9 +69,6 @@ extension RemoteTransportTests {
     func operationPruning() async throws {
         let session = try await createSession()
         defer { try? FileManager.default.removeItem(atPath: session) }
-
-        var relay = try await startRelay(in: session, plan: ["answer"])
-        defer { relay.process.terminate() }
 
         // 两条已结束的操作；早的那条结束后又被取消过，取消直接得到确认，留下取消标记
         let early = UUID().uuidString.lowercased()
@@ -97,7 +94,9 @@ extension RemoteTransportTests {
             )
         }
 
-        _ = try await runWrapper(["watch", session, "6", "300"])
+        // 看守等到转发的 socket 出现才开始心跳
+        var relay = try await startRelay(in: session, plan: ["answer"])
+        defer { relay.process.terminate() }
 
         // 看守第一轮心跳之后就清理一遍，第二次心跳时这一遍已经清理完
         for _ in 0 ..< 2 {
@@ -116,47 +115,40 @@ extension RemoteTransportTests {
     /// 看守在清理过期操作的同一节拍上记下包装器的使用：只更新访问时间，修改时间不变。
     @Test("会话看守定期记下包装器的使用")
     func watcherRecordsUse() async throws {
-        let session = try await createSession()
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-wrapper-" + UUID().uuidString)
-        let wrapper = directory.appending(path: "spooky-remote").path
+        let wrapper = directory.appending(path: "spooky-remote")
+        defer { try? FileManager.default.removeItem(at: directory) }
 
-        defer {
-            try? FileManager.default.removeItem(atPath: session)
-            try? FileManager.default.removeItem(at: directory)
-        }
+        // 会话与看守从测试自己的副本新建，记下的是这份副本的使用；保留期 1 秒，每一轮心跳之后都记一次
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try FileManager.default.copyItem(at: Self.wrapper, to: wrapper)
+
+        // 新建会话之前就把两个时间改到 100 天前：新建会话与看守都先读出修改时间再连同访问时间写回，写回的修改时间都相同
+        let past = time(nil) - 100 * 24 * 60 * 60
+        var times = [timeval(tv_sec: past, tv_usec: 0), timeval(tv_sec: past, tv_usec: 0)]
+        try #require(utimes(wrapper.path, &times) == 0)
+
+        let session = try await createSession(retention: "1", wrapper: wrapper)
+        defer { try? FileManager.default.removeItem(atPath: session) }
 
         var relay = try await startRelay(in: session, plan: ["answer"])
         defer { relay.process.terminate() }
 
-        // 看守从测试自己的副本启动，记下的是这份副本的使用；保留期 1 秒，每一轮心跳之后都记一次
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
-        try FileManager.default.copyItem(at: Self.wrapper, to: URL(fileURLWithPath: wrapper))
-
-        // 看守启动之前就把两个时间改到 100 天前：看守先读出修改时间再连同访问时间写回，无论它在测试改时间之前还是之后读，写回的修改时间都相同
-        let past = time(nil) - 100 * 24 * 60 * 60
-        var times = [timeval(tv_sec: past, tv_usec: 0), timeval(tv_sec: past, tv_usec: 0)]
-        try #require(utimes(wrapper, &times) == 0)
-
-        _ = try await CommandExecutor.execute(
-            executable: "/usr/bin/perl",
-            processArguments: [wrapper, "watch", session, "6", "1"]
-        )
-
         #expect(try await relay.steps.next() == "answer")
 
-        // 看守启动时读过副本，访问时间这时再改回 100 天前，之后只会因看守记下使用而更新
-        try #require(utimes(wrapper, &times) == 0)
+        // 看守已经开始心跳，访问时间这时再改回 100 天前，之后只会因看守记下使用而更新
+        try #require(utimes(wrapper.path, &times) == 0)
 
-        let watching = try attributeChanges(of: wrapper)
+        let watching = try attributeChanges(of: wrapper.path)
         defer { watching.source.cancel() }
 
         var changes = watching.changes.makeAsyncIterator()
 
-        while try status(of: wrapper).st_atimespec.tv_sec == past {
+        while try status(of: wrapper.path).st_atimespec.tv_sec == past {
             _ = await changes.next()
         }
 
-        #expect(try status(of: wrapper).st_mtimespec.tv_sec == past)
+        #expect(try status(of: wrapper.path).st_mtimespec.tv_sec == past)
 
         // 关掉会话后看守随之退出
         _ = try await runWrapper(["close", session])
@@ -189,13 +181,63 @@ extension RemoteTransportTests {
         try finisher.run()
         defer { if finisher.isRunning { finisher.terminate() } }
 
-        // 会话里没有 relay.sock，看守的第一次心跳就连不上，随即开始清理
-        _ = try await runWrapper(["watch", session, "6", "300"])
+        // relay.sock 出现了却没有人监听，看守的第一次心跳就连不上，随即开始清理
+        let exit = try await watcherExit(in: session)
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [
+                "-MIO::Socket::UNIX",
+                "-e",
+                "IO::Socket::UNIX->new(Type => SOCK_STREAM, Local => $ARGV[0], Listen => 1) or die",
+                session + "/relay.sock",
+            ]
+        )
 
-        for await _ in try await watcherExit(in: session) { }
+        for await _ in exit { }
 
         // 看守一直撑到 done 出现，确认操作结束后删掉了会话目录
         #expect(!FileManager.default.fileExists(atPath: session))
+    }
+
+    /// 新建会话先校验看守的两个参数；分出的看守不留调用方的输出与其它描述符，转发的 socket 到期仍没出现时清理会话。
+    @Test("新建会话时分出看守，转发一直没出现就清理会话")
+    func sessionWatcher() async throws {
+        // 参数不对时报错，不输出会话目录
+        for arguments in [["x", "300"], ["6"]] {
+            let rejected = try await CommandExecutor.execute(
+                executable: "/usr/bin/perl",
+                processArguments: [Self.wrapper.path, "create-session"] + arguments,
+                input: sessionRequest(),
+                acceptedExitCodes: Set(0 ... 255)
+            )
+
+            #expect(rejected.exitCode != 0)
+            #expect(rejected.standardOutput.isEmpty)
+        }
+
+        // 标准输出另有一份在 3 号描述符上：看守留着其中任何一个，这里就读不到输出结束
+        let created = try await CommandExecutor.execute(
+            executable: "/bin/sh",
+            processArguments: [
+                "-c",
+                #"exec 3>&1; exec /usr/bin/perl "$0" create-session 600 300"#,
+                Self.wrapper.path,
+            ],
+            input: sessionRequest()
+        )
+        let session = String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
+        defer { try? FileManager.default.removeItem(atPath: session) }
+
+        #expect(FileManager.default.fileExists(atPath: session + "/session.json"))
+        _ = try await runWrapper(["close", session])
+
+        // 容忍期 1 秒内 relay.sock 一直没出现，看守按心跳失败清理会话
+        let expiring = try await createSession(tolerance: "1")
+        defer { try? FileManager.default.removeItem(atPath: expiring) }
+
+        for await _ in try removal(of: expiring) { }
+
+        #expect(!FileManager.default.fileExists(atPath: expiring))
     }
 
     /// 控制连接没发报文就断开时，run 继续监督命令直到它结束，不会被读报文的定时器结束。
@@ -287,17 +329,34 @@ extension RemoteTransportTests {
         )
     }
 
-    /// 用包装器建一个本机会话目录。
+    /// 用包装器建一个本机会话目录，同时分出它的看守。
     ///
+    /// 看守等到 relay.sock 出现才开始心跳；默认的容忍期足够长，不接假中继的测试里看守不会中途清理会话，
+    /// 测试删掉会话目录后它随之退出。
+    ///
+    /// - Parameters:
+    ///   - tolerance: 看守的心跳容忍期，也是等 relay.sock 出现的期限。
+    ///   - retention: 看守保留已结束操作的秒数。
+    ///   - wrapper: 运行的包装器。
     /// - Returns: 会话目录的路径。
-    func createSession() async throws -> String {
-        let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
-        let created = try await runWrapper(
-            ["create-session"],
-            input: Data(#"{"token":"\#(token)"}"#.utf8) + Data([10])
+    func createSession(
+        tolerance: String = "600",
+        retention: String = "300",
+        wrapper: URL = RemoteTransportTests.wrapper
+    ) async throws -> String {
+        let created = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [wrapper.path, "create-session", tolerance, retention],
+            input: sessionRequest()
         )
 
         return String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
+    }
+
+    /// 新建会话的报文：一行 JSON，带着随机的令牌。
+    private func sessionRequest() -> Data {
+        let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
+        return Data(#"{"token":"\#(token)"}"#.utf8) + Data([10])
     }
 
     /// 在会话里经 `run` 启动一条执行一段时间的命令，等它开始执行后返回。
@@ -333,20 +392,18 @@ extension RemoteTransportTests {
         return (process, errors, exits)
     }
 
-    /// 给会话接上假中继并启动看守，等会话目录被删除后收起假中继。
+    /// 给会话接上假中继，让等着的看守开始心跳，等会话目录被删除后收起假中继。
     ///
     /// - Parameters:
     ///   - session: 会话目录。
     ///   - plan: 假中继处理各个连接的计划。
     /// - Returns: 会话目录被删除之前，假中继处理过的每一步。
     private func watch(_ session: String, plan: [String]) async throws -> [String] {
-        var relay = try await startRelay(in: session, plan: plan)
-        defer { relay.process.terminate() }
-
-        // 删除事件要在启动看守之前开始监听
+        // 删除事件要在 relay.sock 出现之前开始监听
         let removal = try removal(of: session)
 
-        _ = try await runWrapper(["watch", session, "6", "300"])
+        var relay = try await startRelay(in: session, plan: plan)
+        defer { relay.process.terminate() }
 
         for await _ in removal { }
 
@@ -418,6 +475,12 @@ extension RemoteTransportTests {
     /// - Returns: 只在目录被删除时结束、不产出元素的事件流。
     private func removal(of session: String) throws -> AsyncStream<Void> {
         let descriptor = Darwin.open(session, O_EVTONLY | O_CLOEXEC)
+
+        // 目录已经不在时直接结束
+        if descriptor < 0, errno == ENOENT {
+            return AsyncStream { $0.finish() }
+        }
+
         try #require(descriptor >= 0)
 
         let source = DispatchSource.makeFileSystemObjectSource(
@@ -434,6 +497,11 @@ extension RemoteTransportTests {
             finished.finish()
         }
         source.resume()
+
+        // 开始监听之前目录已被删掉时，删除事件不会再来
+        if !FileManager.default.fileExists(atPath: session) {
+            source.cancel()
+        }
 
         return removed
     }

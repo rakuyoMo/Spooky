@@ -82,6 +82,51 @@ extension RemoteHealthCheckTests {
         #expect(incomplete.standardOutput.isEmpty)
     }
 
+    /// 转成常驻通道的体检：会话步骤成功之后，同一个进程接着作为常驻通道执行请求；
+    /// 包装器还没安装时脚本照常结束，前导带着脚本的结束状态，通道随之关闭。
+    @Test("体检的会话转成常驻通道", arguments: ["/bin/sh", "/bin/dash"])
+    func channelHealthCheck(shell: String) async throws {
+        let home = FileManager.default.temporaryDirectory.appending(path: "spooky-home-" + UUID().uuidString)
+        let bundled = try #require(RemoteConnection.bundledWrapper)
+        var sessions: [String] = []
+
+        defer {
+            try? FileManager.default.removeItem(at: home)
+
+            for session in sessions {
+                try? FileManager.default.removeItem(atPath: session)
+            }
+        }
+
+        // 还没有安装：会话步骤失败，脚本照常结束，通道没有就绪就关闭
+        let absent = try await channelCheck(shell, home: home)
+        let absentSession = try #require(absent.checks.completed(.session, argument: "session"))
+
+        #expect(absentSession.exitCode != 0)
+        #expect(await !absent.channel.waitUntilReady())
+
+        sessions += try await deploy(shell, home: home, bundled: bundled).dropFirst()
+
+        // 已安装：会话步骤照常输出包装器路径与会话目录，之后经同一个进程执行请求
+        let entered = try await channelCheck(shell, home: home)
+        defer { entered.channel.close() }
+
+        let session = try #require(entered.checks.completed(.session, argument: "session"))
+        let lines = String(decoding: session.standardOutput, as: UTF8.self).split(separator: "\n").map(String.init)
+        let directory = try #require(lines.last)
+        sessions.append(directory)
+
+        #expect(session.exitCode == 0)
+        #expect(lines.count == 2)
+        #expect(await entered.channel.waitUntilReady())
+
+        let inspected = try await entered.channel.execute(["inspect", directory], input: Data(), resultArguments: [])
+        #expect(inspected.standardOutput == Data("1\n".utf8))
+
+        let closed = try await entered.channel.execute(["close", directory], input: Data(), resultArguments: [])
+        #expect(closed.exitCode == 0)
+    }
+
     /// 在临时主目录下用 `shell` 只执行体检的会话步骤。
     ///
     /// - Parameters:
@@ -96,8 +141,8 @@ extension RemoteHealthCheckTests {
         let result = try await CommandExecutor.execute(
             executable: shell,
             processArguments: [
-                "-c", RemoteHealthCheck.script([.session]), "spooky-check",
-                "/", filename, String(length),
+                "-c", RemoteHealthCheck.script([.session], entersChannel: false), "spooky-check",
+                "/", filename, String(length), "600", "300",
             ],
             environment: .inherit.updating(["HOME": home.path]),
             input: Data((marker + "\n").utf8) + sessionRequest()
@@ -105,6 +150,38 @@ extension RemoteHealthCheckTests {
 
         let checks = RemoteHealthCheck(result, marker: marker, steps: [.session])
         return try #require(checks.completed(.session, argument: "session"))
+    }
+
+    /// 在临时主目录下用 `shell` 只执行体检的会话步骤，会话步骤成功之后转成常驻通道。
+    ///
+    /// - Parameters:
+    ///   - shell: 执行脚本的 shell。
+    ///   - home: 临时主目录。
+    /// - Returns: 切开的体检结果与通道。
+    private func channelCheck(
+        _ shell: String,
+        home: URL
+    ) async throws -> (checks: RemoteHealthCheck, channel: RemoteCommandChannel) {
+        let marker = UUID().uuidString
+        let bundled = try #require(RemoteConnection.bundledWrapper)
+
+        let channel = RemoteCommandChannel(
+            executable: shell,
+            arguments: [
+                "-c", RemoteHealthCheck.script([.session], entersChannel: true), "spooky-check",
+                "/", bundled.filename, String(bundled.source.count), "600", "300",
+            ],
+            environment: .inherit.updating(["HOME": home.path]),
+            preamble: RemoteCommandChannel.Preamble(
+                input: Data((marker + "\n").utf8) + sessionRequest(),
+                marker: RemoteHealthCheck.channelMarker(marker),
+                arguments: ["health-check"]
+            ),
+            onDisconnect: { _ in }
+        )
+
+        let result = try await channel.preambleResult()
+        return (RemoteHealthCheck(result, marker: marker, steps: [.session]), channel)
     }
 
     /// 在临时主目录下用 `shell` 执行部署脚本。
@@ -123,7 +200,7 @@ extension RemoteHealthCheckTests {
 
         let result = try await CommandExecutor.execute(
             executable: shell,
-            processArguments: ["-c", script],
+            processArguments: ["-c", script, "spooky-deploy", "600", "300"],
             environment: .inherit.updating(["HOME": home.path]),
             input: bundled.source + sessionRequest()
         )

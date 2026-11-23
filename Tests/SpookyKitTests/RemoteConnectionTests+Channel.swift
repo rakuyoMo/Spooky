@@ -111,7 +111,7 @@ extension RemoteConnectionTests {
         }
     }
 
-    /// 关掉常驻通道后，读取、写入与取消都逐条另开会话执行。
+    /// 关掉常驻通道后，读取、写入与取消都逐条另开会话执行，B 上不开 serve 会话。
     @Test("关掉常驻通道时逐条执行的读取、写入与取消")
     func withoutResidentChannel() async throws {
         let fixture = try await RemoteFixture.create()
@@ -141,6 +141,15 @@ extension RemoteConnectionTests {
 
             #expect(await connection.channelCommands == 0)
             #expect(await connection.resident == nil)
+
+            // B 上这个会话没有 serve，看守照样由新建会话分出
+            let session = try #require(await connection.remoteDirectory)
+            let watchers = try await RemoteFixture.raw([
+                "/bin/sh", "-c", #"pgrep -f "watc[h] $1" || :"#, "spooky-watchers", session,
+            ])
+
+            #expect(try await servers(of: connection) == 0)
+            #expect(!watchers.standardOutput.isEmpty)
 
             await connection.close()
             try await fixture.remove()

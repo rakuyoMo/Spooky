@@ -116,20 +116,36 @@ struct RemoteHealthCheck {
 
     /// 体检脚本：先从标准输入读出分隔标记与新建会话的报文，再依次执行 `steps`。
     ///
-    /// 位置参数依次是仓库路径、包装器的文件名与字节数。报文带着中继的令牌，只放在不导出的变量里，经管道交给包装器。
+    /// 位置参数依次是仓库路径、包装器的文件名与字节数、会话看守的心跳容忍期与操作保留期。
+    /// 报文带着中继的令牌，只放在不导出的变量里，经管道交给包装器。
     ///
-    /// - Parameter steps: 要执行的步骤。
-    static func script(_ steps: [Step]) -> String {
+    /// 转成常驻通道时，会话步骤成功之后在两路输出上各写一个 ``channelMarker(_:)``，再 exec 到包装器的 serve 模式，
+    /// 标准输入换回读完两行之后另存的那一个；之后经标准输入写进来的是通道的请求帧。
+    ///
+    /// - Parameters:
+    ///   - steps: 要执行的步骤。
+    ///   - entersChannel: 会话步骤成功之后是否转成常驻通道。
+    static func script(_ steps: [Step], entersChannel: Bool) -> String {
         let commands = steps.map { step in
             // 读取环境失败不停，后面的检查仍给出具体错误
             let frame = step == .environment ? "spooky_frame $? || :" : "spooky_frame $? || exit 0"
             return command(for: step) + "\n" + frame
         }
 
+        // 各步骤的标准输入都是 /dev/null；转成通道时原来的标准输入另存在 3 号描述符，留给 serve
+        let input = entersChannel ? "exec 3<&0 </dev/null" : "exec </dev/null"
+
+        let channel = """
+
+            printf '\\036%s\\037' "$spooky_marker"
+            printf '\\036%s\\037' "$spooky_marker" >&2
+            exec "$spooky_wrapper" serve "$spooky_session" <&3 3<&-
+            """
+
         return """
             IFS= read -r spooky_marker || exit 1
             IFS= read -r spooky_request || exit 1
-            exec </dev/null
+            \(input)
 
             spooky_frame() {
                 printf '\\036%s:%s\\037' "$spooky_marker" "$1"
@@ -138,7 +154,14 @@ struct RemoteHealthCheck {
             }
 
             \(commands.joined(separator: "\n"))
-            """
+            """ + (entersChannel ? channel : "")
+    }
+
+    /// 体检会话转成常驻通道时，两路输出在前导与通道之间的分隔标记；与步骤的分隔帧不同，标记之后没有冒号与退出码。
+    ///
+    /// - Parameter marker: 本次经标准输入交给脚本的分隔标记。
+    static func channelMarker(_ marker: String) -> Data {
+        Data([0x1E]) + Data(marker.utf8) + Data([0x1F])
     }
 
     /// 一步的结果，参数记为 `argument`。
@@ -230,14 +253,15 @@ extension RemoteHealthCheck {
 
         case .session:
             // 包装器与全部回调入口都可执行、字节数与本机一致时才用它；BSD 的 wc 在数字前补空格，不加引号让 shell 去掉
+            // 包装器路径与会话目录留在脚本的变量里，转成常驻通道时 exec 用得到
             """
-            (spooky_wrapper="$HOME/.spooky/bin/$2"
-            for spooky_entry in '' \(RemoteConnection.callbackLinks.map { "-" + $0 }.joined(separator: " ")); do
+            spooky_wrapper="$HOME/.spooky/bin/$2"
+            (for spooky_entry in '' \(RemoteConnection.callbackLinks.map { "-" + $0 }.joined(separator: " ")); do
                 test -x "$spooky_wrapper$spooky_entry" || exit 1
             done
-            test $(wc -c < "$spooky_wrapper") -eq "$3" || exit 1
-            printf '%s\\n' "$spooky_wrapper"
-            printf '%s\\n' "$spooky_request" | "$spooky_wrapper" create-session)
+            test $(wc -c < "$spooky_wrapper") -eq "$3") &&
+            spooky_session=$(printf '%s\\n' "$spooky_request" | "$spooky_wrapper" create-session "$4" "$5") &&
+            printf '%s\\n%s\\n' "$spooky_wrapper" "$spooky_session"
             """
         }
     }

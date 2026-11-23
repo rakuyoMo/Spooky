@@ -95,6 +95,9 @@ public actor RemoteConnection {
     /// 主连接上常驻的命令通道，就绪之后才放在这里。
     var resident: RemoteCommandChannel? = nil
 
+    /// 建立连接期间打开、还没启用的常驻通道；连接到一半失败或关闭时随 ``closeChannel()`` 关掉。
+    var pendingChannel: RemoteCommandChannel? = nil
+
     /// 正在后台重新打开常驻通道的任务。
     var reopening: Task<Void, Never>? = nil
 
