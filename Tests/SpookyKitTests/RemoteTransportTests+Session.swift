@@ -113,13 +113,173 @@ extension RemoteTransportTests {
         _ = try await runWrapper(["close", session])
     }
 
+    /// 看守在清理过期操作的同一节拍上记下包装器的使用：只更新访问时间，修改时间不变。
+    @Test("会话看守定期记下包装器的使用")
+    func watcherRecordsUse() async throws {
+        let session = try await createSession()
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-wrapper-" + UUID().uuidString)
+        let wrapper = directory.appending(path: "spooky-remote").path
+
+        defer {
+            try? FileManager.default.removeItem(atPath: session)
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        var relay = try await startRelay(in: session, plan: ["answer"])
+        defer { relay.process.terminate() }
+
+        // 看守从测试自己的副本启动，记下的是这份副本的使用；保留期 1 秒，每一轮心跳之后都记一次
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try FileManager.default.copyItem(at: Self.wrapper, to: URL(fileURLWithPath: wrapper))
+
+        // 看守启动之前就把两个时间改到 100 天前：看守先读出修改时间再连同访问时间写回，无论它在测试改时间之前还是之后读，写回的修改时间都相同
+        let past = time(nil) - 100 * 24 * 60 * 60
+        var times = [timeval(tv_sec: past, tv_usec: 0), timeval(tv_sec: past, tv_usec: 0)]
+        try #require(utimes(wrapper, &times) == 0)
+
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [wrapper, "watch", session, "6", "1"]
+        )
+
+        #expect(try await relay.steps.next() == "answer")
+
+        // 看守启动时读过副本，访问时间这时再改回 100 天前，之后只会因看守记下使用而更新
+        try #require(utimes(wrapper, &times) == 0)
+
+        let watching = try attributeChanges(of: wrapper)
+        defer { watching.source.cancel() }
+
+        var changes = watching.changes.makeAsyncIterator()
+
+        while try status(of: wrapper).st_atimespec.tv_sec == past {
+            _ = await changes.next()
+        }
+
+        #expect(try status(of: wrapper).st_mtimespec.tv_sec == past)
+
+        // 关掉会话后看守随之退出
+        _ = try await runWrapper(["close", session])
+    }
+
+    /// 心跳连不上中继之后，看守接着清理会话；清理比心跳的超时更久时，看守不会中途被定时器结束。
+    @Test("心跳失败后的清理不受心跳定时器影响")
+    func watcherOutlivesHeartbeatTimer() async throws {
+        let session = try await createSession()
+        defer { try? FileManager.default.removeItem(atPath: session) }
+
+        // 执行它的 run 已被强行结束的操作：目录还在，没有控制 socket 也没有 done，取消只能等 done 出现
+        let operation = UUID().uuidString.lowercased()
+        try FileManager.default.createDirectory(
+            atPath: session + "/" + operation,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+
+        // 看守留下取消标记 4 秒后才补上 done，比心跳的 3 秒超时更久，又在取消的期限之内
+        let finisher = Process()
+        finisher.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        finisher.arguments = [
+            "-MTime::HiRes=sleep",
+            "-e",
+            #"sleep(0.05) until -e $ARGV[0]; sleep(4); open(my $f, '>', $ARGV[1]) or die;"#,
+            session + "/cancel-" + operation,
+            session + "/" + operation + "/done",
+        ]
+        try finisher.run()
+        defer { if finisher.isRunning { finisher.terminate() } }
+
+        // 会话里没有 relay.sock，看守的第一次心跳就连不上，随即开始清理
+        _ = try await runWrapper(["watch", session, "6", "300"])
+
+        for await _ in try await watcherExit(in: session) { }
+
+        // 看守一直撑到 done 出现，确认操作结束后删掉了会话目录
+        #expect(!FileManager.default.fileExists(atPath: session))
+    }
+
+    /// 控制连接没发报文就断开时，run 继续监督命令直到它结束，不会被读报文的定时器结束。
+    @Test("控制连接断开后 run 照常等命令结束")
+    func supervisorOutlivesControlTimer() async throws {
+        let session = try await createSession()
+        defer { try? FileManager.default.removeItem(atPath: session) }
+
+        // 命令执行 4 秒，比读控制报文的 2 秒超时更久
+        let operation = UUID().uuidString.lowercased()
+        let command = try await startOperation(operation, in: session, duration: 4)
+        defer { if command.process.isRunning { command.process.terminate() } }
+
+        // 连上控制 socket 立即断开，不发任何报文
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [
+                "-MIO::Socket::UNIX",
+                "-e",
+                "IO::Socket::UNIX->new(Type => SOCK_STREAM(), Peer => $ARGV[0]) or die;",
+                session + "/" + operation + "/control.sock",
+            ]
+        )
+
+        for await _ in command.exits { }
+
+        let marker = try command.errors.fileHandleForReading.readToEnd() ?? Data()
+        #expect(command.process.terminationReason == .exit)
+        #expect(command.process.terminationStatus == 0)
+        #expect(String(decoding: marker, as: UTF8.self) == "\u{1E}SPOOKY:\(operation):0:0:0\u{1F}")
+    }
+
+    /// 控制连接没回报文就断开、之后再也连不上时，cancel 等到期限后报告未确认，不会被读报文的定时器结束。
+    @Test("控制连接断开后 cancel 照常等到期限")
+    func cancellationOutlivesControlTimer() async throws {
+        let session = try await createSession()
+        defer { try? FileManager.default.removeItem(atPath: session) }
+
+        let operation = UUID().uuidString.lowercased()
+        let directory = session + "/" + operation
+
+        try FileManager.default.createDirectory(
+            atPath: directory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+
+        // 假的控制 socket：接受一次连接后不回报文就关闭，之后不再监听
+        let script = #"""
+        $| = 1;
+        my $server = IO::Socket::UNIX->new(Type => SOCK_STREAM(), Local => $ARGV[0], Listen => 1) or die;
+        print "ready\n";
+        close $server->accept;
+        close $server;
+        """#
+
+        let control = Process()
+        let output = Pipe()
+        control.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        control.arguments = ["-MIO::Socket::UNIX", "-e", script, directory + "/control.sock"]
+        control.standardOutput = output
+        try control.run()
+        defer { if control.isRunning { control.terminate() } }
+
+        var lines = output.fileHandleForReading.bytes.lines.makeAsyncIterator()
+        #expect(try await lines.next() == "ready")
+
+        // 读报文的定时器比取消的期限早到期；cancel 一直等到期限，以未确认退出
+        let result = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [Self.wrapper.path, "cancel", session, operation, "2"],
+            acceptedExitCodes: [0, 1]
+        )
+
+        #expect(result.exitCode == 1)
+    }
+
     /// 在本机运行包装器的一个模式，退出码不为 0 时抛出。
     ///
     /// - Parameters:
     ///   - arguments: 模式与它的参数。
     ///   - input: 标准输入。
     /// - Returns: 包装器的输出与退出状态。
-    private func runWrapper(_ arguments: [String], input: Data? = nil) async throws -> GitCommandResult {
+    func runWrapper(_ arguments: [String], input: Data? = nil) async throws -> GitCommandResult {
         try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: [Self.wrapper.path] + arguments,
@@ -130,7 +290,7 @@ extension RemoteTransportTests {
     /// 用包装器建一个本机会话目录。
     ///
     /// - Returns: 会话目录的路径。
-    private func createSession() async throws -> String {
+    func createSession() async throws -> String {
         let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
         let created = try await runWrapper(
             ["create-session"],
@@ -140,15 +300,17 @@ extension RemoteTransportTests {
         return String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
     }
 
-    /// 在会话里经 `run` 启动一条一直执行的命令，等它开始执行后返回。
+    /// 在会话里经 `run` 启动一条执行一段时间的命令，等它开始执行后返回。
     ///
     /// - Parameters:
     ///   - operation: 操作标识。
     ///   - session: 会话目录。
+    ///   - duration: 命令执行的秒数。
     /// - Returns: 包装器进程、它的标准错误与退出事件。
     private func startOperation(
         _ operation: String,
-        in session: String
+        in session: String,
+        duration: Int = 60
     ) async throws -> (process: Process, errors: Pipe, exits: AsyncStream<Void>) {
         let process = Process()
         let output = Pipe()
@@ -157,7 +319,7 @@ extension RemoteTransportTests {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
         process.arguments = [
             Self.wrapper.path, "run", session, operation, "2",
-            "/bin/sh", "-c", "echo started; exec /bin/sleep 60",
+            "/bin/sh", "-c", "echo started; exec /bin/sleep \(duration)",
         ]
         process.standardOutput = output
         process.standardError = errors
@@ -222,6 +384,34 @@ extension RemoteTransportTests {
         return (process, steps)
     }
 
+    /// 会话看守进程退出时结束的事件流。
+    ///
+    /// - Parameter session: 会话目录。
+    /// - Returns: 只在看守退出时结束、不产出元素的事件流。
+    private func watcherExit(in session: String) async throws -> AsyncStream<Void> {
+        // 方括号让匹配式不匹配 pgrep 所在命令行本身
+        let found = try await CommandExecutor.execute(
+            executable: "/usr/bin/pgrep",
+            processArguments: ["-f", "watc[h] " + session]
+        )
+        let line = String(decoding: found.standardOutput, as: UTF8.self).split(separator: "\n").first
+        let pid = try #require(line.flatMap { pid_t($0) })
+
+        let source = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .global())
+        let (exited, finished) = AsyncStream<Void>.makeStream()
+
+        source.setEventHandler { source.cancel() }
+        source.setCancelHandler { finished.finish() }
+        source.resume()
+
+        // 开始监听之前看守已经退出时，退出事件不会再来
+        if kill(pid, 0) != 0, errno == ESRCH {
+            source.cancel()
+        }
+
+        return exited
+    }
+
     /// 会话目录被删除时结束的事件流。
     ///
     /// - Parameter session: 会话目录。
@@ -246,5 +436,42 @@ extension RemoteTransportTests {
         source.resume()
 
         return removed
+    }
+
+    /// 文件属性每变化一次产出一个元素的事件流；取消监听源时关掉描述符并结束事件流。
+    ///
+    /// - Parameter path: 文件路径。
+    /// - Returns: 属性变化的事件流，以及用来停止监听的监听源。
+    private func attributeChanges(
+        of path: String
+    ) throws -> (changes: AsyncStream<Void>, source: any DispatchSourceFileSystemObject) {
+        let descriptor = Darwin.open(path, O_EVTONLY | O_CLOEXEC)
+        try #require(descriptor >= 0)
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: .attrib,
+            queue: .global()
+        )
+
+        let (changes, continuation) = AsyncStream<Void>.makeStream()
+
+        source.setEventHandler { continuation.yield() }
+        source.setCancelHandler {
+            Darwin.close(descriptor)
+            continuation.finish()
+        }
+        source.resume()
+
+        return (changes, source)
+    }
+
+    /// 文件的状态信息。
+    private func status(of path: String) throws -> stat {
+        var info = stat()
+
+        guard stat(path, &info) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+
+        return info
     }
 }

@@ -25,6 +25,9 @@ struct SSHConfiguration: Sendable {
     /// 操作结束后，B 上的会话看守保留它的结束标记的秒数：这期间对它的取消直接得到确认，过后看守删掉它的目录与取消标记。
     var operationRetention: Double = 300
 
+    /// 是否在主连接上打开常驻通道；为 false 时每条命令都另开会话执行，测试据此核对逐条执行的路径。
+    var usesResidentChannel = true
+
     /// 按参数边界传递配置路径，认证失败快速返回且绝不静默接受指纹。
     var options: [String] {
         var options = [

@@ -85,6 +85,57 @@ struct ResourceReleaseTests {
         }
     }
 
+    /// 常驻通道反复经历持有者关闭、通道进程被结束与没有就绪之后，进程打开的描述符数量不随次数增长。
+    ///
+    /// 与 ``descriptors()`` 一样在只运行这一项的子进程里计数；通道进程直接以 serve 模式运行本机的包装器。
+    @Test("常驻通道的三条结束路径都释放文件描述符")
+    func channelDescriptors() async {
+        await #expect(processExitsWith: .success) {
+            let transport = RemoteTransportTests()
+            let session = try await transport.createSession()
+            defer { try? FileManager.default.removeItem(atPath: session) }
+
+            let before = try openDescriptors()
+
+            for _ in 0 ..< 20 {
+                // 执行一条请求后由持有者关闭
+                let closed = transport.openChannel(in: session)
+                _ = try await closed.execute(["inspect", session], input: Data(), resultArguments: [])
+                closed.close()
+
+                // 就绪之后通道进程被结束
+                let (disconnected, disconnect) = AsyncStream<Void>.makeStream()
+                let killed = transport.openChannel(in: session) { _ in disconnect.finish() }
+
+                #expect(await killed.waitUntilReady())
+
+                _ = try await CommandExecutor.execute(
+                    executable: "/usr/bin/pkill",
+                    processArguments: ["-KILL", "-f", "serv[e] " + session]
+                )
+
+                for await _ in disconnected { }
+
+                // 通道进程读到请求的第一个字节就退出，没有就绪
+                let starting = RemoteCommandChannel(
+                    executable: "/usr/bin/perl",
+                    arguments: ["-e", "sysread STDIN, my $byte, 1"],
+                    environment: .inherit,
+                    onDisconnect: { _ in }
+                )
+
+                await #expect(throws: RemoteCommandChannel.NotExecuted.self) {
+                    try await starting.execute(["inspect"], input: Data(), resultArguments: [])
+                }
+            }
+
+            let after = try openDescriptors()
+
+            // 任一条路径每次泄漏一个，20 次就多出 20 个
+            #expect(after - before < 16)
+        }
+    }
+
     /// 本机凭据回调的私有会话目录在成功、失败和取消后都被删除。
     @Test("本机凭据会话目录在三条路径上删除")
     func credentialSessions() async throws {

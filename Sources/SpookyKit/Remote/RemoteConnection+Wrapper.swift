@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // MARK: - Wrapper
@@ -6,9 +7,27 @@ extension RemoteConnection {
     /// 包装器的回调入口：与包装器同一文件的硬链接，包装器按调用名的后缀区分模式。
     static let callbackLinks = ["askpass", "git-askpass", "gpg", "ssh-keygen"]
 
+    /// 部署新版本时，删掉超过这么多天没有新建过会话的旧版本。
+    static let wrapperRetentionDays = 30
+
+    /// 随 App 分发的包装器：源码与按内容摘要生成的版本化文件名；资源缺失时为 nil。
+    static let bundledWrapper: (source: Data, filename: String)? = {
+        guard
+            let resource = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl"),
+            let source = try? Data(contentsOf: resource)
+        else { return nil }
+
+        let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
+        return (source, wrapperPrefix + String(version.prefix(16)))
+    }()
+
+    /// 包装器文件名的前缀，后接内容摘要。
+    private static let wrapperPrefix = "spooky-remote-v1-"
+
     /// 在 B 上原子安装包装器与全部回调入口并输出包装器的绝对路径，再由包装器新建会话、输出会话目录。
     ///
     /// 标准输入先是包装器源码，紧接着是会话令牌的报文：安装只读走源码的字节数，余下的报文留给新建会话。
+    /// 安装之后删掉 ``wrapperRetentionDays`` 天里没有新建过会话的旧版本。
     ///
     /// - Parameters:
     ///   - filename: 按脚本内容摘要生成的版本化文件名。
@@ -37,6 +56,11 @@ extension RemoteConnection {
             }
             """
 
+        // 别的客户端可能还在用旧版本：每次新建会话都会更新包装器的访问时间，按它只删掉长期没人用的版本；
+        // 回调入口是同一文件的硬链接，访问时间相同，随之一起删掉。清理失败不影响部署
+        let cleaning = "find \"$HOME/.spooky/bin\" -maxdepth 1 -type f -name '\(wrapperPrefix)*'"
+            + " -atime +\(wrapperRetentionDays) -exec rm -f {} + || :"
+
         return """
             set -eu
             umask 077
@@ -52,6 +76,7 @@ extension RemoteConnection {
             \(linking)
             mv -f "$spooky_install_file" "$HOME/.spooky/bin/\(filename)"
             \(moving)
+            \(cleaning)
             printf '%s\\n' "$HOME/.spooky/bin/\(filename)"
             exec "$HOME/.spooky/bin/\(filename)" create-session
             """
@@ -72,5 +97,24 @@ extension RemoteConnection {
             "-c", "gpg.program=\(wrapper)-gpg",
             "-c", "gpg.ssh.program=\(wrapper)-ssh-keygen",
         ]
+    }
+
+    /// 新建会话的报文：一行 JSON，带着本机中继的令牌，只经标准输入交给 B。
+    func sessionRequest() throws -> Data {
+        guard let relay else { throw RemoteConnectionError(.deployment) }
+        return try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
+    }
+
+    /// 在 B 上安装包装器并新建会话：包装器源码与新建会话的报文先后经标准输入交给部署脚本。
+    func deployWrapper() async throws {
+        guard let bundled = Self.bundledWrapper else { throw RemoteConnectionError(.deployment) }
+
+        let deployed = try await probe(
+            ["/bin/sh", "-c", Self.deploymentScript(filename: bundled.filename, length: bundled.source.count)],
+            input: bundled.source + sessionRequest(),
+            kind: .deployment
+        )
+
+        try recordSession(deployed)
     }
 }

@@ -65,10 +65,12 @@ actor RepositoryOperationQueue {
     /// 应用进程中的统一调度器。
     static let shared = RepositoryOperationQueue()
 
-    /// 同一主机同时执行的命令数；加上取消通道与一个还没释放的会话，不超过 OpenSSH 默认的每条连接 10 个会话（`MaxSessions`）。
+    /// 同一主机同时执行的命令数；加上常驻通道（通道不在时是取消通道）与一个还没释放的会话，
+    /// 不超过 OpenSSH 默认的每条连接 10 个会话（`MaxSessions`）。
     static let maximumHostCommands = 8
 
-    /// 同一主机同时打开的取消通道数：被取消的命令在 B 上结束之前一直占着会话，取消得到确认时那个会话也可能还没释放，取消通道只开一条。
+    /// 同一主机同时打开的取消通道数：被取消的命令在 B 上结束之前一直占着会话，取消得到确认时那个会话也可能还没释放，取消通道只开一条；
+    /// 常驻通道在时取消经它发出，不另开会话。
     static let maximumHostCancellations = 1
 
     /// 主机级并发门闩。
