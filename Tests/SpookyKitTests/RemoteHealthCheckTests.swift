@@ -64,7 +64,7 @@ struct RemoteHealthCheckTests {
                 isCancelled: false
             )
 
-            return RemoteHealthCheck(result, marker: "marker")
+            return RemoteHealthCheck(result, marker: "marker", steps: RemoteHealthCheck.Step.allCases)
         }
 
         let environment = try checks(exitingWith: 1).result(.environment, argument: "environment")
@@ -90,7 +90,13 @@ struct RemoteHealthCheckTests {
         #expect(truncated?.kind == .protocolFailure)
     }
 
-    /// 在本机按 B 上的方式执行体检脚本：路径是第一个位置参数，分隔标记经标准输入交给脚本。
+    /// 新建会话的报文：一行 JSON，带着随机的令牌。
+    func sessionRequest() -> Data {
+        let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
+        return Data(#"{"token":"\#(token)"}"#.utf8) + Data([10])
+    }
+
+    /// 在本机按 B 上的方式执行体检脚本到 `last` 为止，不含新建会话：路径是第一个位置参数，分隔标记经标准输入交给脚本。
     ///
     /// - Parameters:
     ///   - last: 最后一个要执行的步骤。
@@ -98,18 +104,19 @@ struct RemoteHealthCheckTests {
     /// - Returns: 切开的各步骤结果。
     private func run(through last: RemoteHealthCheck.Step, path: String) async throws -> RemoteHealthCheck {
         let marker = UUID().uuidString
+        let steps = Array(RemoteHealthCheck.Step.allCases.prefix { $0 != last }) + [last]
 
         let result = try await CommandExecutor.execute(
             executable: "/bin/sh",
-            processArguments: ["-c", RemoteHealthCheck.script(through: last), "spooky-check", path],
+            processArguments: ["-c", RemoteHealthCheck.script(steps), "spooky-check", path],
             environment: .inherit.updating([
                 "GIT_CONFIG_GLOBAL": "/dev/null",
                 "GIT_CONFIG_SYSTEM": "/dev/null",
                 "GIT_CONFIG_NOSYSTEM": "1",
             ]),
-            input: Data((marker + "\n").utf8)
+            input: Data((marker + "\n").utf8) + sessionRequest()
         )
 
-        return RemoteHealthCheck(result, marker: marker)
+        return RemoteHealthCheck(result, marker: marker, steps: steps)
     }
 }

@@ -220,7 +220,15 @@ sub prune_operations {
     }
 }
 
-# 看守经中继的心跳确认 A 仍连着，心跳失败时返回；第一轮先清理一遍过期的操作，之后每过保留期的五分之一清理一遍。
+# 部署新版本时按访问时间删掉长期没人用的旧版本：这里把包装器的访问时间更新为现在，修改时间保持安装时的值。
+# 挂载选项可能让读取不更新访问时间，所以明确更新；经常驻通道执行的命令不会重新读取包装器文件，会话存续期间由看守定期更新。
+sub record_use {
+    my $modified = (stat $wrapper)[9];
+    utime(time, $modified, $wrapper) if defined $modified;
+}
+
+# 看守经中继的心跳确认 A 仍连着，心跳失败时返回；
+# 第一轮先清理一遍过期的操作并记下包装器的使用，之后每过保留期的五分之一做一遍。
 # 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
 # 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
 sub watch_session {
@@ -242,6 +250,7 @@ sub watch_session {
 
         if (time() - $pruned >= $retention / 5) {
             prune_operations($session, $retention);
+            record_use();
             $pruned = time();
         }
 
@@ -788,6 +797,8 @@ sub dispatch {
         open my $file, '>:raw', "$session/session.json" or die "cannot initialize session\n";
         print {$file} JSON::PP::encode_json({ token => $request->{token} });
         close $file;
+
+        record_use();
         print "$session\n";
     } elsif ($mode eq 'watch') {
         my ($session, $tolerance, $retention) = @ARGV;

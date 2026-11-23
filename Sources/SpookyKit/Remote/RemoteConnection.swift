@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import os
 import Subprocess
@@ -64,7 +63,7 @@ public actor RemoteConnection {
     private(set) var canonical: RemoteConnection? = nil
 
     /// 本机回调服务，凭据只通过此对象在内存中流转。
-    private var relay: CallbackRelay? = nil
+    private(set) var relay: CallbackRelay? = nil
 
     /// 主连接检查任务。
     private var monitor: Task<Void, Never>? = nil
@@ -179,7 +178,7 @@ public actor RemoteConnection {
         return repository
     }
 
-    /// 建立或复用主连接：工作区连接按顺序体检后部署包装器，主机连接只体检 Git 与 B 端环境。
+    /// 建立或复用主连接：工作区连接按顺序体检后启动会话，主机连接只体检 Git 与 B 端环境。
     func connect() async throws {
         try Task.checkCancellation()
 
@@ -500,7 +499,7 @@ extension RemoteConnection {
         }
     }
 
-    /// 建立无命令主连接，体检成功后才部署包装器并允许仓库进入列表。
+    /// 建立无命令主连接，体检成功后才启动会话并允许仓库进入列表。
     private func establish() async throws {
         let directory = URL(fileURLWithPath: "/tmp/spooky-" + UUID().uuidString.lowercased())
         try FileManager.default.createDirectory(
@@ -517,10 +516,13 @@ extension RemoteConnection {
         guard master.exitCode == 0 else { throw RemoteConnectionError.ssh(master) }
         try await check()
 
-        // 主机连接没有工作区：体检 Git 与 B 端环境后直接部署包装器
+        // 中继先于体检启动：体检的最后一步用它的令牌新建会话
+        try startRelay(in: directory)
+
+        // 主机连接没有工作区：体检 Git 与 B 端环境后直接启动会话
         if isHostScoped {
             try await verifyHost()
-            try await deployRelay(in: directory)
+            try await startSession()
 
             // 先关掉上一个会话里的操作，再算连上
             try await closeUnclosedSessions()
@@ -543,7 +545,7 @@ extension RemoteConnection {
         }
 
         if let existing {
-            // 子目录和根目录指向同一个工作区，关闭额外的体检连接后共享规范会话。
+            // 子目录和根目录指向同一个工作区，关闭额外的体检连接与体检新建的会话后共享规范会话。
             await tearDown()
             canonical = existing
             if let callbackHandler { await existing.setCallbackHandler(callbackHandler) }
@@ -554,7 +556,7 @@ extension RemoteConnection {
             return
         }
 
-        try await deployRelay(in: directory)
+        try await startSession()
 
         // 先关掉上一个会话里的操作再核对仓库，读到的才不会再被它们改动
         try await closeUnclosedSessions()
@@ -567,17 +569,8 @@ extension RemoteConnection {
         startMonitoring()
     }
 
-    /// 包装器按内容哈希版本化，安装与回调状态均位于仓库之外；安装包装器与新建会话在一次往返里完成。
-    private func deployRelay(in directory: URL) async throws {
-        guard let resource = Bundle.module.url(forResource: "spooky-remote", withExtension: "pl") else {
-            throw RemoteConnectionError(.deployment)
-        }
-
-        let source = try Data(contentsOf: resource)
-        let version = SHA256.hash(data: source).map { String(format: "%02x", $0) }.joined()
-        let filename = "spooky-remote-v1-" + String(version.prefix(16))
-
-        // 处理器在请求到达时才取：主机连接为多种操作共用，连接建立后才安装的处理器同样生效
+    /// 启动本机回调服务；处理器在请求到达时才取，主机连接为多种操作共用，连接建立后才安装的处理器同样生效。
+    private func startRelay(in directory: URL) throws {
         let relay = try CallbackRelay(
             path: directory.appending(path: "relay.sock").path,
             host: host,
@@ -586,33 +579,17 @@ extension RemoteConnection {
                 return await handler?(request) ?? nil
             }
         )
+
         try relay.start()
         self.relay = relay
+    }
 
-        // 包装器源码与会话令牌先后经标准输入交给 B；输出的第一行是包装器路径，最后一行是会话目录
-        let token = try JSONSerialization.data(withJSONObject: ["token": relay.token]) + Data([10])
-        let deployed = try await probe(
-            ["/bin/sh", "-c", Self.deploymentScript(filename: filename, length: source.count)],
-            input: source + token,
-            kind: .deployment
-        )
+    /// 体检没能复用已安装的包装器时安装它并新建会话，再把本机中继转发进会话目录、启动会话看守。
+    private func startSession() async throws {
+        if wrapper == nil { try await deployWrapper() }
 
-        guard
-            let output = String(data: deployed.standardOutput, encoding: .utf8),
-            output.hasSuffix("\n"),
-            let separator = output.dropLast().lastIndex(of: "\n")
-        else { throw RemoteConnectionError(.deployment, result: deployed) }
+        guard let relay, let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
 
-        let wrapper = String(output[..<separator])
-        let remoteDirectory = String(output[output.index(after: separator)...].dropLast())
-
-        guard wrapper.hasPrefix("/"), remoteDirectory.hasPrefix("/tmp/spooky-") else {
-            throw RemoteConnectionError(.deployment, result: deployed)
-        }
-
-        self.wrapper = wrapper
-        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
-        self.remoteDirectory = remoteDirectory
         let forward = try await ssh([
             "-O", "forward",
             "-o", "ExitOnForwardFailure=yes",
@@ -622,6 +599,30 @@ extension RemoteConnection {
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
 
         try await startWatcher(wrapper: wrapper, remoteDirectory: remoteDirectory)
+    }
+
+    /// 记下包装器路径与新建的会话目录：输出的第一行是包装器路径，最后一行是会话目录。
+    ///
+    /// 记下之后，连接建立到一半失败时，关闭连接的流程会关掉这个会话。
+    func recordSession(_ result: GitCommandResult) throws {
+        guard
+            let output = String(data: result.standardOutput, encoding: .utf8),
+            output.hasSuffix("\n"),
+            let separator = output.dropLast().lastIndex(of: "\n")
+        else { throw RemoteConnectionError(.deployment, result: result) }
+
+        let wrapper = String(output[..<separator])
+        let remoteDirectory = String(output[output.index(after: separator)...].dropLast())
+
+        guard wrapper.hasPrefix("/"), remoteDirectory.hasPrefix("/tmp/spooky-") else {
+            throw RemoteConnectionError(.deployment, result: result)
+        }
+
+        self.wrapper = wrapper
+        self.remoteDirectory = remoteDirectory
+
+        let filename = URL(fileURLWithPath: wrapper).lastPathComponent
+        Self.logger.info("远端包装器已就绪：\(filename, privacy: .public)")
     }
 
     /// 在本工作区执行 Git：带上全局选项与回调配置，交给包装器在独立进程组里运行。

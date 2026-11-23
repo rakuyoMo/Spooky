@@ -113,6 +113,55 @@ extension RemoteTransportTests {
         _ = try await runWrapper(["close", session])
     }
 
+    /// 看守在清理过期操作的同一节拍上记下包装器的使用：只更新访问时间，修改时间不变。
+    @Test("会话看守定期记下包装器的使用")
+    func watcherRecordsUse() async throws {
+        let session = try await createSession()
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-wrapper-" + UUID().uuidString)
+        let wrapper = directory.appending(path: "spooky-remote").path
+
+        defer {
+            try? FileManager.default.removeItem(atPath: session)
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        var relay = try await startRelay(in: session, plan: ["answer"])
+        defer { relay.process.terminate() }
+
+        // 看守从测试自己的副本启动，记下的是这份副本的使用；保留期 1 秒，每一轮心跳之后都记一次
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try FileManager.default.copyItem(at: Self.wrapper, to: URL(fileURLWithPath: wrapper))
+
+        // 看守启动之前就把两个时间改到 100 天前：看守先读出修改时间再连同访问时间写回，无论它在测试改时间之前还是之后读，写回的修改时间都相同
+        let past = time(nil) - 100 * 24 * 60 * 60
+        var times = [timeval(tv_sec: past, tv_usec: 0), timeval(tv_sec: past, tv_usec: 0)]
+        try #require(utimes(wrapper, &times) == 0)
+
+        _ = try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [wrapper, "watch", session, "6", "1"]
+        )
+
+        #expect(try await relay.steps.next() == "answer")
+
+        // 看守启动时读过副本，访问时间这时再改回 100 天前，之后只会因看守记下使用而更新
+        try #require(utimes(wrapper, &times) == 0)
+
+        let watching = try attributeChanges(of: wrapper)
+        defer { watching.source.cancel() }
+
+        var changes = watching.changes.makeAsyncIterator()
+
+        while try status(of: wrapper).st_atimespec.tv_sec == past {
+            _ = await changes.next()
+        }
+
+        #expect(try status(of: wrapper).st_mtimespec.tv_sec == past)
+
+        // 关掉会话后看守随之退出
+        _ = try await runWrapper(["close", session])
+    }
+
     /// 心跳连不上中继之后，看守接着清理会话；清理比心跳的超时更久时，看守不会中途被定时器结束。
     @Test("心跳失败后的清理不受心跳定时器影响")
     func watcherOutlivesHeartbeatTimer() async throws {
@@ -387,5 +436,42 @@ extension RemoteTransportTests {
         source.resume()
 
         return removed
+    }
+
+    /// 文件属性每变化一次产出一个元素的事件流；取消监听源时关掉描述符并结束事件流。
+    ///
+    /// - Parameter path: 文件路径。
+    /// - Returns: 属性变化的事件流，以及用来停止监听的监听源。
+    private func attributeChanges(
+        of path: String
+    ) throws -> (changes: AsyncStream<Void>, source: any DispatchSourceFileSystemObject) {
+        let descriptor = Darwin.open(path, O_EVTONLY | O_CLOEXEC)
+        try #require(descriptor >= 0)
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: .attrib,
+            queue: .global()
+        )
+
+        let (changes, continuation) = AsyncStream<Void>.makeStream()
+
+        source.setEventHandler { continuation.yield() }
+        source.setCancelHandler {
+            Darwin.close(descriptor)
+            continuation.finish()
+        }
+        source.resume()
+
+        return (changes, source)
+    }
+
+    /// 文件的状态信息。
+    private func status(of path: String) throws -> stat {
+        var info = stat()
+
+        guard stat(path, &info) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+
+        return info
     }
 }

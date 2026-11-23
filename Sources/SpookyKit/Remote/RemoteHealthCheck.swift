@@ -8,8 +8,8 @@ import Foundation
 /// 每步结束后，标准输出与标准错误里各写一个带随机标记的分隔帧，A 据此切回每步自己的输出与退出码，
 /// 步骤的输出含任意字节都不会与分隔帧混淆。
 struct RemoteHealthCheck {
-    /// 体检的步骤，按执行顺序排列；主机连接只检查到 `gitVersion`。
-    enum Step: Int, CaseIterable {
+    /// 体检的步骤，按执行顺序排列；工作区连接执行全部步骤，主机连接执行 ``RemoteHealthCheck/hostSteps``。
+    enum Step: CaseIterable {
         /// 读取 B 的非交互环境。
         case environment
 
@@ -36,6 +36,9 @@ struct RemoteHealthCheck {
 
         /// Git 确认的工作区根。
         case root
+
+        /// B 上已经装好这一版包装器时，用它新建会话，连接时不再部署。
+        case session
     }
 
     /// 一步的输出与结束状态。
@@ -62,6 +65,12 @@ struct RemoteHealthCheck {
         let end: Data.Index
     }
 
+    /// 主机连接的体检步骤：没有工作区，检查 Git 之后直接新建会话。
+    static let hostSteps: [Step] = [.environment, .gitPath, .gitVersion, .session]
+
+    /// 本次执行的步骤，按执行顺序排列。
+    private let steps: [Step]
+
     /// 两路输出都写完分隔帧的步骤。
     private let outputs: [Output]
 
@@ -76,7 +85,10 @@ struct RemoteHealthCheck {
     /// - Parameters:
     ///   - result: 体检通道的结果。
     ///   - marker: 本次经标准输入交给脚本的分隔标记。
-    init(_ result: GitCommandResult, marker: String) {
+    ///   - steps: 本次执行的步骤。
+    init(_ result: GitCommandResult, marker: String, steps: [Step]) {
+        self.steps = steps
+
         let marker = Data(marker.utf8)
         let output = Self.frames(in: result.standardOutput, marker: marker)
         let error = Self.frames(in: result.standardError, marker: marker)
@@ -102,11 +114,13 @@ struct RemoteHealthCheck {
         isCancelled = result.isCancelled
     }
 
-    /// 体检脚本：先从标准输入读出分隔标记，执行到 `last` 为止；仓库路径是脚本的第一个位置参数。
+    /// 体检脚本：先从标准输入读出分隔标记与新建会话的报文，再依次执行 `steps`。
     ///
-    /// - Parameter last: 最后一个要执行的步骤。
-    static func script(through last: Step) -> String {
-        let steps = Step.allCases.prefix { $0.rawValue <= last.rawValue }.map { step in
+    /// 位置参数依次是仓库路径、包装器的文件名与字节数。报文带着中继的令牌，只放在不导出的变量里，经管道交给包装器。
+    ///
+    /// - Parameter steps: 要执行的步骤。
+    static func script(_ steps: [Step]) -> String {
+        let commands = steps.map { step in
             // 读取环境失败不停，后面的检查仍给出具体错误
             let frame = step == .environment ? "spooky_frame $? || :" : "spooky_frame $? || exit 0"
             return command(for: step) + "\n" + frame
@@ -114,6 +128,7 @@ struct RemoteHealthCheck {
 
         return """
             IFS= read -r spooky_marker || exit 1
+            IFS= read -r spooky_request || exit 1
             exec </dev/null
 
             spooky_frame() {
@@ -122,7 +137,7 @@ struct RemoteHealthCheck {
                 return "$1"
             }
 
-            \(steps.joined(separator: "\n"))
+            \(commands.joined(separator: "\n"))
             """
     }
 
@@ -131,14 +146,20 @@ struct RemoteHealthCheck {
     /// 脚本没写完这一步就结束时按通道的结束状态处理：SSH 的 255 按连接诊断识别，
     /// 正常退出说明输出不完整，其它退出码连同剩下的输出算作这一步的结果。
     func result(_ step: Step, argument: String) throws -> GitCommandResult {
-        guard step.rawValue < outputs.count else {
+        guard let index = steps.firstIndex(of: step), index < outputs.count else {
             let rest = Self.result(remainder, argument: argument, isCancelled: isCancelled)
             if rest.exitCode == 255 { throw RemoteConnectionError.ssh(rest) }
             guard rest.exitCode != 0 else { throw RemoteConnectionError(.protocolFailure, result: rest) }
             return rest
         }
 
-        return Self.result(outputs[step.rawValue], argument: argument, isCancelled: isCancelled)
+        return Self.result(outputs[index], argument: argument, isCancelled: isCancelled)
+    }
+
+    /// 写完分隔帧的一步的结果；脚本没有执行完这一步时返回 nil。
+    func completed(_ step: Step, argument: String) -> GitCommandResult? {
+        guard let index = steps.firstIndex(of: step), index < outputs.count else { return nil }
+        return Self.result(outputs[index], argument: argument, isCancelled: isCancelled)
     }
 
     /// 要求一步成功：255 按连接诊断识别，其它非零退出归入 `kind`。
@@ -206,6 +227,18 @@ extension RemoteHealthCheck {
 
         case .root:
             "git -C \"$1\" rev-parse --show-toplevel"
+
+        case .session:
+            // 包装器与全部回调入口都可执行、字节数与本机一致时才用它；BSD 的 wc 在数字前补空格，不加引号让 shell 去掉
+            """
+            (spooky_wrapper="$HOME/.spooky/bin/$2"
+            for spooky_entry in '' \(RemoteConnection.callbackLinks.map { "-" + $0 }.joined(separator: " ")); do
+                test -x "$spooky_wrapper$spooky_entry" || exit 1
+            done
+            test $(wc -c < "$spooky_wrapper") -eq "$3" || exit 1
+            printf '%s\\n' "$spooky_wrapper"
+            printf '%s\\n' "$spooky_request" | "$spooky_wrapper" create-session)
+            """
         }
     }
 

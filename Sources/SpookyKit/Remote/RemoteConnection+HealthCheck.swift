@@ -1,9 +1,10 @@
 import Foundation
 
 extension RemoteConnection {
-    /// 依次检查 Git、路径权限、工作区与状态格式，返回 Git 确认的工作区根；全部检查在一次往返里执行。
+    /// 依次检查 Git、路径权限、工作区与状态格式，返回 Git 确认的工作区根；
+    /// 全部检查与复用已安装的包装器新建会话在一次往返里执行。
     func verifyRepository() async throws -> RemoteRepository {
-        let checks = try await runHealthCheck(through: .root)
+        let checks = try await runHealthCheck(RemoteHealthCheck.Step.allCases)
 
         // 先记下 B 的非交互环境，后面任何一步失败时界面都能据此给出修复方向
         environment = try readEnvironment(checks)
@@ -37,9 +38,10 @@ extension RemoteConnection {
         return RemoteRepository(host: host, path: String(rootPath.dropLast()))
     }
 
-    /// 主机连接的体检：读出 B 的主目录与环境，确认非交互环境能找到满足最低版本的 Git；全部检查在一次往返里执行。
+    /// 主机连接的体检：读出 B 的主目录与环境，确认非交互环境能找到满足最低版本的 Git；
+    /// 全部检查与复用已安装的包装器新建会话在一次往返里执行。
     func verifyHost() async throws {
-        let checks = try await runHealthCheck(through: .gitVersion)
+        let checks = try await runHealthCheck(RemoteHealthCheck.hostSteps)
         environment = try readEnvironment(checks)
 
         // 主目录是浏览与默认目标路径的起点，读不到环境说明 B 缺少包装器同样依赖的 Perl
@@ -51,17 +53,32 @@ extension RemoteConnection {
         try verifyGitVersion(checks)
     }
 
-    /// 在一次往返里执行体检脚本到 `last` 为止，按本次随机的分隔标记切开各步骤的输出。
-    private func runHealthCheck(through last: RemoteHealthCheck.Step) async throws -> RemoteHealthCheck {
+    /// 在一次往返里执行体检脚本的 `steps`，按本次随机的分隔标记切开各步骤的输出。
+    ///
+    /// 会话步骤新建了会话时立即记下，之后任何一步失败，关闭连接的流程都会关掉这个会话。
+    private func runHealthCheck(_ steps: [RemoteHealthCheck.Step]) async throws -> RemoteHealthCheck {
+        guard let bundled = Self.bundledWrapper else { throw RemoteConnectionError(.deployment) }
+
         let marker = UUID().uuidString
 
+        // 分隔标记与新建会话的报文经标准输入交给脚本，包装器的文件名与字节数是位置参数
         let result = try await commandChannel(
-            ["/bin/sh", "-c", RemoteHealthCheck.script(through: last), "spooky-check", requestedPath],
-            input: Data((marker + "\n").utf8),
+            [
+                "/bin/sh", "-c", RemoteHealthCheck.script(steps), "spooky-check",
+                requestedPath, bundled.filename, String(bundled.source.count),
+            ],
+            input: Data((marker + "\n").utf8) + sessionRequest(),
             arguments: ["health-check"]
         )
 
-        return RemoteHealthCheck(result, marker: marker)
+        let checks = RemoteHealthCheck(result, marker: marker, steps: steps)
+        let session = checks.completed(.session, argument: RemoteConnectionError.Kind.deployment.rawValue)
+
+        if let session, session.exitCode == 0 {
+            try recordSession(session)
+        }
+
+        return checks
     }
 
     /// 确认非交互环境能找到 Git；找不到时把这个环境的 PATH 写进诊断，修复方向一目了然。
