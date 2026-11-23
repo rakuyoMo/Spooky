@@ -33,7 +33,7 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <ServerDiagram
   mac={{ title: '你的 Mac', items: ['Spooky 的窗口', '~/.ssh/config 与 SSH 密钥'] }}
-  link={{ title: 'SSH', items: ['Git 命令与它们的输出', '经 SFTP 读写的文件'] }}
+  link={{ title: 'SSH', items: ['Git 命令与它们的输出', '读写的文件'] }}
   server={{ title: '你的服务器', items: ['工作区与 Git', '~/.spooky/bin/ 里的小脚本'] }}
 />
 
@@ -49,7 +49,7 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <Point icon="terminal" title="Git 在服务器上执行">
 
-Spooky 用服务器上的 Git，文件经 SFTP 读写。
+Spooky 用服务器上的 Git，文件经 SSH 读写。
 
 </Point>
 

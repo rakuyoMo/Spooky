@@ -33,7 +33,7 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <ServerDiagram
   mac={{ title: 'Ihr Mac', items: ['Das Spooky-Fenster', '~/.ssh/config und Ihre SSH-Schlüssel'] }}
-  link={{ title: 'SSH', items: ['Git-Befehle und ihre Ausgabe', 'Dateien, per SFTP gelesen und geschrieben'] }}
+  link={{ title: 'SSH', items: ['Git-Befehle und ihre Ausgabe', 'Dateien, gelesen und geschrieben'] }}
   server={{ title: 'Ihr Server', items: ['Arbeitsverzeichnis und Git', 'Ein kleines Hilfsskript in ~/.spooky/bin/'] }}
 />
 
@@ -49,7 +49,7 @@ Das Arbeitsverzeichnis bleibt auf dem Server. Sie müssen es nicht erst auf Ihre
 
 <Point icon="terminal" title="Git läuft auf dem Server">
 
-Spooky verwendet das Git des Servers und liest und schreibt Dateien per SFTP.
+Spooky verwendet das Git des Servers und liest und schreibt Dateien per SSH.
 
 </Point>
 

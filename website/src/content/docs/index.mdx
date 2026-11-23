@@ -33,7 +33,7 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <ServerDiagram
   mac={{ title: 'Your Mac', items: ['The Spooky window', '~/.ssh/config and your SSH keys'] }}
-  link={{ title: 'SSH', items: ['Git commands and their output', 'Files read and written over SFTP'] }}
+  link={{ title: 'SSH', items: ['Git commands and their output', 'Files read and written'] }}
   server={{ title: 'Your server', items: ['The working tree and Git', 'A small helper in ~/.spooky/bin/'] }}
 />
 
@@ -49,7 +49,7 @@ The working tree stays on the server. You don’t clone it to your Mac first.
 
 <Point icon="terminal" title="Git runs on the server">
 
-Spooky uses the server’s own Git, and reads and writes files over SFTP.
+Spooky uses the server’s own Git, and reads and writes files over SSH.
 
 </Point>
 

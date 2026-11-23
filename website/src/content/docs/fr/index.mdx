@@ -33,7 +33,7 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <ServerDiagram
   mac={{ title: 'Votre Mac', items: ['La fenêtre Spooky', '~/.ssh/config et vos clés SSH'] }}
-  link={{ title: 'SSH', items: ['Les commandes Git et leur sortie', 'Les fichiers lus et écrits via SFTP'] }}
+  link={{ title: 'SSH', items: ['Les commandes Git et leur sortie', 'Les fichiers lus et écrits'] }}
   server={{ title: 'Votre serveur', items: ['L’arbre de travail et Git', 'Un petit script dans ~/.spooky/bin/'] }}
 />
 
@@ -49,7 +49,7 @@ L’arbre de travail reste sur le serveur. Vous ne le clonez pas d’abord sur v
 
 <Point icon="terminal" title="Git s’exécute sur le serveur">
 
-Spooky utilise le Git du serveur, et lit et écrit les fichiers via SFTP.
+Spooky utilise le Git du serveur, et lit et écrit les fichiers via SSH.
 
 </Point>
 
