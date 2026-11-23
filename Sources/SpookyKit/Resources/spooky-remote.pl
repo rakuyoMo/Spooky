@@ -95,16 +95,25 @@ sub relay_request {
     my $info = session_info($session);
     local $SIG{ALRM} = sub { die "relay request timed out\n" };
     alarm($timeout);
-    my $socket = IO::Socket::UNIX->new(
-        Type => SOCK_STREAM,
-        Peer => "$session/relay.sock"
-    ) or die "relay unavailable\n";
-    $request->{token} = $info->{token};
-    $request->{id} = identifier();
-    write_message($socket, $request);
-    my $response = read_message($socket);
-    close $socket;
+    my $response;
+
+    my $answered = eval {
+        my $socket = IO::Socket::UNIX->new(
+            Type => SOCK_STREAM,
+            Peer => "$session/relay.sock"
+        ) or die "relay unavailable\n";
+        $request->{token} = $info->{token};
+        $request->{id} = identifier();
+        write_message($socket, $request);
+        $response = read_message($socket);
+        close $socket;
+        1;
+    };
+    my $error = $@;
+
+    # 连不上、读写失败时同样先取消定时器：留下的定时器会在之后的清理中途按默认处理结束整个进程
     alarm(0);
+    die $error unless $answered;
     die "relay request refused\n" unless $response->{accepted};
     return $response->{value} // '';
 }
@@ -125,15 +134,18 @@ sub cancel_operation {
         );
 
         if ($socket) {
-            eval {
+            my $confirmed = eval {
                 local $SIG{ALRM} = sub { die "cancel confirmation timed out\n" };
                 alarm(int($grace) + 4);
                 write_message($socket, { cancel => \1 });
                 my $reply = read_message($socket);
-                alarm(0);
-                close $socket;
-                return $reply->{confirmed} ? 1 : 0;
-            } and return 1;
+                $reply->{confirmed} ? 1 : 0;
+            };
+
+            # 读写失败时同样先取消定时器：留下的定时器会在之后的重试或清理中途按默认处理结束整个进程
+            alarm(0);
+            close $socket;
+            return 1 if $confirmed;
         }
 
         sleep(0.05);
@@ -361,6 +373,9 @@ sub supervise_process {
                 alarm(0);
                 $request;
             };
+
+            # 读取失败时定时器还在走，不取消就会在 eval 之外按默认处理结束 run
+            alarm(0);
 
             if ($request && $request->{cancel}) {
                 $cancelled = 1;
