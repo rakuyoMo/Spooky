@@ -20,7 +20,7 @@ A native Git client for macOS that works with repositories on your Mac and on yo
 
 Spooky opens Git repositories on your Mac, and works directly with repositories on another machine over SSH.
 
-A server repository's working tree stays on the server: Git runs there and files are read and written over SFTP, so the repository never has to be cloned to your Mac.
+A server repository's working tree stays on the server: Git commands and file reads and writes all run there, so the repository never has to be cloned to your Mac.
 
 Connections use the system's SSH and the host aliases in `~/.ssh/config`. OpenSSH handles authentication, host keys, and connection sharing.
 
@@ -106,7 +106,7 @@ A few designs run through the whole codebase:
 
 - **One write at a time**: each repository has one write queue shared by all its windows. Writes run one at a time in the order they were started, and a write started while another is running waits its turn. Read-only Git commands are registered in `RepositoryOperationQueue.isReadOnly`, and every other command is treated as a write
 
-- **Server connections**: each server working tree gets its own SSH master connection (ControlMaster), which exits after 10 idle minutes. After the first connection check, the Perl helper `spooky-remote.pl` is installed in `~/.spooky/bin/` on the server, named after a digest of its contents, to manage remote processes and callbacks. Files are read and written over SFTP on the same master connection
+- **Server connections**: each server working tree gets its own SSH master connection (ControlMaster), which exits after 10 idle minutes. After the first connection check, the Perl helper `spooky-remote.pl` is installed in `~/.spooky/bin/` on the server, named after a digest of its contents, to manage remote processes and callbacks. Files are read and written by the same helper, and commands go through one long-lived helper session on the master connection. Only files too large to read in one request are fetched over SFTP
 
 - **Callbacks**: when Git asks for a password, a passphrase, or an editor, `CallbackRelay` brings the request back to the Mac, through a reverse Unix socket for server repositories and a private Unix socket for local ones
 
