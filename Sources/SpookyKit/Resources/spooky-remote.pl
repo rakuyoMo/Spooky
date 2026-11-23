@@ -173,7 +173,12 @@ sub clean_session {
 
     if ($confirmed) {
         require File::Path;
-        File::Path::remove_tree($session);
+
+        # 删除期间到达的取消会在已经列过的目录里留下取消标记，目录因此删不掉；还在就再删一遍，最多三遍
+        for (1 .. 3) {
+            File::Path::remove_tree($session);
+            last unless -d $session;
+        }
     }
 
     return $confirmed;
