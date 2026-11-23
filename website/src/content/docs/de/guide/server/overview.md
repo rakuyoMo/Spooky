@@ -14,7 +14,7 @@ Spooky verbindet sich mit dem SSH, das zu macOS gehört. Es verwendet einen Host
 Auf dem Server:
 
 - Git führt jeden Befehl aus, mit dem eigenen Git und der eigenen Umgebung des Servers.
-- Spooky liest und schreibt Dateien per SFTP, dem Dateiübertragungsteil von SSH.
+- Spooky liest und schreibt Dateien über die SSH-Verbindung. Große Dateien kommen per SFTP, dem Dateiübertragungsteil von SSH.
 - Dateien, die Sie löschen, und neue Dateien, die Sie verwerfen, kommen in den Papierkorb des Servers, falls er einen hat.
 - Abrufen, Pullen und Pushen erreichen Remotes wie GitHub vom Server aus. Sie verwenden das Netzwerk und die SSH-Schlüssel des Servers.
 

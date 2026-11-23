@@ -14,7 +14,7 @@ Spooky se conecta con el SSH que viene con macOS. Usa un alias de host de tu arc
 En el servidor:
 
 - Git ejecuta todos los comandos, con el Git y el entorno del propio servidor.
-- Spooky lee y escribe los archivos por SFTP, la parte de SSH dedicada a transferir archivos.
+- Spooky lee y escribe los archivos por la conexión SSH. Los archivos grandes llegan por SFTP, la parte de SSH dedicada a transferir archivos.
 - Los archivos que eliminas, y los archivos nuevos que descartas, van a la papelera del servidor si tiene una.
 - Fetch, pull y push acceden a remotos como GitHub desde el servidor. Usan la red del servidor y las claves SSH del servidor.
 
