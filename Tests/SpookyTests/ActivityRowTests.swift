@@ -79,7 +79,7 @@ struct ActivityRowTests {
     /// Remote 页进行中的行写 In Progress…，结束后换成开始的日期，今天与昨天写作相对的说法、更早的写完整日期，都不写时间；
     /// 其余两页写两位小数的耗时，进行中的算到当前时间。
     /// 最后一行写日志的最后一个非空行，行首的空白原样保留：stderr 有内容时取它的，否则取 stdout 的；
-    /// 没有日志时写状态，同步进行中是步骤名。
+    /// 获取的结果行是给程序读的，不取它；没有日志时写状态，同步进行中是步骤名。
     @Test("右上角的时间与最后一行的文字")
     func cornerAndStatus() {
         let now = Date()
@@ -138,6 +138,16 @@ struct ActivityRowTests {
         read.append(.standardOutput(Data("0 updated, 1 added, 0 deleted".utf8)))
         read.state = "activity.finished"
         #expect(ActivityRow(activity: read).status == "0 updated, 1 added, 0 deleted")
+
+        // 拉取先获取：没有新对象时只有 stdout 里写入 FETCH_HEAD 的结果行，它不当作最后一行；合并的输出出来后取合并的
+        let pull = RepositoryActivity(kind: .remote, repository: location, title: "Pull", target: .pull("origin"))
+        let fetched = "* 0000000000000000000000000000000000000000 c8a777c131f337e27e21501bbb5d5946ae7133f3 FETCH_HEAD\n"
+        pull.append(.standardOutput(Data(fetched.utf8)))
+        #expect(ActivityRow(activity: pull).status == AppLocalization.text("activity.running"))
+
+        pull.append(.standardOutput(Data("Already up to date.\n".utf8)))
+        #expect(ActivityRow(activity: pull).status == "Already up to date.")
+        #expect(pull.log == fetched + "Already up to date.\n")
 
         // 没有日志：进行中、同步的步骤、结束
         let sync = RepositoryActivity(kind: .remote, repository: location, title: "Sync", target: .pull("origin"))
