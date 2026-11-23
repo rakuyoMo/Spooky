@@ -11,7 +11,7 @@ import TestSupport
 /// 仓库窗口的工具栏、窗口标题、标签页与启动窗口。
 @MainActor
 struct WindowChromeTests {
-    /// 同一个仓库窗口依次核对：工具栏的排布、旧排布里的关闭仓库、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
+    /// 同一个仓库窗口依次核对：工具栏的排布、Clone 项、旧排布里的关闭仓库、标签、可见优先级与图标；刷新进行中 Refresh 照常可用；
     /// 隐藏与显示窗口标题；主机前缀与仓库管理入口的状态；新标签与显式新窗口。
     @Test("工具栏、刷新中的 Refresh、窗口标题与标签页")
     func toolbarItems() async throws {
@@ -30,6 +30,7 @@ struct WindowChromeTests {
 
         // 各项的排布、标签、可见优先级与图标在窗口显示仓库时核对
         try Self.expectToolbarLayout(in: controller)
+        try await Self.expectCloneItem(in: fixture)
         Self.expectSavedCloseRepositoryDropped(in: fixture)
         try Self.expectToolbarLabels(in: controller)
         try Self.expectTransferIcons(in: controller)
@@ -167,6 +168,38 @@ extension WindowChromeTests {
                 controller.toolbar(toolbar, itemForItemIdentifier: identifier, willBeInsertedIntoToolbar: false) == nil
             )
         }
+    }
+
+    /// Clone 与其它按钮一样可以移动与移除，默认与仓库管理入口一起排在侧边栏分隔符之前；
+    /// 工具栏里的一份有克隆时才显示，自定义面板里的一份始终列出。
+    private static func expectCloneItem(in fixture: NavigationTests.WindowFixture) async throws {
+        let controller = fixture.controller
+        let toolbar = try #require(controller.window?.toolbar)
+        let identifiers = toolbar.items.map(\.itemIdentifier)
+        let index = try #require(identifiers.firstIndex(of: RepositoryToolbar.clone))
+        let item = toolbar.items[index]
+
+        #expect(!controller.toolbarImmovableItemIdentifiers(toolbar).contains(RepositoryToolbar.clone))
+        #expect(identifiers[index - 1] == RepositoryToolbar.repositories)
+        #expect(identifiers[index + 1] == RepositoryToolbar.sidebarSeparator)
+
+        // 没有克隆时工具栏里的一份隐藏，自定义面板里的一份照样列出
+        let listed = try #require(
+            controller.toolbar(toolbar, itemForItemIdentifier: RepositoryToolbar.clone, willBeInsertedIntoToolbar: false)
+        )
+
+        #expect(item.isHidden)
+        #expect(!listed.isHidden)
+
+        // 目标不是绝对路径，克隆在执行 Git 之前就失败，仍留在最近克隆里：工具栏里的一份随之出现，移除后又隐藏
+        let activity = fixture.coordinator.clones.start(
+            RepositoryClone(url: "https://example.invalid/app.git", destination: .local(path: "relative/app"))
+        )
+
+        await until { !item.isHidden }
+
+        fixture.coordinator.clones.remove(activity)
+        await until { item.isHidden }
     }
 
     /// 以前保存的排布里有关闭仓库一项：按这份排布建出的工具栏载入后没有它，其余保存的项照旧；
