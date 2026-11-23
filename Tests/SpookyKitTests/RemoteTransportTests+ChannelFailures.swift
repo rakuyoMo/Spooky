@@ -267,16 +267,12 @@ extension RemoteTransportTests {
         #expect(!channel.isReady)
         await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await pending.value }
 
-        // 带前导的通道在分隔标记之前不计就绪期限，通道进程也一直不退出：等待被取消时关闭通道，等待随之结束
+        // 带前导的通道在转入通道的标记之前不计就绪期限，通道进程也一直不退出：等待被取消时关闭通道，等待随之结束
         let waiting = RemoteCommandChannel(
             executable: "/bin/sh",
             arguments: ["-c", "exec /bin/cat > /dev/null"],
             environment: .inherit,
-            preamble: RemoteCommandChannel.Preamble(
-                input: Data(),
-                marker: RemoteHealthCheck.channelMarker("marker"),
-                arguments: []
-            ),
+            preamble: RemoteCommandChannel.Preamble(arguments: []),
             onDisconnect: { _ in }
         )
         let wait = Task { await waiting.waitUntilReady() }

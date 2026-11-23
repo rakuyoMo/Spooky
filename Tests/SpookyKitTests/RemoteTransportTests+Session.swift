@@ -199,36 +199,47 @@ extension RemoteTransportTests {
         #expect(!FileManager.default.fileExists(atPath: session))
     }
 
-    /// 新建会话先校验看守的两个参数；分出的看守不留调用方的输出与其它描述符，转发的 socket 到期仍没出现时清理会话。
-    @Test("新建会话时分出看守，转发一直没出现就清理会话")
+    /// 新建会话不读标准输入，也不分出看守；开始会话先校验看守的两个参数，写入令牌之后才分出看守，
+    /// 分出的看守不留调用方的输出与其它描述符；转发的 socket 到期仍没有出现时，看守不发心跳，按心跳失败清理会话。
+    @Test("开始会话时分出看守，转发到期没有出现就清理会话")
     func sessionWatcher() async throws {
-        // 参数不对时报错，不输出会话目录
-        for arguments in [["x", "300"], ["6"]] {
-            let rejected = try await CommandExecutor.execute(
-                executable: "/usr/bin/perl",
-                processArguments: [Self.wrapper.path, "create-session"] + arguments,
-                input: sessionRequest(),
-                acceptedExitCodes: Set(0 ... 255)
-            )
-
-            #expect(rejected.exitCode != 0)
-            #expect(rejected.standardOutput.isEmpty)
-        }
-
-        // 标准输出另有一份在 3 号描述符上：看守留着其中任何一个，这里就读不到输出结束
+        // 新建会话不读标准输入，之后的 cat 读到全部输入；会话目录是空的，没有看守
+        let input = tokenLine()
         let created = try await CommandExecutor.execute(
             executable: "/bin/sh",
-            processArguments: [
-                "-c",
-                #"exec 3>&1; exec /usr/bin/perl "$0" create-session 600 300"#,
-                Self.wrapper.path,
-            ],
-            input: sessionRequest()
+            processArguments: ["-c", #"/usr/bin/perl "$0" create-session && exec cat"#, Self.wrapper.path],
+            input: input
         )
-        let session = String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
+        let output = String(decoding: created.standardOutput, as: UTF8.self)
+        let session = String(output.prefix { $0 != "\n" })
         defer { try? FileManager.default.removeItem(atPath: session) }
 
-        #expect(FileManager.default.fileExists(atPath: session + "/session.json"))
+        #expect(session.hasPrefix("/tmp/spooky-"))
+        #expect(Data(output.dropFirst(session.count + 1).utf8) == input)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: session).isEmpty)
+        #expect(try await watchers(of: session) == 0)
+
+        // 参数不对时报错，不写令牌，也不分出看守
+        for arguments in [["x", "300"], ["6"]] {
+            let rejected = try await startSession(input, in: session, arguments: arguments)
+            #expect(rejected.exitCode != 0)
+        }
+
+        #expect(try FileManager.default.contentsOfDirectory(atPath: session).isEmpty)
+        #expect(try await watchers(of: session) == 0)
+
+        // 标准输出另有一份在 3 号描述符上：看守留着其中任何一个，这里就读不到输出结束
+        _ = try await CommandExecutor.execute(
+            executable: "/bin/sh",
+            processArguments: [
+                "-c", #"exec 3>&1; exec /usr/bin/perl "$0" start-session "$1" 600 300"#,
+                Self.wrapper.path, session,
+            ],
+            input: input
+        )
+
+        #expect(try FileManager.default.contentsOfDirectory(atPath: session) == ["session.json"])
+        #expect(try await watchers(of: session) == 1)
         _ = try await runWrapper(["close", session])
 
         // 容忍期 1 秒内 relay.sock 一直没出现，看守按心跳失败清理会话
@@ -238,6 +249,41 @@ extension RemoteTransportTests {
         for await _ in try removal(of: expiring) { }
 
         #expect(!FileManager.default.fileExists(atPath: expiring))
+    }
+
+    /// 开始会话时令牌只认标准输入的一行 64 个小写十六进制字符，会话目录不对或已经写过时拒绝；
+    /// 写成之后会话目录里只有完整的 session.json，不留临时文件。
+    @Test("写入令牌只接受格式正确的第一次")
+    func sessionToken() async throws {
+        let session = try await createSession(startsSession: false)
+        defer { try? FileManager.default.removeItem(atPath: session) }
+
+        let token = String(repeating: "0123456789abcdef", count: 4)
+        let path = session + "/session.json"
+        let written = Data(#"{"token":"\#(token)"}"#.utf8)
+
+        // 大写、少一个字符、缺少换行与空输入都不对
+        for line in [token.uppercased() + "\n", String(token.dropLast()) + "\n", token, ""] {
+            let rejected = try await startSession(Data(line.utf8), in: session)
+            #expect(rejected.exitCode != 0)
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: path))
+
+        // 会话目录不在
+        let missing = try await startSession(Data((token + "\n").utf8), in: session + "/missing")
+        #expect(missing.exitCode != 0)
+
+        let accepted = try await startSession(Data((token + "\n").utf8), in: session)
+        #expect(accepted.exitCode == 0)
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == written)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: session) == ["session.json"])
+
+        // 已经写过：拒绝，内容不变
+        let repeated = try await startSession(Data((String(repeating: "f", count: 64) + "\n").utf8), in: session)
+        #expect(repeated.exitCode != 0)
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == written)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: session) == ["session.json"])
     }
 
     /// 控制连接没发报文就断开时，run 继续监督命令直到它结束，不会被读报文的定时器结束。
@@ -329,7 +375,7 @@ extension RemoteTransportTests {
         )
     }
 
-    /// 用包装器建一个本机会话目录，同时分出它的看守。
+    /// 用包装器建一个本机会话目录，再开始会话：写入随机的令牌，分出它的看守。
     ///
     /// 看守等到 relay.sock 出现才开始心跳；默认的容忍期足够长，不接假中继的测试里看守不会中途清理会话，
     /// 测试删掉会话目录后它随之退出。
@@ -338,25 +384,67 @@ extension RemoteTransportTests {
     ///   - tolerance: 看守的心跳容忍期，也是等 relay.sock 出现的期限。
     ///   - retention: 看守保留已结束操作的秒数。
     ///   - wrapper: 运行的包装器。
+    ///   - startsSession: 是否开始会话；为 false 时只建会话目录，没有令牌与看守。
     /// - Returns: 会话目录的路径。
     func createSession(
         tolerance: String = "600",
         retention: String = "300",
-        wrapper: URL = RemoteTransportTests.wrapper
+        wrapper: URL = RemoteTransportTests.wrapper,
+        startsSession: Bool = true
     ) async throws -> String {
         let created = try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
-            processArguments: [wrapper.path, "create-session", tolerance, retention],
-            input: sessionRequest()
+            processArguments: [wrapper.path, "create-session"]
         )
+        let session = String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
 
-        return String(decoding: created.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
+        if startsSession {
+            _ = try await CommandExecutor.execute(
+                executable: "/usr/bin/perl",
+                processArguments: [wrapper.path, "start-session", session, tolerance, retention],
+                input: tokenLine()
+            )
+        }
+
+        return session
     }
 
-    /// 新建会话的报文：一行 JSON，带着随机的令牌。
-    private func sessionRequest() -> Data {
+    /// 会话令牌的一行：64 个随机的小写十六进制字符。
+    private func tokenLine() -> Data {
         let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
-        return Data(#"{"token":"\#(token)"}"#.utf8) + Data([10])
+        return Data((token + "\n").utf8)
+    }
+
+    /// 开始会话：经标准输入把一行令牌写进会话并分出看守，接受全部退出码。
+    ///
+    /// - Parameters:
+    ///   - line: 标准输入。
+    ///   - session: 会话目录。
+    ///   - arguments: 看守的心跳容忍期与操作保留期。
+    /// - Returns: 包装器的输出与退出状态。
+    private func startSession(
+        _ line: Data,
+        in session: String,
+        arguments: [String] = ["600", "300"]
+    ) async throws -> GitCommandResult {
+        try await CommandExecutor.execute(
+            executable: "/usr/bin/perl",
+            processArguments: [Self.wrapper.path, "start-session", session] + arguments,
+            input: line,
+            acceptedExitCodes: Set(0 ... 255)
+        )
+    }
+
+    /// 本机看着 `session` 的看守进程数，按看守的进程标题找。
+    private func watchers(of session: String) async throws -> Int {
+        // 方括号让匹配式不匹配 pgrep 所在命令行本身；一个也没有时 pgrep 以 1 退出
+        let found = try await CommandExecutor.execute(
+            executable: "/usr/bin/pgrep",
+            processArguments: ["-f", "watc[h] " + session],
+            acceptedExitCodes: [0, 1]
+        )
+
+        return String(decoding: found.standardOutput, as: UTF8.self).split(separator: "\n").count
     }
 
     /// 在会话里经 `run` 启动一条执行一段时间的命令，等它开始执行后返回。

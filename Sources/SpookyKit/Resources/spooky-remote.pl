@@ -228,7 +228,8 @@ sub record_use {
 }
 
 # 看守经中继的心跳确认 A 仍连着，心跳失败时返回；
-# 会话刚建好时 A 还没把中继转发进来：转发的 socket 出现之前不发心跳，等满容忍期仍没有出现按心跳失败处理。
+# 看守在写入令牌之后分出，这时 A 可能还没把中继转发进来：转发的 socket 出现之前不发心跳，
+# 等满容忍期仍没有出现按心跳失败处理。
 # 第一轮先清理一遍过期的操作并记下包装器的使用，之后每过保留期的五分之一做一遍。
 # 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
 # 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
@@ -267,33 +268,38 @@ sub watch_session {
     }
 }
 
-# 分出会话的看守进程，看守结束后清理会话；分不出来时删掉刚建的会话目录再报错。
+# 分出会话的看守进程，看守结束后清理会话；分不出来时删掉刚写的令牌再报错，会话目录留给 A 的关闭流程。
 # 看守脱离调用方的进程组，不留调用方的标准输入输出与其它描述符：调用方读到输出结束就能继续，不被看守拖住。
+# 等看守脱离进程组、写好进程标题才返回：调用方随即退出也不会连带结束它，按进程标题立即就能找到它。
 sub start_watcher {
     my ($session, $tolerance, $retention) = @_;
-    my $pid = fork();
+    my $fail = sub { unlink "$session/session.json"; die "cannot watch session\n" };
 
-    if (!defined $pid) {
-        unlink "$session/session.json";
-        rmdir $session;
-        die "cannot watch session\n";
+    pipe(my $ready_read, my $ready_write) or $fail->();
+    my $pid = fork();
+    $fail->() unless defined $pid;
+
+    if ($pid) {
+        close $ready_write;
+        read($ready_read, my $ready, 1);
+        close $ready_read;
+        return;
     }
 
-    return if $pid;
-
+    close $ready_read;
     setsid();
     open STDIN, '<', '/dev/null';
     open STDOUT, '>', '/dev/null';
     open STDERR, '>', '/dev/null';
-
-    # 调用方可能把别的管道留在 3 号及以后的描述符上，逐个关掉
-    my $limit = POSIX::sysconf(POSIX::_SC_OPEN_MAX()) // 256;
-    POSIX::close($_) for 3 .. ($limit < 4096 ? $limit : 4096) - 1;
-
     $SIG{HUP} = 'IGNORE';
 
     # 进程标题写成 “包装器 watch 会话目录”，按命令行能找到某个会话的看守
     $0 = "$wrapper watch $session";
+    syswrite($ready_write, '1');
+
+    # 调用方可能把别的管道留在 3 号及以后的描述符上，连同握手的管道逐个关掉
+    my $limit = POSIX::sysconf(POSIX::_SC_OPEN_MAX()) // 256;
+    POSIX::close($_) for 3 .. ($limit < 4096 ? $limit : 4096) - 1;
 
     watch_session($session, $tolerance, $retention);
     clean_session($session);
@@ -1010,23 +1016,45 @@ sub dispatch {
     my ($mode) = @_;
 
     if ($mode eq 'create-session') {
-        my ($tolerance, $retention) = @ARGV;
-        die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
-        die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
+        # 这一步在建立连接的关键路径上，不加载 File::Temp：目录名取内核的随机数，名字已被占用时换一个；
+        # 名字取 16 个字符，操作目录里控制 socket 的路径才不会超出 Unix socket 的长度上限
+        my $session;
 
-        require File::Temp;
-        require JSON::PP;
-        my $request = read_message(\*STDIN);
-        die "invalid session token\n" unless ($request->{token} // '') =~ /\A[a-f0-9]{64}\z/;
-        my $session = File::Temp::tempdir('spooky-XXXXXXXX', DIR => '/tmp', CLEANUP => 0);
-        chmod 0700, $session;
-        open my $file, '>:raw', "$session/session.json" or die "cannot initialize session\n";
-        print {$file} JSON::PP::encode_json({ token => $request->{token} });
-        close $file;
+        for (1 .. 16) {
+            my $candidate = '/tmp/spooky-' . substr(identifier(), 0, 16);
+
+            if (mkdir($candidate, 0700)) {
+                $session = $candidate;
+                last;
+            }
+
+            die "cannot create session: $!\n" unless $! == EEXIST;
+        }
+
+        die "cannot create session\n" unless defined $session;
 
         record_use();
-        start_watcher($session, $tolerance, $retention);
         print "$session\n";
+    } elsif ($mode eq 'start-session') {
+        # 令牌只经标准输入交来，是一行 64 个小写十六进制字符；内容格式固定，直接拼成 JSON，不加载 JSON::PP。
+        # 先写进同一目录的临时文件再改名，读到的 session.json 要么没有、要么完整；写好令牌才分出看守
+        my ($session, $tolerance, $retention) = @ARGV;
+        die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
+        die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
+        check_session($session);
+
+        my $line = <STDIN> // '';
+        my ($token) = ($line =~ /\A([a-f0-9]{64})\n\z/) or die "invalid session token\n";
+        die "session token already written\n" if -e "$session/session.json";
+
+        my $temporary = "$session/session.json." . identifier();
+        my $fail = sub { unlink $temporary; die "$_[0]\n" };
+
+        open(my $file, '>:raw', $temporary) or die "cannot write session token: $!\n";
+        print {$file} qq({"token":"$token"}) or $fail->("cannot write session token: $!");
+        close($file) or $fail->("cannot write session token: $!");
+        rename($temporary, "$session/session.json") or $fail->("cannot write session token: $!");
+        start_watcher($session, $tolerance, $retention);
     } elsif ($mode eq 'close') {
         my $session = shift @ARGV;
 

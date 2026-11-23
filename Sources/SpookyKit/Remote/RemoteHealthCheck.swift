@@ -4,12 +4,17 @@ import Foundation
 
 /// 连接体检在 B 上一次执行完的各个步骤。
 ///
-/// 脚本按顺序执行步骤，遇到第一个非零退出的检查就停下；读取环境失败不停，后面的检查仍给出具体错误。
-/// 每步结束后，标准输出与标准错误里各写一个带随机标记的分隔帧，A 据此切回每步自己的输出与退出码，
-/// 步骤的输出含任意字节都不会与分隔帧混淆。
+/// 脚本先由 B 生成本次的随机标记，在标准输出与标准错误上各写一个宣告；之后按顺序执行步骤，
+/// 遇到第一个非零退出的检查就停下，读取环境与新建会话失败不停。
+/// 每步结束后两路输出各写一个带标记的分隔帧，A 据此切回每步自己的输出与退出码，
+/// 步骤的输出含任意字节都不会与分隔帧混淆，见 ``Splitter``。
 struct RemoteHealthCheck {
-    /// 体检的步骤，按执行顺序排列；工作区连接执行全部步骤，主机连接执行 ``RemoteHealthCheck/hostSteps``。
-    enum Step: CaseIterable {
+    /// 体检的步骤；工作区连接执行 ``RemoteHealthCheck/repositorySteps``，主机连接执行 ``RemoteHealthCheck/hostSteps``，
+    /// 逐条执行时最后再加上 ``token``。
+    enum Step {
+        /// B 上已经装好这一版包装器时，用它新建会话，连接时不再部署；排在最前，A 读到它就开始准备会话。
+        case session
+
         /// 读取 B 的非交互环境。
         case environment
 
@@ -37,8 +42,9 @@ struct RemoteHealthCheck {
         /// Git 确认的工作区根。
         case root
 
-        /// B 上已经装好这一版包装器时，用它新建会话，连接时不再部署。
-        case session
+        /// 不转成常驻通道时开始会话：会话已经新建且其余步骤全部成功时，令牌经脚本原来的标准输入交给包装器，
+        /// 包装器写入令牌之后分出会话看守。
+        case token
     }
 
     /// 一步的输出与结束状态。
@@ -53,20 +59,14 @@ struct RemoteHealthCheck {
         let terminationStatus: GitTerminationStatus?
     }
 
-    /// 一路输出里的一个分隔帧。
-    private struct Frame {
-        /// 上一帧之后、这一帧之前的输出。
-        let output: Data
+    /// 工作区连接的体检步骤，按执行顺序排列。
+    static let repositorySteps: [Step] = [
+        .session, .environment, .gitPath, .gitVersion,
+        .directory, .permission, .listing, .workTree, .status, .root,
+    ]
 
-        /// 帧里记录的退出码。
-        let code: Int32
-
-        /// 帧末尾之后的位置。
-        let end: Data.Index
-    }
-
-    /// 主机连接的体检步骤：没有工作区，检查 Git 之后直接新建会话。
-    static let hostSteps: [Step] = [.environment, .gitPath, .gitVersion, .session]
+    /// 主机连接的体检步骤：没有工作区，新建会话之后只检查环境与 Git。
+    static let hostSteps: [Step] = [.session, .environment, .gitPath, .gitVersion]
 
     /// 本次执行的步骤，按执行顺序排列。
     private let steps: [Step]
@@ -80,72 +80,89 @@ struct RemoteHealthCheck {
     /// 通道是否因任务取消而结束。
     private let isCancelled: Bool
 
-    /// 按本次的分隔标记切开体检通道的输出。
+    /// 两路的宣告不一致，或宣告、分隔帧的格式不对；此时不认任何一步的结果。
+    private let isMalformed: Bool
+
+    /// 按两路各自宣告的标记切开体检的输出。
     ///
     /// - Parameters:
-    ///   - result: 体检通道的结果。
-    ///   - marker: 本次经标准输入交给脚本的分隔标记。
+    ///   - result: 体检的结果。
     ///   - steps: 本次执行的步骤。
-    init(_ result: GitCommandResult, marker: String, steps: [Step]) {
+    init(_ result: GitCommandResult, steps: [Step]) {
         self.steps = steps
 
-        let marker = Data(marker.utf8)
-        let output = Self.frames(in: result.standardOutput, marker: marker)
-        let error = Self.frames(in: result.standardError, marker: marker)
-        let count = min(output.count, error.count)
+        var output = Splitter()
+        var error = Splitter()
+        let outputFrames = output.receive(result.standardOutput).frames
+        let errorFrames = error.receive(result.standardError).frames
+
+        let malformed = output.isMalformed || error.isMalformed || output.marker != error.marker
+        let count = malformed ? 0 : min(outputFrames.count, errorFrames.count)
 
         outputs = (0 ..< count).map { index in
             Output(
-                standardOutput: output[index].output,
-                standardError: error[index].output,
-                terminationStatus: .exited(output[index].code)
+                standardOutput: outputFrames[index].output,
+                standardError: errorFrames[index].output,
+                terminationStatus: .exited(outputFrames[index].code)
             )
         }
 
-        // 没写完的那一步拿到最后一个完整帧之后的全部输出
-        let outputEnd = count > 0 ? output[count - 1].end : result.standardOutput.startIndex
-        let errorEnd = count > 0 ? error[count - 1].end : result.standardError.startIndex
+        // 没写完的那一步拿到最后一个完整帧之后的全部输出；一帧都没有时从宣告之后算起，格式不对时从头算起
+        func start(_ frames: [Splitter.Frame], _ splitter: Splitter) -> Int {
+            if count > 0 { return frames[count - 1].end }
+            return malformed ? 0 : splitter.announcementEnd
+        }
 
         remainder = Output(
-            standardOutput: Data(result.standardOutput[outputEnd...]),
-            standardError: Data(result.standardError[errorEnd...]),
+            standardOutput: Data(result.standardOutput.dropFirst(start(outputFrames, output))),
+            standardError: Data(result.standardError.dropFirst(start(errorFrames, error))),
             terminationStatus: result.terminationStatus
         )
         isCancelled = result.isCancelled
+        isMalformed = malformed
     }
 
-    /// 体检脚本：先从标准输入读出分隔标记与新建会话的报文，再依次执行 `steps`。
+    /// 体检脚本：B 先生成本次的分隔标记并在两路输出上各写一个宣告，再依次执行 `steps`。
     ///
     /// 位置参数依次是仓库路径、包装器的文件名与字节数、会话看守的心跳容忍期与操作保留期。
-    /// 报文带着中继的令牌，只放在不导出的变量里，经管道交给包装器。
+    /// 标记取 B 的内核随机数，只放在不导出的变量里，不进参数与环境变量。
+    /// 各步骤的标准输入都是 /dev/null，原来的标准输入另存在 3 号描述符：
+    /// 转成常驻通道时留给 serve，逐条执行时留给 ``Step/token`` 读令牌。
+    /// 启动外部程序的命令各自带上 `3<&-`，Git 与它启动的钩子、守护进程都拿不到这条请求流；
+    /// 整段放进带 `3<&-` 的花括号不行：bash 为了事后恢复把 3 号描述符另存一份，子进程照样拿得到。
     ///
-    /// 转成常驻通道时，会话步骤成功之后在两路输出上各写一个 ``channelMarker(_:)``，再 exec 到包装器的 serve 模式，
-    /// 标准输入换回读完两行之后另存的那一个；之后经标准输入写进来的是通道的请求帧。
+    /// 转成常驻通道时，会话已经新建且全部步骤成功之后，两路输出上各写一个转入通道的标记 `\036<标记>:channel\037`，
+    /// 再 exec 到包装器的 serve 模式；之后经标准输入写进来的是通道的请求帧。
     ///
     /// - Parameters:
     ///   - steps: 要执行的步骤。
-    ///   - entersChannel: 会话步骤成功之后是否转成常驻通道。
+    ///   - entersChannel: 全部步骤成功之后是否转成常驻通道。
     static func script(_ steps: [Step], entersChannel: Bool) -> String {
         let commands = steps.map { step in
-            // 读取环境失败不停，后面的检查仍给出具体错误
-            let frame = step == .environment ? "spooky_frame $? || :" : "spooky_frame $? || exit 0"
-            return command(for: step) + "\n" + frame
+            // 读取环境与新建会话失败都不停：前者让后面的检查给出具体错误，后者在体检之后部署包装器
+            let continues = step == .environment || step == .session
+            return command(for: step) + "\n" + (continues ? "spooky_frame $? || :" : "spooky_frame $? || exit 0")
         }
-
-        // 各步骤的标准输入都是 /dev/null；转成通道时原来的标准输入另存在 3 号描述符，留给 serve
-        let input = entersChannel ? "exec 3<&0 </dev/null" : "exec </dev/null"
 
         let channel = """
 
-            printf '\\036%s\\037' "$spooky_marker"
-            printf '\\036%s\\037' "$spooky_marker" >&2
+
+            test -n "$spooky_session" || exit 0
+            printf '\\036%s:channel\\037' "$spooky_marker"
+            printf '\\036%s:channel\\037' "$spooky_marker" >&2
             exec "$spooky_wrapper" serve "$spooky_session" <&3 3<&-
             """
 
+        // 标记是 16 字节随机数的小写十六进制，读不到随机数时长度不对，脚本不写宣告就结束；
+        // 工具用绝对路径，非交互环境的 PATH 不对时后面的步骤仍能给出具体错误
         return """
-            IFS= read -r spooky_marker || exit 1
-            IFS= read -r spooky_request || exit 1
-            \(input)
+            exec 3<&0 </dev/null
+            spooky_marker=$(/usr/bin/od -A n -t x1 -N 16 /dev/urandom 3<&- | /usr/bin/tr -d ' \\n' 3<&-)
+            test ${#spooky_marker} -eq 32 || exit 1
+            spooky_session=
+
+            printf '\\036%s\\037' "$spooky_marker"
+            printf '\\036%s\\037' "$spooky_marker" >&2
 
             spooky_frame() {
                 printf '\\036%s:%s\\037' "$spooky_marker" "$1"
@@ -155,13 +172,6 @@ struct RemoteHealthCheck {
 
             \(commands.joined(separator: "\n"))
             """ + (entersChannel ? channel : "")
-    }
-
-    /// 体检会话转成常驻通道时，两路输出在前导与通道之间的分隔标记；与步骤的分隔帧不同，标记之后没有冒号与退出码。
-    ///
-    /// - Parameter marker: 本次经标准输入交给脚本的分隔标记。
-    static func channelMarker(_ marker: String) -> Data {
-        Data([0x1E]) + Data(marker.utf8) + Data([0x1F])
     }
 
     /// 找到 Git 那一步输出的绝对路径；输出不是一行以 “/” 开头的路径时为 nil。
@@ -181,12 +191,16 @@ struct RemoteHealthCheck {
     /// 一步的结果，参数记为 `argument`。
     ///
     /// 脚本没写完这一步就结束时按通道的结束状态处理：SSH 的 255 按连接诊断识别，
-    /// 正常退出说明输出不完整，其它退出码连同剩下的输出算作这一步的结果。
+    /// 正常退出或输出的格式不对说明输出不完整，其它退出码连同剩下的输出算作这一步的结果。
     func result(_ step: Step, argument: String) throws -> GitCommandResult {
         guard let index = steps.firstIndex(of: step), index < outputs.count else {
             let rest = Self.result(remainder, argument: argument, isCancelled: isCancelled)
             if rest.exitCode == 255 { throw RemoteConnectionError.ssh(rest) }
-            guard rest.exitCode != 0 else { throw RemoteConnectionError(.protocolFailure, result: rest) }
+
+            guard rest.exitCode != 0, !isMalformed else {
+                throw RemoteConnectionError(.protocolFailure, result: rest)
+            }
+
             return rest
         }
 
@@ -228,7 +242,7 @@ extension RemoteHealthCheck {
         switch step {
         case .environment:
             // 环境脚本最后 exec 到 Perl，放进子 shell 才不会结束整个体检
-            "(\n" + RemoteHostEnvironment.script + "\n)"
+            "(\n" + RemoteHostEnvironment.script + "\n) 3<&-"
 
         case .gitPath:
             // macOS 的 /usr/bin/git 是转发壳，每次执行都先查一遍开发者工具的位置；
@@ -236,7 +250,7 @@ extension RemoteHealthCheck {
             """
             spooky_git=$(command -v git) && {
                 if test "$spooky_git" = /usr/bin/git &&
-                    spooky_tools=$(/usr/bin/xcode-select -p 2>/dev/null) &&
+                    spooky_tools=$(/usr/bin/xcode-select -p 2>/dev/null 3<&-) &&
                     test -x "$spooky_tools/usr/bin/git"
                 then
                     spooky_git=$spooky_tools/usr/bin/git
@@ -247,7 +261,7 @@ extension RemoteHealthCheck {
             """
 
         case .gitVersion:
-            "\"$spooky_git\" --version"
+            "\"$spooky_git\" --version 3<&-"
 
         case .directory:
             "(if ! test -d \"$1\"; then printf '%s\\n' 'Directory does not exist' >&2; exit 2; fi)"
@@ -264,31 +278,39 @@ extension RemoteHealthCheck {
             // 权限位允许时，B 的隐私保护仍可能在读取目录内容时拒绝 SSH 会话
             "/usr/bin/perl -e "
                 + GitRunner.shellQuoted("opendir(my $directory, $ARGV[0]) or do { print STDERR \"$!\\n\"; exit 3 }")
-                + " -- \"$1\""
+                + " -- \"$1\" 3<&-"
 
         case .workTree:
-            "\"$spooky_git\" -C \"$1\" rev-parse --is-inside-work-tree"
+            "\"$spooky_git\" -C \"$1\" rev-parse --is-inside-work-tree 3<&-"
 
         case .status:
             "\"$spooky_git\" -C \"$1\" "
                 + (GitRunner.globalOptions + ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=normal"])
                 .map(GitRunner.shellQuoted)
                 .joined(separator: " ")
+                + " 3<&-"
 
         case .root:
-            "\"$spooky_git\" -C \"$1\" rev-parse --show-toplevel"
+            "\"$spooky_git\" -C \"$1\" rev-parse --show-toplevel 3<&-"
 
         case .session:
             // 包装器与全部回调入口都可执行、字节数与本机一致时才用它；BSD 的 wc 在数字前补空格，不加引号让 shell 去掉
-            // 包装器路径与会话目录留在脚本的变量里，转成常驻通道时 exec 用得到
+            // 包装器路径与会话目录留在脚本的变量里，写入令牌与转成常驻通道时用得到
             """
             spooky_wrapper="$HOME/.spooky/bin/$2"
             (for spooky_entry in '' \(RemoteConnection.callbackLinks.map { "-" + $0 }.joined(separator: " ")); do
                 test -x "$spooky_wrapper$spooky_entry" || exit 1
             done
-            test $(wc -c < "$spooky_wrapper") -eq "$3") &&
-            spooky_session=$(printf '%s\\n' "$spooky_request" | "$spooky_wrapper" create-session "$4" "$5") &&
+            test $(wc -c < "$spooky_wrapper") -eq "$3") 3<&- &&
+            spooky_session=$("$spooky_wrapper" create-session 3<&-) &&
             printf '%s\\n%s\\n' "$spooky_wrapper" "$spooky_session"
+            """
+
+        case .token:
+            // 会话没有新建时不写令牌，脚本就此结束
+            """
+            test -n "$spooky_session" || exit 0
+            "$spooky_wrapper" start-session "$spooky_session" "$4" "$5" <&3 3<&-
             """
         }
     }
@@ -302,29 +324,5 @@ extension RemoteHealthCheck {
             terminationStatus: output.terminationStatus,
             isCancelled: isCancelled
         )
-    }
-
-    /// 按分隔标记切开一路输出，返回其中完整的分隔帧；格式不对的帧及其后的输出不算。
-    private static func frames(in data: Data, marker: Data) -> [Frame] {
-        let opening = Data([0x1E]) + marker + Data(":".utf8)
-        var frames: [Frame] = []
-        var start = data.startIndex
-
-        while
-            let head = data.range(of: opening, in: start ..< data.endIndex),
-            let tail = data[head.upperBound...].firstIndex(of: 0x1F),
-            let code = Int32(String(decoding: data[head.upperBound ..< tail], as: UTF8.self))
-        {
-            let end = data.index(after: tail)
-
-            frames.append(Frame(
-                output: Data(data[start ..< head.lowerBound]),
-                code: code,
-                end: end
-            ))
-            start = end
-        }
-
-        return frames
     }
 }

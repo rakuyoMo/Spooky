@@ -101,6 +101,10 @@ public actor RemoteConnection {
     /// 建立连接期间打开、还没启用的常驻通道；连接到一半失败或关闭时随 ``closeChannel()`` 关掉。
     var pendingChannel: RemoteCommandChannel? = nil
 
+    /// 体检新建会话之后、与其余步骤同时开始的转发中继与写入令牌，由 ``startSession()`` 等它们完成；
+    /// 连接到一半失败或关闭时先停下它们，再关会话。
+    var sessionSetup: (forward: Task<Void, any Error>, token: Task<Void, any Error>)? = nil
+
     /// 正在后台重新打开常驻通道的任务。
     var reopening: Task<Void, Never>? = nil
 
@@ -508,14 +512,13 @@ extension RemoteConnection {
             "-o", "ClearAllForwardings=yes",
         ], arguments: ["connection-open"])
         guard master.exitCode == 0 else { throw RemoteConnectionError.ssh(master) }
-        try await check()
 
-        // 中继先于体检启动：体检的最后一步用它的令牌新建会话
+        // 中继先于体检启动：体检新建会话之后就要把它的令牌写进会话
         try startRelay(in: directory)
 
         // 主机连接没有工作区：体检 Git 与 B 端环境后直接启动会话
         if isHostScoped {
-            try await verifyHost()
+            try await verifyWhileChecking { try await verifyHost() }
             try await startSession()
 
             // 先关掉上一个会话里的操作，再算连上
@@ -527,7 +530,7 @@ extension RemoteConnection {
             return
         }
 
-        let repository = try await verifyRepository()
+        let repository = try await verifyWhileChecking { try await verifyRepository() }
         let existing = Self.connections.withLock { connections -> RemoteConnection? in
             if let existing = connections[repository.location], existing !== self {
                 connections[.remote(host: host, path: requestedPath)] = existing
@@ -923,6 +926,15 @@ extension RemoteConnection {
     private func tearDown() async {
         monitor?.cancel()
         monitor = nil
+
+        // 先停下体检期间开始的转发与写入令牌，再关会话
+        if let setup = sessionSetup {
+            setup.forward.cancel()
+            setup.token.cancel()
+            _ = await (setup.forward.result, setup.token.result)
+        }
+
+        sessionSetup = nil
 
         if let wrapper, let remoteDirectory {
             let closed = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])

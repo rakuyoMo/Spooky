@@ -129,7 +129,7 @@ final class RemoteCommandChannel: Sendable {
     ///   - executable: 通道进程的可执行文件。
     ///   - arguments: 通道进程的参数。
     ///   - environment: 通道进程的环境变量。
-    ///   - preamble: 帧之前的前导；它的输入先于任何帧写进标准输入，就绪的期限从前导结束时算起。
+    ///   - preamble: 帧之前的前导；就绪的期限从前导结束时算起。
     ///   - onDisconnect: 通道自行断开时的通知，``close()`` 关掉时不通知。
     init(
         executable: String,
@@ -172,13 +172,10 @@ final class RemoteCommandChannel: Sendable {
 
         state.withLock { $0.process = process }
 
-        guard let preamble else {
-            armReadinessTimeout()
-            return
-        }
+        // 有前导时，就绪的期限从前导结束时算起
+        guard preamble == nil else { return }
 
-        // 前导的输入先于任何帧写进去：脚本读完它才会转成 serve 模式
-        writer.async { [self] in _ = writeAll(preamble.input) }
+        armReadinessTimeout()
     }
 
     /// 等到通道就绪或关闭；等待期间任务被取消时关闭通道，不等满就绪期限。
@@ -362,7 +359,7 @@ extension RemoteCommandChannel {
             }
         }
 
-        try await endPreamble(stream, isError: false)
+        try await endPreamble(&stream, isError: false)
     }
 
     /// 把一个事件交给对应的请求；就绪帧的协议版本不对时结束通道。
@@ -410,7 +407,7 @@ extension RemoteCommandChannel {
             }
         }
 
-        try await endPreamble(stream, isError: true)
+        try await endPreamble(&stream, isError: true)
     }
 
     /// 消费一个请求的事件，结束时按逐条执行的规则建立结果；压缩的输出在这里解开，输出上限按解开后的字节数算。

@@ -249,24 +249,20 @@ private func cancelAfterStart(_ runner: GitRunner) async throws -> Int32 {
     return try #require(Int32(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)))
 }
 
-/// 让两条帧之前带前导的通道在前导阶段结束：一条没写分隔标记就退出，一条在等前导时被取消。
+/// 让两条帧之前带前导的通道在前导阶段结束：一条没写转入通道的标记就退出，一条在等前导时被取消。
 private func endPreambleChannels() async throws {
     let open: ([String]) -> RemoteCommandChannel = {
         RemoteCommandChannel(
             executable: "/bin/sh",
             arguments: $0,
             environment: .inherit,
-            preamble: RemoteCommandChannel.Preamble(
-                input: Data("marker\n".utf8),
-                marker: RemoteHealthCheck.channelMarker("marker"),
-                arguments: []
-            ),
+            preamble: RemoteCommandChannel.Preamble(arguments: []),
             onDisconnect: { _ in }
         )
     }
 
-    // 读完前导的输入就以 3 退出，没写分隔标记：前导带着结束状态，通道随之关闭
-    let unfinished = open(["-c", "read -r line; exit 3"])
+    // 以 3 退出，没写转入通道的标记：前导带着结束状态，通道随之关闭
+    let unfinished = open(["-c", "exit 3"])
 
     #expect(try await unfinished.preambleResult().exitCode == 3)
     #expect(await !unfinished.waitUntilReady())

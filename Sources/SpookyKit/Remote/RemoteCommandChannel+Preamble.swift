@@ -5,14 +5,15 @@ import Synchronization
 
 extension RemoteCommandChannel {
     /// 通道进程在帧之前的一段输出：连接体检的会话转成常驻通道时，体检脚本先写各步骤的结果，
-    /// 两路输出各写一个分隔标记之后才 exec 到包装器的 serve 模式。
+    /// 两路输出各写一个转入通道的标记之后才 exec 到包装器的 serve 模式。
     ///
-    /// 分隔标记之前的输出组成体检的结果，上限与逐条执行相同；之后的标准输出按帧切开，标准错误作通道自己的诊断。
-    /// 两路都读到分隔标记时体检以 0 结束；进程没写完前导就结束时，体检的结果带着进程的结束状态。
+    /// 两路输出由 ``RemoteHealthCheck/Splitter`` 切开：转入通道的标记之前的输出组成体检的结果，上限与逐条执行相同；
+    /// 之后的标准输出按帧切开，标准错误作通道自己的诊断。标准输出的第一个分隔帧在前导结束之前就交给连接。
+    /// 两路都读到转入通道的标记时体检以 0 结束；进程没写完前导就结束时，体检的结果带着进程的结束状态。
     final class Preamble: Sendable {
         /// 前导的进度。
         private struct State {
-            /// 还没读到分隔标记的输出路数。
+            /// 还没读到转入通道的标记的输出路数。
             var remaining = 2
 
             /// 体检的结果，前导结束后才有。
@@ -20,13 +21,16 @@ extension RemoteCommandChannel {
 
             /// 等着体检结果的任务。
             var waiters: [CheckedContinuation<Result<GitCommandResult, GitError>, Never>] = []
+
+            /// 标准输出的第一个分隔帧；前导结束时还没读到它就是 nil。
+            var firstFrame: RemoteHealthCheck.Splitter.Frame? = nil
+
+            /// 第一个分隔帧已经读到，或前导已经结束。
+            var isFrameSettled = false
+
+            /// 等着第一个分隔帧的任务。
+            var frameWaiters: [CheckedContinuation<RemoteHealthCheck.Splitter.Frame?, Never>] = []
         }
-
-        /// 先于任何帧写进标准输入的内容。
-        let input: Data
-
-        /// 两路输出里前导与通道之间的分隔标记。
-        let marker: Data
 
         /// 记进体检结果与错误的业务参数。
         let arguments: [String]
@@ -39,13 +43,8 @@ extension RemoteCommandChannel {
 
         /// 创建一段前导。
         ///
-        /// - Parameters:
-        ///   - input: 先于任何帧写进标准输入的内容，可能带着凭据，不进入记录与错误。
-        ///   - marker: 两路输出里前导与通道之间的分隔标记。
-        ///   - arguments: 记进体检结果与错误的业务参数。
-        init(input: Data, marker: Data, arguments: [String]) {
-            self.input = input
-            self.marker = marker
+        /// - Parameter arguments: 记进体检结果与错误的业务参数。
+        init(arguments: [String]) {
             self.arguments = arguments
         }
 
@@ -61,6 +60,22 @@ extension RemoteCommandChannel {
 
                 if let outcome {
                     continuation.resume(returning: outcome)
+                }
+            }
+        }
+
+        /// 等到标准输出的第一个分隔帧；前导没读到它就结束时为 nil。
+        func firstFrame() async -> RemoteHealthCheck.Splitter.Frame? {
+            await withCheckedContinuation { continuation in
+                let settled = state.withLock { state -> RemoteHealthCheck.Splitter.Frame?? in
+                    if state.isFrameSettled { return .some(state.firstFrame) }
+
+                    state.frameWaiters.append(continuation)
+                    return .none
+                }
+
+                if let settled {
+                    continuation.resume(returning: settled)
                 }
             }
         }
@@ -106,7 +121,12 @@ extension RemoteCommandChannel {
             return resolve(.success(result))
         }
 
-        /// 记下体检的结果并叫醒等待的任务。
+        /// 读到了标准输出的一个分隔帧：第一个交给等着它的任务，之后的不改动。
+        func reach(_ frame: RemoteHealthCheck.Splitter.Frame) {
+            settleFrame(frame)
+        }
+
+        /// 记下体检的结果并叫醒等待的任务；还没读到第一个分隔帧的等待以 nil 结束。
         ///
         /// - Returns: 是否记下；已经有结果时不改动。
         @discardableResult
@@ -121,21 +141,39 @@ extension RemoteCommandChannel {
 
             guard let waiters else { return false }
 
+            settleFrame(nil)
+
             for waiter in waiters {
                 waiter.resume(returning: outcome)
             }
 
             return true
         }
+
+        /// 定下第一个分隔帧并叫醒等着它的任务；已经定下时不改动。
+        private func settleFrame(_ frame: RemoteHealthCheck.Splitter.Frame?) {
+            let waiters = state.withLock { state -> [CheckedContinuation<RemoteHealthCheck.Splitter.Frame?, Never>] in
+                guard !state.isFrameSettled else { return [] }
+
+                state.isFrameSettled = true
+                state.firstFrame = frame
+                defer { state.frameWaiters = [] }
+                return state.frameWaiters
+            }
+
+            for waiter in waiters {
+                waiter.resume(returning: frame)
+            }
+        }
     }
 
-    /// 一路输出在分隔标记之前的进度。
+    /// 一路输出在转入通道的标记之前的进度。
     struct PreambleStream {
-        /// 这一路已经过了分隔标记。
+        /// 这一路已经过了转入通道的标记。
         var isPassed = false
 
-        /// 还没交出的末尾几个字节，可能是分隔标记的开头。
-        var pending = Data()
+        /// 切开这一路的前导。
+        var splitter = RemoteHealthCheck.Splitter()
     }
 }
 
@@ -169,29 +207,33 @@ extension RemoteCommandChannel {
         return try outcome.get()
     }
 
-    /// 收下通道进程的一块输出：这一路还没读到分隔标记时，标记之前的部分记进体检的结果。
+    /// 收下通道进程的一块输出：这一路还没读到转入通道的标记时，标记之前的部分记进体检的结果。
     ///
     /// - Parameters:
     ///   - data: 这一块输出。
     ///   - isError: 是否来自标准错误。
     ///   - stream: 这一路的进度。
-    /// - Returns: 分隔标记之后、交给通道的部分；没有前导时原样返回。
+    /// - Returns: 转入通道的标记之后、交给通道的部分；没有前导时原样返回。
     func passPreamble(_ data: Data, isError: Bool, stream: inout PreambleStream) async throws -> Data {
         guard !stream.isPassed, let preamble else { return data }
 
-        stream.pending.append(data)
+        let scan = stream.splitter.receive(data)
+        try await record(scan.released, isError: isError, into: preamble)
 
-        guard let range = stream.pending.range(of: preamble.marker) else {
-            // 末尾不到一个分隔标记长的字节可能是它的开头，留到下一块再看
-            let kept = min(stream.pending.count, preamble.marker.count - 1)
-            try await record(stream.pending.dropLast(kept), isError: isError, into: preamble)
-            stream.pending = Data(stream.pending.suffix(kept))
+        // 会话步骤是标准输出的第一帧，读到就交给连接，不等其余步骤
+        if !isError, let frame = scan.frames.first {
+            preamble.reach(frame)
+        }
+
+        // 宣告或分隔帧的格式不对时等不到转入通道的标记，体检就此结束，按输出不完整处理
+        if stream.splitter.isMalformed {
+            await preamble.finish(.success(.exited(0)), cancelled: false)
             return Data()
         }
 
-        let passed = Data(stream.pending[range.upperBound...])
-        try await record(Data(stream.pending[..<range.lowerBound]), isError: isError, into: preamble)
-        stream = PreambleStream(isPassed: true)
+        guard let passed = scan.channel else { return Data() }
+
+        stream.isPassed = true
 
         // 前导结束后才开始等就绪帧
         if await preamble.pass() {
@@ -201,15 +243,15 @@ extension RemoteCommandChannel {
         return passed
     }
 
-    /// 一路输出读完时还没读到分隔标记：留着待看的末尾几个字节也记进体检的结果。
+    /// 一路输出读完时还没读到转入通道的标记：留着待看的末尾几个字节也记进体检的结果。
     ///
     /// - Parameters:
     ///   - stream: 这一路的进度。
     ///   - isError: 是否来自标准错误。
-    func endPreamble(_ stream: PreambleStream, isError: Bool) async throws {
+    func endPreamble(_ stream: inout PreambleStream, isError: Bool) async throws {
         guard !stream.isPassed, let preamble else { return }
 
-        try await record(stream.pending, isError: isError, into: preamble)
+        try await record(stream.splitter.finish(), isError: isError, into: preamble)
     }
 
     /// 把前导的一段输出记进体检的结果；超出上限时立即以超限结束前导，不等通道进程结束。

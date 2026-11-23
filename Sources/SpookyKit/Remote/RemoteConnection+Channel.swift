@@ -53,29 +53,36 @@ extension RemoteConnection {
         }
     }
 
-    /// 把本机中继转发进体检新建的会话并启用常驻通道：体检没能复用已安装的包装器时先安装它。
+    /// 等会话准备好并启用常驻通道。
     ///
-    /// 新建会话时 B 已经分出会话看守，看守等到转发的 socket 出现才开始心跳。
-    /// 体检会话转成的通道直接等它就绪；安装了包装器时另开 serve 会话，与转发同时进行。
+    /// 体检会话转成通道时，等体检期间开始的转发中继与写入令牌完成，这条通道直接等它就绪。
+    /// 其余情况先转发中继：体检没能复用已安装的包装器时先安装它，部署脚本同时新建会话、写入令牌；
+    /// 使用常驻通道时另开 serve 会话，与转发同时进行。
+    /// B 的会话看守在写入令牌时分出，等到转发的 socket 出现才开始心跳。
     /// 通道没有就绪时关掉它并记一次失败，命令逐条另开会话执行，之后在后台重新打开。
     func startSession() async throws {
-        if wrapper == nil { try await deployWrapper() }
+        if let setup = sessionSetup {
+            try await withTaskCancellationHandler {
+                try await setup.forward.value
+                try await setup.token.value
+            } onCancel: {
+                setup.forward.cancel()
+                setup.token.cancel()
+            }
 
-        guard let relay, let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
+            sessionSetup = nil
+        } else {
+            if wrapper == nil { try await deployWrapper() }
 
-        if pendingChannel == nil, configuration.usesResidentChannel {
-            pendingChannel = makeChannel([wrapper, "serve", remoteDirectory])
+            guard let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
+
+            if configuration.usesResidentChannel {
+                pendingChannel = makeChannel([wrapper, "serve", remoteDirectory])
+            }
+
+            try await forwardRelay()
         }
 
-        // 转发失败时连接建立失败，关闭连接的流程关掉还没启用的通道
-        let forward = try await ssh([
-            "-O", "forward",
-            "-o", "ExitOnForwardFailure=yes",
-            "-o", "StreamLocalBindUnlink=yes",
-            "-R", remoteDirectory + "/relay.sock:" + relay.path,
-        ], arguments: ["relay-forward"])
-
-        guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
         guard let channel = pendingChannel else { return }
 
         let ready = await channel.waitUntilReady()
@@ -95,6 +102,20 @@ extension RemoteConnection {
         }
 
         adoptChannel(channel)
+    }
+
+    /// 把本机中继转发进会话目录的 relay.sock；转发失败时连接建立失败，关闭连接的流程关掉还没启用的通道。
+    func forwardRelay() async throws {
+        guard let relay, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
+
+        let forward = try await ssh([
+            "-O", "forward",
+            "-o", "ExitOnForwardFailure=yes",
+            "-o", "StreamLocalBindUnlink=yes",
+            "-R", remoteDirectory + "/relay.sock:" + relay.path,
+        ], arguments: ["relay-forward"])
+
+        guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
     }
 
     /// 关掉常驻通道与还没启用的通道，并停下正在进行的重新打开。

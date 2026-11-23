@@ -49,32 +49,37 @@ struct RemoteHealthCheckTests {
         #expect(skipped?.kind == .protocolFailure)
     }
 
-    /// 通道在某一步写完分隔帧之前结束时，这一步按通道的结束状态处理，前面写完的步骤不受影响。
+    /// 通道在某一步写完分隔帧之前结束时，这一步按通道的结束状态处理，前面写完的步骤不受影响；
+    /// 宣告之前登录 shell 打印的内容不算进任何一步。
     @Test("没写完的步骤按通道的结束状态处理")
     func unfinishedStep() throws {
-        // 第一步两路都写完了分隔帧；第二步只在标准输出写了帧，标准错误的帧没写完通道就结束了
-        let frame = Data([0x1E]) + Data("marker:0".utf8) + Data([0x1F])
+        let marker = String(repeating: "0123456789abcdef", count: 2)
+        let done = frame(marker, "0")
 
+        // 第一步两路都写完了分隔帧；第二步只在标准输出写了帧，标准错误的帧没写完通道就结束了
         func checks(exitingWith code: Int32) -> RemoteHealthCheck {
             let result = GitCommandResult(
                 arguments: ["health-check"],
-                standardOutput: Data("home".utf8) + frame + Data("/usr/bin/git\n".utf8) + frame,
-                standardError: frame + Data("broken".utf8),
+                standardOutput: Data("motd\n".utf8) + announcement(marker)
+                    + Data("home".utf8) + done
+                    + Data("/usr/bin/git\n".utf8) + done,
+                standardError: Data("notice\n".utf8) + announcement(marker) + done + Data("broken".utf8),
                 terminationStatus: .exited(code),
                 isCancelled: false
             )
 
-            return RemoteHealthCheck(result, marker: "marker", steps: RemoteHealthCheck.Step.allCases)
+            return RemoteHealthCheck(result, steps: [.environment, .gitPath, .gitVersion])
         }
 
         let environment = try checks(exitingWith: 1).result(.environment, argument: "environment")
         #expect(environment.standardOutput == Data("home".utf8))
+        #expect(environment.standardError.isEmpty)
         #expect(environment.exitCode == 0)
 
         // 脚本异常结束：剩下的输出连同通道的退出码算作这一步的结果
         let rest = try checks(exitingWith: 1).result(.gitPath, argument: "gitUnavailable")
         #expect(rest.exitCode == 1)
-        #expect(rest.standardOutput == Data("/usr/bin/git\n".utf8) + frame)
+        #expect(rest.standardOutput == Data("/usr/bin/git\n".utf8) + done)
         #expect(rest.standardError == Data("broken".utf8))
 
         // SSH 的 255 按连接诊断识别
@@ -88,6 +93,85 @@ struct RemoteHealthCheckTests {
             try checks(exitingWith: 0).require(.gitPath, kind: .gitUnavailable)
         }
         #expect(truncated?.kind == .protocolFailure)
+    }
+
+    /// 两路的宣告不一致，或宣告、分隔帧的格式不对时不认任何一步，脚本以哪个退出码结束都按输出不完整处理；
+    /// 没有宣告时脚本在生成标记时就结束了，输出连同结束状态照常算作第一步的结果。
+    @Test("宣告不对时按协议错误处理，没有宣告时保留诊断")
+    func announcementMismatch() throws {
+        let marker = String(repeating: "0123456789abcdef", count: 2)
+        let other = String(repeating: "fedcba9876543210", count: 2)
+        let upper = marker.uppercased()
+
+        let malformed: [(output: Data, error: Data)] = [
+            // 两路的标记不同，帧都完整
+            (announcement(marker) + frame(marker, "0"), announcement(other) + frame(other, "0")),
+
+            // 标记不是小写十六进制
+            (announcement(upper) + frame(upper, "0"), announcement(upper) + frame(upper, "0")),
+
+            // 分隔帧里不是退出码
+            (announcement(marker) + frame(marker, "x"), announcement(marker) + frame(marker, "0")),
+        ]
+
+        for streams in malformed {
+            for code: Int32 in [0, 1] {
+                let checks = RemoteHealthCheck(result(streams.output, streams.error, exitingWith: code), steps: [.gitPath])
+
+                let error = #expect(throws: RemoteConnectionError.self) {
+                    try checks.require(.gitPath, kind: .gitUnavailable)
+                }
+                #expect(error?.kind == .protocolFailure)
+            }
+        }
+
+        // 没有宣告：诊断与退出码算作第一步的结果
+        let diagnostic = Data("od: /dev/urandom: No such file or directory\n".utf8)
+        let missing = RemoteHealthCheck(result(Data(), diagnostic, exitingWith: 1), steps: [.gitPath])
+
+        let error = #expect(throws: RemoteConnectionError.self) {
+            try missing.require(.gitPath, kind: .gitUnavailable)
+        }
+        #expect(error?.kind == .gitUnavailable)
+        #expect(error?.result?.standardError == diagnostic)
+    }
+
+    /// 体检通道逐块收下输出：分隔帧拆在几块之间时照样切开，读到转入通道的标记就停下，
+    /// 标记之前的字节都交出去记进体检的结果，标记本身不交，之后的字节交给通道。
+    @Test("分块切开前导，在转入通道的标记处停下")
+    func splitterChunks() {
+        let marker = String(repeating: "0123456789abcdef", count: 2)
+        let preamble = Data("motd".utf8) + announcement(marker)
+            + Data("one".utf8) + frame(marker, "0")
+            + Data("two".utf8) + frame(marker, "7")
+        let stream = preamble + frame(marker, "channel") + Data("frames".utf8)
+
+        // 一次收下全部输出
+        var whole = RemoteHealthCheck.Splitter()
+        let scan = whole.receive(stream)
+
+        #expect(scan.released == preamble)
+        #expect(scan.channel == Data("frames".utf8))
+        #expect(scan.frames.map(\.output) == [Data("one".utf8), Data("two".utf8)])
+        #expect(scan.frames.map(\.code) == [0, 7])
+
+        // 一个字节一块：切出的帧与位置相同，转入通道的标记的最后一个字节到达时停下
+        var chunked = RemoteHealthCheck.Splitter()
+        var released = Data()
+        var frames: [RemoteHealthCheck.Splitter.Frame] = []
+        var channel: Data? = nil
+
+        for byte in stream where channel == nil {
+            let piece = chunked.receive(Data([byte]))
+            released += piece.released
+            frames += piece.frames
+            channel = piece.channel
+        }
+
+        #expect(released == preamble)
+        #expect(channel == Data())
+        #expect(frames.map(\.end) == scan.frames.map(\.end))
+        #expect(frames.map(\.output) == scan.frames.map(\.output))
     }
 
     /// 找到 Git 那一步输出之后各步执行的 Git：PATH 里找到的是 /usr/bin/git 时换成开发者目录里的 Git，其余照原样；
@@ -153,13 +237,13 @@ struct RemoteHealthCheckTests {
         #expect(RemoteHealthCheck.gitExecutable(in: Data("/a/git\n/b/git\n".utf8)) == nil)
     }
 
-    /// 新建会话的报文：一行 JSON，带着随机的令牌。
-    func sessionRequest() -> Data {
+    /// 会话令牌的一行：64 个随机的小写十六进制字符。
+    func tokenLine() -> Data {
         let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
-        return Data(#"{"token":"\#(token)"}"#.utf8) + Data([10])
+        return Data((token + "\n").utf8)
     }
 
-    /// 在本机按 B 上的方式执行体检脚本到 `last` 为止，不含新建会话：路径是第一个位置参数，分隔标记经标准输入交给脚本。
+    /// 在本机按 B 上的方式执行体检脚本到 `last` 为止，不含新建会话：路径是第一个位置参数，分隔标记由脚本自己生成。
     ///
     /// - Parameters:
     ///   - last: 最后一个要执行的步骤。
@@ -171,8 +255,7 @@ struct RemoteHealthCheckTests {
         path: String,
         searchPath: String? = nil
     ) async throws -> RemoteHealthCheck {
-        let marker = UUID().uuidString
-        let steps = Array(RemoteHealthCheck.Step.allCases.prefix { $0 != last }) + [last]
+        let steps = Array(RemoteHealthCheck.repositorySteps.dropFirst().prefix { $0 != last }) + [last]
 
         var environment: [Environment.Key: String?] = [
             "GIT_CONFIG_GLOBAL": "/dev/null",
@@ -187,10 +270,30 @@ struct RemoteHealthCheckTests {
         let result = try await CommandExecutor.execute(
             executable: "/bin/sh",
             processArguments: ["-c", RemoteHealthCheck.script(steps, entersChannel: false), "spooky-check", path],
-            environment: .inherit.updating(environment),
-            input: Data((marker + "\n").utf8) + sessionRequest()
+            environment: .inherit.updating(environment)
         )
 
-        return RemoteHealthCheck(result, marker: marker, steps: steps)
+        return RemoteHealthCheck(result, steps: steps)
+    }
+
+    /// 分隔标记为 `marker` 的宣告。
+    private func announcement(_ marker: String) -> Data {
+        Data([0x1E]) + Data(marker.utf8) + Data([0x1F])
+    }
+
+    /// 分隔标记为 `marker` 的分隔帧，`body` 是冒号之后的内容。
+    private func frame(_ marker: String, _ body: String) -> Data {
+        Data([0x1E]) + Data((marker + ":" + body).utf8) + Data([0x1F])
+    }
+
+    /// 两路输出与退出码组成的体检结果。
+    private func result(_ output: Data, _ error: Data, exitingWith code: Int32) -> GitCommandResult {
+        GitCommandResult(
+            arguments: ["health-check"],
+            standardOutput: output,
+            standardError: error,
+            terminationStatus: .exited(code),
+            isCancelled: false
+        )
     }
 }
