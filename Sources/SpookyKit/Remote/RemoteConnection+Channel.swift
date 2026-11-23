@@ -146,7 +146,7 @@ extension RemoteConnection {
 extension RemoteConnection {
     /// 在后台重新打开常驻通道：只在连接可用、通道不在且没有连续失败到上限时进行。
     ///
-    /// 新通道就绪之前占着主机的一个执行槽，同时打开的会话数不超过 B 的上限。
+    /// 新通道就绪之前占着本连接的一个会话名额，同时打开的会话数不超过 B 的上限。
     private func reopenChannel() {
         guard
             configuration.usesResidentChannel,
@@ -159,10 +159,8 @@ extension RemoteConnection {
             let remoteDirectory
         else { return }
 
-        let location = repository?.location ?? .remote(host: host, path: requestedPath)
-
         reopening = Task {
-            let opened = try? await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
+            let opened = try? await sessions.withPermit {
                 let channel = await self.makeChannel([wrapper, "serve", remoteDirectory])
                 return (channel: channel, ready: await channel?.waitUntilReady() ?? false)
             }

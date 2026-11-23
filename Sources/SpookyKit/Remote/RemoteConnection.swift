@@ -107,6 +107,9 @@ public actor RemoteConnection {
     /// 经常驻通道执行完的命令数，测试据此确认命令走了通道。
     var channelCommands = 0
 
+    /// 另开会话的名额，见 ``RepositoryOperationQueue/maximumConnectionSessions``。
+    let sessions = OperationPermitPool(capacity: RepositoryOperationQueue.maximumConnectionSessions)
+
     /// 创建会话不产生网络访问，首次 open 或 execute 才建立连接。
     ///
     /// - Parameter hostScoped: 是否连接整台主机；主机连接不检查工作区，`path` 不使用。
@@ -332,13 +335,14 @@ public actor RemoteConnection {
         return ("/usr/bin/sftp", arguments)
     }
 
-    /// 经 SFTP 取回大文件：与只读命令一样占用主机槽，取消只终止本次 SFTP 通道。
+    /// 经 SFTP 取回大文件：与只读命令一样占用主机槽，另占本连接的一个会话名额；取消只终止本次 SFTP 通道。
     func transferSFTP(_ input: Data) async throws -> GitCommandResult {
         if let canonical { return try await canonical.transferSFTP(input) }
 
         let location = repository?.location ?? .remote(host: host, path: requestedPath)
+
         return try await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
-            try await self.runSFTP(input)
+            try await self.sessions.withPermit { try await self.runSFTP(input) }
         }
     }
 
@@ -369,7 +373,7 @@ public actor RemoteConnection {
 // MARK: - Private
 
 extension RemoteConnection {
-    /// 同一仓库写入串行，同一主机最多同时执行八条命令。
+    /// 同一仓库写入串行，同一服务器同时执行的命令数不超过 ``RepositoryOperationQueue/maximumHostCommands``。
     private func perform(
         _ arguments: [String],
         input: Data?,
@@ -663,6 +667,9 @@ extension RemoteConnection {
             }
 
             return result
+        } catch let error as CancellationError {
+            // 命令发出之前就被取消：B 上没有开始执行，不必确认取消
+            throw error
         } catch {
             let redacted: any Error =
                 if let remote = error as? RemoteConnectionError {
@@ -740,6 +747,7 @@ extension RemoteConnection {
     /// - Parameters:
     ///   - inputFile: 标准输入改从这个本机文件读取。
     ///   - cancelling: 这条命令是取消：经常驻通道执行时直接发出，另开会话时先取得主机的取消名额。
+    /// - Throws: 命令发出之前任务已被取消时抛出 `CancellationError`，B 上没有开始执行。
     func commandChannel(
         _ command: [String],
         input: Data? = nil,
@@ -767,7 +775,10 @@ extension RemoteConnection {
 
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
         let separate: @Sendable () async throws -> GitCommandResult = {
-            try await self.ssh(
+            // 发出之前任务已被取消时不开会话，B 上没有开始执行
+            try Task.checkCancellation()
+
+            return try await self.ssh(
                 ["-o", "ControlMaster=no", "-o", "ProxyCommand=/usr/bin/false"],
                 command: shell,
                 input: input,
@@ -777,7 +788,8 @@ extension RemoteConnection {
             )
         }
 
-        guard cancelling else { return try await separate() }
+        // 另开的会话占本连接的一个会话名额
+        guard cancelling else { return try await sessions.withPermit(separate) }
 
         // 被取消的命令在 B 上结束之前仍占着会话，另开会话的取消按主机限量，B 才不会拒绝开新会话
         return try await RepositoryOperationQueue.shared.performCancellation(on: host, action: separate)

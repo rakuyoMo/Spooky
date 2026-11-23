@@ -8,13 +8,13 @@ import System
 /// 常驻在主连接上的一个 SSH 会话，运行包装器的 serve 模式；以包装器开头的命令作为请求经它执行，
 /// 省掉每条命令另开会话的往返。
 ///
-/// 请求的执行语义与 ``CommandExecutor`` 接受全部退出码时相同：输出上限、取消与超限的错误一致。
+/// 已经写出的请求的执行语义与 ``CommandExecutor`` 接受全部退出码时相同：输出上限、取消与超限的错误一致。
 /// 通道断开时，已经写完的请求以 255 结束，结果带上通道进程自己的诊断；还没写完的请求抛出 ``NotExecuted``，
-/// 调用方改为逐条开会话执行。
+/// 调用方改为逐条开会话执行。开始写之前任务已被取消的请求同样抛出 ``NotExecuted``，B 上不会执行它。
 ///
 /// 由连接体检的会话转成的通道，帧之前先是体检脚本的输出，见 ``Preamble``。
 final class RemoteCommandChannel: Sendable {
-    /// 请求没有交给 B 执行：通道没有就绪、已经关闭，或请求编码后超出上限。
+    /// 请求没有交给 B 执行：通道没有就绪、已经关闭，请求编码后超出上限，或开始写之前任务已被取消。
     struct NotExecuted: Error { }
 
     /// 一个请求在通道里的进度。
@@ -204,13 +204,8 @@ final class RemoteCommandChannel: Sendable {
         resultArguments: [String],
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws -> GitCommandResult {
-        let collector = GitOutputCollector(onOutput: onOutput)
-
-        // 与逐条执行相同：任务已经取消时不发请求，B 上不会开始执行
-        guard !Task.isCancelled else {
-            let result = await collector.result(arguments: resultArguments, termination: nil, cancelled: true)
-            throw GitError(result: result, category: .cancelled, diagnostic: nil)
-        }
+        // 任务已经取消时不发请求，B 上不会开始执行
+        guard !Task.isCancelled else { throw NotExecuted() }
 
         // 按算出的帧大小判断上限，超出时不登记也不编码
         guard Frame.requestSize(arguments: arguments, input: input) <= Self.requestLimit else { throw NotExecuted() }
@@ -230,6 +225,8 @@ final class RemoteCommandChannel: Sendable {
 
         let frame = Frame.request(identifier: identifier, arguments: arguments, input: input)
         writer.async { [self] in write(frame, for: identifier) }
+
+        let collector = GitOutputCollector(onOutput: onOutput)
 
         return try await withTaskCancellationHandler {
             try await receive(events, for: identifier, collector: collector, arguments: resultArguments)
@@ -456,13 +453,18 @@ extension RemoteCommandChannel {
         }
     }
 
-    /// 放弃一个请求：不再等它的事件；已经开始写的请求另发放弃帧，B 不再为它发帧。
+    /// 放弃一个请求：不再等它的事件；还没开始写的请求以 ``NotExecuted`` 结束，已经开始写的请求另发放弃帧，B 不再为它发帧。
     private func abort(_ identifier: UInt32) {
         guard let request = state.withLock({ $0.requests.removeValue(forKey: identifier) }) else { return }
 
-        request.events.finish()
+        // 还没开始写的请求从此不会写出，B 上不会执行它
+        guard request.progress != .queued else {
+            request.events.yield(.notExecuted)
+            request.events.finish()
+            return
+        }
 
-        guard request.progress != .queued else { return }
+        request.events.finish()
 
         writer.async { [self] in
             guard !state.withLock({ $0.isClosed }) else { return }

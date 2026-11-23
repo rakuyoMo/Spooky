@@ -201,8 +201,9 @@ extension RemoteTransportTests {
         _ = try await runWrapper(["close", session])
     }
 
+    /// 写入一直等着时，开始写之前任务已被取消的请求与排在后面时被取消的请求都不交给 B；
     /// 通道进程不再读取标准输入后被结束：正在写的请求与之后的请求都不执行，测试进程不会收到 SIGPIPE。
-    @Test("通道进程退出后写入请求不触发 SIGPIPE")
+    @Test("写出之前取消的请求不执行，通道进程退出后写入请求不触发 SIGPIPE")
     func channelWriteAfterExit() async throws {
         let tag = UUID().uuidString
 
@@ -222,6 +223,24 @@ extension RemoteTransportTests {
         }
 
         #expect(await channel.waitUntilReady())
+
+        // 开始之前任务已被取消的请求
+        let cancelledFirst = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+
+            return try await channel.execute(["inspect"], input: Data(), resultArguments: [])
+        }
+
+        await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await cancelledFirst.value }
+
+        // 排在一直等着的写入后面时被取消的请求
+        let queued = Task {
+            try await channel.execute(["inspect"], input: Data(), resultArguments: [])
+        }
+
+        queued.cancel()
+        await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await queued.value }
+
         _ = try await CommandExecutor.execute(executable: "/usr/bin/pkill", processArguments: ["-f", tag])
 
         await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await pending.value }
