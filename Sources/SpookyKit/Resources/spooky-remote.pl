@@ -542,13 +542,22 @@ sub sign_with_relay {
 }
 
 # 常驻通道的帧，两个方向相同：长度（其后的字节数）、类型、请求标识、负载，整数都是大端。
-# A 发来的类型：1 执行，负载是参数个数、逐个参数的长度与内容，其余字节是标准输入；2 放弃，不再要这个请求的输出。
-# 发给 A 的类型：0 就绪，标识是协议版本；1、2 是标准输出、标准错误的一块；3 退出，负载是 1 字节退出码。
+# A 发来的类型：
+#   1 执行，负载是 1 字节的标志（第 0 位：标准输出可以压缩）、参数个数、逐个参数的长度与内容，其余字节是标准输入；
+#   2 放弃，不再要这个请求的输出；3 探测，没有负载。
+# 发给 A 的类型：
+#   0 就绪，标识是协议版本，负载是 1 字节的能力标志（第 0 位：能压缩）；
+#   1、2 是标准输出、标准错误的一块；3 退出，负载是 1 字节退出码；
+#   4 压缩过的一块标准输出；5 探测的应答，标识与探测帧相同，没有负载。
+# 一个请求的压缩块连起来是一条 raw deflate 流，每块以同步刷新结尾，A 收到一块就能解出一块。
 use constant {
-    SERVE_VERSION => 1,
+    SERVE_VERSION => 2,
     SERVE_REQUEST_LIMIT => 8 * 1024 * 1024,
     SERVE_CHUNK => 64 * 1024,
 };
+
+# 不到这个字节数的标准输出块原样发，不喂给压缩器。
+use constant SERVE_COMPRESS_MINIMUM => 512;
 
 # 命令退出之后，每个输出管道最多再转发的字节数。
 # 命令退出时管道里它写下的内容不超过管道容量：macOS 上最大 64 KiB，Linux 上非特权进程默认最多调到 1 MiB，转发这么多足以送完；
@@ -570,10 +579,13 @@ sub serve {
         wake => [$wake_read, $wake_write],
         requests => {},
         processes => {},
-        pending => ''
+        pending => '',
+
+        # 加载不了 zlib 时照常工作，只是不压缩
+        compresses => eval { require Compress::Raw::Zlib; 1 } ? 1 : 0
     };
     my $checked = time();
-    write_frame(0, SERVE_VERSION, '');
+    write_frame(0, SERVE_VERSION, pack('C', $state->{compresses}));
 
     while (1) {
         my $selector = IO::Select->new(\*STDIN, $wake_read, serve_outputs($state));
@@ -653,7 +665,13 @@ sub relay_chunk {
 
     do {
         $count = sysread($request->{$stream}, my $chunk, SERVE_CHUNK);
-        write_frame($stream eq 'output' ? 1 : 2, $id, $chunk) if $count;
+
+        if ($count && $stream eq 'output') {
+            relay_output($request, $id, $chunk);
+        } elsif ($count) {
+            # 标准错误不压缩
+            write_frame(2, $id, $chunk);
+        }
     } while (!defined($count) && $! == EINTR);
 
     return $count if $count;
@@ -684,6 +702,9 @@ sub read_requests {
             start_request($state, $id, request_arguments($payload));
         } elsif ($type == 2) {
             abort_request($state, $id);
+        } elsif ($type == 3) {
+            # 探测不 fork、立即应答，A 据此量出往返时间
+            write_frame(5, $id, '');
         } else {
             die "invalid request frame\n";
         }
@@ -692,12 +713,12 @@ sub read_requests {
     return 1;
 }
 
-# 解开执行帧的负载：参数个数，逐个参数的长度与内容，其余字节是标准输入。
+# 解开执行帧的负载：1 字节的标志，参数个数，逐个参数的长度与内容，其余字节是标准输入。
 sub request_arguments {
     my ($payload) = @_;
-    die "invalid request frame\n" if length($payload) < 4;
-    my $count = unpack('N', $payload);
-    my $offset = 4;
+    die "invalid request frame\n" if length($payload) < 5;
+    my ($flags, $count) = unpack('C N', $payload);
+    my $offset = 5;
     my @arguments;
 
     for (1 .. $count) {
@@ -709,12 +730,13 @@ sub request_arguments {
         $offset += $length;
     }
 
-    return (\@arguments, substr($payload, $offset));
+    return ($flags, \@arguments, substr($payload, $offset));
 }
 
 # 在子进程里执行一个请求；有标准输入时另起一个进程写入，命令不读输入也不会卡住通道。
+# 标志的第 0 位表示 A 要求压缩标准输出，B 能压缩时才压缩。
 sub start_request {
-    my ($state, $id, $arguments, $input) = @_;
+    my ($state, $id, $flags, $arguments, $input) = @_;
     die "duplicate request\n" if $state->{requests}{$id};
     pipe(my $output_read, my $output_write) or die "cannot start request\n";
     pipe(my $error_read, my $error_write) or die "cannot start request\n";
@@ -738,7 +760,13 @@ sub start_request {
 
     close $_ for $output_write, $error_write;
     IO::Handle::blocking($_, 0) for $output_read, $error_read;
-    $state->{requests}{$id} = { pid => $pid, output => $output_read, error => $error_read };
+
+    $state->{requests}{$id} = {
+        pid => $pid,
+        output => $output_read,
+        error => $error_read,
+        compresses => $state->{compresses} && ($flags & 1)
+    };
     $state->{processes}{$pid} = $id;
     return unless defined $input_read;
 
@@ -755,6 +783,46 @@ sub abort_request {
     my $request = delete $state->{requests}{$id} or return;
     delete $state->{processes}{$request->{pid}};
     close $_ for grep { defined } @{$request}{qw(output error)};
+}
+
+# 转发一块标准输出：请求要求压缩时，不到 SERVE_COMPRESS_MINIMUM 字节的块原样发，其余的块压缩后发。
+# 某一块压完不小于原来的 90% 说明内容压不动：这一块已经进了压缩流，照样按压缩帧发出，这个请求之后的块都原样发。
+# 压缩器按请求建、记在请求上，请求结束或被放弃时随请求一起释放。
+sub relay_output {
+    my ($request, $id, $chunk) = @_;
+
+    if (!$request->{compresses} || length($chunk) < SERVE_COMPRESS_MINIMUM) {
+        write_frame(1, $id, $chunk);
+        return;
+    }
+
+    unless ($request->{deflater}) {
+        my $status;
+
+        ($request->{deflater}, $status) = Compress::Raw::Zlib::Deflate->new(
+            -Level => 1,
+            -WindowBits => -15,
+            -AppendOutput => 1
+        );
+
+        die "cannot compress output\n" unless $status == Compress::Raw::Zlib::Z_OK();
+    }
+
+    # 每块以同步刷新结尾，A 收到这一块就能全部解出
+    my $deflater = $request->{deflater};
+    my $compressed = '';
+    my $status = $deflater->deflate($chunk, $compressed);
+
+    $status = $deflater->flush($compressed, Compress::Raw::Zlib::Z_SYNC_FLUSH())
+        if $status == Compress::Raw::Zlib::Z_OK();
+
+    die "cannot compress output\n" unless $status == Compress::Raw::Zlib::Z_OK();
+
+    write_frame(4, $id, $compressed);
+    return if length($compressed) < length($chunk) * 0.9;
+
+    $request->{compresses} = 0;
+    delete $request->{deflater};
 }
 
 # 请求的子进程：只留这个请求自己的管道作标准输入、输出与错误，再按单独启动包装器的方式执行模式。

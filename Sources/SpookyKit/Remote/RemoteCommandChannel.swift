@@ -13,6 +13,8 @@ import System
 /// 调用方改为逐条开会话执行。开始写之前任务已被取消的请求同样抛出 ``NotExecuted``，B 上不会执行它。
 ///
 /// 由连接体检的会话转成的通道，帧之前先是体检脚本的输出，见 ``Preamble``。
+///
+/// 要求压缩时，B 把请求的标准输出压缩后发回，发起请求的任务各自解开，见 ``chooseOutputCompression(_:)``。
 final class RemoteCommandChannel: Sendable {
     /// 请求没有交给 B 执行：通道没有就绪、已经关闭，请求编码后超出上限，或开始写之前任务已被取消。
     struct NotExecuted: Error { }
@@ -33,6 +35,9 @@ final class RemoteCommandChannel: Sendable {
     private enum Event: Sendable {
         /// 一段输出。
         case output(Data, isError: Bool)
+
+        /// 压缩输出流里的一段，解开后是标准输出。
+        case compressedOutput(Data)
 
         /// 命令结束的退出码。
         case exit(Int32)
@@ -58,6 +63,12 @@ final class RemoteCommandChannel: Sendable {
         /// 收到过就绪帧。
         var isReady = false
 
+        /// B 的能力标志，来自就绪帧。
+        var capabilities: UInt8 = 0
+
+        /// 此后写出的请求是否要求 B 压缩标准输出。
+        var compressesOutput = false
+
         /// 通道已关闭，不再接受请求。
         var isClosed = false
 
@@ -69,6 +80,9 @@ final class RemoteCommandChannel: Sendable {
 
         /// 等着通道就绪或关闭的任务。
         var readinessWaiters: [CheckedContinuation<Bool, Never>] = []
+
+        /// 等着应答的探测：收到应答时得到 true，通道关闭时得到 false。
+        var probes: [UInt32: CheckedContinuation<Bool, Never>] = [:]
 
         /// 通道进程自己的标准错误，只留开头一段。
         var diagnostic = Data()
@@ -84,7 +98,7 @@ final class RemoteCommandChannel: Sendable {
     static let readinessTimeout = Duration.seconds(10)
 
     /// serve 模式的协议版本，写在就绪帧的标识里。
-    private static let protocolVersion: UInt32 = 1
+    private static let protocolVersion: UInt32 = 2
 
     /// 通道进程自己的标准错误保留的字节数。
     private static let diagnosticLimit = 64 * 1024
@@ -212,18 +226,24 @@ final class RemoteCommandChannel: Sendable {
 
         let (events, continuation) = AsyncStream<Event>.makeStream()
 
-        let identifier: UInt32? = state.withLock { state in
+        let registration: (identifier: UInt32, compressesOutput: Bool)? = state.withLock { state in
             guard !state.isClosed else { return nil }
 
             let identifier = state.nextIdentifier
             state.nextIdentifier &+= 1
             state.requests[identifier] = Request(events: continuation, progress: .queued)
-            return identifier
+            return (identifier, state.compressesOutput)
         }
 
-        guard let identifier else { throw NotExecuted() }
+        guard let registration else { throw NotExecuted() }
 
-        let frame = Frame.request(identifier: identifier, arguments: arguments, input: input)
+        let identifier = registration.identifier
+        let frame = Frame.request(
+            identifier: identifier,
+            arguments: arguments,
+            input: input,
+            compressesOutput: registration.compressesOutput
+        )
         writer.async { [self] in write(frame, for: identifier) }
 
         let collector = GitOutputCollector(onOutput: onOutput)
@@ -245,6 +265,36 @@ final class RemoteCommandChannel: Sendable {
         Task { [weak self] in
             try? await Task.sleep(for: Self.readinessTimeout)
             self?.stopIfStarting()
+        }
+    }
+
+    /// 定下此后经这条通道的请求是否要求 B 压缩标准输出，在通道就绪之后调用。
+    ///
+    /// 自动时先在后台发 ``probeCount`` 次探测，按最短的往返时间决定，量完之前的请求不压缩。
+    ///
+    /// - Parameter mode: 压缩的设置。
+    func chooseOutputCompression(_ mode: SSHConfiguration.OutputCompression) {
+        let capable = state.withLock { $0.capabilities & Self.compressionCapability != 0 }
+
+        // 不用量往返时间就能定下的，直接定下
+        guard mode == .automatic, capable else {
+            let compresses = Self.compressesOutput(roundTrip: nil, capable: capable, mode: mode)
+            state.withLock { $0.compressesOutput = compresses }
+            return
+        }
+
+        Task {
+            var shortest: Duration? = nil
+
+            for _ in 0 ..< Self.probeCount {
+                // 通道关闭时不再量，也不再改动
+                guard let roundTrip = await probe() else { return }
+
+                shortest = min(shortest ?? roundTrip, roundTrip)
+            }
+
+            let compresses = Self.compressesOutput(roundTrip: shortest, capable: capable, mode: mode)
+            state.withLock { $0.compressesOutput = compresses }
         }
     }
 }
@@ -318,11 +368,12 @@ extension RemoteCommandChannel {
     /// 把一个事件交给对应的请求；就绪帧的协议版本不对时结束通道。
     private func deliver(_ event: FrameReader.Event) throws {
         switch event {
-        case .ready(let version):
+        case .ready(let version, let capabilities):
             guard version == Self.protocolVersion else { throw FrameReader.InvalidFrame() }
 
             let waiters = state.withLock { state in
                 state.isReady = !state.isClosed
+                state.capabilities = capabilities
                 defer { state.readinessWaiters = [] }
                 return state.readinessWaiters
             }
@@ -333,6 +384,12 @@ extension RemoteCommandChannel {
 
         case .output(let identifier, let isError, let data):
             state.withLock { _ = $0.requests[identifier]?.events.yield(.output(data, isError: isError)) }
+
+        case .compressedOutput(let identifier, let data):
+            state.withLock { _ = $0.requests[identifier]?.events.yield(.compressedOutput(data)) }
+
+        case .probeReply(let identifier):
+            state.withLock { $0.probes.removeValue(forKey: identifier) }?.resume(returning: true)
 
         case .exit(let identifier, let code):
             let request = state.withLock { $0.requests.removeValue(forKey: identifier) }
@@ -356,7 +413,7 @@ extension RemoteCommandChannel {
         try await endPreamble(stream, isError: true)
     }
 
-    /// 消费一个请求的事件，结束时按逐条执行的规则建立结果。
+    /// 消费一个请求的事件，结束时按逐条执行的规则建立结果；压缩的输出在这里解开，输出上限按解开后的字节数算。
     private func receive(
         _ events: AsyncStream<Event>,
         for identifier: UInt32,
@@ -365,35 +422,47 @@ extension RemoteCommandChannel {
     ) async throws -> GitCommandResult {
         var termination: GitTerminationStatus? = nil
 
-        for await event in events {
+        // 这个请求的解压器，收到第一段压缩输出时建立
+        var inflater: Inflater? = nil
+
+        receiving: for await event in events {
+            let output: (data: Data, isError: Bool)
+
             switch event {
             case .output(let data, let isError):
-                do {
-                    try await collector.receive(data, isError: isError)
-                } catch {
-                    // 超出上限时不再要这个请求的输出，结果只带上限内的字节；任务已被取消时按取消处理
-                    abort(identifier)
+                output = (data, isError)
 
-                    let cancelled = Task.isCancelled
-                    let result = await collector.result(arguments: arguments, termination: nil, cancelled: cancelled)
+            case .compressedOutput(let data):
+                let current = inflater ?? Inflater()
+                inflater = current
 
-                    throw GitError(
-                        result: result,
-                        category: cancelled ? .cancelled : .outputLimitExceeded,
-                        diagnostic: nil
-                    )
+                guard let plain = try? current.inflate(data) else {
+                    // 解不开说明通道的字节流已经错乱：与收到格式不对的帧一样关掉通道，这个请求按通道断开处理
+                    try? await collector.receive(breakChannel(dropping: identifier), isError: true)
+                    termination = .exited(255)
+                    break receiving
                 }
+
+                output = (plain, false)
 
             case .exit(let code):
                 termination = .exited(code)
+                continue
 
             case .disconnected(let diagnostic):
                 // 与逐条执行时 SSH 的 255 相同：通道进程自己的诊断接在命令的标准错误之后
                 try? await collector.receive(diagnostic, isError: true)
                 termination = .exited(255)
+                continue
 
             case .notExecuted:
                 throw NotExecuted()
+            }
+
+            do {
+                try await collector.receive(output.data, isError: output.isError)
+            } catch {
+                throw await overflow(identifier, collector: collector, arguments: arguments)
             }
         }
 
@@ -453,6 +522,73 @@ extension RemoteCommandChannel {
         }
     }
 
+    /// 一个请求的输出超出上限：不再要这个请求的输出，结果只带上限内的字节；任务已被取消时按取消处理。
+    ///
+    /// - Returns: 交给调用方的错误。
+    private func overflow(
+        _ identifier: UInt32,
+        collector: GitOutputCollector,
+        arguments: [String]
+    ) async -> GitError {
+        abort(identifier)
+
+        let cancelled = Task.isCancelled
+        let result = await collector.result(arguments: arguments, termination: nil, cancelled: cancelled)
+
+        return GitError(
+            result: result,
+            category: cancelled ? .cancelled : .outputLimitExceeded,
+            diagnostic: nil
+        )
+    }
+
+    /// 一个请求的压缩输出解不开：不再为它收事件，与收到格式不对的帧一样结束通道进程，通道随之关闭。
+    ///
+    /// - Returns: 通道进程到此为止的诊断。
+    private func breakChannel(dropping identifier: UInt32) -> Data {
+        let (request, process, diagnostic) = state.withLock { state in
+            (state.requests.removeValue(forKey: identifier), state.process, state.diagnostic)
+        }
+
+        request?.events.finish()
+        process?.cancel()
+        return diagnostic
+    }
+
+    /// 发一次探测并等它的应答。
+    ///
+    /// - Returns: 从发出到收到应答的时间；通道已经关闭或在等待期间关闭时为 nil。
+    private func probe() async -> Duration? {
+        let start = ContinuousClock.now
+
+        let answered = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
+            let identifier: UInt32? = state.withLock { state in
+                guard !state.isClosed else { return nil }
+
+                let identifier = state.nextIdentifier
+                state.nextIdentifier &+= 1
+                state.probes[identifier] = continuation
+                return identifier
+            }
+
+            guard let identifier else {
+                continuation.resume(returning: false)
+                return
+            }
+
+            // 关闭通道之后不再写：写入端可能已经关掉
+            writer.async { [self] in
+                guard !state.withLock({ $0.isClosed }) else { return }
+
+                if !writeAll(Frame.probe(identifier: identifier)) {
+                    state.withLock { $0.process }?.cancel()
+                }
+            }
+        }
+
+        return answered ? start.duration(to: .now) : nil
+    }
+
     /// 放弃一个请求：不再等它的事件；还没开始写的请求以 ``NotExecuted`` 结束，已经开始写的请求另发放弃帧，B 不再为它发帧。
     private func abort(_ identifier: UInt32) {
         guard let request = state.withLock({ $0.requests.removeValue(forKey: identifier) }) else { return }
@@ -484,12 +620,13 @@ extension RemoteCommandChannel {
         process?.cancel()
     }
 
-    /// 关闭通道：交出还没结束的请求的结果，叫醒等待就绪的任务，最后关掉写入端并结束通道进程。
+    /// 关闭通道：交出还没结束的请求的结果，叫醒等待就绪的任务与探测，最后关掉写入端并结束通道进程。
     ///
     /// 正在写的请求由写入方在写完后决定结果。
     private func shutDown(byOwner: Bool) {
         var finished: [(Request, Event)] = []
         var waiters: [CheckedContinuation<Bool, Never>] = []
+        var probes: [CheckedContinuation<Bool, Never>] = []
         var process: Task<Void, Never>? = nil
 
         let closes = state.withLock { state in
@@ -508,6 +645,8 @@ extension RemoteCommandChannel {
 
             waiters = state.readinessWaiters
             state.readinessWaiters = []
+            probes = Array(state.probes.values)
+            state.probes = [:]
             process = state.process
             return true
         }
@@ -519,7 +658,7 @@ extension RemoteCommandChannel {
             request.events.finish()
         }
 
-        for waiter in waiters {
+        for waiter in waiters + probes {
             waiter.resume(returning: false)
         }
 

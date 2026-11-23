@@ -13,15 +13,24 @@ extension RemoteCommandChannel {
         /// 放弃请求的类型：B 不再为这个请求发帧。
         private static let abortType: UInt8 = 2
 
+        /// 探测的类型：B 立即回一个应答帧。
+        private static let probeType: UInt8 = 3
+
         /// 执行一个包装器模式的请求帧。
         ///
         /// - Parameters:
         ///   - identifier: 请求标识。
         ///   - arguments: 包装器的模式与它的参数。
         ///   - input: 请求的标准输入。
-        /// - Returns: 负载依次是参数个数、逐个参数的长度与内容，其余字节是标准输入。
-        static func request(identifier: UInt32, arguments: [String], input: Data) -> Data {
-            var payload = Data()
+        ///   - compressesOutput: 是否要求 B 压缩这个请求的标准输出。
+        /// - Returns: 负载依次是 1 字节的标志（第 0 位：标准输出可以压缩）、参数个数、逐个参数的长度与内容，其余字节是标准输入。
+        static func request(
+            identifier: UInt32,
+            arguments: [String],
+            input: Data,
+            compressesOutput: Bool = false
+        ) -> Data {
+            var payload = Data([compressesOutput ? 1 : 0])
             append(UInt32(arguments.count), to: &payload)
 
             for argument in arguments {
@@ -34,13 +43,13 @@ extension RemoteCommandChannel {
             return frame(type: requestType, identifier: identifier, payload: payload)
         }
 
-        /// 请求帧编码后的字节数：帧头 9 字节，参数个数 4 字节，每个参数 4 字节的长度加内容，再加标准输入。
+        /// 请求帧编码后的字节数：帧头 9 字节，标志 1 字节，参数个数 4 字节，每个参数 4 字节的长度加内容，再加标准输入。
         ///
         /// - Parameters:
         ///   - arguments: 包装器的模式与它的参数。
         ///   - input: 请求的标准输入。
         static func requestSize(arguments: [String], input: Data) -> Int {
-            arguments.reduce(9 + 4 + input.count) { $0 + 4 + $1.utf8.count }
+            arguments.reduce(9 + 1 + 4 + input.count) { $0 + 4 + $1.utf8.count }
         }
 
         /// 放弃一个请求的帧，没有负载。
@@ -48,6 +57,13 @@ extension RemoteCommandChannel {
         /// - Parameter identifier: 请求标识。
         static func abort(identifier: UInt32) -> Data {
             frame(type: abortType, identifier: identifier, payload: Data())
+        }
+
+        /// 探测往返时间的帧，没有负载；B 回的应答带着同一个标识。
+        ///
+        /// - Parameter identifier: 探测的标识。
+        static func probe(identifier: UInt32) -> Data {
+            frame(type: probeType, identifier: identifier, payload: Data())
         }
 
         /// 给负载加上帧头。
@@ -74,14 +90,20 @@ extension RemoteCommandChannel {
     struct FrameReader {
         /// 切出的一件事。
         enum Event: Equatable {
-            /// 通道就绪，带协议版本。
-            case ready(version: UInt32)
+            /// 通道就绪，带协议版本与 B 的能力标志。
+            case ready(version: UInt32, capabilities: UInt8)
 
             /// 一个请求的一段输出。
             case output(identifier: UInt32, isError: Bool, data: Data)
 
+            /// 一个请求的压缩输出流里的一段，解开后是标准输出。
+            case compressedOutput(identifier: UInt32, data: Data)
+
             /// 一个请求的命令已结束；被信号结束时退出码是 128 加信号值。
             case exit(identifier: UInt32, code: UInt8)
+
+            /// 一次探测的应答。
+            case probeReply(identifier: UInt32)
         }
 
         /// 帧的长度或类型不对，通道不能再用。
@@ -89,6 +111,9 @@ extension RemoteCommandChannel {
 
         /// 一块输出的上限，与包装器每次读取的大小相同。
         static let chunkLimit = 64 * 1024
+
+        /// 一块压缩输出的上限：压不动的一块压完会比原来略大，多留 1 KiB。
+        static let compressedChunkLimit = chunkLimit + 1024
 
         /// 还没凑齐的帧头。
         private var header: [UInt8] = []
@@ -129,10 +154,18 @@ extension RemoteCommandChannel {
                 index += count
                 remaining -= count
 
-                // 退出帧的负载只有 1 字节，读到就结束这一帧
-                if type == 3 {
+                // 就绪帧与退出帧的负载只有 1 字节，读到就结束这一帧；输出按到达的分段交出
+                switch type {
+                case 0:
+                    events.append(.ready(version: identifier, capabilities: segment[segment.startIndex]))
+
+                case 3:
                     events.append(.exit(identifier: identifier, code: segment[segment.startIndex]))
-                } else {
+
+                case 4:
+                    events.append(.compressedOutput(identifier: identifier, data: Data(segment)))
+
+                default:
                     events.append(.output(identifier: identifier, isError: type == 2, data: Data(segment)))
                 }
 
@@ -152,15 +185,18 @@ extension RemoteCommandChannel {
             remaining = length - 5
 
             switch type {
-            case 0:
-                guard remaining == 0 else { throw InvalidFrame() }
-                events.append(.ready(version: identifier))
+            case 0, 3:
+                guard remaining == 1 else { throw InvalidFrame() }
 
             case 1, 2:
                 guard (0 ... Self.chunkLimit).contains(remaining) else { throw InvalidFrame() }
 
-            case 3:
-                guard remaining == 1 else { throw InvalidFrame() }
+            case 4:
+                guard (0 ... Self.compressedChunkLimit).contains(remaining) else { throw InvalidFrame() }
+
+            case 5:
+                guard remaining == 0 else { throw InvalidFrame() }
+                events.append(.probeReply(identifier: identifier))
 
             default:
                 throw InvalidFrame()

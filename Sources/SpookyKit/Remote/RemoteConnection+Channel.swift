@@ -189,10 +189,11 @@ extension RemoteConnection {
         adoptChannel(channel)
     }
 
-    /// 启用就绪的通道并清零连续失败的次数。
+    /// 启用就绪的通道并清零连续失败的次数，再定下经它执行的命令的输出是否压缩。
     private func adoptChannel(_ channel: RemoteCommandChannel) {
         resident = channel
         channelFailures = 0
+        channel.chooseOutputCompression(configuration.outputCompression)
 
         let host = host
         Self.logger.info("常驻通道已就绪：\(host, privacy: .private)")

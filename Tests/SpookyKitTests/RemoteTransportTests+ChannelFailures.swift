@@ -18,7 +18,7 @@ extension RemoteTransportTests {
         }
 
         var events = serve.events.makeAsyncIterator()
-        #expect(await events.next() == .ready(version: 1))
+        #expect(await events.next() == .ready(version: 2, capabilities: RemoteCommandChannel.compressionCapability))
 
         // 请求 1 一直输出，收到它的第一段输出后放弃它，紧接着发请求 2 与请求 3
         let endless = ["/usr/bin/perl", "-e", "$| = 1; while (1) { print 'x'; select(undef, undef, undef, 0.01) }"]
@@ -210,7 +210,7 @@ extension RemoteTransportTests {
         // 读到请求的第一个字节就发出就绪帧，之后不再读取
         let channel = RemoteCommandChannel(
             executable: "/usr/bin/perl",
-            arguments: ["-e", "sysread STDIN, my $byte, 1; syswrite STDOUT, pack('NCN', 5, 0, 1); sleep 600", tag],
+            arguments: ["-e", "sysread STDIN, my $byte, 1; syswrite STDOUT, pack('NCNC', 6, 0, 2, 0); sleep 600", tag],
             environment: .inherit,
             onDisconnect: { _ in }
         )
@@ -291,7 +291,7 @@ extension RemoteTransportTests {
     ///   - arguments: 包装器 run 模式的参数。
     ///   - channel: 常驻通道。
     /// - Returns: 执行请求的任务。
-    private func startLongRequest(
+    func startLongRequest(
         _ arguments: [String],
         through channel: RemoteCommandChannel
     ) async throws -> Task<GitCommandResult, any Error> {
@@ -309,10 +309,13 @@ extension RemoteTransportTests {
 
     /// 直接启动 serve 模式的包装器，逐帧读出它发回的事件；读到 EOF 或格式错误的帧时事件流结束。
     ///
-    /// - Parameter session: 会话目录。
+    /// - Parameters:
+    ///   - session: 会话目录。
+    ///   - perlOptions: 加在包装器路径之前的 Perl 选项。
     /// - Returns: 写请求的标准输入，以及发回的事件。
-    private func startServe(
-        in session: String
+    func startServe(
+        in session: String,
+        perlOptions: [String] = []
     ) throws -> (input: FileHandle, events: AsyncStream<RemoteCommandChannel.FrameReader.Event>) {
         let process = Process()
         let input = Pipe()
@@ -321,7 +324,7 @@ extension RemoteTransportTests {
         let (events, continuation) = AsyncStream<RemoteCommandChannel.FrameReader.Event>.makeStream()
 
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [Self.wrapper.path, "serve", session]
+        process.arguments = perlOptions + [Self.wrapper.path, "serve", session]
         process.standardInput = input
         process.standardOutput = output
 
@@ -344,11 +347,12 @@ extension RemoteTransportTests {
         return (input.fileHandleForWriting, events)
     }
 
-    /// 事件所属的请求；就绪帧不属于任何请求。
-    private func identifier(of event: RemoteCommandChannel.FrameReader.Event) -> UInt32? {
+    /// 事件所属的请求；就绪帧与探测的应答不属于任何请求。
+    func identifier(of event: RemoteCommandChannel.FrameReader.Event) -> UInt32? {
         switch event {
-        case .ready: nil
+        case .ready, .probeReply: nil
         case .output(let identifier, _, _): identifier
+        case .compressedOutput(let identifier, _): identifier
         case .exit(let identifier, _): identifier
         }
     }
