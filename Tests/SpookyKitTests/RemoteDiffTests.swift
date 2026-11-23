@@ -6,7 +6,7 @@ import Testing
 /// 服务器上的 Diff 选项与图片两侧都在 B 上生成；只在显式启用时访问测试专用仓库。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteDiffTests {
-    /// 显示整个文件与忽略空白下的按块暂存在 B 上执行，图片新的一侧经 SFTP 读取。
+    /// 显示整个文件与忽略空白下的按块暂存在 B 上执行，图片新的一侧由包装器读取。
     @Test("服务器 Diff 选项与图片")
     func remoteDiff() async throws {
         let fixture = try await RemoteFixture.create()
@@ -32,7 +32,7 @@ struct RemoteDiffTests {
             try await service.apply(snapshot, file: 0, hunk: 0)
             #expect(try await runner.run(["show", ":" + path]) == Data("one\ntwo\nthree\n".utf8))
 
-            // 图片的工作区一侧经 SFTP 读取
+            // 图片的工作区一侧由包装器读取
             let image = fixture.repository + "/图 片.png"
             let bytes = Data([0x89, 0x50, 0x4E, 0x47, 0, 1, 2])
             try await files.write(bytes, to: image)

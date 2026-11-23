@@ -120,7 +120,7 @@ extension ExternalToolFiles {
 extension WorkingCopyOperations {
     /// 把合并工具的结果写回工作区并标记解决：先核对工作区文件仍是准备时的内容，再按需留下备份，写入后 `git add`。
     ///
-    /// 核对、备份、写入与暂存在同一个仓库写锁里完成；服务器上的文件经 SFTP 读写。
+    /// 核对、备份、写入与暂存在同一个仓库写锁里完成；服务器上的文件由 B 上的包装器读写。
     ///
     /// - Parameters:
     ///   - result: 合并工具写出的内容。

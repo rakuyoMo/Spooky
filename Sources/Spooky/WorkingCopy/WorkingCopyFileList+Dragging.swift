@@ -52,7 +52,7 @@ extension WorkingCopyFileList.Coordinator {
 
 // MARK: - WorkingCopyFilePromise
 
-/// 服务器文件的拖出：落点给出目标位置后，先经 SFTP 取到会话缓存，再复制过去，远端路径不交给落点。
+/// 服务器文件的拖出：落点给出目标位置后，先下载到会话缓存，再复制过去，远端路径不交给落点。
 final class WorkingCopyFilePromise: NSFilePromiseProvider, NSFilePromiseProviderDelegate {
     /// 仓库内的相对路径。
     private let path: String

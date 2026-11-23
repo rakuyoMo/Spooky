@@ -4,7 +4,7 @@ import Testing
 @testable import SpookyKit
 
 extension RemoteDiffTests {
-    /// 同一套精确路径、快照与写入检查在服务器执行，文件内容通过 SFTP 读取。
+    /// 同一套精确路径、快照与写入检查在服务器执行，文件内容由包装器读取。
     @Test("服务器单文件补丁边界", arguments: [false, true])
     func remoteScope(ancestor: Bool) async throws {
         let fixture = try await RemoteFixture.create()

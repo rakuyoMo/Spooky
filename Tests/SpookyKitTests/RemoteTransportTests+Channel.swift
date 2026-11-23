@@ -187,7 +187,7 @@ extension RemoteTransportTests {
     /// 单独启动包装器执行一个模式，接受任何退出码。
     ///
     /// - Parameter arguments: 模式与它的参数。
-    private func standaloneWrapper(_ arguments: [String]) async throws -> GitCommandResult {
+    func standaloneWrapper(_ arguments: [String]) async throws -> GitCommandResult {
         try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: [Self.wrapper.path] + arguments,

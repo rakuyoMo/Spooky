@@ -80,15 +80,18 @@ extension RemoteConnection {
 
         switch trash {
         case .macOS:
-            let result = try await runProgram(["/bin/sh", "-c", Self.trashScript, "spooky-trash"] + paths)
+            let result = try await performWrite(arguments: ["trash"]) { _ in
+                ["/bin/sh", "-c", Self.trashScript, "spooky-trash"] + paths
+            }
+
             return Self.trashedItems(paths, output: result.standardOutput)
 
         case .gio(let program):
-            _ = try await runProgram([program, "trash"] + paths)
+            _ = try await performWrite(arguments: ["trash"]) { _ in [program, "trash"] + paths }
             return paths.map { TrashedItem(path: $0, location: nil) }
 
         case .trashPut(let program):
-            _ = try await runProgram([program] + paths)
+            _ = try await performWrite(arguments: ["trash"]) { _ in [program] + paths }
             return paths.map { TrashedItem(path: $0, location: nil) }
         }
     }
@@ -102,10 +105,9 @@ extension RemoteConnection {
         if repository == nil { _ = try await open() }
         if let canonical { return try await canonical.moveRepositoryToTrash(path) }
 
-        let check = try await runProgram(
-            ["/bin/sh", "-c", Self.repositoryTrashCheckScript, "spooky-trash-check", path],
-            acceptedExitCodes: [0, 4, 5]
-        )
+        let check = try await performWrite(arguments: ["trash"], acceptedExitCodes: [0, 4, 5]) { _ in
+            ["/bin/sh", "-c", Self.repositoryTrashCheckScript, "spooky-trash-check", path]
+        }
 
         switch check.exitCode {
         case 4:
@@ -132,43 +134,12 @@ extension RemoteConnection {
             return
         }
 
-        let result = try await runProgram(
-            ["/bin/sh", "-c", Self.putBackScript, "spooky-put-back"] + moves.flatMap { [$0.from, $0.to] },
-            acceptedExitCodes: [0, 3]
-        )
+        let program = ["/bin/sh", "-c", Self.putBackScript, "spooky-put-back"] + moves.flatMap { [$0.from, $0.to] }
+        let result = try await performWrite(arguments: ["trash"], acceptedExitCodes: [0, 3]) { _ in program }
 
         guard result.exitCode == 0 else {
             throw RepositoryFileError.trashedItemsUnavailable
         }
-    }
-}
-
-// MARK: - Private
-
-extension RemoteConnection {
-    /// 在 B 上执行废纸篓相关的程序：与 Git 写命令一样占用本仓库的写槽与主机槽，经包装器在独立进程组里运行。
-    private func runProgram(_ program: [String], acceptedExitCodes: Set<Int32> = [0]) async throws -> GitCommandResult {
-        let location = RepositoryLocation.remote(host: host, path: repository?.path ?? requestedPath)
-
-        return try await RepositoryOperationQueue.shared.perform(at: location, writing: true) {
-            try await self.runConnectedProgram(program, acceptedExitCodes: acceptedExitCodes)
-        }
-    }
-
-    /// 获得执行槽后再次确认连接与写入核对状态，排队期间的断线不能被忽略。
-    private func runConnectedProgram(_ program: [String], acceptedExitCodes: Set<Int32>) async throws -> GitCommandResult {
-        guard state == .connected else { throw failure ?? RemoteConnectionError(.unavailable) }
-        guard !requiresReconciliation else { throw RemoteConnectionError(.interruptedWrite) }
-
-        try await check()
-
-        return try await runOperation(
-            program,
-            arguments: ["trash"],
-            acceptedExitCodes: acceptedExitCodes,
-            writing: true,
-            onOutput: { _ in }
-        )
     }
 }
 

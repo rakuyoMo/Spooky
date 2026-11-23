@@ -219,7 +219,7 @@ extension OperationProgress {
 // MARK: - State Files
 
 extension WorkingCopyOperations {
-    /// 读取 Git 目录中的状态文件：一次 rev-parse 定位，linked worktree 也正确，再批量读取，服务器上走 SFTP。
+    /// 读取 Git 目录中的状态文件：一次 rev-parse 定位，linked worktree 也正确，再批量读取，服务器上一次往返读完。
     ///
     /// - Parameter names: 相对 Git 目录的文件名。
     /// - Returns: 存在的文件名与按 UTF-8 解码的内容。

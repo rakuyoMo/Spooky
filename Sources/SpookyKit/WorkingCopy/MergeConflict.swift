@@ -215,7 +215,7 @@ public enum ConflictResolutionError: Error, Sendable, Equatable {
 // MARK: - Conflict Operations
 
 extension WorkingCopyOperations {
-    /// 冲突向导的三方原文与工作区文件：三个对象经一次 `cat-file --batch` 取回，工作区文件服务器上走 SFTP。
+    /// 冲突向导的三方原文与工作区文件：三个对象经一次 `cat-file --batch` 取回，服务器上的工作区文件由包装器读取。
     public func conflictContents(of entry: StatusEntry) async throws -> ConflictContents {
         guard let stages = entry.conflict else {
             throw WorkingCopyError.unsupportedFile

@@ -6,8 +6,8 @@ import Testing
 /// 文件历史、Blame 与原文的服务器验收，只在显式启用时访问 spooky-test 的独立测试目录。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteFileViewsTests {
-    /// 查询都由 B 上的 Git 执行；工作区文件经 SFTP 下载到本机缓存后才交给本机程序。
-    @Test("服务器文件历史、Blame、原文、NFD 路径与 SFTP 副本")
+    /// 查询都由 B 上的 Git 执行；工作区文件下载到本机缓存后才交给本机程序。
+    @Test("服务器文件历史、Blame、原文、NFD 路径与下载的副本")
     func fileViews() async throws {
         let fixture = try await RemoteFixture.create()
         let remote = fixture.connection()
@@ -48,7 +48,7 @@ struct RemoteFileViewsTests {
             #expect(Array(entry.path.utf8) == Array(decomposed.utf8))
             #expect(try await views.contents(of: entry) == Data("nfd\n".utf8))
 
-            // 工作区文件的本机副本来自 SFTP，路径在本机的临时缓存中
+            // 工作区文件下载成本机副本，路径在本机的临时缓存中
             let cache = RepositoryFileCache(runner: runner)
             let copy = try await cache.workingTreeFile(path)
             #expect(try Data(contentsOf: copy) == Data("one\ntwo\n".utf8))

@@ -56,7 +56,7 @@ public enum ExternalToolError: Error, Sendable, Equatable {
 
 /// 把外部比较与合并工具要看的内容放到本机：各版本经 Git 取出写进会话缓存，工具只拿到本机路径。
 ///
-/// 本机与服务器仓库走同一条路径；服务器上的工作区文件经 SFTP 读取，远端路径不交给本机程序。
+/// 本机与服务器仓库走同一条路径；服务器上的工作区文件由 B 上的包装器读取，远端路径不交给本机程序。
 public struct ExternalToolFiles: Sendable {
     /// 与仓库会话共用的文件缓存，关闭仓库时随它删除。
     public let cache: RepositoryFileCache

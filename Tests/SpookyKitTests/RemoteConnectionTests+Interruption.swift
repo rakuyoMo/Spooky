@@ -1,6 +1,5 @@
 import Foundation
 import Testing
-import TestSupport
 
 @testable import SpookyKit
 
@@ -42,49 +41,6 @@ extension RemoteConnectionTests {
                 "/bin/sh", "-c", "if kill -0 \"$1\" 2>/dev/null; then exit 7; fi", "fixture", process,
             ])
             _ = try await connection.execute(["status", "--porcelain=v2", "-z", "--branch"])
-
-            await connection.close()
-            try await fixture.remove()
-        } catch {
-            await connection.close()
-            try await fixture.remove()
-            throw error
-        }
-    }
-
-    /// SFTP 写入没有可确认退出的远端进程组：取消按取消未确认报告，重连核对之前拒绝写入，核对之后恢复。
-    @Test("SFTP 写入取消与重连核对")
-    func sftpWriteCancellation() async throws {
-        let fixture = try await RemoteFixture.create()
-        let connection = fixture.connection()
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sftp-gate-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        do {
-            let gate = try ProcessGate(in: directory)
-            _ = try await connection.open()
-
-            // 批处理里 “!” 开头的命令在本机执行：SFTP 停在闸门上时取消
-            let transfer = Task {
-                try await connection.transferSFTP(Data(("!" + gate.command + "\n").utf8), writing: true)
-            }
-
-            await gate.arrival()
-            transfer.cancel()
-
-            let cancelled = await #expect(throws: RemoteConnectionError.self) { try await transfer.value }
-            #expect(cancelled?.kind == .cancellationUnconfirmed)
-
-            // 核对之前拒绝写入；重连核对之后取得核对结果，可以继续写入
-            let blocked = await #expect(throws: RemoteConnectionError.self) {
-                try await connection.execute(["commit", "--allow-empty", "-m", "blocked"])
-            }
-            #expect(blocked?.kind == .interruptedWrite)
-
-            _ = try await connection.reconnect()
-            #expect(await connection.recovery != nil)
-            _ = try await connection.execute(["commit", "--allow-empty", "-m", "after reconciliation"])
 
             await connection.close()
             try await fixture.remove()

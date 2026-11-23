@@ -332,16 +332,13 @@ public actor RemoteConnection {
         return ("/usr/bin/sftp", arguments)
     }
 
-    /// 文件传输共用主机队列和写入核对规则，取消只终止本次 SFTP 通道。
-    func transferSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
-        if let canonical { return try await canonical.transferSFTP(input, writing: writing) }
-        guard !writing || !requiresReconciliation else {
-            throw RemoteConnectionError(.interruptedWrite)
-        }
+    /// 经 SFTP 取回大文件：与只读命令一样占用主机槽，取消只终止本次 SFTP 通道。
+    func transferSFTP(_ input: Data) async throws -> GitCommandResult {
+        if let canonical { return try await canonical.transferSFTP(input) }
 
         let location = repository?.location ?? .remote(host: host, path: requestedPath)
-        return try await RepositoryOperationQueue.shared.perform(at: location, writing: writing) {
-            try await self.runSFTP(input, writing: writing)
+        return try await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
+            try await self.runSFTP(input)
         }
     }
 
@@ -435,11 +432,7 @@ extension RemoteConnection {
     }
 
     /// 活跃传输阻止空闲回收，失败后检查主连接以区分文件错误与断线。
-    private func runSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
-        guard !writing || !requiresReconciliation else {
-            throw RemoteConnectionError(.interruptedWrite)
-        }
-
+    private func runSFTP(_ input: Data) async throws -> GitCommandResult {
         let command = try await sftpCommand()
         activeChannels += 1
         defer {
@@ -461,20 +454,11 @@ extension RemoteConnection {
             let original = error
             let result = (error as? GitError)?.result
 
-            if Task.isCancelled {
-                guard writing else { throw original }
-
-                // SFTP 没有可确认退出的远端进程组：写入被取消时按取消未确认报告，会话据此重连核对，核对之前不能继续写入
-                requiresReconciliation = true
-                let host = host
-                Self.logger.error("SFTP 写入已取消，未能确认服务器上已停止：\(host, privacy: .private)")
-                throw RemoteConnectionError(.cancellationUnconfirmed, result: result)
-            }
+            if Task.isCancelled { throw original }
 
             do { try await check() }
             catch {
-                requiresReconciliation = writing || requiresReconciliation
-                let failure = RemoteConnectionError(writing ? .interruptedWrite : .unavailable, result: result)
+                let failure = RemoteConnectionError(.unavailable, result: result)
                 self.failure = failure
                 updateState(.unavailable)
                 throw failure

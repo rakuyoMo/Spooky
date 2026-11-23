@@ -5,10 +5,10 @@ import Testing
 
 // MARK: - RemoteWorkingCopyFilesTests
 
-/// 服务器 M6 工作区文件操作仅在显式启用时访问测试专用仓库：规则文件经 SFTP 读写，确认后的删除在 B 上永久生效，补丁经标准输入交给 B 上的 git apply。
+/// 服务器 M6 工作区文件操作仅在显式启用时访问测试专用仓库：规则文件由 B 上的包装器读写，确认后的删除在 B 上永久生效，补丁经标准输入交给 B 上的 git apply。
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemoteWorkingCopyFilesTests {
-    /// 忽略与排除规则写进 B 上的文件，info 目录不存在时经 SFTP 创建；停止跟踪、移动与删除都在 B 上执行。
+    /// 忽略与排除规则写进 B 上的文件，info 目录不存在时在 B 上建出；停止跟踪、移动与删除都在 B 上执行。
     @Test("服务器忽略、排除、停止跟踪、移动与删除")
     func fileOperations() async throws {
         let fixture = try await RemoteFixture.create()
@@ -44,7 +44,7 @@ struct RemoteWorkingCopyFilesTests {
             #expect(entries.contains { $0.path == "keep.txt" && $0.staged == .deleted })
             #expect(entries.contains { $0.path == "keep.txt" && $0.kind == .untracked })
 
-            // 已跟踪文件经 git mv 移动；未跟踪文件经 SFTP 移动，目标已存在时拒绝
+            // 已跟踪文件经 git mv 移动；未跟踪文件由包装器移动，目标已存在时拒绝
             try await service.move(special, to: "renamed.txt", tracked: true)
             await #expect(throws: WorkingCopyFileError.destinationExists) {
                 try await service.move("keep.txt", to: "tracked.txt", tracked: false)

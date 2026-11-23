@@ -6,7 +6,7 @@ use warnings;
 # 每条 Git 命令都经 run 启动一次包装器，这里只加载 run 用到的模块；其余模块在用到它们的地方 require。
 use IO::Select;
 use IO::Socket::UNIX;
-use POSIX qw(EAGAIN EINTR ENOENT setsid WNOHANG);
+use POSIX qw(EAGAIN EEXIST EINTR ENOENT ENOTDIR setsid WNOHANG);
 use Time::HiRes qw(time sleep);
 
 # 登录时的 umask：run 启动的命令按它运行，替换写入的新文件按它取权限。
@@ -825,6 +825,118 @@ sub write_frame {
     }
 }
 
+# 文件操作失败：按 “路径: 原因” 写进标准错误并以 1 退出。
+# 不用 die：die 的退出码随 errno 变化，会与移动时 “目标已存在” 的专用退出码相撞。
+sub fail_path {
+    my ($path, $reason) = @_;
+    print STDERR "$path: ", ($reason // "$!"), "\n";
+    exit 1;
+}
+
+# 把数据写全到标准输出；写不出去说明 A 已经放弃这个请求，立即退出。
+sub write_output {
+    my ($data) = @_;
+
+    while (length $data) {
+        my $count = syswrite(STDOUT, $data);
+        next if !defined($count) && $! == EINTR;
+        exit 1 unless $count;
+        substr($data, 0, $count, '');
+    }
+}
+
+# 按顺序为每个路径写出一条记录，第一个字节是类别：0 不存在，1 带内容，2 超出内联预算、不带内容；
+# 1 与 2 接着是修改时间（整秒）与大小，见 record_header，1 的内容紧跟在后面。
+# 前面已内联的字节数加上这个文件的大小不超过预算时才内联；不存在指 ENOENT 与 ENOTDIR，其余失败按 fail_path 结束。
+sub read_files {
+    my ($budget, @paths) = @_;
+    die "invalid read budget\n" unless ($budget // '') =~ /\A\d+\z/;
+    my $remaining = $budget;
+
+    for my $path (@paths) {
+        # 先看类型再打开：打开 FIFO 等特殊文件会一直等下去
+        unless (stat $path) {
+            fail_path($path) unless $! == ENOENT || $! == ENOTDIR;
+            write_output("\0");
+            next;
+        }
+
+        fail_path($path, 'Is a directory') if -d _;
+        fail_path($path, 'Not a regular file') unless -f _;
+        open(my $file, '<:raw', $path) or fail_path($path);
+
+        # 修改时间在读之前取：读的过程中文件又被改动时，记下的时间早于内容，A 下次比对仍会发现变化
+        my ($size, $modified) = (stat $file)[7, 9];
+        my $content = '';
+        my $inline = $size <= $remaining;
+
+        # 读进内存再写出，记录里的大小就是随后写出的字节数；读的过程中变大、超出剩余的预算时改按超出预算记录
+        while ($inline) {
+            my $count = sysread($file, $content, 65536, length $content);
+            next if !defined($count) && $! == EINTR;
+            fail_path($path) unless defined $count;
+            last unless $count;
+            $inline = length($content) <= $remaining;
+        }
+
+        unless ($inline) {
+            $size = (stat $file)[7];
+            close $file;
+            write_output(record_header(2, $modified, $size));
+            next;
+        }
+
+        close $file;
+        $remaining -= length $content;
+        write_output(record_header(1, $modified, length $content));
+        write_output($content);
+    }
+}
+
+# 读取记录的头：类别 1 字节，修改时间与大小各写成高 32 位、低 32 位两个大端整数；
+# 不按 64 位整数打包，Perl 不带 64 位整数时同样写得出。修改时间早于 1970 年时按 0 记。
+sub record_header {
+    my ($kind, $modified, $size) = @_;
+    my $header = pack('C', $kind);
+
+    # 拆分用浮点除法：时间与大小都远小于 2^53，结果是精确的整数
+    for my $value ($modified < 0 ? 0 : $modified, $size) {
+        my $high = int($value / 4294967296);
+        $header .= pack('N N', $high, $value - $high * 4294967296);
+    }
+
+    return $header;
+}
+
+# 按顺序删除文件，遇到第一个失败就停下；不删目录。
+sub delete_files {
+    for my $path (@_) {
+        unlink($path) or fail_path($path);
+    }
+}
+
+# 把文件或目录移到新位置；目标已存在时以 3 退出、不覆盖，悬空的符号链接同样算已存在。
+sub move_file {
+    my ($source, $destination) = @_;
+    die "invalid move\n" unless @_ == 2;
+    exit 3 if lstat $destination;
+    rename($source, $destination) or fail_path($source);
+}
+
+# 从根目录起逐级建出目录，已存在的目录不算失败；新目录按登录时的 umask 取权限。
+sub make_directory {
+    my ($path) = @_;
+    die "invalid directory\n" unless @_ == 1 && $path =~ m{\A/};
+    umask $login_umask;
+    my $level = '';
+
+    for my $component (grep { length } split m{/}, $path) {
+        $level .= "/$component";
+        next if mkdir $level;
+        fail_path($level) unless $! == EEXIST && -d $level;
+    }
+}
+
 # 按模式执行一次包装器；单独启动与常驻通道里的请求都从这里进入，模式的参数在 @ARGV 里。
 sub dispatch {
     my ($mode) = @_;
@@ -946,6 +1058,14 @@ sub dispatch {
         $ENV{DISPLAY} = 'spooky:0';
         $ENV{SPOOKY_SIGNING} = '1';
         exec_program($program, @ARGV);
+    } elsif ($mode eq 'read') {
+        read_files(@ARGV);
+    } elsif ($mode eq 'delete') {
+        delete_files(@ARGV);
+    } elsif ($mode eq 'move') {
+        move_file(@ARGV);
+    } elsif ($mode eq 'mkdir') {
+        make_directory(@ARGV);
     } elsif ($mode eq 'inspect') {
         # 路径由 git rev-parse --git-path 提供，只检查存在性，不读取元数据内容。
         for my $path (@ARGV) {

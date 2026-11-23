@@ -19,8 +19,14 @@ public enum RepositoryFileError: Error, Sendable {
 
 // MARK: - RepositoryFiles
 
-/// 工作区所在机器的文件访问边界；远端路径始终作为 SFTP 数据处理。
+/// 工作区所在机器的文件访问边界：服务器上的文件由 B 上的包装器读写，超出内联预算的大文件经 SFTP 取回，远端路径不交给本机文件 API。
 public struct RepositoryFiles: Sendable {
+    /// 一次读取随记录取回的内容的总字节数上限，超出的文件经 SFTP 取回。
+    static let inlineReadBudget = 16 * 1024 * 1024
+
+    /// 随请求发出的写入内容的上限：常驻通道的请求上限里给包装器、路径等参数留出 64 KiB，超出时 ssh 从本机临时文件读取内容。
+    private static let inlineWriteLimit = RemoteCommandChannel.requestLimit - 64 * 1024
+
     /// 文件访问与 Git 使用相同的仓库和 SSH 会话。
     let runner: GitRunner
 
@@ -47,7 +53,7 @@ public struct RepositoryFiles: Sendable {
 
     /// 中继文件只落在本次调用独占的 0700 目录中。
     private static func temporaryDirectory() throws -> URL {
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sftp-" + UUID().uuidString)
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-transfer-" + UUID().uuidString)
         try FileManager.default.createDirectory(
             at: directory,
             withIntermediateDirectories: false,
@@ -75,7 +81,7 @@ public struct RepositoryFiles: Sendable {
 
     /// 批量读取已定位的绝对路径，连同文件在工作区所在机器上的修改时间；缺失文件不进入结果。
     ///
-    /// 服务器上的文件经 SFTP 带 `-p` 取回，本机副本保留远端的修改时间。
+    /// 服务器上的修改时间精确到秒。
     public func readWithModificationDates(_ paths: [String]) async throws -> [String: (data: Data, modified: Date?)] {
         try await snapshot(paths, preservingDates: true)
     }
@@ -110,49 +116,31 @@ public struct RepositoryFiles: Sendable {
             return result
         }
 
-        // 状态文件多数不存在：先用一次往返确认存在性，只为存在的文件启动 SFTP。
-        let flags = try await remote.inspect(paths)
-        let existing = zip(paths, flags).filter(\.1).map(\.0)
-
-        guard !existing.isEmpty else {
-            return [:]
-        }
-
-        let directory = try Self.temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        // 独立编号避免把远端路径解释为本机路径，也避免文件名的规范化碰撞；-p 让本机副本带上远端的修改时间
-        let get = preservingDates ? "-get -p " : "-get "
-        let commands = try existing.enumerated().map {
-            get + (try Self.quoted($0.element)) + " "
-                + (try Self.quoted(directory.appending(path: String($0.offset)).path))
-        }
-        let result = try await transfer(commands, writing: false)
-        let diagnostics = String(decoding: result.standardError, as: UTF8.self)
-            .split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter {
-                !$0.contains("No such file or directory")
-                    && !($0.hasPrefix("File \"") && $0.hasSuffix("\" not found."))
-                    && !$0.isEmpty
-            }
-
-        // -get 仅容忍缺失标记文件，不能把权限错误或中断误判为普通工作区。
-        guard diagnostics.isEmpty else {
-            throw GitError(result: result, category: .processIOFailed, diagnostic: nil)
-        }
-
+        // 一次往返取回内容与修改时间，不存在的文件不进结果；超出内联预算的大文件再经 SFTP 取回
+        let records = try await remote.readFiles(paths, inlineBudget: Self.inlineReadBudget)
         var contents: [String: (data: Data, modified: Date?)] = [:]
+        var oversized: [(path: String, modified: Date)] = []
 
-        for (index, path) in existing.enumerated() {
-            let local = directory.appending(path: String(index))
+        for (path, record) in zip(paths, records) {
+            switch record {
+            case .missing:
+                continue
 
-            if FileManager.default.fileExists(atPath: local.path) {
-                contents[path] = (
-                    try Self.boundedRead(local),
-                    preservingDates ? Self.modificationDate(local) : nil
-                )
+            case .content(let data, let modified):
+                contents[path] = (data, preservingDates ? modified : nil)
+
+            case .oversized(let modified):
+                oversized.append((path, modified))
             }
+        }
+
+        let fetched = try await fetchOversized(oversized.map(\.path))
+
+        // 读取之后又被删掉的大文件同样按不存在处理
+        for (path, modified) in oversized {
+            guard let data = fetched[path] else { continue }
+
+            contents[path] = (data, preservingDates ? modified : nil)
         }
 
         return contents
@@ -169,39 +157,55 @@ public struct RepositoryFiles: Sendable {
                 return
             }
 
-            // 内容先落到私有临时文件，ssh 直接读它：连接中途断开时本进程没有写到一半的管道
+            // 内容装得进一个请求时随请求发出
+            guard data.count > Self.inlineWriteLimit else {
+                try await remote.replaceFile(path, size: data.count, input: data)
+                return
+            }
+
+            // 装不下时先落到私有临时文件，ssh 直接读它：连接中途断开时本进程没有写到一半的管道
             let directory = try Self.temporaryDirectory()
             defer { try? FileManager.default.removeItem(at: directory) }
+
             let file = directory.appending(path: "content")
             try data.write(to: file)
 
-            try await remote.replaceFile(path, from: file, size: data.count)
+            try await remote.replaceFile(path, size: data.count, inputFile: file)
         }
     }
 
-    /// 把工作区所在机器上的文件复制到本机指定位置；服务器路径只作为 SFTP 数据传递，不交给本机文件 API。
+    /// 把工作区所在机器上的文件复制到本机指定位置；文件不存在、没有权限时都抛出。
     ///
     /// - Parameters:
     ///   - path: 工作区所在机器上的绝对路径。
     ///   - destination: 本机目标文件，必须尚不存在。
     public func download(_ path: String, to destination: URL) async throws {
-        guard runner.remote != nil else {
+        guard let remote = runner.remote else {
             try FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: destination)
             return
         }
 
-        // 不带 “-” 前缀的 get 失败时 SFTP 以非零状态退出，缺失与权限错误都会抛出
-        _ = try await transfer(
-            ["get " + (try Self.quoted(path)) + " " + (try Self.quoted(destination.path))],
-            writing: false
-        )
+        // 先一次往返读取，内容在内联预算之内时直接写到目标
+        let record = try await remote.readFiles([path], inlineBudget: Self.inlineReadBudget).first ?? .missing
+
+        switch record {
+        case .content(let data, _):
+            try data.write(to: destination)
+
+        case .oversized:
+            // 大文件经 SFTP 取回：不带 “-” 前缀的 get 失败时 SFTP 以非零状态退出
+            _ = try await transfer(["get " + (try Self.quoted(path)) + " " + (try Self.quoted(destination.path))])
+
+        case .missing:
+            throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: path])
+        }
     }
 
     /// 永久删除明确选中的文件，不递归进入嵌套仓库。
     func remove(_ paths: [String]) async throws {
         guard !paths.isEmpty else { return }
 
-        if runner.remote == nil {
+        guard let remote = runner.remote else {
             for path in paths {
                 try FileManager.default.removeItem(at: URL(fileURLWithPath: path))
             }
@@ -209,7 +213,7 @@ public struct RepositoryFiles: Sendable {
             return
         }
 
-        _ = try await transfer(try paths.map { "rm " + (try Self.quoted($0)) }, writing: true)
+        try await remote.removeFiles(paths)
     }
 
     /// 把工作区所在机器上的文件移到新位置，目标已存在时不覆盖。
@@ -231,15 +235,7 @@ public struct RepositoryFiles: Sendable {
                 return
             }
 
-            // 服务器支持 posix-rename 时 SFTP 的 rename 会覆盖目标，先确认目标不存在
-            guard try await remote.inspect([destination]) == [false] else {
-                throw WorkingCopyFileError.destinationExists
-            }
-
-            _ = try await transfer(
-                ["rename " + (try Self.quoted(path)) + " " + (try Self.quoted(destination))],
-                writing: true
-            )
+            try await remote.moveFile(path, to: destination)
         }
     }
 
@@ -247,7 +243,7 @@ public struct RepositoryFiles: Sendable {
     ///
     /// - Parameter path: 目录的绝对路径。
     func createDirectory(_ path: String) async throws {
-        guard runner.remote != nil else {
+        guard let remote = runner.remote else {
             try FileManager.default.createDirectory(
                 at: URL(fileURLWithPath: path),
                 withIntermediateDirectories: true
@@ -255,16 +251,12 @@ public struct RepositoryFiles: Sendable {
             return
         }
 
-        // SFTP 的 mkdir 只建最后一级，从根目录起逐级发出；带 “-” 前缀的命令失败时不中断，目录已存在属于这种情况
-        let components = path.split(separator: "/")
-        let levels = components.indices.map { "/" + components[...$0].joined(separator: "/") }
-
-        _ = try await transfer(try levels.map { "-mkdir " + (try Self.quoted($0)) }, writing: true)
+        try await remote.createDirectory(path)
     }
 
     /// 删掉工作区所在机器上的一个目录及其全部内容，目录不存在时什么也不做。
     ///
-    /// SFTP 不能递归删除，服务器经主机连接在 B 上执行 `rm -rf`。
+    /// ``remove(_:)`` 只删文件，服务器经主机连接在 B 上执行 `rm -rf`。
     ///
     /// - Parameter path: 目录的绝对路径。
     func removeTree(_ path: String) async throws {
@@ -282,13 +274,53 @@ public struct RepositoryFiles: Sendable {
         )
     }
 
-    /// 执行一批 SFTP 命令；取消会直接结束本批子进程，SSH 主连接保留。
-    private func transfer(_ commands: [String], writing: Bool) async throws -> GitCommandResult {
+    /// 经 SFTP 取回超出内联预算的文件；取回之前已被删掉的文件不进结果，权限与传输失败仍抛错。
+    ///
+    /// - Parameter paths: 工作区所在机器上的绝对路径。
+    /// - Returns: 取回的内容。
+    private func fetchOversized(_ paths: [String]) async throws -> [String: Data] {
+        guard !paths.isEmpty else { return [:] }
+
+        let directory = try Self.temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        // 独立编号避免把远端路径解释为本机路径，也避免文件名的规范化碰撞
+        let commands = try paths.enumerated().map {
+            "-get " + (try Self.quoted($0.element)) + " "
+                + (try Self.quoted(directory.appending(path: String($0.offset)).path))
+        }
+        let result = try await transfer(commands)
+        let diagnostics = String(decoding: result.standardError, as: UTF8.self)
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter {
+                !$0.contains("No such file or directory")
+                    && !($0.hasPrefix("File \"") && $0.hasSuffix("\" not found."))
+                    && !$0.isEmpty
+            }
+
+        // -get 只容忍已被删掉的文件，不能把权限错误或中断当成文件不存在
+        guard diagnostics.isEmpty else {
+            throw GitError(result: result, category: .processIOFailed, diagnostic: nil)
+        }
+
+        var contents: [String: Data] = [:]
+
+        for (index, path) in paths.enumerated() {
+            let local = directory.appending(path: String(index))
+
+            if FileManager.default.fileExists(atPath: local.path) {
+                contents[path] = try Self.boundedRead(local)
+            }
+        }
+
+        return contents
+    }
+
+    /// 执行一批 SFTP 命令取回文件；取消会直接结束本批子进程，SSH 主连接保留。
+    private func transfer(_ commands: [String]) async throws -> GitCommandResult {
         guard let remote = runner.remote else { throw RepositoryFileError.unsupportedPath }
-        return try await remote.transferSFTP(
-            Data((commands.joined(separator: "\n") + "\n").utf8),
-            writing: writing
-        )
+        return try await remote.transferSFTP(Data((commands.joined(separator: "\n") + "\n").utf8))
     }
 
 }
