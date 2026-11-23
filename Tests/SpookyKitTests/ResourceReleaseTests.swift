@@ -4,6 +4,8 @@ import Testing
 
 @testable import SpookyKit
 
+// MARK: - ResourceReleaseTests
+
 /// 子进程、文件描述符与临时文件在成功、失败、取消三条路径上都必须释放。
 struct ResourceReleaseTests {
     /// 取消先发送 TERM：Git 这类程序可以在退出前移除自己的锁文件；忽略 TERM 的进程在宽限期后由 KILL 结束，不会遗留在后台。
@@ -50,41 +52,37 @@ struct ResourceReleaseTests {
 
     /// 反复执行成功、非零退出与取消后，进程打开的描述符数量不随次数增长。
     ///
-    /// 本机仓库的 Git 命令在测试进程里共用一组主机槽，整套测试并行时 60 次调用要依次排队，上限按整套测试的耗时留足。
+    /// 在只运行这一项的子进程里计数：数的是整个进程打开的描述符，与其它测试同在一个进程时，它们的连接与管道也会算进来。
     @Test("成功、失败与取消都释放文件描述符")
-    func descriptors() async throws {
-        let temporary = try TemporaryRepository()
-        defer { temporary.remove() }
-        try await temporary.initialize()
+    func descriptors() async {
+        await #expect(processExitsWith: .success) {
+            let temporary = try TemporaryRepository()
+            defer { temporary.remove() }
+            try await temporary.initialize()
 
-        let waiting = try script(in: temporary, name: "waiting-git", body: """
-            printf '%s\\n' "$$"
-            exec /bin/sleep 30
-            """)
+            let waiting = try script(in: temporary, name: "waiting-git", body: """
+                printf '%s\\n' "$$"
+                exec /bin/sleep 30
+                """)
 
-        let cancelling = temporary.runner(at: "/", executable: waiting.path)
-        let before = try openDescriptors()
+            let cancelling = temporary.runner(at: "/", executable: waiting.path)
+            let before = try openDescriptors()
 
-        for _ in 0 ..< 20 {
-            _ = try await temporary.runner.execute(["status", "--porcelain=v2", "-z"])
+            for _ in 0 ..< 20 {
+                _ = try await temporary.runner.execute(["status", "--porcelain=v2", "-z"])
 
-            await #expect(throws: GitError.self) {
-                try await temporary.runner.execute(["rev-parse", "--verify", "missing-revision"])
+                await #expect(throws: GitError.self) {
+                    try await temporary.runner.execute(["rev-parse", "--verify", "missing-revision"])
+                }
+
+                _ = try await cancelAfterStart(cancelling)
             }
 
-            _ = try await cancelAfterStart(cancelling)
+            let after = try openDescriptors()
+
+            // 任一条路径每次泄漏一个，20 次就多出 20 个
+            #expect(after - before < 16)
         }
-
-        // 其它并行测试也会短暂占用描述符：超出时隔一会儿再读，取最少的一次；
-        // 逐次泄漏会让数量随 60 次调用明显增长，怎么读都降不下来
-        var after = try openDescriptors()
-
-        for _ in 0 ..< 20 where after - before >= 16 {
-            try await Task.sleep(for: .milliseconds(250))
-            after = min(after, try openDescriptors())
-        }
-
-        #expect(after - before < 16)
     }
 
     /// 本机凭据回调的私有会话目录在成功、失败和取消后都被删除。
@@ -142,59 +140,61 @@ struct ResourceReleaseTests {
             #expect(!FileManager.default.fileExists(atPath: session), "\(session)")
         }
     }
+}
 
-    /// 写入可执行的测试脚本，只放在本测试的临时目录中；默认由 `/bin/sh` 解释。
-    private func script(
-        in temporary: TemporaryRepository,
-        name: String,
-        interpreter: String = "/bin/sh",
-        body: String
-    ) throws -> URL {
-        let url = temporary.directory.appending(path: name)
+// MARK: - Helpers
 
-        try Data(("#!" + interpreter + "\n" + body + "\n").utf8).write(to: url)
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
+/// 写入可执行的测试脚本，只放在本测试的临时目录中；默认由 `/bin/sh` 解释。
+private func script(
+    in temporary: TemporaryRepository,
+    name: String,
+    interpreter: String = "/bin/sh",
+    body: String
+) throws -> URL {
+    let url = temporary.directory.appending(path: name)
 
-        return url
-    }
+    try Data(("#!" + interpreter + "\n" + body + "\n").utf8).write(to: url)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
 
-    /// 等到脚本输出自己的 PID 后取消，返回该 PID 供检查进程是否已经结束。
-    private func cancelAfterStart(_ runner: GitRunner) async throws -> Int32 {
-        let (stream, continuation) = AsyncStream<Data>.makeStream()
+    return url
+}
 
-        let task = Task {
-            // 进程意外提前退出时结束输出流，测试不会一直等待 PID
-            defer { continuation.finish() }
+/// 等到脚本输出自己的 PID 后取消，返回该 PID 供检查进程是否已经结束。
+private func cancelAfterStart(_ runner: GitRunner) async throws -> Int32 {
+    let (stream, continuation) = AsyncStream<Data>.makeStream()
 
-            return try await runner.execute(["status"]) {
-                if case .standardOutput(let data) = $0 {
-                    continuation.yield(data)
-                }
+    let task = Task {
+        // 进程意外提前退出时结束输出流，测试不会一直等待 PID
+        defer { continuation.finish() }
+
+        return try await runner.execute(["status"]) {
+            if case .standardOutput(let data) = $0 {
+                continuation.yield(data)
             }
         }
+    }
 
-        var output = Data()
+    var output = Data()
 
-        for await data in stream {
-            output.append(data)
+    for await data in stream {
+        output.append(data)
 
-            if output.contains(10) {
-                break
-            }
+        if output.contains(10) {
+            break
         }
-
-        task.cancel()
-        continuation.finish()
-
-        let error = await #expect(throws: GitError.self) { try await task.value }
-
-        #expect(error?.isCancelled ?? false)
-
-        return try #require(Int32(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)))
     }
 
-    /// 当前进程打开的文件描述符数量。
-    private func openDescriptors() throws -> Int {
-        try FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count
-    }
+    task.cancel()
+    continuation.finish()
+
+    let error = await #expect(throws: GitError.self) { try await task.value }
+
+    #expect(error?.isCancelled ?? false)
+
+    return try #require(Int32(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)))
+}
+
+/// 当前进程打开的文件描述符数量。
+private func openDescriptors() throws -> Int {
+    try FileManager.default.contentsOfDirectory(atPath: "/dev/fd").count
 }
