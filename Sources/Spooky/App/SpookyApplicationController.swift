@@ -460,7 +460,7 @@ extension SpookyApplicationController {
                     return
                 }
 
-                bookmarks.markMissing(location)
+                bookmarks.markMissing(location, directoryGone: RepositoryManagerController.isDirectoryGone(error))
                 showOpeningFailure(error, at: location, from: source, inNewWindow: inNewWindow)
             }
         }

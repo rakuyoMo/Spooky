@@ -67,19 +67,25 @@ extension RepositoryManagerController {
     /// 删除书签的询问：标题按个数取写法，说明按有没有服务器仓库取写法，下面是每次都不勾的移到废纸篓勾选框，主按钮是 Delete。
     /// 确认后删除书签并从选中里去掉；勾上时再在后台把仓库文件夹移进废纸篓。
     ///
+    /// 目录已不存在的服务器仓库没有文件夹可移，不算进勾选框的个数；要问的都是这样的仓库时勾选框置灰。
+    ///
     /// - Parameters:
     ///   - targets: 要删除的书签。
     ///   - close: 关闭询问。
     func deleteBookmarksPrompt(_ targets: [Bookmark], close: @escaping () -> Void) -> ConfirmationDialog {
         let folders = Self.repositoryFolders(in: targets)
+        let movable = folders.filter { !bookmarks.isDirectoryGone($0) }
 
         let message = folders.contains { $0.host != nil }
             ? AppLocalization.text("bookmarks.delete.noteServer")
             : AppLocalization.text("bookmarks.delete.note")
 
-        let checkbox = folders.count == 1
+        // 置灰时照旧按全部仓库写个数
+        let count = movable.isEmpty ? folders.count : movable.count
+
+        let checkbox = count == 1
             ? AppLocalization.text("bookmarks.delete.trash")
-            : AppLocalization.text("bookmarks.delete.trashMultiple", folders.count)
+            : AppLocalization.text("bookmarks.delete.trashMultiple", count)
 
         return ConfirmationDialog(
             title: targets.count == 1
@@ -88,12 +94,13 @@ extension RepositoryManagerController {
             message: message,
             submitTitle: AppLocalization.text("bookmarks.delete.submit"),
             checkbox: checkbox,
+            isCheckboxEnabled: !movable.isEmpty,
             close: close
         ) { [weak self] checked in
             self?.delete(targets)
 
             if checked {
-                self?.moveToTrash(folders)
+                self?.moveToTrash(movable)
             }
         }
     }

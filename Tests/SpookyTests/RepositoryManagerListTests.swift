@@ -8,7 +8,7 @@ import TestSupport
 
 // MARK: - RepositoryManagerListTests
 
-/// 仓库管理列表的两个显示设置：服务器仓库行上的主机别名，以及列出仓库的工作树。
+/// 仓库管理的列表：服务器仓库行上的主机别名与列出仓库的工作树两个显示设置，以及回车改名。
 @MainActor
 struct RepositoryManagerListTests {
     /// 主机别名默认写在服务器仓库的名称前；关掉后行上只写名称，改动随即生效。
@@ -186,6 +186,72 @@ struct RepositoryManagerListTests {
 
         let next = await Self.loadedSidebar(manager, defaults: defaults, runner: runner)
         #expect(next.outlineView.isItemExpanded(next.item(for: repository)))
+    }
+
+    /// 名称平时不能编辑，点已选中的名称不会进入改名；只选中一个书签时回车进入改名，选中多项时不改名；
+    /// 取消与提交之后名称都回到不能编辑。
+    @Test("回车改名，名称平时不能编辑")
+    func renameFromKeyboard() throws {
+        let (defaults, directory) = try Self.defaults()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let bookmarks = RepositoryBookmarks(defaults: defaults)
+        let repository = bookmarks.add(.local(path: directory.appending(path: "app").path))
+        bookmarks.addFolder(named: "Group")
+
+        let manager = RepositoryManagerController(bookmarks: bookmarks, session: RepositorySession())
+        let sidebar = BookmarkSidebarController(manager: manager, defaults: defaults)
+
+        // 编辑名称要用窗口的字段编辑器
+        let window = NSWindow(contentViewController: sidebar)
+        let outline = sidebar.outlineView
+        let row = outline.row(forItem: sidebar.item(for: repository))
+        let cell = try #require(outline.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView)
+        let name = try #require(cell.textField)
+
+        #expect(!name.isEditable && !name.isSelectable)
+
+        let returnKey = try #require(NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            isARepeat: false,
+            keyCode: 36
+        ))
+
+        // 选中两项时回车不改名
+        window.makeFirstResponder(outline)
+        outline.selectAll(nil)
+        outline.keyDown(with: returnKey)
+        #expect(window.firstResponder === outline)
+
+        // 只选中一个书签时进入改名：字段编辑器属于这一行的名称
+        outline.selectRowIndexes([row], byExtendingSelection: false)
+        outline.keyDown(with: returnKey)
+
+        let editor = try #require(window.firstResponder as? NSTextView)
+        #expect(editor.delegate === name)
+
+        // 取消后名称没变，回到不能编辑
+        editor.doCommand(by: #selector(NSResponder.cancelOperation(_:)))
+        #expect(!(window.firstResponder is NSTextView))
+        #expect(!name.isEditable && !name.isSelectable)
+        #expect(bookmarks.bookmark(repository)?.name == "app")
+
+        // 提交后改了名，同样回到不能编辑
+        outline.keyDown(with: returnKey)
+
+        let renaming = try #require(window.firstResponder as? NSTextView)
+        renaming.insertText("tool", replacementRange: NSRange(location: 0, length: renaming.string.utf16.count))
+        renaming.doCommand(by: #selector(NSResponder.insertNewline(_:)))
+
+        #expect(bookmarks.bookmark(repository)?.name == "tool")
+        #expect(!name.isEditable && !name.isSelectable)
     }
 }
 

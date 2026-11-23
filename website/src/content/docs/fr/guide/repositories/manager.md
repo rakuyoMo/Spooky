@@ -69,7 +69,7 @@ Les dépôts déjà présents dans la liste ne sont pas proposés à nouveau. Vo
 
 - Pour ajouter un groupe, choisissez :ui[bookmarks.newGroup] dans le menu du bouton d’ajout, puis tapez un nom.
 - Pour réordonner des entrées ou les déplacer dans un autre groupe, faites-les glisser.
-- Pour renommer une entrée, cliquez dessus avec le bouton droit et choisissez :ui[bookmarks.rename]. Renommer un dépôt dans la liste ne renomme pas son dossier.
+- Pour renommer une entrée, sélectionnez-la et appuyez sur <kbd>↩</kbd>, ou cliquez dessus avec le bouton droit et choisissez :ui[bookmarks.rename]. Renommer un dépôt dans la liste ne renomme pas son dossier.
 - Pour trier par nom, cliquez avec le bouton droit et choisissez :ui[bookmarks.sortChildren] pour trier les entrées d’un groupe, ou :ui[bookmarks.sortParent] pour trier le groupe où se trouve une entrée.
 
 Deux options de :ui[app.name > settings.title] › :ui[settings.general] changent ce que la liste affiche :
@@ -81,7 +81,7 @@ Consultez [Fenêtres et liste Dépôts](/guide/settings/general/#windows).
 
 ## Ouvrir un dépôt {#open}
 
-Double-cliquez sur un dépôt, ou sélectionnez-le et appuyez sur <kbd>↩</kbd>. Il s’ouvre dans la même fenêtre, à la place de la liste. Si le dépôt est déjà ouvert dans une autre fenêtre, Spooky place plutôt cette fenêtre au premier plan.
+Double-cliquez sur un dépôt. Il s’ouvre dans la même fenêtre, à la place de la liste. Si le dépôt est déjà ouvert dans une autre fenêtre, Spooky place plutôt cette fenêtre au premier plan.
 
 Cliquez sur un dépôt avec le bouton droit pour d’autres choix :
 
@@ -125,7 +125,7 @@ Le placement dans la Corbeille emporte tout le dossier du dépôt, y compris les
 Si un dossier ne peut pas être déplacé, Spooky affiche :ui[bookmarks.trashFailed.title] et liste les dossiers restés en place. Spooky ne place jamais dans la Corbeille votre dossier de départ, un dossier qui le contient, ni le niveau supérieur d’un disque.
 
 :::note[Dépôts sur un serveur]
-Spooky demande toujours confirmation avant de retirer un dépôt sur un serveur. Son dossier va dans la Corbeille de ce serveur, pas dans celle de votre Mac.
+Spooky demande toujours confirmation avant de retirer un dépôt sur un serveur. Son dossier va dans la Corbeille de ce serveur, pas dans celle de votre Mac. Si le dossier n’est plus sur le serveur, la case de la Corbeille est estompée et seul le signet est retiré.
 :::
 
 ## Voir aussi

@@ -46,19 +46,19 @@ final class BookmarkWorktreeItem: NSObject {
 
 // MARK: - BookmarkOutlineView
 
-/// 书签列表：回车打开选中的仓库，删除键删除选中的书签；书签只能在应用内拖动。
+/// 书签列表：回车给选中的书签改名，删除键删除选中的书签；书签只能在应用内拖动。
 final class BookmarkOutlineView: NSOutlineView {
     /// 回车或换行键的动作。
-    var onOpen: (() -> Void)?
+    var onRename: (() -> Void)?
 
     /// 删除键的动作。
     var onDelete: (() -> Void)?
 
-    /// 回车打开、删除键删除，其余按键照常处理。
+    /// 回车改名、删除键删除，其余按键照常处理。
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 36, 76:
-            onOpen?()
+            onRename?()
 
         case 51, 117:
             onDelete?()
@@ -79,6 +79,37 @@ final class BookmarkOutlineView: NSOutlineView {
     /// 拖动时按住修饰键也只做移动。
     override func ignoreModifierKeys(for _: NSDraggingSession) -> Bool {
         true
+    }
+}
+
+// MARK: - BookmarkNameField
+
+/// 书签的名称：平时不能编辑，点它不进入改名；改名期间可以编辑，提交或取消后复原。
+final class BookmarkNameField: NSTextField {
+    /// 提交编辑、通知委托之后复原。
+    override func textDidEndEditing(_ notification: Notification) {
+        super.textDidEndEditing(notification)
+
+        endRenaming()
+    }
+
+    /// 取消编辑后复原；取消不经过 `textDidEndEditing`。
+    override func abortEditing() -> Bool {
+        let aborted = super.abortEditing()
+
+        endRenaming()
+        return aborted
+    }
+
+    /// 设成可以编辑，由列表接着开始编辑。
+    func beginRenaming() {
+        isEditable = true
+    }
+
+    /// 回到不能编辑也不能选中文字的标签。
+    func endRenaming() {
+        isEditable = false
+        isSelectable = false
     }
 }
 
@@ -124,7 +155,6 @@ final class BookmarkCellView: NSTableCellView {
 
         imageView?.image = NSImage(systemSymbolName: bookmark.symbolName, accessibilityDescription: nil)
         textField?.stringValue = bookmark.name
-        textField?.isEditable = true
 
         let host = showsHost ? bookmark.location?.host : nil
         hostField.stringValue = host.map { $0 + ":" } ?? ""
@@ -194,9 +224,8 @@ extension BookmarkCellView {
         icon.contentTintColor = .secondaryLabelColor
         imageView = icon
 
-        let name = NSTextField(labelWithString: "")
+        let name = BookmarkNameField(labelWithString: "")
         name.font = .systemFont(ofSize: 13)
-        name.isEditable = true
         name.lineBreakMode = .byTruncatingTail
         name.usesSingleLineMode = true
         name.cell?.isScrollable = false

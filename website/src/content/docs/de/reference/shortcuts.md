@@ -187,7 +187,7 @@ Mit der Maus halten Sie <kbd>⇧</kbd> gedrückt und klicken auf eine Zeilennumm
 | Das Filterfeld der Seitenleiste | <kbd>Esc</kbd> | Leert das Feld |
 | Stashes | <kbd>⌘⌫</kbd> | Löscht nach Rückfrage die ausgewählten Stashes |
 | Branch-Übersicht | <kbd>⌘⌫</kbd> | Löscht nach Rückfrage die ausgewählten Branches |
-| Das Fenster „Repositorys“ | <kbd>↩</kbd> | Öffnet das ausgewählte Repository |
+| Das Fenster „Repositorys“ | <kbd>↩</kbd> | Benennt den ausgewählten Eintrag um |
 | Das Fenster „Repositorys“ | <kbd>⌫</kbd> oder <kbd>⌦</kbd> | Entfernt die ausgewählten Einträge. Siehe [Repositorys entfernen](/guide/repositories/manager/#delete). |
 | Das beim Start gezeigte Fenster | <kbd>↩</kbd> | Öffnet das ausgewählte Repository. Siehe [Dort weitermachen, wo Sie aufgehört haben](/guide/repositories/navigation/#restore). |
 | Die Konversation eines Pull Requests | <kbd>↩</kbd> | Öffnet den ausgewählten Commit |

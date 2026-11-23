@@ -187,7 +187,7 @@ Avec la souris, maintenez <kbd>⇧</kbd> et cliquez sur un numéro de ligne pour
 | Le champ de filtre de la barre latérale | <kbd>Esc</kbd> | Vide le champ |
 | Les remisages | <kbd>⌘⌫</kbd> | Supprime les remisages sélectionnés, après confirmation |
 | La revue des branches | <kbd>⌘⌫</kbd> | Supprime les branches sélectionnées, après confirmation |
-| La fenêtre Dépôts | <kbd>↩</kbd> | Ouvre le dépôt sélectionné |
+| La fenêtre Dépôts | <kbd>↩</kbd> | Renomme l’entrée sélectionnée |
 | La fenêtre Dépôts | <kbd>⌫</kbd> ou <kbd>⌦</kbd> | Retire les entrées sélectionnées. Consultez [Retirer des dépôts](/guide/repositories/manager/#delete). |
 | La fenêtre affichée au lancement | <kbd>↩</kbd> | Ouvre le dépôt sélectionné. Consultez [Reprendre là où vous vous étiez arrêté](/guide/repositories/navigation/#restore). |
 | La conversation d’une pull request | <kbd>↩</kbd> | Ouvre le commit sélectionné |

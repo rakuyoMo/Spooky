@@ -25,6 +25,9 @@ struct ConfirmationDialog: View {
     /// 内容区勾选框的标题；为 nil 时没有勾选框。
     let checkbox: String?
 
+    /// 勾选框能否勾选；不能时置灰，交给各按钮动作的状态总是没勾上。
+    let isCheckboxEnabled: Bool
+
     /// 底栏左下角帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     let helpArticle: HelpArticle?
 
@@ -57,6 +60,7 @@ struct ConfirmationDialog: View {
         ) {
             if let checkbox {
                 Toggle(checkbox, isOn: $checked)
+                    .disabled(!isCheckboxEnabled)
                     .padding(.leading, DialogMetrics.alignment)
                     .padding(.bottom, 20)
             }
@@ -72,6 +76,7 @@ struct ConfirmationDialog: View {
     ///   - cancelTitle: 取消按钮的标题。
     ///   - alternate: 备选按钮的标题与动作，动作的参数是勾选框是否勾上。
     ///   - checkbox: 内容区勾选框的标题。
+    ///   - isCheckboxEnabled: 勾选框能否勾选。
     ///   - helpArticle: 帮助按钮打开的官网文章；为 nil 时没有帮助按钮。
     ///   - close: 关闭对话框。
     ///   - cancel: 取消后执行。
@@ -83,6 +88,7 @@ struct ConfirmationDialog: View {
         cancelTitle: String = AppLocalization.text("action.cancel"),
         alternate: (title: String, action: (_ checked: Bool) -> Void)? = nil,
         checkbox: String? = nil,
+        isCheckboxEnabled: Bool = true,
         helpArticle: HelpArticle? = nil,
         close: @escaping () -> Void,
         cancel: @escaping (_ checked: Bool) -> Void = { _ in },
@@ -94,6 +100,7 @@ struct ConfirmationDialog: View {
         self.cancelTitle = cancelTitle
         self.alternate = alternate
         self.checkbox = checkbox
+        self.isCheckboxEnabled = isCheckboxEnabled
         self.helpArticle = helpArticle
         self.close = close
         self.cancel = cancel

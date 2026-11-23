@@ -258,7 +258,7 @@ extension BookmarkSidebarController {
         beginRename(id)
     }
 
-    /// 选中并开始编辑一行的名称。
+    /// 选中并开始编辑一行的名称；名称在编辑期间才可以编辑。
     func beginRename(_ id: Bookmark.ID) {
         expandAncestors(of: id)
         let row = outlineView.row(forItem: item(for: id))
@@ -269,7 +269,17 @@ extension BookmarkSidebarController {
 
         outlineView.selectRowIndexes([row], byExtendingSelection: false)
         outlineView.scrollRowToVisible(row)
+
+        let cell = outlineView.view(atColumn: 0, row: row, makeIfNecessary: true) as? NSTableCellView
+        let name = cell?.textField as? BookmarkNameField
+
+        name?.beginRenaming()
         outlineView.editColumn(0, row: row, with: nil, select: true)
+
+        // 没能开始编辑时（如另一处编辑不能结束）复原
+        if name?.currentEditor() == nil {
+            name?.endRenaming()
+        }
     }
 
     /// 展开一个书签的全部上级文件夹。

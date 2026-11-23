@@ -69,7 +69,7 @@ Repositories already in the list aren’t shown again. You can search several fo
 
 - To add a group, choose :ui[bookmarks.newGroup] from the add button’s menu, then type a name.
 - To reorder entries or move them into another group, drag them.
-- To rename an entry, right-click it and choose :ui[bookmarks.rename]. Renaming a repository in the list doesn’t rename its folder.
+- To rename an entry, select it and press <kbd>↩</kbd>, or right-click it and choose :ui[bookmarks.rename]. Renaming a repository in the list doesn’t rename its folder.
 - To sort by name, right-click and choose :ui[bookmarks.sortChildren] to sort the entries of a group, or :ui[bookmarks.sortParent] to sort the group an entry is in.
 
 Two options in :ui[app.name > settings.title] › :ui[settings.general] change what the list shows:
@@ -81,7 +81,7 @@ See [Windows and the Repositories list](/guide/settings/general/#windows).
 
 ## Open a repository {#open}
 
-Double-click a repository, or select it and press <kbd>↩</kbd>. It opens in the same window, in place of the list. If the repository is already open in another window, Spooky brings that window to the front instead.
+Double-click a repository. It opens in the same window, in place of the list. If the repository is already open in another window, Spooky brings that window to the front instead.
 
 Right-click a repository for more choices:
 
@@ -125,7 +125,7 @@ Moving to the Trash takes the whole repository folder, including changes you hav
 If a folder can’t be moved, Spooky shows :ui[bookmarks.trashFailed.title] and lists the folders that stayed. Spooky never moves your home folder, a folder that contains it, or the top level of a disk to the Trash.
 
 :::note[Server repositories]
-Spooky always asks before removing a server repository. Its folder goes to the Trash on that server, not on your Mac.
+Spooky always asks before removing a server repository. Its folder goes to the Trash on that server, not on your Mac. If the folder is no longer on the server, the Trash checkbox is dimmed and only the bookmark is removed.
 :::
 
 ## See also

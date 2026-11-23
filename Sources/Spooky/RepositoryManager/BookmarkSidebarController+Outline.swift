@@ -5,7 +5,7 @@ import SwiftUI
 // MARK: - Configuration
 
 extension BookmarkSidebarController {
-    /// source list 样式的单列大纲，分组行不浮动；双击、回车打开，删除键删除选中的书签，接受书签与 Finder 文件夹的拖放。
+    /// source list 样式的单列大纲，分组行不浮动；双击打开，回车给选中的书签改名，删除键删除选中的书签，接受书签与 Finder 文件夹的拖放。
     func configureOutlineView() {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Bookmarks"))
         column.isEditable = true
@@ -24,12 +24,13 @@ extension BookmarkSidebarController {
         outlineView.target = self
         outlineView.doubleAction = #selector(openClickedRow)
 
-        outlineView.onOpen = { [weak self] in
-            guard let self, outlineView.selectedRowIndexes.count == 1 else {
+        // 只选中一个书签时才改名；工作树行不是书签
+        outlineView.onRename = { [weak self] in
+            guard let self, outlineView.selectedRowIndexes.count == 1, let id = selectedIDs.first else {
                 return
             }
 
-            openRow(outlineView.item(atRow: outlineView.selectedRow))
+            beginRename(id)
         }
 
         outlineView.onDelete = { [weak self] in
@@ -50,8 +51,11 @@ extension BookmarkSidebarController {
         outlineView.draggingDestinationFeedbackStyle = .sourceList
     }
 
-    /// 在当前窗口打开一行：仓库行打开仓库，工作树行打开工作树、失效时响铃；文件夹与分组标题不响应。
-    func openRow(_ item: Any?) {
+    /// 双击一行在当前窗口打开：仓库行打开仓库，工作树行打开工作树、失效时响铃；文件夹与分组标题不响应。
+    @objc
+    private func openClickedRow() {
+        let item = outlineView.item(atRow: outlineView.clickedRow)
+
         if let worktree = item as? BookmarkWorktreeItem {
             guard let location = worktree.location else {
                 NSSound.beep()
@@ -65,12 +69,6 @@ extension BookmarkSidebarController {
         if let location = bookmark(for: item)?.location {
             manager.open(location, inNewWindow: false)
         }
-    }
-
-    /// 双击一行在当前窗口打开。
-    @objc
-    private func openClickedRow() {
-        openRow(outlineView.item(atRow: outlineView.clickedRow))
     }
 }
 

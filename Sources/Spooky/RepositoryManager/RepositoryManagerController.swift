@@ -166,6 +166,11 @@ extension RepositoryManagerController {
         return runner
     }
 
+    /// 失败是否说明服务器上已没有仓库的目录：路径不存在或不是目录。
+    static func isDirectoryGone(_ error: any Error) -> Bool {
+        (error as? RemoteConnectionError)?.kind == .pathUnavailable
+    }
+
     /// 失败是否说明仓库已不在原处：本机路径不存在或不再是仓库，服务器上的路径不存在或不是工作区。
     static func isMissing(_ location: RepositoryLocation, error: any Error) -> Bool {
         if let remote = error as? RemoteConnectionError {
@@ -241,7 +246,7 @@ extension RepositoryManagerController {
 
                 let missing = Self.isMissing(location, error: error)
                 detailState = missing ? .missing : .failed(AppFailure(error: error, opening: true, location: location))
-                bookmarks.markMissing(location)
+                bookmarks.markMissing(location, directoryGone: Self.isDirectoryGone(error))
             }
         }
     }
