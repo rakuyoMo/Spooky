@@ -20,7 +20,7 @@ description: "設定ウインドウの構成と、「一般」「アップデー
 | :ui[settings.profiles] | コミット時に切り替えて使うユーザ情報 | [ユーザプロファイルと Git 設定](/guide/settings/identity/#profiles) |
 | :ui[settings.accounts] | GitHub と GitLab のアカウント | [ホスティングアカウント](/guide/hosting/accounts/) |
 | :ui[settings.integration] | github.com からのリンク、SSH エージェント、クラッシュレポート | [連携](/guide/settings/integration/#integration-page) |
-| :ui[settings.environment] | この Mac 上の Git の環境変数、サーバーの環境の確認 | [環境](#environment) |
+| :ui[settings.environment] | この Mac 上の Git の環境変数、サーバの環境の確認 | [環境](#environment) |
 | :ui[settings.updates] | Spooky のアップデート方法 | [アップデート](#updates) |
 
 ユーザ情報や署名など、1 つのリポジトリだけの設定は、リポジトリのウインドウにあります。[リポジトリの設定](/guide/settings/identity/#repository) を参照してください。
@@ -55,9 +55,9 @@ description: "設定ウインドウの構成と、「一般」「アップデー
 | 設定 | 確認するタイミング |
 |---|---|
 | :ui[settings.warnDiscardingChunks] | ブロックまたは行を破棄する前。どのリポジトリでも同じです。[変更を破棄する](/guide/work/diff/#discard) を参照してください。 |
-| :ui[settings.warnDiscardingOnServer] | サーバーリポジトリでファイル全体を破棄する前 |
-| :ui[settings.warnDeletingOnServer] | ゴミ箱のないサーバーでファイルを完全に削除する前 |
-| :ui[settings.warnRestoringOnServer] | サーバーリポジトリでリビジョンからファイルを復元する前。[リビジョンからファイルを復元する](/guide/history/file-views/#restore) を参照してください。 |
+| :ui[settings.warnDiscardingOnServer] | サーバリポジトリでファイル全体を破棄する前 |
+| :ui[settings.warnDeletingOnServer] | ゴミ箱のないサーバでファイルを完全に削除する前 |
+| :ui[settings.warnRestoringOnServer] | サーバリポジトリでリビジョンからファイルを復元する前。[リビジョンからファイルを復元する](/guide/history/file-views/#restore) を参照してください。 |
 
 ローカルのリポジトリでは、ファイル全体を破棄するときは必ず確認します。
 
@@ -91,7 +91,7 @@ description: "設定ウインドウの構成と、「一般」「アップデー
 | :ui[settings.windowRestoration] | :ui[settings.windowRestoration.system] | Spooky の起動時に開き直すもの。[前回の続きから始める](/guide/repositories/navigation/#restore) を参照してください。 |
 | :ui[settings.showLaunchWindow] | オフ | Spooky の起動時に、最近使ったリポジトリのウインドウを表示します |
 | :ui[settings.showWorktreesInRepositoryList] | オフ | 「リポジトリ」の一覧に、各リポジトリのワークツリーを表示します |
-| :ui[settings.showHostAliasesInRepositoryList] | オン | 「リポジトリ」の一覧に、各サーバーリポジトリのホストエイリアスを表示します |
+| :ui[settings.showHostAliasesInRepositoryList] | オン | 「リポジトリ」の一覧に、各サーバリポジトリのホストエイリアスを表示します |
 | :ui[settings.showDeveloperMenu] | オフ | :ui[menu.developer] メニューを追加します。Spooky 自体をテストするためのツールが入っています |
 
 ## アップデート {#updates}
@@ -116,20 +116,20 @@ Finder や Dock から開いたアプリケーションには、ターミナル�
 - 2 つのカスタム変数が同じ名前のときは、下にあるほうが使われます。名前が正しくない変数は、表には残りますが、Git には渡されません。
 - システムのエージェント以外の SSH エージェントを使うには、ここかログインシェルで `SSH_AUTH_SOCK` を設定します。[SSH エージェント](/guide/settings/integration/#ssh-agent) を参照してください。
 
-:::note[サーバーリポジトリ]
-これらの変数は、この Mac 上の Git にだけ適用されます。サーバーの Git は、サーバー自身の環境を使います。
+:::note[サーバリポジトリ]
+これらの変数は、この Mac 上の Git にだけ適用されます。サーバの Git は、サーバ自身の環境を使います。
 :::
 
-### サーバーを確認する {#server-check}
+### サーバを確認する {#server-check}
 
-ページの下部では、リポジトリを追加せずに、サーバーで Git に渡される環境を確認できます。
+ページの下部では、リポジトリを追加せずに、サーバで Git に渡される環境を確認できます。
 
-1. :ui[remote.host] フィールドにホストエイリアスを入力します。:ui[settings.environment.server.hosts] メニューから選ぶこともできます。メニューには、サーバーリポジトリのサーバーが並びます。
+1. :ui[remote.host] フィールドにホストエイリアスを入力します。:ui[settings.environment.server.hosts] メニューから選ぶこともできます。メニューには、サーバリポジトリのサーバが並びます。
 2. :ui[settings.environment.server.check] をクリックします。
 
-::screenshot[設定の「環境」ページ下部にあるサーバーの確認。ホストエイリアスを確認した結果として、サーバーで見つかった Git とそのバージョンが表示されています。]{name="settings-environment" frame="closeup"}
+::screenshot[設定の「環境」ページ下部にあるサーバの確認。ホストエイリアスを確認した結果として、サーバで見つかった Git とそのバージョンが表示されています。]{name="settings-environment" frame="closeup"}
 
-結果には、SSH でログインしたときに見つかる Git とそのバージョン、または :ui[settings.environment.server.noGit] が表示されます。その下に、`PATH` の各フォルダと、名前が `GIT_` で始まる変数の名前が並びます。Git が見つからないときは、[サーバーで Git が見つからない](/reference/troubleshooting/#server-path) を参照してください。
+結果には、SSH でログインしたときに見つかる Git とそのバージョン、または :ui[settings.environment.server.noGit] が表示されます。その下に、`PATH` の各フォルダと、名前が `GIT_` で始まる変数の名前が並びます。Git が見つからないときは、[サーバで Git が見つからない](/reference/troubleshooting/#server-path) を参照してください。
 
 ## 関連ページ
 

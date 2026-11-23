@@ -35,7 +35,7 @@ description: "ファイルの履歴をたどる方法、Blame で各行を誰が
 
 ツールバーの検索フィールドに入力すると、一覧が絞り込まれます。フィールド内の虫眼鏡をクリックして、検索する対象を選びます：:ui[fileHistory.scope.message]、:ui[fileHistory.scope.hash]、:ui[fileHistory.scope.author]、:ui[fileHistory.scope.committer]。
 
-- メッセージ、作成者、コミッターは、入力したテキストに大文字と小文字を区別せずに一致します。作成者とコミッターは、名前またはメールアドレスで一致します。
+- メッセージ、作成者、コミッタは、入力したテキストに大文字と小文字を区別せずに一致します。作成者とコミッタは、名前またはメールアドレスで一致します。
 - コミットのハッシュ、ブランチ、タグを指定すると、その時点までにファイルを変更した最新のコミットが表示されます。
 
 ## Blame {#blame}
@@ -85,8 +85,8 @@ Blame と同じく、このビューでも新しいファイル、未追跡の�
 
 変更セットまたはファイルツリーからは、複数のファイルやフォルダを一度に復元できます。
 
-:::note[サーバーリポジトリ]
-ファイルはサーバー上で上書きされます。次回から確認を省くには、:ui[dialog.doNotAskAgain] を選択します。もう一度確認されるようにするには、:ui[app.name > settings.title] › :ui[settings.general] で :ui[settings.warnRestoringOnServer] をオンにします。[確認](/guide/settings/general/#confirmations) を参照してください。
+:::note[サーバリポジトリ]
+ファイルはサーバ上で上書きされます。次回から確認を省くには、:ui[dialog.doNotAskAgain] を選択します。もう一度確認されるようにするには、:ui[app.name > settings.title] › :ui[settings.general] で :ui[settings.warnRestoringOnServer] をオンにします。[確認](/guide/settings/general/#confirmations) を参照してください。
 :::
 
 ## 関連ページ

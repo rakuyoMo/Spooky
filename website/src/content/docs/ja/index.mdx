@@ -1,10 +1,10 @@
 ---
 title: "macOS ネイティブの Git クライアント"
-description: "Spooky は macOS ネイティブの Git クライアントです。サーバー上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
+description: "Spooky は macOS ネイティブの Git クライアントです。サーバ上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
 template: splash
 hero:
   title: "Git に、遠隔作用を。"
-  tagline: "Spooky は macOS ネイティブの Git クライアントです。サーバー上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
+  tagline: "Spooky は macOS ネイティブの Git クライアントです。サーバ上の Git リポジトリを、ローカルのリポジトリと同じ感覚で扱えます。クローンは要りません。"
 ---
 
 import Closing from '~/components/home/Closing.astro';
@@ -26,30 +26,30 @@ import ServerDiagram from '~/components/home/ServerDiagram.astro';
 
 <Section
   id="server"
-  kicker="サーバーリポジトリ"
+  kicker="サーバリポジトリ"
   title="不気味な遠隔作用"
-  lead="作業ツリーはサーバーに置いたまま、Git もサーバーで動きます。操作は Mac の Spooky ウインドウから行います。"
+  lead="作業ツリーはサーバに置いたまま、Git もサーバで動きます。操作は Mac の Spooky ウインドウから行います。"
 >
 
 <ServerDiagram
   mac={{ title: 'あなたの Mac', items: ['Spooky のウインドウ', '~/.ssh/config と SSH 鍵'] }}
   link={{ title: 'SSH', items: ['Git コマンドとその出力', 'SFTP で読み書きするファイル'] }}
-  server={{ title: 'あなたのサーバー', items: ['作業ツリーと Git', '~/.spooky/bin/ の小さなヘルパー'] }}
+  server={{ title: 'あなたのサーバ', items: ['作業ツリーと Git', '~/.spooky/bin/ の小さなヘルパー'] }}
 />
 
-<More> [サーバーリポジトリの仕組み](/guide/server/overview/) </More>
+<More> [サーバリポジトリの仕組み](/guide/server/overview/) </More>
 
 <Grid columns={4}>
 
 <Point icon="server" title="Mac にクローンしない">
 
-作業ツリーはサーバーに置いたままです。先に Mac へクローンする必要はありません。
+作業ツリーはサーバに置いたままです。先に Mac へクローンする必要はありません。
 
 </Point>
 
-<Point icon="terminal" title="Git はサーバーで動く">
+<Point icon="terminal" title="Git はサーバで動く">
 
-Spooky はサーバーの Git を使い、ファイルは SFTP で読み書きします。
+Spooky はサーバの Git を使い、ファイルは SFTP で読み書きします。
 
 </Point>
 
@@ -61,7 +61,7 @@ Spooky はサーバーの Git を使い、ファイルは SFTP で読み書き�
 
 <Point icon="script" title="root もバックグラウンドサービスも不要">
 
-サーバーの root 権限は要りません。バックグラウンドサービスもインストールしません。Spooky が置くのは `~/.spooky/bin/` の小さなヘルパースクリプトだけです。
+サーバの root 権限は要りません。バックグラウンドサービスもインストールしません。Spooky が置くのは `~/.spooky/bin/` の小さなヘルパースクリプトだけです。
 
 </Point>
 
@@ -72,13 +72,13 @@ Spooky はサーバーの Git を使い、ファイルは SFTP で読み書き�
   shots={[
     {
       name: 'add-server',
-      alt: 'サーバーリポジトリを追加するダイアログ。ホストエイリアス spooky-test とパス /srv/git/driftwood が入力されています。',
+      alt: 'サーバリポジトリを追加するダイアログ。ホストエイリアス spooky-test とパス /srv/git/driftwood が入力されています。',
       frame: 'dialog',
     },
   ]}
 >
 
-:ui[action.addRemote] を選び、`~/.ssh/config` のホストエイリアスを入力して、サーバー上のリポジトリのパスを入力するかブラウズして選びます。
+:ui[action.addRemote] を選び、`~/.ssh/config` のホストエイリアスを入力して、サーバ上のリポジトリのパスを入力するかブラウズして選びます。
 
 Spooky が接続を確認して、リポジトリを開きます。
 
@@ -90,7 +90,7 @@ Spooky が接続を確認して、リポジトリを開きます。
   id="workflow"
   kicker="Git のワークフローをまるごと"
   title="最初の変更から、ブランチのマージまで"
-  lead="ステージ、コミット、履歴の確認、同期、競合の解決。リポジトリが Mac にあってもサーバーにあっても、やり方は同じです。"
+  lead="ステージ、コミット、履歴の確認、同期、競合の解決。リポジトリが Mac にあってもサーバにあっても、やり方は同じです。"
 >
 
 <Feature
@@ -130,7 +130,7 @@ Spooky が接続を確認して、リポジトリを開きます。
 
 <Point icon="history" title="履歴と検索">
 
-コミットグラフですべてのブランチの流れを追えます。メッセージ、作成者、コミッター、ファイル、コミットハッシュ、日付で検索できます。
+コミットグラフですべてのブランチの流れを追えます。メッセージ、作成者、コミッタ、ファイル、コミットハッシュ、日付で検索できます。
 
 </Point>
 
@@ -148,7 +148,7 @@ GitHub、GitLab.com、<mark>セルフマネージドの GitLab</mark> で、一�
 
 <Point icon="layers" title="スタッシュ、サブモジュール、<mark>ワークツリー</mark>、Git LFS">
 
-どれもサーバーリポジトリでも使えます。
+どれもサーバリポジトリでも使えます。
 
 </Point>
 
@@ -164,6 +164,6 @@ GitHub、GitLab.com、<mark>セルフマネージドの GitLab</mark> で、一�
   ]}
 >
 
-macOS 26 以降と、Mac とサーバーの両方に Git 2.41 以降が必要です。詳しくは [システム要件](/reference/requirements/) を参照してください。
+macOS 26 以降と、Mac とサーバの両方に Git 2.41 以降が必要です。詳しくは [システム要件](/reference/requirements/) を参照してください。
 
 </Closing>

@@ -25,7 +25,7 @@ Spooky 写出的原因能告诉你该往哪里查：
 
 | 原因 | 怎么办 |
 |---|---|
-| :ui[remoteError.authentication] | 服务器不接受你的密钥，或者 Mac 解不开它。重启 Mac 之后，照 [重启 Mac 之后](/guide/server/prepare-ssh/#after-restart) 重新载入密钥。只能用密码登录的账户用不了。 |
+| :ui[remoteError.authentication] | 服务器不接受你的密钥，或者 Mac 解不开它。重启 Mac 之后，照 [重启 Mac 之后](/guide/server/prepare-ssh/#after-restart) 重新加载密钥。只能用密码登录的账户用不了。 |
 | :ui[remoteError.unknownHostKey] | Mac 还不认识这台服务器。先在终端里连一次，核对指纹，见 [先连一次](/guide/server/prepare-ssh/#fingerprint)。Spooky 从不替你接受指纹。 |
 | :ui[remoteError.changedHostKey] | 先别连。和服务器管理者确认指纹为什么变了。 |
 | :ui[remoteError.unavailable] | 检查主机别名和网络。每次尝试失败后，Spooky 过 5 秒会再试。想马上重试，点横条里的 :ui[action.reconnect]。见 [断线与重连](/guide/server/connection/#reconnect)。 |

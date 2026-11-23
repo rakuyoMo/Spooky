@@ -3,11 +3,11 @@ title: "リポジトリウインドウ"
 description: "リポジトリのブックマーク、グループ分け、オープン、クローン、作成、検索、削除と、見つからなくなったリポジトリの確認について説明します。"
 ---
 
-リポジトリウインドウには、この Mac 上とサーバー上の、作業に使うリポジトリが一覧で並びます。各項目はリポジトリを指すブックマークです。ブックマークを削除しても、リポジトリのフォルダはそのまま残ります。フォルダをゴミ箱に入れるかどうかは別に選びます。このページでは、リポジトリの追加、整理、オープン、削除を説明します。
+リポジトリウインドウには、この Mac 上とサーバ上の、作業に使うリポジトリが一覧で並びます。各項目はリポジトリを指すブックマークです。ブックマークを削除しても、リポジトリのフォルダはそのまま残ります。フォルダをゴミ箱に入れるかどうかは別に選びます。このページでは、リポジトリの追加、整理、オープン、削除を説明します。
 
 リポジトリから一覧に移動するには、ツールバーの :ui[toolbar.bookmarks] をクリックするか、:ui[menu.view > menu.showRepositories]（<kbd>⌃⌘R</kbd>）を選びます。
 
-::screenshot[リポジトリウインドウ。サイドバーには Driftwood Labs と Notes の 2 つのグループがあり、その中にリポジトリが並んでいます。そのうち 1 つはサーバーリポジトリで、名前がホストエイリアスで始まっています。右側には、選択したリポジトリ driftwood の詳細が表示されています。場所、最後に開いた日時、最後のコミット、説明、コミッターの ID、現在のブランチ、変更されたファイルの数、リモートです。]{name="repositories" frame="window"}
+::screenshot[リポジトリウインドウ。サイドバーには Driftwood Labs と Notes の 2 つのグループがあり、その中にリポジトリが並んでいます。そのうち 1 つはサーバリポジトリで、名前がホストエイリアスで始まっています。右側には、選択したリポジトリ driftwood の詳細が表示されています。場所、最後に開いた日時、最後のコミット、説明、コミッタの ID、現在のブランチ、変更されたファイルの数、リモートです。]{name="repositories" frame="window"}
 
 ## リポジトリを追加する {#add}
 
@@ -17,7 +17,7 @@ description: "リポジトリのブックマーク、グループ分け、オー
 |---|---|
 | :ui[bookmarks.newGroup] | 選択している項目の下にグループを追加します。そのまま名前を入力できます。 |
 | :ui[bookmarks.add] | すでに Mac 上にあるリポジトリを追加します。複数のフォルダを一度に選択できます。 |
-| :ui[action.addRemote] | サーバー上のリポジトリを追加します。[サーバーリポジトリを追加する](/guide/server/add/) を参照してください。 |
+| :ui[action.addRemote] | サーバ上のリポジトリを追加します。[サーバリポジトリを追加する](/guide/server/add/) を参照してください。 |
 | :ui[bookmarks.create] | 空のリポジトリを作成します。[リポジトリを作成する](#create) を参照してください。 |
 | :ui[clone.menu] | リモートからリポジトリをコピーします。[リポジトリをクローンする](#clone) を参照してください。 |
 | :ui[scan.menu] | フォルダの中にあるリポジトリを探します。[リポジトリを検索する](#scan) を参照してください。 |
@@ -39,7 +39,7 @@ Spooky がフォルダを作成して空の Git リポジトリにし、選択�
 
 1. 追加ボタンのメニューから :ui[clone.menu] を選ぶか、<kbd>⌃⌘C</kbd> を押します。
 2. :ui[clone.url] にリポジトリのアドレスを入力します。たとえば `https://` や `git@` で始まるアドレスです。
-3. :ui[clone.to] で :ui[clone.machine.local] またはサーバーを選びます。すでに使っているサーバーは一覧に並んでいます。ほかのサーバーを使うときは、:ui[clone.machine.other] を選んで :ui[remote.host] を入力します。
+3. :ui[clone.to] で :ui[clone.machine.local] またはサーバを選びます。すでに使っているサーバは一覧に並んでいます。ほかのサーバを使うときは、:ui[clone.machine.other] を選んで :ui[remote.host] を入力します。
 4. :ui[clone.directory] でクローン先のフォルダを選びます。Spooky はその中に、リポジトリと同じ名前のフォルダを作成します。
 5. リポジトリのサブモジュールもチェックアウトするときは、:ui[clone.submodules] を選択したままにします。リポジトリが大きなファイルを Git LFS で管理しているときは、:ui[clone.lfs] を選択します。
 6. :ui[clone.submit] をクリックします。
@@ -50,8 +50,8 @@ Spooky はまず、リモートにアクセスできるかを確認します。�
 
 最近のクローンがある間は、ツールバーに :ui[toolbar.clone] が表示されます。クリックすると :ui[clone.recent.title] が表示されます。ここでは、実行中のクローンを停止したり、失敗またはキャンセルしたクローンを :ui[clone.retry] でやり直したり、:ui[clone.remove] で一覧から取り除いたりできます。完了したクローンはダブルクリックで開けます。:ui[clone.recent.clear] は一覧を空にします。
 
-:::note[サーバーリポジトリ]
-サーバーにクローンするときは、Spooky が接続を確認し、サーバー上でクローンを実行します。新しいリポジトリはサーバーリポジトリとして追加されます。フォルダは、サーバー上の絶対パスを入力するか、:ui[clone.browse] をクリックして選びます。Spooky は、サーバーごとに最後に使ったフォルダを覚えています。
+:::note[サーバリポジトリ]
+サーバにクローンするときは、Spooky が接続を確認し、サーバ上でクローンを実行します。新しいリポジトリはサーバリポジトリとして追加されます。フォルダは、サーバ上の絶対パスを入力するか、:ui[clone.browse] をクリックして選びます。Spooky は、サーバごとに最後に使ったフォルダを覚えています。
 :::
 
 リポジトリのアドレスを一覧にドラッグしてクローンを始めることもできます。リンクから始めることもできます。[ウインドウとナビゲーション](/guide/repositories/navigation/) を参照してください。
@@ -59,11 +59,11 @@ Spooky はまず、リモートにアクセスできるかを確認します。�
 ### リポジトリを検索する {#scan}
 
 1. 追加ボタンのメニューから :ui[scan.menu] を選びます。
-2. :ui[scan.in] で :ui[clone.machine.local] またはサーバーを選び、検索するフォルダを選びます。
+2. :ui[scan.in] で :ui[clone.machine.local] またはサーバを選び、検索するフォルダを選びます。
 3. :ui[scan.start] をクリックします。Spooky が見つけたリポジトリから順に表示されます。止めるには :ui[scan.stop] をクリックします。
 4. 見つかったリポジトリはすべて選択されています。不要なものの選択を解除して、:ui[scan.add] をクリックします。
 
-すでに一覧にあるリポジトリは表示されません。複数のフォルダやサーバーを続けて検索できます。結果は足されていきます。
+すでに一覧にあるリポジトリは表示されません。複数のフォルダやサーバを続けて検索できます。結果は足されていきます。
 
 ## 一覧を整理する {#organize}
 
@@ -75,7 +75,7 @@ Spooky はまず、リモートにアクセスできるかを確認します。�
 :ui[app.name > settings.title] › :ui[settings.general] の 2 つのオプションで、一覧に表示する内容を変えられます。
 
 - :ui[settings.showWorktreesInRepositoryList]：ほかのワークツリーがあるリポジトリを展開して、ワークツリーを表示できます。ワークツリーはリポジトリと同じ方法で開けます。デフォルトでオフです。
-- :ui[settings.showHostAliasesInRepositoryList]：サーバーリポジトリの名前がホストエイリアスで始まります。デフォルトでオンです。
+- :ui[settings.showHostAliasesInRepositoryList]：サーバリポジトリの名前がホストエイリアスで始まります。デフォルトでオンです。
 
 [ウインドウとリポジトリ一覧](/guide/settings/general/#windows) を参照してください。
 
@@ -88,10 +88,10 @@ Spooky はまず、リモートにアクセスできるかを確認します。�
 - :ui[bookmarks.open]{1="driftwood"} と :ui[bookmarks.openNewWindow]{1="driftwood"}
 - :ui[action.revealFinder]、:ui[action.copyPath]、:ui[action.openTerminal]
 
-右側の詳細にも :ui[action.open] と :ui[bookmarks.multiple.delete] のボタンがあります。そこで :ui[bookmarks.detail.edit] をクリックすると、:ui[bookmarks.detail.description] と :ui[bookmarks.detail.identity] を変更できます。:ui[bookmarks.detail.unset] は、このリポジトリだけに設定した情報を取り除きます。各リモートの横の :ui[bookmarks.detail.viewInBrowser] は、その Web ページを開きます。説明とコミッターの ID は、[リポジトリの設定](/guide/settings/identity/#repository) に表示されるものと同じです。
+右側の詳細にも :ui[action.open] と :ui[bookmarks.multiple.delete] のボタンがあります。そこで :ui[bookmarks.detail.edit] をクリックすると、:ui[bookmarks.detail.description] と :ui[bookmarks.detail.identity] を変更できます。:ui[bookmarks.detail.unset] は、このリポジトリだけに設定した情報を取り除きます。各リモートの横の :ui[bookmarks.detail.viewInBrowser] は、その Web ページを開きます。説明とコミッタの ID は、[リポジトリの設定](/guide/settings/identity/#repository) に表示されるものと同じです。
 
-:::note[サーバーリポジトリ]
-:ui[action.copyPath] は、`alias:/path/to/repository` のように、先頭にホストエイリアスを付けたパスをコピーします。Spooky がサーバーリポジトリの詳細を読み込むのは、選択したときだけです。選択すると、サーバーに接続することがあります。
+:::note[サーバリポジトリ]
+:ui[action.copyPath] は、`alias:/path/to/repository` のように、先頭にホストエイリアスを付けたパスをコピーします。Spooky がサーバリポジトリの詳細を読み込むのは、選択したときだけです。選択すると、サーバに接続することがあります。
 :::
 
 ## 見つからないリポジトリ {#missing}
@@ -102,8 +102,8 @@ Spooky はまず、リモートにアクセスできるかを確認します。�
 
 項目を直すには、いったん削除して、いまの場所からリポジトリを追加し直します。
 
-:::note[サーバーリポジトリ]
-Spooky がサーバーリポジトリを確認するのは、選択したときと開いたときだけです。サーバーにアクセスできないときは、ウインドウに :ui[missing.unreachable.title]{1="alias"} と表示され、SSH が報告した内容も表示されます。[接続状態と再接続](/guide/server/connection/) を参照してください。
+:::note[サーバリポジトリ]
+Spooky がサーバリポジトリを確認するのは、選択したときと開いたときだけです。サーバにアクセスできないときは、ウインドウに :ui[missing.unreachable.title]{1="alias"} と表示され、SSH が報告した内容も表示されます。[接続状態と再接続](/guide/server/connection/) を参照してください。
 :::
 
 ## リポジトリを削除する {#delete}
@@ -124,12 +124,12 @@ Spooky がサーバーリポジトリを確認するのは、選択したとき�
 
 フォルダを移動できなかったときは、Spooky が :ui[bookmarks.trashFailed.title] と表示し、残ったフォルダを一覧にします。ホームフォルダ、ホームフォルダを含むフォルダ、ディスクの最上位を Spooky がゴミ箱に入れることはありません。
 
-:::note[サーバーリポジトリ]
-サーバーリポジトリを削除するときは、Spooky が必ず確認します。フォルダは Mac ではなく、そのサーバーのゴミ箱に入ります。
+:::note[サーバリポジトリ]
+サーバリポジトリを削除するときは、Spooky が必ず確認します。フォルダは Mac ではなく、そのサーバのゴミ箱に入ります。
 :::
 
 ## 関連ページ
 
 - [ウインドウとナビゲーション](/guide/repositories/navigation/)
-- [サーバーリポジトリを追加する](/guide/server/add/)
+- [サーバリポジトリを追加する](/guide/server/add/)
 - [ワークツリー](/guide/advanced/worktrees/)

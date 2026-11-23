@@ -107,7 +107,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 | <kbd>⌥⇧⌘R</kbd> | :ui[workspace.title > sync.quickRebase] |
 | <kbd>⌃⇧⌘R</kbd> | :ui[workspace.title > rewrite.rebaseOnto.menu] |
 
-帶 <kbd>⌥⇧⌘</kbd> 的是快速版本。開啟選單後按住 <kbd>⌥</kbd>，它們就取代上面那一項。它們不跳出對話框，直接執行。不開啟選單，快速鍵也能用。見 [擷取、拉取與推送](/guide/branches/sync/#quick) 與 [合併與變基](/guide/branches/merge-rebase/#quick) 裡的「快速版本」。
+帶 <kbd>⌥⇧⌘</kbd> 的是快速版本。開啟選單後按住 <kbd>⌥</kbd>，它們就取代上面那一項。它們不跳出對話框，直接執行。不開啟選單，快速鍵也能用。見 [擷取、拉取與推送](/guide/branches/sync/#quick) 與 [合併與重定基底](/guide/branches/merge-rebase/#quick) 裡的「快速版本」。
 
 ### 變更與提交 {#changes}
 
@@ -129,7 +129,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 
 | 在哪裡 | 變成什麼 |
 |---|---|
-| 工具列裡擷取、拉取、推送、同步、合併與變基的按鈕 | 變成快速版本。見 [擷取、拉取與推送](/guide/branches/sync/#quick)。 |
+| 工具列裡擷取、拉取、推送、同步、合併與重定基底的按鈕 | 變成快速版本。見 [擷取、拉取與推送](/guide/branches/sync/#quick)。 |
 | 提交區，前提是沒有在編輯任何訊息欄 | 切換到修補上一次提交。見 [修補上一次提交](/guide/work/commit/#amend)。 |
 | 檔案列表上方的 :ui[working.stageAll]，前提是只暫存了一部分變更 | 變成 :ui[working.unstageAll]。見 [暫存整個檔案](/guide/work/diff/#stage-file)。 |
 | 工作區裡檔案的選單 | 儲藏的幾項變成快速版本。見 [儲藏部分檔案](/guide/work/stash/#partial)。 |
@@ -221,7 +221,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 
 | 拖什麼 | 拖到哪裡 | 不按 <kbd>⌥</kbd> | 按住 <kbd>⌥</kbd> |
 |---|---|---|---|
-| 本機分支 | :ui[workspace.title] 或目前分支 | 合併對話框 | 變基對話框 |
+| 本機分支 | :ui[workspace.title] 或目前分支 | 合併對話框 | 重定基底對話框 |
 | 遠端分支 | 目前分支 | 拉取對話框 | 它成為目前分支的上游 |
 | 歷史裡的提交 | :ui[workspace.title] 或目前分支 | 摘取它們 | 反轉它們 |
 | 歷史裡的提交 | 列表裡的另一個提交 | 把它們壓縮進去 | 改為 Fixup |
@@ -233,4 +233,4 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 - [視窗與導覽](/guide/repositories/navigation/)
 - [提交變更](/guide/work/commit/)
 - [檢視與挑選變更](/guide/work/diff/)
-- [合併與變基](/guide/branches/merge-rebase/)
+- [合併與重定基底](/guide/branches/merge-rebase/)

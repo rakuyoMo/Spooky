@@ -86,7 +86,7 @@ description: "윈도우와 탭을 다루고, 뒤로 및 앞으로 이동하고, 
 
 ## 최근 저장소와 Dock {#recent}
 
-:ui[menu.file > menu.openRecent]에는 Mac과 서버에서 최근에 연 저장소가 나열됩니다. 맨 아래의 :ui[menu.clearRecent]는 목록을 비웁니다. 저장소 윈도우의 북마크는 그대로 남습니다.
+:ui[menu.file > menu.openRecent]에는 Mac과 서버에서 최근에 연 저장소가 나열됩니다. 맨 아래의 :ui[menu.clearRecent]는 목록을 비웁니다. 저장소 윈도우의 책갈피는 그대로 남습니다.
 
 **Dock**에서 Spooky 아이콘을 오른쪽 클릭하면 :ui[menu.newWindow]와 최근 저장소가 있는 메뉴가 나옵니다. 저장소를 선택하면 열립니다. Spooky가 아직 실행 중이 아니어도 됩니다.
 

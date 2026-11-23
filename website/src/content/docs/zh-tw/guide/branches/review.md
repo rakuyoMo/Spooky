@@ -95,6 +95,6 @@ Spooky 可以每天檢查一次有沒有要封存的分支。下面幾處都能�
 ## 相關頁面
 
 - [分支](/guide/branches/branches/)
-- [合併與變基](/guide/branches/merge-rebase/)
+- [合併與重定基底](/guide/branches/merge-rebase/)
 - [Pull Request 與 Merge Request](/guide/hosting/pull-requests/)
 - [託管帳號](/guide/hosting/accounts/)

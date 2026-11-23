@@ -1,6 +1,6 @@
 ---
 title: "Branches"
-description: "Créez, basculez, suivez, renommez, supprimez, épinglez et archivez des branches, définissez des branches parentes, puis filtrez et groupez les branches dans la barre latérale."
+description: "Créez, extrayez, suivez, renommez, supprimez, épinglez et archivez des branches, définissez des branches parentes, puis filtrez et groupez les branches dans la barre latérale."
 ---
 
 Vos branches locales sont listées dans la barre latérale sous :ui[branch.group]. Presque tout ce que vous faites avec une branche part de là : cliquez dessus avec le bouton droit pour afficher son menu, ou faites-la glisser quelque part.
@@ -15,7 +15,7 @@ Vos branches locales sont listées dans la barre latérale sous :ui[branch.group
 
 ## Dans la barre latérale {#sidebar}
 
-Cliquez sur une branche pour voir ses commits dans l’historique. Double-cliquez dessus pour basculer sur elle.
+Cliquez sur une branche pour voir ses commits dans l’historique. Double-cliquez dessus pour l’extraire.
 
 Une branche qui suit une branche distante indique l’écart entre les deux. ↑ compte vos commits qui ne sont pas encore sur le dépôt distant. ↓ compte les commits du dépôt distant que vous n’avez pas. Placez le pointeur sur une branche pour voir ce qu’elle suit.
 
@@ -31,7 +31,7 @@ Sous :ui[remote.group], une icône de maison marque la branche par défaut de ch
 4. Réglez les options :
    - :ui[branch.trackStart] fait suivre son point de départ à la nouvelle branche. L’option n’est disponible que si le point de départ est une branche.
    - :ui[branch.pin] place la nouvelle branche sous :ui[sidebar.pinned].
-   - :ui[branch.checkoutCreated] bascule tout de suite sur la nouvelle branche. Spooky retient ce choix.
+   - :ui[branch.checkoutCreated] extrait tout de suite la nouvelle branche. Spooky retient ce choix.
    - :ui[branch.parentOption] fait du point de départ la [branche parente](#parent) de la nouvelle branche.
 5. Cliquez sur :ui[branch.create].
 
@@ -41,15 +41,15 @@ Pendant la saisie, Spooky corrige le nom pour Git : les espaces et les caractè
 
 Un `/` dans un nom range la branche dans un dossier, comme `feature/units-toggle` dans `feature`. Cliquez avec le bouton droit sur un dossier et choisissez :ui[branch.createMenu] dans le menu : le nom commence déjà par le dossier.
 
-## Basculer sur une branche {#checkout}
+## Extraire une branche {#checkout}
 
 Double-cliquez sur une branche, ou cliquez dessus avec le bouton droit et choisissez :ui[branch.checkoutNamed]{1="feature/dark-mode"} dans le menu.
 
 Le double-clic fonctionne aussi sur une branche distante :
 
-- Si une branche locale la suit déjà, Spooky bascule sur cette branche.
-- S’il existe une branche locale du même nom qui ne la suit pas, Spooky demande d’abord confirmation dans :ui[branch.trackExisting.title]. Il bascule ensuite sur cette branche et lui fait suivre la branche distante.
-- Sinon, Spooky crée une branche locale du même nom qui suit la branche distante. Puis il bascule sur cette branche.
+- Si une branche locale la suit déjà, Spooky extrait cette branche.
+- S’il existe une branche locale du même nom qui ne la suit pas, Spooky demande d’abord confirmation dans :ui[branch.trackExisting.title]. Il extrait ensuite cette branche et lui fait suivre la branche distante.
+- Sinon, Spooky crée une branche locale du même nom qui suit la branche distante. Puis il extrait cette branche.
 
 Si des fichiers suivis sont modifiés, Spooky demande s’il faut d’abord les remiser. Consultez [Remisage automatique](/guide/work/stash/#auto-stash).
 
@@ -74,7 +74,7 @@ Pour obtenir une branche locale à partir d’une branche distante :
 
 Pour changer ce que suit une branche existante, cliquez dessus avec le bouton droit et choisissez une branche sous :ui[branch.tracking]. :ui[branch.tracking.remove] arrête le suivi. Pour la branche actuelle, vous pouvez aussi maintenir <kbd>⌥</kbd> et faire glisser une branche distante sur elle.
 
-Quand une branche autre que la branche actuelle est en retard sur sa branche amont et n’a aucun commit propre, son menu contient :ui[branch.fastForward]{1="main"}. La branche avance jusqu’à sa branche amont sans que vous basculiez sur elle.
+Quand une branche autre que la branche actuelle est en retard sur sa branche amont et n’a aucun commit propre, son menu contient :ui[branch.fastForward]{1="main"}. La branche avance jusqu’à sa branche amont sans que vous l’extrayiez.
 
 ## Renommer une branche {#rename}
 
@@ -93,7 +93,7 @@ Spooky demande toujours confirmation. La zone de dialogue propose deux options 
 - :ui[branch.forceDelete] supprime la branche même si elle n’est pas entièrement fusionnée. Sans cette option, Spooky liste les branches qui ne sont pas entièrement fusionnées et redemande confirmation.
 - :ui[branch.deleteUpstream] supprime aussi la branche distante qu’elle suit. L’option apparaît quand vous supprimez une seule branche dont la branche distante existe encore.
 
-Vous ne pouvez pas supprimer la branche actuelle. Basculez d’abord sur une autre branche.
+Vous ne pouvez pas supprimer la branche actuelle. Extrayez d’abord une autre branche.
 
 Supprimer une branche distante la supprime sur le dépôt distant.
 

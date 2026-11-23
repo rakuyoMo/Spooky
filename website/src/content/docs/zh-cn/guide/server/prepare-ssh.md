@@ -136,7 +136,7 @@ ssh -o BatchMode=yes driftwood-server git --version
 
 ## 重启 Mac 之后 {#after-restart}
 
-测试原来能通过，重启 Mac 后却报 `Permission denied` 的话，重新载入密钥。口令已经存进钥匙串的密钥，用这条命令载入：
+测试原来能通过，重启 Mac 后却报 `Permission denied` 的话，重新加载密钥。口令已经存进钥匙串的密钥，用这条命令加载：
 
 ```sh
 ssh-add --apple-load-keychain

@@ -59,7 +59,7 @@ La mise à jour n’est disponible que s’il y a quelque chose à faire : le s
 
 ### Mettre à jour après d’autres opérations {#auto-update}
 
-Le basculement sur une branche, le tirage, la fusion et d’autres opérations peuvent changer le pointeur d’un sous-module extrait. Spooky demande ensuite s’il faut mettre ces sous-modules à jour. Cochez :ui[submodule.autoUpdate.always] pour les mettre à jour aussitôt à partir de là. Vous pouvez revenir en arrière avec :ui[settings.autoUpdateSubmodules] dans :ui[app.name > settings.title] › :ui[settings.general]. Consultez [Opérations](/guide/settings/general/#operations).
+L’extraction d’une branche, le tirage, la fusion et d’autres opérations peuvent changer le pointeur d’un sous-module extrait. Spooky demande ensuite s’il faut mettre ces sous-modules à jour. Cochez :ui[submodule.autoUpdate.always] pour les mettre à jour aussitôt à partir de là. Vous pouvez revenir en arrière avec :ui[settings.autoUpdateSubmodules] dans :ui[app.name > settings.title] › :ui[settings.general]. Consultez [Opérations](/guide/settings/general/#operations).
 
 ### Initialiser et synchroniser {#initialize}
 

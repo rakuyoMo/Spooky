@@ -49,8 +49,8 @@ Das Zurücksetzen verschiebt den Branch, auf dem Sie sich befinden, auf einen an
 1. Klicken Sie mit der rechten Maustaste auf den Commit und wählen Sie :ui[rewrite.menu.reset]{1="e2dda2bc"} im Menü. Sie können auch in den Commit-Details auf :ui[history.rollback] klicken oder :ui[workspace.title > rewrite.reset.menu] in der Menüleiste wählen.
 2. Prüfen Sie :ui[rewrite.revision]. Sie können einen Branch, einen Remote-Branch oder ein Tag wählen oder einen Hash eingeben. Das Dialogfenster listet die Commits auf, die den Branch verlassen werden.
 3. Wählen Sie unter :ui[rewrite.reset.mode] einen Modus:
-   - :ui[rewrite.reset.soft] lässt Staging-Bereich und Arbeitskopie, wie sie sind. Die Änderungen aus den Commits, die den Branch verlassen, bleiben gestagt.
-   - :ui[rewrite.reset.mixed] setzt den Staging-Bereich zurück und behält die Arbeitskopie. Diese Änderungen sind danach nicht gestagt.
+   - :ui[rewrite.reset.soft] lässt Index und Arbeitskopie, wie sie sind. Die Änderungen aus den Commits, die den Branch verlassen, bleiben gestagt.
+   - :ui[rewrite.reset.mixed] setzt den Index zurück und behält die Arbeitskopie. Diese Änderungen sind danach nicht gestagt.
    - :ui[rewrite.reset.hard] setzt beides zurück. Nicht committete Änderungen und die Änderungen aus den Commits, die den Branch verlassen, werden verworfen.
 4. Klicken Sie auf :ui[rewrite.reset.button].
 

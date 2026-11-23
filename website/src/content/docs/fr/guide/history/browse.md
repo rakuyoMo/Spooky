@@ -5,7 +5,7 @@ description: "Parcourez la liste et le graphe des commits, lisez les pastilles d
 
 La vue :ui[history.title] liste les commits d’un dépôt, du plus récent au plus ancien, à côté d’un graphe qui montre comment ils se relient. Sélectionnez un commit pour voir ses détails à droite.
 
-::screenshot[La vue Historique d’un dépôt. L’en-tête au-dessus de la liste indique Toutes les branches, dépôts distants et étiquettes, avec le bouton des options de présentation à son extrémité droite. Les commits sont regroupés sous novembre 2026. Des lignes colorées, à gauche, relient les commits, et des pastilles comme HEAD, main et v0.4.0 figurent à côté des noms d’auteur. À droite se trouvent les détails du commit sélectionné, avec les boutons Modifications et Arborescence en haut.]{name="history" frame="window" markers="50,13.75 42,23 22.5,62 79,9"}
+::screenshot[La vue Historique d’un dépôt. L’en-tête au-dessus de la liste indique Toutes les branches, dépôts distants et tags, avec le bouton des options de présentation à son extrémité droite. Les commits sont regroupés sous novembre 2026. Des lignes colorées, à gauche, relient les commits, et des pastilles comme HEAD, main et v0.4.0 figurent à côté des noms d’auteur. À droite se trouvent les détails du commit sélectionné, avec les boutons Modifications et Arborescence en haut.]{name="history" frame="window" markers="50,13.75 42,23 22.5,62 79,9"}
 
 1. L’en-tête : ce que la liste affiche, et les options de présentation
 2. Les pastilles des branches et des tags qui pointent sur un commit

@@ -13,7 +13,7 @@ Les worktrees sont listés sous :ui[worktree.group] dans la barre latérale, tri
 
 Cliquez sur un worktree pour voir son nom, son chemin, sa révision actuelle et sa branche. Double-cliquez dessus pour l’ouvrir dans la même fenêtre.
 
-Une branche extraite dans un autre worktree a une petite pastille sur son icône. Quand vous cliquez dessus avec le bouton droit, le menu indique dans quel worktree elle se trouve. Il propose aussi d’ouvrir ou de supprimer ce worktree. Consultez [Basculer sur une branche](/guide/branches/branches/#checkout).
+Une branche extraite dans un autre worktree a une petite pastille sur son icône. Quand vous cliquez dessus avec le bouton droit, le menu indique dans quel worktree elle se trouve. Il propose aussi d’ouvrir ou de supprimer ce worktree. Consultez [Extraire une branche](/guide/branches/branches/#checkout).
 
 Pour lister aussi les worktrees dans la fenêtre Dépôts, consultez [Organiser la liste](/guide/repositories/manager/#organize).
 

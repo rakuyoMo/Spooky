@@ -7,7 +7,7 @@ La fenêtre Dépôts tient la liste des dépôts avec lesquels vous travaillez, 
 
 Pour accéder à la liste depuis un dépôt, cliquez sur :ui[toolbar.bookmarks] dans la barre d’outils ou choisissez :ui[menu.view > menu.showRepositories] (<kbd>⌃⌘R</kbd>).
 
-::screenshot[La fenêtre Dépôts. La barre latérale liste deux groupes, Driftwood Labs et Notes, avec des dépôts à l’intérieur ; l’un d’eux est un dépôt sur un serveur, dont le nom commence par son alias d’hôte. À droite figurent les détails du dépôt sélectionné, driftwood : son emplacement, sa dernière ouverture, son dernier commit, une description, l’identité du committer, la branche actuelle, le nombre de fichiers modifiés et le dépôt distant.]{name="repositories" frame="window"}
+::screenshot[La fenêtre Dépôts. La barre latérale liste deux groupes, Driftwood Labs et Notes, avec des dépôts à l’intérieur ; l’un d’eux est un dépôt sur un serveur, dont le nom commence par son alias d’hôte. À droite figurent les détails du dépôt sélectionné, driftwood : son emplacement, sa dernière ouverture, son dernier commit, une description, l’identité du validateur, la branche actuelle, le nombre de fichiers modifiés et le dépôt distant.]{name="repositories" frame="window"}
 
 ## Ajouter des dépôts {#add}
 

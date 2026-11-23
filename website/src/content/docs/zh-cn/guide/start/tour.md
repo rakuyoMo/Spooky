@@ -60,7 +60,7 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 - :ui[sync.merge] 与 :ui[sync.rebaseHead]：把当前分支与另一个分支合到一起
 - :ui[toolbar.applyStash] 与 :ui[toolbar.saveStash]：取回收起来的改动，或把当前的改动收起来
 - :ui[action.refresh]：重新读取仓库
-- :ui[action.search]：过滤当前视图的列表
+- :ui[action.search]：筛选当前视图的列表
 
 按住 <kbd>⌥</kbd> 时，从 :ui[sync.fetch] 到 :ui[sync.rebaseHead] 的按钮会换成快速版本，例如 :ui[sync.quickPush]。快速版本直接对跟踪分支执行，不弹出对话框。
 

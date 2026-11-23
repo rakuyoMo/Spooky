@@ -1,9 +1,9 @@
 ---
 title: "저장소 윈도우"
-description: "저장소를 북마크하고, 그룹으로 묶고, 열고, 복제하고, 만들고, 찾고, 제거하는 방법과 사라진 저장소를 찾는 방법을 알아봅니다."
+description: "저장소를 책갈피에 추가하고, 그룹으로 묶고, 열고, 복제하고, 만들고, 찾고, 제거하는 방법과 사라진 저장소를 찾는 방법을 알아봅니다."
 ---
 
-저장소 윈도우에는 Mac과 서버에서 작업하는 저장소의 목록이 있습니다. 각 항목은 저장소를 가리키는 북마크입니다. 북마크를 제거해도 저장소 폴더는 그 자리에 남습니다. 폴더를 휴지통으로 옮기는 것은 따로 선택합니다. 이 페이지는 저장소를 추가하고, 정리하고, 열고, 제거하는 방법을 다룹니다.
+저장소 윈도우에는 Mac과 서버에서 작업하는 저장소의 목록이 있습니다. 각 항목은 저장소를 가리키는 책갈피입니다. 책갈피를 제거해도 저장소 폴더는 그 자리에 남습니다. 폴더를 휴지통으로 옮기는 것은 따로 선택합니다. 이 페이지는 저장소를 추가하고, 정리하고, 열고, 제거하는 방법을 다룹니다.
 
 저장소에서 목록으로 가려면 도구 막대의 :ui[toolbar.bookmarks]를 클릭하거나 :ui[menu.view > menu.showRepositories](<kbd>⌃⌘R</kbd>)를 선택합니다.
 
@@ -114,7 +114,7 @@ Spooky는 서버 저장소를 선택하거나 열 때만 확인합니다. 서버
 - 오른쪽 클릭하고 :ui[bookmarks.delete]{1="driftwood"}를 선택합니다. 그룹이면 :ui[bookmarks.deleteFolder], 항목이 여러 개면 :ui[bookmarks.deleteMultiple]{1="2"}를 선택합니다.
 - 세부사항에서 :ui[bookmarks.multiple.delete]를 클릭합니다.
 
-저장소 폴더가 아직 있으면 Spooky가 먼저 :ui[bookmarks.delete.title]{1="driftwood"}라고 묻습니다. 북마크만 제거됩니다. 폴더는 그 자리에 남습니다. 폴더도 휴지통으로 옮기려면 :ui[bookmarks.delete.trash]을 선택합니다. :ui[bookmarks.delete.submit]를 클릭해 확인합니다.
+저장소 폴더가 아직 있으면 Spooky가 먼저 :ui[bookmarks.delete.title]{1="driftwood"}라고 묻습니다. 책갈피만 제거됩니다. 폴더는 그 자리에 남습니다. 폴더도 휴지통으로 옮기려면 :ui[bookmarks.delete.trash]을 선택합니다. :ui[bookmarks.delete.submit]를 클릭해 확인합니다.
 
 빈 그룹과 폴더가 없어진 항목은 묻지 않고 바로 제거됩니다.
 

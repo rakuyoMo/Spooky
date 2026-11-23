@@ -16,8 +16,8 @@ Spooky がリポジトリを開き、:ui[workspace.title] を表示します。�
 
 リポジトリ内のフォルダならどれを選んでもかまいません。Spooky はリポジトリ全体を開きます。フォルダが Git リポジトリの中にない場合は、:ui[bookmarks.noRepository.title] と表示されます。:ui[bookmarks.noRepository.create] をクリックするとそのフォルダが新しいリポジトリになり、:ui[action.cancel] をクリックすると別のフォルダを選び直せます。
 
-:::note[サーバーリポジトリ]
-サーバー上のリポジトリで作業するときは、代わりに :ui[action.addRemote] で追加します。手順は [サーバーリポジトリを追加する](/guide/server/add/) で説明しています。開いたあとは、このページの残りの手順は同じです。
+:::note[サーバリポジトリ]
+サーバ上のリポジトリで作業するときは、代わりに :ui[action.addRemote] で追加します。手順は [サーバリポジトリを追加する](/guide/server/add/) で説明しています。開いたあとは、このページの残りの手順は同じです。
 :::
 
 ## 変更を加える {#change}

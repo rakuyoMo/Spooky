@@ -85,7 +85,7 @@ Git führt ein Protokoll darüber, wohin HEAD und jeder lokale Branch gezeigt ha
 Klicken Sie mit der rechten Maustaste auf den Eintrag, um den Commit zurückzuholen:
 
 - :ui[reflog.createBranch]{1="9e0d36a7"} beginnt dort einen neuen Branch. Ihre vorhandenen Branches bleiben, wie sie sind.
-- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} verschiebt den angezeigten Branch zurück auf diesen Commit. Arbeitskopie und Staging-Bereich ändern sich nicht. Spooky fragt vorher nach, und Sie können es widerrufen.
+- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} verschiebt den angezeigten Branch zurück auf diesen Commit. Arbeitskopie und Index ändern sich nicht. Spooky fragt vorher nach, und Sie können es widerrufen.
 - :ui[reflog.cherryPick]{1="9e0d36a7"} kopiert den Commit auf den aktuellen Branch. Sie können den Eintrag auch auf :ui[workspace.title] oder den aktuellen Branch in der Seitenleiste ziehen.
 - :ui[reflog.reset]{1="9e0d36a7"} öffnet das Dialogfenster zum Zurücksetzen, um den aktuellen Branch auf diesen Commit zu verschieben.
 - :ui[patch.menu]{1="9e0d36a7"} sichert den Commit als Patch-Datei.

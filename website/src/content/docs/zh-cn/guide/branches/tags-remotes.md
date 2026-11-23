@@ -11,7 +11,7 @@ description: "新建、发布与删除标签，添加、编辑、重命名与移
 
 把指针停在标签上，可以看到它指向的提交，有说明的话也会显示出来。连按标签就检出它所在的提交，见 [检出标签或提交](/guide/branches/branches/#checkout-revision)。
 
-和分支一样，名字里带 `/` 的标签会放进文件夹。想只显示最新的几个，或者倒过来排序，见 [过滤与分组](/guide/branches/branches/#filter)。
+和分支一样，名字里带 `/` 的标签会放进文件夹。想只显示最新的几个，或者倒过来排序，见 [筛选与分组](/guide/branches/branches/#filter)。
 
 ### 新建标签 {#create-tag}
 

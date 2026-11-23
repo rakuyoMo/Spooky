@@ -69,7 +69,7 @@ Spooky 先檢查能不能連上遠端。連不上時，對話框不關，會寫�
 
 - 新增群組：在加入按鈕的選單裡選 :ui[bookmarks.newGroup]，再輸入名稱。
 - 調整順序或移進別的群組：直接拖移。
-- 重新命名：在這一項上按右鍵，選 :ui[bookmarks.rename]。在列表裡替儲存庫重新命名，不會改動它的資料夾名稱。
+- 重新命名：在這一項上按右鍵，選 :ui[bookmarks.rename]。在列表裡替儲存庫重新命名，不會變更它的資料夾名稱。
 - 按名稱排序：按右鍵，選 :ui[bookmarks.sortChildren] 替一個群組裡的項目排序，或選 :ui[bookmarks.sortParent] 替這一項所在的群組排序。
 
 :ui[app.name > settings.title] › :ui[settings.general] 裡有兩個選項決定列表顯示什麼：

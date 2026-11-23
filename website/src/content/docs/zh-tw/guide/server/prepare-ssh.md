@@ -108,7 +108,7 @@ SSH 警告遠端主機的識別變了（remote host identification has changed�
 ssh-copy-id -i ~/.ssh/id_ed25519.pub driftwood-server
 ```
 
-伺服器不接受密碼登入時，把公開金鑰傳給伺服器管理者。這條指令會把公開金鑰拷貝到剪貼板：
+伺服器不接受密碼登入時，把公開金鑰傳給伺服器管理者。這條指令會把公開金鑰拷貝到剪貼簿：
 
 ```sh
 pbcopy < ~/.ssh/id_ed25519.pub

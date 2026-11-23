@@ -1,11 +1,11 @@
 ---
 title: "分支"
-description: "新建、检出、跟踪、改名、删除、置顶与归档分支，设置父分支，在侧边栏里过滤与分组分支。"
+description: "新建、检出、跟踪、改名、删除、置顶与归档分支，设置父分支，在侧边栏里筛选与分组分支。"
 ---
 
 本地分支列在侧边栏的 :ui[branch.group] 下。对分支做的事大多从这里开始：右键点按它打开菜单，或者把它拖到别处。
 
-::screenshot[侧边栏的下半部分。分支下面，main 带着 HEAD 标记和 ↑3，feature 文件夹里是 dark-mode、station-map 与 units-toggle。已归档分支是空的。标签下列着 v0.1.0 到 v0.4.0。远端下面，origin 里有带房子图标的 main 和收起的 feature 文件夹。底栏左边是过滤输入框，右边是添加与显示设置两个按钮。]{name="branches" frame="closeup" markers="57,7 57,12.1 75,33.6 17,96.8 73,96.8"}
+::screenshot[侧边栏的下半部分。分支下面，main 带着 HEAD 标记和 ↑3，feature 文件夹里是 dark-mode、station-map 与 units-toggle。已归档分支是空的。标签下列着 v0.1.0 到 v0.4.0。远端下面，origin 里有带房子图标的 main 和收起的 feature 文件夹。底栏左边是筛选输入框，右边是添加与显示设置两个按钮。]{name="branches" frame="closeup" markers="57,7 57,12.1 75,33.6 17,96.8 73,96.8"}
 
 1. 当前所在的分支，带着 HEAD 标记和还没推送的提交数
 2. 名字以 `feature/` 开头的分支所在的文件夹
@@ -130,15 +130,15 @@ Spooky 也能找出值得归档的分支，还能替你归档，见 [分支整�
 - 对当前所在的分支，菜单里的 :ui[branch.mergeWith]{1="main"} 与 :ui[branch.rebaseOn]{1="main"} 会打开合并与变基对话框，并选好父分支。
 - 父分支本身不会算作陈旧。
 
-## 过滤与分组 {#filter}
+## 筛选与分组 {#filter}
 
-在侧边栏底部的 :ui[sidebar.filter] 里输入，就只显示匹配的分支、标签、远端分支、子模块与工作树。字母不用挨着：输入 `stm` 能找到 `station-map`。不区分大小写和变音符号。过滤时文件夹会展开，按 <kbd>Esc</kbd> 清空输入框。
+在侧边栏底部的 :ui[sidebar.filter] 里输入，就只显示匹配的分支、标签、远端分支、子模块与工作树。字母不用挨着：输入 `stm` 能找到 `station-map`。不区分大小写和变音符号。筛选时文件夹会展开，按 <kbd>Esc</kbd> 清空输入框。
 
 点右下角的显示设置按钮，或者选 :ui[menu.view > sidebar.menu]，设置侧边栏显示什么。这些设置对所有窗口都有效。
 
 - :ui[sidebar.groupRefs] 把带 `/` 的名字放进文件夹，一开始是打开的。:ui[sidebar.groupedRefsOnTop] 把文件夹排在其它分支前面。
 - :ui[sidebar.showStaleInfo] 标出陈旧的分支。:ui[sidebar.staleInterval] 设置多久没有提交算陈旧，一开始是 6 个月。
-- :ui[sidebar.remoteFilter] 与 :ui[sidebar.tagsFilter] 用 :ui[sidebar.showNewest] 只列出最新的几个。远端分支按每个远端分别计数。标签还能用 :ui[sidebar.sortBy] 排序。过滤时会列出全部匹配项。
+- :ui[sidebar.remoteFilter] 与 :ui[sidebar.tagsFilter] 用 :ui[sidebar.showNewest] 只列出最新的几个。远端分支按每个远端分别计数。标签还能用 :ui[sidebar.sortBy] 排序。筛选时会列出全部匹配项。
 - :ui[sidebar.autoArchive] 见 [分支整理](/guide/branches/review/#auto-archive)。
 
 ## 相关页面
