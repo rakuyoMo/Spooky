@@ -156,11 +156,11 @@
 
 "error.parse" = "No se ha podido leer la salida de Git";
 
-"error.openHelp" = "Seleccionar un árbol de trabajo de Git accesible. Spooky requiere Git 2.41.0 o posterior; elegir otro binario de Git en Ajustes, o actualizar Xcode o Command Line Tools. La salida original se muestra debajo.";
+"error.openHelp" = "Selecciona un árbol de trabajo de Git accesible. Spooky requiere Git 2.41.0 o posterior; elige otro binario de Git en Ajustes, o actualiza Xcode o Command Line Tools. La salida original se muestra debajo.";
 
-"error.refreshHelp" = "Cuando falla una actualización, se conserva el resultado anterior, si lo hay. Revisar la salida original y, después, actualizar para volver a intentarlo.";
+"error.refreshHelp" = "Cuando falla una actualización, se conserva el resultado anterior, si lo hay. Revisa la salida original y, después, actualiza para volver a intentarlo.";
 
-"error.writeHelp" = "La operación no ha terminado. Revisar la salida original y, después, actualizar para ver el estado actual del repositorio.";
+"error.writeHelp" = "La operación no ha terminado. Revisa la salida original y, después, actualiza para ver el estado actual del repositorio.";
 
 "error.details" = "Salida original";
 
@@ -205,7 +205,7 @@
 "action.search" = "Buscar";
 "action.find" = "Buscar…";
 "menu.find" = "Buscar";
-"remote.form.help" = "Usar un alias de host de la configuración de SSH y una ruta absoluta en ese servidor.";
+"remote.form.help" = "Usa un alias de host de la configuración de SSH y una ruta absoluta en ese servidor.";
 "remote.form.title" = "Añadir repositorio de servidor";
 "remote.host" = "Alias del host:";
 "remote.path" = "Ruta del repositorio:";
@@ -236,7 +236,7 @@
 "callback.saveKeychain" = "Guardar en el llavero de este Mac";
 "error.indexLocked" = "El repositorio está bloqueado por otro proceso de Git; tras comprobar que no hay otro proceso de Git en ejecución, eliminar “%@” manualmente.";
 "error.terminal" = "No se ha podido abrir el terminal";
-"error.terminalHelp" = "Comprobar el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
+"error.terminalHelp" = "Comprueba el terminal seleccionado en Ajustes y su permiso de Automatización de macOS.";
 "error.remoteConnection" = "Error al conectar con el remoto";
 "error.synchronization" = "Error al sincronizar con el remoto";
 "error.remoteNotFound" = "No se encuentra el repositorio remoto";
@@ -269,39 +269,39 @@
 "themes.preview.added" = "Texto añadido";
 "themes.preview.deleted" = "Texto eliminado";
 "remoteError.invalidHost" = "Alias de host SSH no válido";
-"remoteError.invalidHost.help" = "Introducir un único alias de host de ~/.ssh/config, sin nombre de usuario ni puerto.";
+"remoteError.invalidHost.help" = "Introduce un único alias de host de ~/.ssh/config, sin nombre de usuario ni puerto.";
 "remoteError.absolutePathRequired" = "Se necesita una ruta absoluta";
-"remoteError.absolutePathRequired.help" = "Introducir la ruta completa del repositorio en el servidor, empezando por /.";
+"remoteError.absolutePathRequired.help" = "Introduce la ruta completa del repositorio en el servidor, empezando por /.";
 "remoteError.unknownHostKey" = "Huella digital del host desconocida";
-"remoteError.unknownHostKey.help" = "Verificar primero la huella digital del servidor en un terminal de confianza y, después, volver a conectar. Spooky no la aceptará automáticamente.";
+"remoteError.unknownHostKey.help" = "Verifica primero la huella digital del servidor en un terminal de confianza y, después, vuelve a conectar. Spooky no la aceptará automáticamente.";
 "remoteError.changedHostKey" = "La huella digital del host ha cambiado";
-"remoteError.changedHostKey.help" = "Confirmar el cambio de huella digital con el propietario del servidor en un terminal de confianza antes de volver a conectar.";
+"remoteError.changedHostKey.help" = "Confirma el cambio de huella digital con el propietario del servidor en un terminal de confianza antes de volver a conectar.";
 "remoteError.authentication" = "Error de autenticación SSH";
-"remoteError.authentication.help" = "Comprobar la clave SSH, el llavero o el agente SSH de este Mac. La frase de contraseña de la clave privada nunca se envía al servidor.";
+"remoteError.authentication.help" = "Comprueba la clave SSH, el llavero o el agente SSH de este Mac. La frase de contraseña de la clave privada nunca se envía al servidor.";
 "remoteError.unavailable" = "Conexión con el servidor no disponible";
-"remoteError.unavailable.help" = "Comprobar el alias del host y la conexión y volver a intentarlo. La última instantánea correcta sigue disponible.";
+"remoteError.unavailable.help" = "Comprueba el alias del host y la conexión y vuelve a intentarlo. La última instantánea correcta sigue disponible.";
 "remoteError.gitUnavailable" = "Git no está disponible en el servidor";
-"remoteError.gitUnavailable.help" = "Instalar Git 2.41.0 o posterior en el servidor y hacer que esté disponible en el entorno SSH no interactivo.";
+"remoteError.gitUnavailable.help" = "Instala Git 2.41.0 o posterior en el servidor y haz que esté disponible en el entorno SSH no interactivo.";
 "remoteError.gitVersion" = "La versión de Git del servidor no es compatible";
-"remoteError.gitVersion.help" = "Actualizar Git en el servidor a la versión 2.41.0 o posterior. Spooky usa la misma versión mínima en local y en remoto.";
+"remoteError.gitVersion.help" = "Actualiza Git en el servidor a la versión 2.41.0 o posterior. Spooky usa la misma versión mínima en local y en remoto.";
 "remoteError.pathUnavailable" = "No se ha encontrado el directorio en el servidor";
-"remoteError.pathUnavailable.help" = "Comprobar que la ruta absoluta existe en el servidor seleccionado.";
+"remoteError.pathUnavailable.help" = "Comprueba que la ruta absoluta existe en el servidor seleccionado.";
 "remoteError.pathPermission" = "Acceso denegado al directorio del servidor";
 "remoteError.pathPermission.help" = "El usuario de SSH necesita permisos de lectura y búsqueda en este directorio.";
 "remoteError.diskAccess" = "Carpeta del servidor bloqueada por la privacidad";
 "remoteError.diskAccess.help" = "macOS en el servidor impide que las sesiones SSH lean esta carpeta. En el servidor, permite el acceso total al disco para usuarios remotos en Compartir → Sesión remota, o mueve el repositorio fuera de las carpetas protegidas.";
 "remoteError.notWorkingTree" = "La ruta no es un árbol de trabajo de Git";
-"remoteError.notWorkingTree.help" = "Seleccionar un árbol de trabajo de Git existente en el servidor. Revisar la salida original de Git por si hay restricciones de propiedad.";
+"remoteError.notWorkingTree.help" = "Selecciona un árbol de trabajo de Git existente en el servidor. Revisa la salida original de Git por si hay restricciones de propiedad.";
 "remoteError.statusFormat" = "No se ha podido leer el estado del servidor";
-"remoteError.statusFormat.help" = "Revisar el error de Git status que aparece debajo. Git debe admitir porcelain v2 con salida separada por NUL.";
+"remoteError.statusFormat.help" = "Revisa el error de Git status que aparece debajo. Git debe admitir porcelain v2 con salida separada por NUL.";
 "remoteError.deployment" = "No se ha podido preparar la sesión en el servidor";
-"remoteError.deployment.help" = "Comprobar el reenvío de sockets Unix de SSH, /usr/bin/perl y el acceso de escritura a ~/.spooky/bin y al directorio temporal de la sesión.";
+"remoteError.deployment.help" = "Comprueba el reenvío de sockets Unix de SSH, /usr/bin/perl y el acceso de escritura a ~/.spooky/bin y al directorio temporal de la sesión.";
 "remoteError.protocolFailure" = "Resultado incompleto en el servidor";
-"remoteError.protocolFailure.help" = "Volver a conectar e inspeccionar el repositorio antes de repetir cualquier operación de escritura.";
+"remoteError.protocolFailure.help" = "Vuelve a conectar e inspecciona el repositorio antes de repetir cualquier operación de escritura.";
 "remoteError.cancellationUnconfirmed" = "Cancelación remota no confirmada";
-"remoteError.cancellationUnconfirmed.help" = "Se ha cerrado el canal local, pero no se ha podido confirmar que el proceso del servidor se haya detenido. Volver a conectar e inspeccionar el repositorio; la escritura no se repetirá automáticamente.";
+"remoteError.cancellationUnconfirmed.help" = "Se ha cerrado el canal local, pero no se ha podido confirmar que el proceso del servidor se haya detenido. Vuelve a conectar e inspecciona el repositorio; la escritura no se repetirá automáticamente.";
 "remoteError.interruptedWrite" = "La escritura interrumpida requiere verificación";
-"remoteError.interruptedWrite.help" = "Volver a conectar para comprobar la rama, el árbol de trabajo, el bloqueo del índice y el estado de fusión o rebase antes de volver a escribir.";
+"remoteError.interruptedWrite.help" = "Vuelve a conectar para comprobar la rama, el árbol de trabajo, el bloqueo del índice y el estado de fusión o rebase antes de volver a escribir.";
 
 "working.stage" = "Añadir al stage";
 "working.unstage" = "Quitar del stage";
@@ -380,13 +380,13 @@
 "working.skip" = "Omitir";
 "working.endEditing" = "Terminar edición";
 "working.diffThreshold" = "Mostrar aviso para diffs mayores de (kB):";
-"working.error.stale" = "El archivo ha cambiado. Actualizar el diff y volver a seleccionar los cambios.";
+"working.error.stale" = "El archivo ha cambiado. Actualiza el diff y vuelve a seleccionar los cambios.";
 "working.error.selection" = "No se ha seleccionado ningún cambio de texto aplicable.";
 "working.error.file" = "Esta operación requiere un archivo regular.";
 "working.error.path" = "Esta ruta no se puede representar con comandos por lotes de SFTP.";
 "commit.empty.title" = "¿Quieres crear un commit vacío?";
-"commit.empty.message" = "No hay cambios para hacer commit. Crear un commit vacío o abortar la operación en curso.";
-"commit.empty.sequenceMessage" = "Este paso no tiene cambios. Conservarlo como commit vacío y continuar, u omitirlo.";
+"commit.empty.message" = "No hay cambios para hacer commit. Crea un commit vacío o aborta la operación en curso.";
+"commit.empty.sequenceMessage" = "Este paso no tiene cambios. Consérvalo como commit vacío y continúa, u omítelo.";
 "commit.empty.use" = "Usar commit vacío";
 "commit.empty.abort" = "Abortar fusión";
 "commit.empty.skip" = "Omitir commit";
@@ -484,15 +484,15 @@
 "sync.publish.noRemotes" = "No hay ningún remoto en el que publicar la rama.";
 "sync.publish.noBranches" = "No hay ninguna rama local que publicar.";
 "sync.merge.empty" = "No hay ramas ni etiquetas que fusionar.";
-"sync.error.dirty" = "Hacer commit de los cambios locales o descartarlos antes de continuar.";
+"sync.error.dirty" = "Haz commit de los cambios locales o descártalos antes de continuar.";
 "sync.error.branch" = "Esta operación requiere una rama local con commits.";
 "sync.error.remote" = "No se ha encontrado el repositorio remoto.";
-"sync.error.rejected" = "El remoto ha rechazado el push. Hacer fetch e integrar sus actualizaciones antes de volver a intentarlo.";
-"sync.error.authentication" = "Error de autenticación en el remoto. Comprobar las credenciales configuradas.";
+"sync.error.rejected" = "El remoto ha rechazado el push. Haz fetch e integra sus actualizaciones antes de volver a intentarlo.";
+"sync.error.authentication" = "Error de autenticación en el remoto. Comprueba las credenciales configuradas.";
 "sync.error.timeout" = "Se ha agotado el tiempo de espera de la conexión remota.";
 "sync.error.connection" = "La conexión remota se ha interrumpido o no está disponible.";
-"sync.error.upstream" = "No hay ningún upstream configurado. Publicar esta rama o seleccionar una rama remota.";
-"merge.squash" = "Hacer squash de los commits";
+"sync.error.upstream" = "No hay ningún upstream configurado. Publica esta rama o selecciona una rama remota.";
+"merge.squash" = "Combinar los commits";
 "merge.squash.help" = "Añade al stage los cambios combinados para un único commit.";
 "merge.alwaysCommit" = "Generar siempre un commit de fusión";
 "merge.alwaysCommit.help" = "Crea un commit de fusión aunque sea posible hacer fast-forward.";
@@ -509,7 +509,7 @@
 "activity.title" = "Actividad";
 "activity.clear" = "Borrar todo";
 "activity.search" = "Buscar actividades";
-"activity.empty" = "Seleccionar una actividad para ver su registro.";
+"activity.empty" = "Selecciona una actividad para ver su registro.";
 "activity.running" = "En ejecución";
 "activity.finished" = "Terminada";
 "activity.cancelled" = "Cancelada";
@@ -583,8 +583,8 @@
 "failure.kind.repository" = "Estado del repositorio";
 "failure.kind.environment" = "Proceso o sistema";
 "recovery.title" = "Se ha comprobado la operación interrumpida";
-"recovery.changed" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD ha pasado de %@ a %@, así que es posible que la operación se haya completado. Comprobar el resultado antes de volver a intentarlo.";
-"recovery.unchanged" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD sigue en %@. Comprobar la copia de trabajo antes de volver a intentarlo.";
+"recovery.changed" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD ha pasado de %@ a %@, así que es posible que la operación se haya completado. Comprueba el resultado antes de volver a intentarlo.";
+"recovery.unchanged" = "“%@” se ha interrumpido por la desconexión y no se ha reintentado. HEAD sigue en %@. Comprueba la copia de trabajo antes de volver a intentarlo.";
 "recovery.notStarted" = "“%@” no se ha iniciado porque la conexión con el servidor no estaba disponible. No se ha cambiado nada en el servidor.";
 "recovery.unborn" = "ningún commit";
 "dialog.blocked" = "El servidor está desconectado. Se conserva la configuración indicada; volver a intentarlo después de reconectar.";
@@ -629,7 +629,7 @@
 "themes.error.rename" = "No se ha podido renombrar el tema";
 "themes.error.delete" = "No se ha podido eliminar el tema";
 "themes.error.invalidFile" = "“%@” no es un archivo de tema válido.";
-"themes.error.nameInUse" = "Ya existe un tema llamado “%@”. Elegir otro nombre.";
+"themes.error.nameInUse" = "Ya existe un tema llamado “%@”. Elige otro nombre.";
 /* 储藏。 */
 "stash.title" = "Stashes";
 "stash.show" = "Mostrar stashes";
@@ -654,7 +654,7 @@
 "stash.includeUntracked" = "Incluir archivos sin seguimiento";
 "stash.picker" = "Stash:";
 "stash.deleteAfterApply" = "Eliminar el stash después de aplicarlo";
-"stash.restoreIndex" = "Restaurar el estado del área de stage";
+"stash.restoreIndex" = "Restaurar el estado del índice";
 "stash.noStashes" = "Este repositorio no tiene stashes para aplicar.";
 "stash.applyNamed" = "Aplicar stash “%@”…";
 "stash.deleteNamed" = "Eliminar stash “%@”…";
@@ -691,13 +691,13 @@
 "stash.error.noChanges" = "No se puede guardar el stash";
 "stash.error.noChanges.help" = "No hay cambios locales que guardar. Los archivos sin seguimiento solo se guardan si “Incluir archivos sin seguimiento” está activado.";
 "stash.error.changed" = "La lista de stashes cambió";
-"stash.error.changed.help" = "Otro programa cambió la lista de stashes y el stash seleccionado ya no coincide. Revisar la lista actualizada y volver a intentarlo.";
+"stash.error.changed.help" = "Otro programa cambió la lista de stashes y el stash seleccionado ya no coincide. Revisa la lista actualizada y vuelve a intentarlo.";
 "stash.error.conflicts" = "Stash aplicado con conflictos";
-"stash.error.conflicts.help" = "Resolver los conflictos en la copia de trabajo. El stash se ha conservado.";
+"stash.error.conflicts.help" = "Resuelve los conflictos en la copia de trabajo. El stash se ha conservado.";
 "stash.error.operation" = "La operación falló después del stash";
-"stash.error.operation.help" = "Los cambios locales se guardaron en el stash y siguen allí. Revisar la copia de trabajo y aplicar el stash cuando esté todo listo.";
+"stash.error.operation.help" = "Los cambios locales se guardaron en el stash y siguen allí. Revisa la copia de trabajo y aplica el stash cuando esté todo listo.";
 "stash.error.operationConflicts" = "Conflictos después del stash";
-"stash.error.operationConflicts.help" = "Resolver los conflictos en la copia de trabajo. Los cambios locales se guardaron en el stash y siguen allí. Aplicar el stash cuando esté todo listo.";
+"stash.error.operationConflicts.help" = "Resuelve los conflictos en la copia de trabajo. Los cambios locales se guardaron en el stash y siguen allí. Aplica el stash cuando esté todo listo.";
 "stash.error.reapply" = "No se pudo volver a aplicar el stash";
 "stash.error.reapply.help" = "La operación terminó, pero los cambios locales no se pudieron volver a aplicar. Siguen en el stash; aplicarlo cuando esté todo listo.";
 /* 冲突向导与进行中操作。 */
@@ -705,15 +705,15 @@
 "conflict.error.version" = "Los archivos seleccionados no tienen esta versión.";
 "conflict.error.version.title" = "Versión no disponible";
 "conflict.export" = "Exportar la versión de “%@”…";
-"conflict.hint.merge.conflicts" = "Resolver todos los conflictos para completar la fusión.";
-"conflict.hint.merge.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Hacer commit** para completar la fusión.";
-"conflict.hint.merge.empty" = "No quedan cambios para hacer commit. Hacer clic en **Abortar** para cancelar la fusión o en **Hacer commit** para crear un commit de fusión vacío.";
-"conflict.hint.rebase.conflicts" = "Resolver todos los conflictos para continuar el rebase.";
-"conflict.hint.rebase.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Continuar** para hacer commit de este paso y continuar el rebase.";
-"conflict.hint.rebase.empty" = "No quedan cambios en este paso. Hacer clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y continuar el rebase.";
-"conflict.hint.sequence.conflicts" = "Resolver todos los conflictos para continuar.";
-"conflict.hint.sequence.resolved" = "Revisar el mensaje del commit y, después, hacer clic en **Continuar** para hacer commit de este paso y seguir con los commits restantes.";
-"conflict.hint.sequence.empty" = "No quedan cambios en este paso. Hacer clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y seguir.";
+"conflict.hint.merge.conflicts" = "Resuelve todos los conflictos para completar la fusión.";
+"conflict.hint.merge.resolved" = "Revisa el mensaje del commit y, después, haz clic en **Hacer commit** para completar la fusión.";
+"conflict.hint.merge.empty" = "No quedan cambios para hacer commit. Haz clic en **Abortar** para cancelar la fusión o en **Hacer commit** para crear un commit de fusión vacío.";
+"conflict.hint.rebase.conflicts" = "Resuelve todos los conflictos para continuar el rebase.";
+"conflict.hint.rebase.resolved" = "Revisa el mensaje del commit y, después, haz clic en **Continuar** para hacer commit de este paso y continuar el rebase.";
+"conflict.hint.rebase.empty" = "No quedan cambios en este paso. Haz clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y continuar el rebase.";
+"conflict.hint.sequence.conflicts" = "Resuelve todos los conflictos para continuar.";
+"conflict.hint.sequence.resolved" = "Revisa el mensaje del commit y, después, haz clic en **Continuar** para hacer commit de este paso y seguir con los commits restantes.";
+"conflict.hint.sequence.empty" = "No quedan cambios en este paso. Haz clic en **Omitir** para dejar fuera este commit o en **Continuar** para conservar un commit vacío y seguir.";
 "conflict.kind.addedByThem" = "Añadido por ellos";
 "conflict.kind.addedByUs" = "Añadido por nosotros";
 "conflict.kind.bothAdded" = "Añadido por ambos";
@@ -853,10 +853,10 @@
 "diff.imageSide" = "Versión mostrada";
 
 /* 提交体验、身份档案与签名。 */
-"signing.error" = "No se ha podido firmar el commit. Comprobar la clave de firma y el programa de firma.";
+"signing.error" = "No se ha podido firmar el commit. Comprueba la clave de firma y el programa de firma.";
 "signing.unlock" = "Desbloquear la clave de firma";
 "signing.key" = "Clave de firma: %@ (%@)";
-"signing.defaultKey" = "Clave de firma: según el autor del commit (%@)";
+"signing.defaultKey" = "Clave de firma: según el committer (%@)";
 "signing.none" = "Sin clave de firma";
 "signing.unknown" = "Clave de firma desconocida";
 "signing.off" = "Los commits no se firman";
@@ -881,7 +881,7 @@
 "profiles.signingKey" = "Clave de firma:";
 "profiles.edit" = "Editar";
 "profiles.noSelection" = "Ningún perfil de usuario seleccionado";
-"profiles.menu" = "Identidad del autor";
+"profiles.menu" = "Identidad del committer";
 "profiles.addCurrent" = "Añadir perfil de usuario “%@”…";
 "profiles.manage" = "Gestionar perfiles de usuario…";
 "profiles.apply" = "Usar perfil de usuario";
@@ -983,7 +983,7 @@
 "files.error.trashUnavailable" = "No hay papelera disponible en el servidor";
 "files.error.trashedItems" = "No se pueden restaurar desde la papelera";
 "files.error.partialDeletion" = "No se han eliminado todos los ítems";
-"files.error.partialDeletion.help" = "Los ítems que aparecen al principio de la salida original se quitaron del disco, pero su eliminación no se añadió al stage. Los demás ítems no han cambiado. Actualizar para revisar la copia de trabajo antes de volver a intentarlo.";
+"files.error.partialDeletion.help" = "Los ítems que aparecen al principio de la salida original se quitaron del disco, pero su eliminación no se añadió al stage. Los demás ítems no han cambiado. Actualiza para revisar la copia de trabajo antes de volver a intentarlo.";
 "files.error.unstagedDeletion" = "La eliminación no se añadió al stage";
 "files.error.unstagedDeletion.help" = "Todos los ítems que aparecen al principio de la salida original se quitaron del disco, pero la eliminación de los archivos con seguimiento no se añadió al stage. Añadir la eliminación al stage en la copia de trabajo, o revisar la causa en la salida original.";
 "files.doubleClick" = "Doble clic en un archivo de la copia de trabajo:";
@@ -1038,7 +1038,7 @@
 "history.group.month" = "Mes";
 "history.group.none" = "Sin grupos";
 "history.group.weekTitle" = "Semana %ld de %@ (S%ld)";
-"history.search.info" = "%@: «%@»";
+"history.search.info" = "%@: “%@”";
 "history.search.kind" = "Condición de búsqueda";
 "history.search.add" = "Añadir condición";
 "history.search.remove" = "Quitar condición";
@@ -1200,8 +1200,8 @@
 "branch.tooltip.stale" = "- está antigua (%@)";
 "remote.tooltip.branch" = "Rama remota “%@”";
 "remote.tooltip.remote" = "Repositorio remoto “%@”";
-"remote.tooltip.fetchURL" = "- URL de obtención: “%@”";
-"remote.tooltip.pushURL" = "- URL de envío: “%@”";
+"remote.tooltip.fetchURL" = "- URL de fetch: “%@”";
+"remote.tooltip.pushURL" = "- URL de push: “%@”";
 "tag.tooltip.revision" = "Apunta a la revisión “%@”";
 "tag.tooltip.message" = "Mensaje de la etiqueta: “%@”";
 "tag.checkoutNamed" = "Hacer checkout de “%@”…";
@@ -1237,9 +1237,9 @@
 "rewrite.reset.button" = "Restablecer";
 "rewrite.checkout.button" = "Hacer checkout";
 "rewrite.reword.button" = "Guardar";
-"rewrite.squash.confirm" = "¿Combinar %ld commits en «%@»?";
-"rewrite.fixup.confirm" = "¿Incorporar %ld commits en «%@» y conservar solo su mensaje?";
-"rewrite.edit.confirm" = "¿Detenerse en «%@» y devolver sus cambios a la copia de trabajo? Hacer commit de ellos y luego hacer clic en «Terminar edición».";
+"rewrite.squash.confirm" = "¿Combinar %ld commits en “%@”?";
+"rewrite.fixup.confirm" = "¿Incorporar %ld commits en “%@” y conservar solo su mensaje?";
+"rewrite.edit.confirm" = "¿Detenerse en “%@” y devolver sus cambios a la copia de trabajo? Haz commit de ellos y luego haz clic en “Terminar edición”.";
 "rewrite.drop.confirm" = "¿Eliminar %ld commits de la rama actual?";
 "rewrite.move.confirm" = "¿Mover %ld commits a la nueva posición?";
 "rewrite.autosquash.confirm" = "¿Incorporar cada commit marcado con fixup!, squash! o amend! en el commit al que se refiere?";
@@ -1249,8 +1249,8 @@
 "rewrite.note.fixup" = "Fixup";
 "rewrite.note.edit" = "Editar";
 "rewrite.note.move" = "Mover";
-"rewrite.remote" = "Esta operación se ejecuta en el servidor «%@».";
-"rewrite.shared" = "Ya enviado o fusionado";
+"rewrite.remote" = "Esta operación se ejecuta en el servidor “%@”.";
+"rewrite.shared" = "Ya con push o fusionado";
 "rewrite.warning.pushed" = "Algunos de estos commits ya están en la rama upstream. Tras reescribirlos, la rama local y la upstream divergen.";
 "rewrite.warning.merged" = "Algunos de estos commits ya están en otras ramas. Reescribirlos deja dos copias de los mismos cambios.";
 "rewrite.pushed.title" = "¿Seguro que quieres reescribir commits que ya están en la rama upstream?";
@@ -1276,7 +1276,7 @@
 "rewrite.error.multipleMerges" = "Un commit de fusión solo se puede revertir o hacer cherry-pick por separado.";
 "rewrite.error.loadCommits" = "No se pudo cargar la información del commit.";
 "rewrite.reset.title" = "Restablecer HEAD a una revisión";
-"rewrite.reset.help" = "Mueve la rama actual a la revisión elegida. Elegir qué ocurre con el índice y la copia de trabajo.";
+"rewrite.reset.help" = "Mueve la rama actual a la revisión elegida. Elige qué ocurre con el índice y la copia de trabajo.";
 "rewrite.revision" = "Revisión:";
 "rewrite.reset.mode" = "Modo:";
 "rewrite.reset.soft" = "Soft";
@@ -1289,22 +1289,22 @@
 "rewrite.reset.leaving" = "Commits que salen de la rama actual (%ld):";
 "rewrite.error.revision" = "No se encontró esta revisión.";
 "rewrite.checkout.title" = "Hacer checkout de una revisión";
-"rewrite.checkout.help" = "Escribir o elegir la revisión de la que hacer checkout. HEAD se mueve a esa revisión.";
+"rewrite.checkout.help" = "Escribe o elige la revisión de la que hacer checkout. HEAD se mueve a esa revisión.";
 "rewrite.noRefs" = "Este repositorio aún no tiene referencias.";
-"rewrite.checkout.detached" = "No es una rama local. HEAD quedará separado en %@.";
+"rewrite.checkout.detached" = "No es una rama local. HEAD quedará desacoplado en %@.";
 "rewrite.rebaseOnto.help" = "Toma los commits de la rama actual posteriores a la base actual y los vuelve a aplicar sobre la nueva base.";
 "rewrite.rebaseOnto.partial.help" = "Vuelve a aplicar los %ld commits seleccionados sobre la nueva base. Los commits no seleccionados del mismo rango se quitan de la rama actual.";
 "rewrite.rebaseOnto.current" = "Base actual:";
 "rewrite.rebaseOnto.new" = "Nueva base:";
-"rewrite.rebaseOnto.missing" = "Elegir las revisiones base.";
+"rewrite.rebaseOnto.missing" = "Elige las revisiones base.";
 "rewrite.rebaseOnto.newIsHead" = "La nueva base no puede ser el commit de HEAD.";
 "rewrite.rebaseOnto.currentIsHead" = "La base actual no puede ser el commit de HEAD.";
-"rewrite.reword.title" = "Editar el mensaje de la revisión «%@»";
+"rewrite.reword.title" = "Editar el mensaje de la revisión “%@”";
 "rewrite.reword.help" = "Sustituye el mensaje del commit seleccionado. Los commits posteriores también se reescriben.";
 "rewrite.error.changed" = "La rama cambió antes de reescribir";
-"rewrite.error.changed.help" = "Los commits de la rama ya no coinciden con lo mostrado. No se reescribió nada. Actualizar el historial y volver a intentarlo.";
+"rewrite.error.changed.help" = "Los commits de la rama ya no coinciden con lo mostrado. No se reescribió nada. Actualiza el historial y vuelve a intentarlo.";
 "rewrite.error.merges" = "Commits de fusión en el rango";
-"rewrite.error.merges.help" = "Los commits que se reescriben incluyen un commit de fusión, que quedaría aplanado. Elegir commits posteriores a la última fusión.";
+"rewrite.error.merges.help" = "Los commits que se reescriben incluyen un commit de fusión, que quedaría aplanado. Elige commits posteriores a la última fusión.";
 "rewrite.error.notInHead" = "Commits fuera de la rama actual";
 "rewrite.error.notInHead.help" = "Los commits seleccionados deben estar todos en una misma línea del historial de HEAD.";
 "rewrite.error.root" = "No se puede editar el commit raíz";
@@ -1312,17 +1312,17 @@
 "rewrite.error.autosquash" = "Nada que combinar automáticamente";
 "rewrite.error.autosquash.help" = "Ningún commit reciente está marcado con fixup!, squash! o amend! para un commit anterior.";
 "rewrite.error.selection" = "Selección no válida";
-"rewrite.error.selection.help" = "Seleccionar al menos dos commits para combinar y un destino que no esté entre los commits seleccionados.";
+"rewrite.error.selection.help" = "Selecciona al menos dos commits para combinar y un destino que no esté entre los commits seleccionados.";
 "rewrite.checkout.menu" = "Hacer checkout de una revisión…";
 "rewrite.rebaseOnto.menu" = "Hacer rebase en otra base…";
 "rewrite.reset.menu" = "Restablecer HEAD a una revisión…";
-"conflict.hint.rebase.edit" = "Dividir o reescribir este commit creando commits nuevos con **Hacer commit** y, después, hacer clic en **Terminar edición** para continuar el rebase.";
-"conflict.hint.rebase.pending" = "Este rebase interactivo aún no ha procesado ningún commit. Hacer clic en **Abortar** para cancelarlo.";
-"rewrite.squash.confirm.one" = "¿Combinar el commit «%@» en «%@»?";
-"rewrite.fixup.confirm.one" = "¿Incorporar «%@» en «%@» y conservar solo el mensaje del destino?";
-"rewrite.drop.confirm.one" = "¿Eliminar «%@» de la rama actual?";
-"rewrite.move.confirm.one" = "¿Mover «%@» a la nueva posición?";
-"rewrite.rebaseOnto.confirm.one" = "¿Hacer rebase de «%@» en la nueva base?";
+"conflict.hint.rebase.edit" = "Divide o reescribe este commit creando commits nuevos con **Hacer commit** y, después, haz clic en **Terminar edición** para continuar el rebase.";
+"conflict.hint.rebase.pending" = "Este rebase interactivo aún no ha procesado ningún commit. Haz clic en **Abortar** para cancelarlo.";
+"rewrite.squash.confirm.one" = "¿Combinar el commit “%@” en “%@”?";
+"rewrite.fixup.confirm.one" = "¿Incorporar “%@” en “%@” y conservar solo el mensaje del destino?";
+"rewrite.drop.confirm.one" = "¿Eliminar “%@” de la rama actual?";
+"rewrite.move.confirm.one" = "¿Mover “%@” a la nueva posición?";
+"rewrite.rebaseOnto.confirm.one" = "¿Hacer rebase de “%@” en la nueva base?";
 "rewrite.rebaseOnto.partial.help.one" = "Vuelve a aplicar el commit seleccionado sobre la nueva base. Los commits no seleccionados del mismo rango se quitan de la rama actual.";
 /* 同步、自动获取与变基。 */
 "sync.sync" = "Sincronizar";
@@ -1395,7 +1395,7 @@
 "sync.lease.overwritten.zero" = "Este push no sobrescribe commits en la rama remota.";
 "sync.lease.overwritten.one" = "Este push sobrescribe 1 commit en la rama remota.";
 "sync.lease.matches" = "La rama remota está en la versión que tenía esta rama antes de reescribir su historial.";
-"sync.lease.same" = "Ambas ramas están en el mismo commit, así que no hay nada que enviar.";
+"sync.lease.same" = "Ambas ramas están en el mismo commit, así que no hay nada de lo que hacer push.";
 "sync.lease.differs" = "La rama remota no está en la versión que tenía esta rama antes de reescribir su historial. Comprueba que es la versión que quieres sobrescribir.";
 "sync.lease.newer" = "La rama remota tiene %d commits que esta rama nunca contuvo. Comprueba que quieres sobrescribirlos.";
 "sync.lease.newer.one" = "La rama remota tiene 1 commit que esta rama nunca contuvo. Comprueba que quieres sobrescribirlo.";
@@ -1442,7 +1442,7 @@
 "branch.parentOption" = "Rama padre:";
 "branch.parentOption.none" = "Sin rama padre";
 "branch.parentOption.help" = "Las comparaciones y actualizaciones de la nueva rama usan la rama padre como base.";
-"branch.pin.help" = "Añade la rama a la sección «Fijadas» de la barra lateral.";
+"branch.pin.help" = "Añade la rama a la sección “Fijadas” de la barra lateral.";
 "branch.remoteField" = "Rama remota:";
 "branch.rename" = "Renombrar rama";
 "branch.rename.message" = "Introduce un nuevo nombre para la rama local.";
@@ -1499,8 +1499,8 @@
 "tag.publish.message" = "Crea la etiqueta local elegida en el remoto elegido.";
 "tag.publishMenu" = "Publicar “%@”…";
 "tag.publishMainMenu" = "Publicar etiqueta…";
-"tag.pushToMenu" = "Enviar “%@” a…";
-"tag.pushAll" = "Enviar todas las etiquetas a “%@”";
+"tag.pushToMenu" = "Hacer push de “%@” a…";
+"tag.pushAll" = "Hacer push de todas las etiquetas a “%@”";
 "tag.local" = "Etiqueta local:";
 "tag.noTags" = "Este repositorio no tiene etiquetas locales.";
 "tag.delete" = "Eliminar etiqueta";
@@ -1530,39 +1530,39 @@
 "remote.deleteMultiple.message" = "Quita %ld remotos y sus ramas remotas de este repositorio. Los repositorios de los servidores no cambian.";
 "remote.editConnection" = "Editar ajustes de conexión…";
 "remote.viewInBrowser" = "Ver “%@” en el navegador";
-"remote.fetchURL.edit" = "Editar URL de obtención";
-"remote.fetchURL.edit.message" = "Introduce la URL que se usa para obtener de “%@”. La conexión se comprueba antes del cambio.";
-"remote.pushURL.edit" = "Editar URL de envío";
-"remote.pushURL.edit.message" = "Introduce la URL que se usa para enviar a “%@”. La conexión se comprueba antes del cambio.";
-"remote.pushURL.unset" = "Quitar URL de envío";
+"remote.fetchURL.edit" = "Editar URL de fetch";
+"remote.fetchURL.edit.message" = "Introduce la URL que se usa para hacer fetch de “%@”. La conexión se comprueba antes del cambio.";
+"remote.pushURL.edit" = "Editar URL de push";
+"remote.pushURL.edit.message" = "Introduce la URL que se usa para hacer push a “%@”. La conexión se comprueba antes del cambio.";
+"remote.pushURL.unset" = "Quitar URL de push";
 "remote.pushURL.unset.submit" = "Quitar";
-"remote.pushURL.unset.confirm" = "El envío volverá a usar la URL de obtención.";
+"remote.pushURL.unset.confirm" = "El push volverá a usar la URL de fetch.";
 "remote.refspec" = "Refspec:";
-"remote.refspec.addFetch" = "Añadir refspec de obtención";
-"remote.refspec.addFetch.message" = "Añade una refspec que “%@” usa al obtener.";
-"remote.refspec.addPush" = "Añadir refspec de envío";
-"remote.refspec.addPush.message" = "Añade una refspec que “%@” usa al enviar.";
-"remote.refspec.editFetch" = "Editar refspec de obtención";
-"remote.refspec.editFetch.message" = "Cambia una refspec que “%@” usa al obtener.";
-"remote.refspec.editPush" = "Editar refspec de envío";
-"remote.refspec.editPush.message" = "Cambia una refspec que “%@” usa al enviar.";
+"remote.refspec.addFetch" = "Añadir refspec de fetch";
+"remote.refspec.addFetch.message" = "Añade una refspec que “%@” usa al hacer fetch.";
+"remote.refspec.addPush" = "Añadir refspec de push";
+"remote.refspec.addPush.message" = "Añade una refspec que “%@” usa al hacer push.";
+"remote.refspec.editFetch" = "Editar refspec de fetch";
+"remote.refspec.editFetch.message" = "Cambia una refspec que “%@” usa al hacer fetch.";
+"remote.refspec.editPush" = "Editar refspec de push";
+"remote.refspec.editPush.message" = "Cambia una refspec que “%@” usa al hacer push.";
 "remote.refspec.add.submit" = "Añadir refspec";
 "remote.refspec.edit.submit" = "Actualizar refspec";
-"remote.refspec.deleteFetch" = "Eliminar refspec de obtención";
-"remote.refspec.deletePush" = "Eliminar refspec de envío";
+"remote.refspec.deleteFetch" = "Eliminar refspec de fetch";
+"remote.refspec.deletePush" = "Eliminar refspec de push";
 "remote.refspec.delete.confirm" = "¿Eliminar la refspec “%@”?";
-"remote.skipFetchAll" = "Omitir en la obtención automática y en “Obtener todo”";
-"remote.skipFetchAll.title" = "Cambiar opciones de obtención";
+"remote.skipFetchAll" = "Omitir en “Fetch automático” y en “Hacer fetch de todos los remotos”";
+"remote.skipFetchAll.title" = "Cambiar opciones de fetch";
 "remote.page" = "Ajustes del remoto";
 "remote.page.general" = "General";
 "remote.page.branches" = "Ramas";
-"remote.field.fetchURL" = "URL de obtención";
-"remote.field.pushURL" = "URL de envío";
+"remote.field.fetchURL" = "URL de fetch";
+"remote.field.pushURL" = "URL de push";
 "remote.field.options" = "Opciones";
-"remote.field.fetchRefspecs" = "Refspecs de obtención";
-"remote.field.pushRefspecs" = "Refspecs de envío";
-"remote.group.fetch" = "Obtención";
-"remote.group.push" = "Envío";
+"remote.field.fetchRefspecs" = "Refspecs de fetch";
+"remote.field.pushRefspecs" = "Refspecs de push";
+"remote.group.fetch" = "Fetch";
+"remote.group.push" = "Push";
 "remote.action.edit" = "Editar";
 "remote.action.set" = "Establecer";
 "remote.action.unset" = "Quitar";
@@ -1700,7 +1700,7 @@
 "rewrite.menu.squashMany" = "Combinar %ld revisiones…";
 "rewrite.menu.fixupMany" = "Fixup de %ld revisiones…";
 "history.createBranch" = "Crear rama desde “%@”…";
-"history.createBranchGeneric" = "Crear rama…";
+"history.createBranchGeneric" = "Crear nueva rama…";
 "history.rollback" = "Retroceder";
 "history.diffTool" = "Comparar";
 
@@ -1732,8 +1732,8 @@
 /* 撤销与重做：Edit 菜单项、不可用的原因与拒绝恢复时的说明。 */
 "menu.undo" = "Deshacer";
 "menu.redo" = "Rehacer";
-"undo.cannotUndo" = "No se puede deshacer «%@»";
-"undo.cannotRedo" = "No se puede rehacer «%@»";
+"undo.cannotUndo" = "No se puede deshacer “%@”";
+"undo.cannotRedo" = "No se puede rehacer “%@”";
 "undo.unavailable" = "%1$@ (%2$@)";
 "undo.reason.busy" = "Operación en curso";
 "undo.reason.disconnected" = "Sin conexión";
@@ -1745,9 +1745,9 @@
 "undo.error.hidden" = "Algunos archivos tienen cambios ocultos";
 "undo.error.hidden.help" = "Hay archivos marcados como assume-unchanged con cambios locales, o el repositorio usa skip-worktree. No se ha cambiado nada.";
 "undo.error.inProgress" = "Hay una operación en curso";
-"undo.error.inProgress.help" = "Terminar o cancelar primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
+"undo.error.inProgress.help" = "Termina o aborta primero la fusión, el rebase, el cherry-pick o el revert. No se ha cambiado nada.";
 "undo.error.conflicts" = "El repositorio tiene conflictos sin resolver";
-"undo.error.conflicts.help" = "Resolver primero los conflictos. No se ha cambiado nada.";
+"undo.error.conflicts.help" = "Resuelve primero los conflictos. No se ha cambiado nada.";
 "undo.error.trash" = "No se pueden restaurar desde la papelera";
 "undo.error.trash.help" = "Algunos archivos trasladados a la papelera ya no están allí, o ahora hay otros archivos en su ubicación original. No se ha cambiado nada.";
 
@@ -1765,7 +1765,7 @@
 "reflog.cherryPick" = "Cherry-pick de “%@”…";
 "reflog.restore.title" = "Restaurar rama";
 "reflog.restore.submit" = "Restaurar";
-"reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el área de preparación no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";
+"reflog.restore.message" = "¿Mover la rama “%1$@” a %2$@ en %3$@? La copia de trabajo y el índice no cambian. Los commits que salen de la rama se siguen encontrando en el reflog.";
 
 "appearance.system" = "Automático";
 "appearance.light" = "Claro";
@@ -1815,7 +1815,7 @@
 "gitConfig.allowedSigners.none" = "Sin archivo allowed signers";
 "gitConfig.allowedSigners.select" = "Seleccionar archivo allowed signers…";
 "gitConfig.signCommits" = "Firmar los commits";
-"gitConfig.ensureEmailMatch" = "Comprobar que el correo de la clave GPG coincide con el del autor del commit";
+"gitConfig.ensureEmailMatch" = "Comprobar que el correo de la clave GPG coincide con el del committer";
 "gitConfig.invalidGPG" = "Programa GPG no válido";
 "gitConfig.invalidGPG.message" = "El programa en %@ no es un programa GnuPG válido.";
 "gitConfig.outdatedGPG" = "No se puede usar este binario de GPG";
@@ -1823,7 +1823,7 @@
 "gitConfig.invalidSSH" = "Programa de firma SSH no válido";
 "gitConfig.invalidSSH.message" = "El programa en %@ no existe o no se puede ejecutar.";
 "gitConfig.emailMismatch" = "El correo de la clave de firma no coincide con el del usuario de Git";
-"gitConfig.emailMismatch.message" = "El correo de la clave de firma «%@» no coincide con el del usuario de Git «%@». Algunos servicios no verifican la firma si son distintos.";
+"gitConfig.emailMismatch.message" = "El correo de la clave de firma “%@” no coincide con el del usuario de Git “%@”. Algunos servicios no verifican la firma si son distintos.";
 "gitConfig.error.read" = "No se puede leer la configuración global de Git";
 "gitConfig.error.write" = "No se puede guardar la configuración global de Git";
 
@@ -1856,7 +1856,7 @@
 "settings.sshAgent.system" = "Agente SSH del sistema";
 "settings.sshAgent.description" = "El agente SSH seleccionado se usará para las conexiones remotas SSH y las firmas SSH.";
 "settings.sshAgent.warning" = "El agente SSH no está en ejecución";
-"settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reiniciar el Mac.";
+"settings.sshAgent.warning.system" = "El agente SSH del sistema no está disponible. Reinicia el Mac.";
 
 /* Settings → Git Config 的 Git 程序一行，以及所选程序不在时打开仓库的错误。 */
 "settings.gitProgram" = "Binario de Git:";
@@ -1869,7 +1869,7 @@
 "settings.gitProgram.rejected.notGit" = "“%@” no es un binario de Git.";
 "settings.gitProgram.rejected.version" = "“%1$@” es Git %2$@. Spooky requiere Git %3$@ o posterior.";
 "error.gitProgram" = "No se encuentra el binario de Git";
-"error.gitProgramHelp" = "Elegir otro binario de Git en Ajustes. La ruta que no se ha podido ejecutar se muestra debajo.";
+"error.gitProgramHelp" = "Elige otro binario de Git en Ajustes. La ruta que no se ha podido ejecutar se muestra debajo.";
 
 "settings.environment" = "Entorno";
 
@@ -1890,7 +1890,7 @@
 "externalTool.error.help" = "Comprueba que la herramienta de comparación o de fusión elegida en Ajustes está instalada y vuelve a intentarlo. Los detalles se muestran abajo.";
 "externalTool.fileChanged" = "Archivo modificado en otro lugar";
 "externalTool.fileChanged.message" = "“%1$@” en %2$@ ha cambiado después de pasarlo a la app externa. ¿Quieres reemplazarlo por la versión editada?";
-"externalTool.overwrite" = "Reemplazar";
+"externalTool.overwrite" = "Sobrescribir";
 "externalTool.noResult" = "No hay resultado de la fusión";
 "externalTool.noResult.message" = "%2$@ no guardó ningún resultado para “%1$@”, así que el conflicto sigue sin resolver.";
 "externalTool.notApplied" = "No se escribió el resultado de la fusión";
@@ -2012,7 +2012,7 @@
 "bookmarks.detail.branch" = "Rama actual";
 "bookmarks.detail.lastCommit" = "Último commit";
 "bookmarks.detail.lastOpened" = "Última apertura";
-"bookmarks.detail.identity" = "Identidad del autor del commit";
+"bookmarks.detail.identity" = "Identidad del committer";
 "bookmarks.detail.description" = "Descripción";
 "bookmarks.detail.remotes" = "Remotos";
 "bookmarks.detail.viewInBrowser" = "Ver en el navegador";
@@ -2029,7 +2029,7 @@
 "bookmarks.description.edit" = "Editar la descripción del repositorio";
 "bookmarks.description.message" = "Escribe una descripción para este repositorio.";
 "bookmarks.description.label" = "Descripción:";
-"bookmarks.identity.edit" = "Editar la identidad del autor del commit";
+"bookmarks.identity.edit" = "Editar la identidad del committer";
 "bookmarks.identity.message" = "Este nombre y este correo solo se aplican a este repositorio. Los valores globales se definen en Ajustes → Git Config.";
 "bookmarks.identity.name" = "Nombre:";
 "bookmarks.identity.namePrompt" = "Nombre completo";
@@ -2108,7 +2108,7 @@
 "quickActions.openWorktree" = "Abrir worktree";
 "quickActions.openWorktreeInNewWindow" = "Abrir worktree en una ventana nueva";
 "quickActions.showRemoteSettings" = "Mostrar ajustes del remoto";
-"quickActions.setCommitter" = "Establecer como identidad de commit";
+"quickActions.setCommitter" = "Establecer como identidad del committer";
 "quickActions.setGlobalUser" = "Establecer como usuario global";
 "quickActions.setGlobalUser.submit" = "Establecer";
 "quickActions.setGlobalUser.local" = "Escribe user.name y user.email en la configuración global de Git de este Mac. Los repositorios sin identidad propia la usan para hacer commits.";
@@ -2233,7 +2233,7 @@
 "whatsNew.entry.subtitle" = "Ver las notas de la versión completas";
 "whatsNew.unread" = "No leído";
 "whatsNew.detail.title" = "Notas de la versión – Versión %@";
-"whatsNew.empty" = "Seleccionar una versión para ver sus notas de la versión.";
+"whatsNew.empty" = "Selecciona una versión para ver sus notas de la versión.";
 "whatsNew.card.title" = "Novedades de Spooky";
 "whatsNew.card.message" = "Consulta los cambios de la versión %@.";
 "whatsNew.card.learnMore" = "Más información…";
@@ -2413,7 +2413,7 @@
 "submodule.update.message" = "Hace checkout del submódulo en la revisión registrada en el índice de este repositorio.";
 "submodule.update.message.all" = "Hace checkout de cada submódulo en la revisión registrada en el índice de este repositorio.";
 "submodule.update.message.updated" = "El submódulo tiene %1$@ en checkout, pero el índice de este repositorio registra %2$@. Al actualizar se hace checkout de la revisión registrada.";
-"submodule.update.recursive" = "Submódulos recursivos";
+"submodule.update.recursive" = "Recorrer los submódulos";
 "submodule.update.recursive.help" = "También actualiza los submódulos anidados. Sus remotos deben ser accesibles con credenciales ya configuradas.";
 "submodule.update.submit" = "Actualizar";
 "submodule.updateAll" = "Actualizar todos los submódulos";
@@ -2448,13 +2448,13 @@
 "worktree.destination" = "Destino:";
 "worktree.destination.exists" = "“%@” ya existe en el destino seleccionado. Elige otro destino.";
 "worktree.detach" = "Desacoplar HEAD";
-"worktree.detach.help" = "El árbol de trabajo tendrá un HEAD separado basado en la revisión inicial seleccionada.";
+"worktree.detach.help" = "El worktree tendrá un HEAD desacoplado basado en la revisión inicial seleccionada.";
 "worktree.field.branch" = "Rama";
 "worktree.field.name" = "Nombre";
 "worktree.field.path" = "Ruta";
 "worktree.field.revision" = "Revisión actual";
 "worktree.force" = "Forzar";
-"worktree.force.help" = "Crea un árbol de trabajo para la revisión inicial indicada aunque ya esté extraída en otro árbol de trabajo.";
+"worktree.force.help" = "Crea un worktree para la revisión inicial indicada aunque ya se haya hecho checkout de ella en otro worktree.";
 "worktree.group" = "Worktrees";
 "worktree.invalid" = "Worktree no válido";
 "worktree.invalid.message" = "El worktree no es válido.";
@@ -2736,8 +2736,8 @@
 "pullRequests.contributors.one" = "1 colaborador";
 "pullRequests.contributors.none" = "Aún no hay colaboradores.";
 "pullRequests.contributors.commits" = "%ld commits";
-"pullRequests.copyCommitHash" = "Copiar hash del commit";
-"pullRequests.copyCommitHashes" = "Copiar hashes de %ld commits";
+"pullRequests.copyCommitHash" = "Copiar el hash del commit al portapapeles";
+"pullRequests.copyCommitHashes" = "Copiar %ld hashes de commits al portapapeles";
 "pullRequests.conversation" = "Conversación";
 "pullRequests.deleteBranch" = "Eliminar la rama tras fusionar";
 "pullRequests.description" = "Descripción:";
@@ -2746,7 +2746,7 @@
 "pullRequests.error.branchMismatch.help" = "Una rama local con este nombre apunta a otro commit. Elige otro nombre para crear una rama nueva.";
 "pullRequests.error.sameBranch" = "La rama de origen y la de destino no pueden ser la misma.";
 "pullRequests.fetch" = "Hacer fetch";
-"pullRequests.fetch.title" = "Commits sin obtener";
+"pullRequests.fetch.title" = "Commits sin fetch";
 "pullRequests.fetch.message" = "Los commits de %1$@ aún no están en este repositorio. Haz fetch desde “%2$@” para ver sus commits y cambios.";
 "pullRequests.header.info" = "%1$@ quiere fusionar %2$@ en %3$@ desde %4$@";
 "pullRequests.header.direction" = "%1$@ quiere fusionar en %2$@ desde %3$@";
@@ -2775,7 +2775,7 @@
 "pullRequests.save" = "Guardar cambios";
 "pullRequests.showCommit" = "Mostrar el commit “%@”";
 "pullRequests.source" = "Origen:";
-"pullRequests.squash" = "Hacer squash de los commits";
+"pullRequests.squash" = "Combinar los commits";
 "pullRequests.state.closed" = "Cerrada";
 "pullRequests.state.draft" = "Borrador";
 "pullRequests.state.merged" = "Fusionada";
@@ -2799,7 +2799,7 @@
 "publish.visibility.internal" = "Interno";
 "publish.visibility.public" = "Público";
 "publish.remote" = "Nombre del remoto:";
-"publish.target" = "URL del remoto:";
+"publish.target" = "URL remota:";
 "publish.push" = "Hace push de todas las ramas locales y etiquetas a “%@”. Las ramas sin upstream siguen su nueva rama remota.";
 "publish.exists" = "“%1$@” ya existe en %2$@. Elige otro nombre; los repositorios existentes no se sobrescriben.";
 "publish.push.title" = "Añadir remoto y hacer push";
