@@ -8,11 +8,11 @@ description: "合并与变基分支，开始前预览冲突，用父分支更新
 - 合并把两段历史接到一起，通常会多一个合并提交。
 - 变基把你的提交挪到另一个分支的提交后面。历史保持一条直线，但你的提交会被改写。
 
-工具栏上并排放着 :ui[sync.merge] 与 :ui[sync.rebaseHead]。:ui[workspace.title] 菜单里也能开始这两个操作。
+这两个操作都从 :ui[workspace.title] 菜单开始。想把 :ui[sync.merge] 与 :ui[sync.rebaseHead] 放到工具栏上，选 :ui[menu.view > menu.customizeToolbar]，把它们拖上去。
 
 ## 合并 {#merge}
 
-1. 点工具栏上的 :ui[sync.merge]，或者选 :ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）。也可以在侧边栏里右键点按当前所在的分支，选 :ui[workspace.mergeMenu]，或者把另一个分支拖到它上面。
+1. 选 :ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）。也可以在侧边栏里右键点按当前所在的分支，选 :ui[workspace.mergeMenu]，或者把另一个分支拖到它上面。
 2. 在 :ui[branch.target] 里选要合并的内容：本地分支、远端分支或标签。一开始是当前分支的上游。
 3. 选择怎么提交：
    - :ui[merge.squash]：把全部改动暂存起来，由你自己做成一个提交，不生成合并提交。
@@ -32,7 +32,7 @@ Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.v
 
 ## 变基 {#rebase}
 
-1. 点工具栏上的 :ui[sync.rebaseHead]，或者选 :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）。也可以右键点按当前所在的分支，选 :ui[workspace.rebaseMenu]。
+1. 选 :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）。也可以右键点按当前所在的分支，选 :ui[workspace.rebaseMenu]。
 2. 在 :ui[branch.target] 里选要变基到哪个分支上。一开始是当前分支的上游。
 3. 看一下预览，需要的话勾选 :ui[sync.skipHooks]。
 4. 点 :ui[sync.rebaseHead]。
@@ -66,7 +66,7 @@ Spooky 会记住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 与 :ui[merge.v
 
 ## 快速版本 {#quick}
 
-按住 <kbd>⌥</kbd>，工具栏上的 :ui[sync.merge] 与 :ui[sync.rebaseHead] 会变成 :ui[sync.quickMerge] 与 :ui[sync.quickRebase]。它们不弹对话框，直接执行：
+按住 <kbd>⌥</kbd>，加到工具栏上的 :ui[sync.merge] 与 :ui[sync.rebaseHead] 会变成 :ui[sync.quickMerge] 与 :ui[sync.quickRebase]。它们不弹对话框，直接执行：
 
 - :ui[sync.quickMerge] 合并当前分支的上游。
 - :ui[sync.quickRebase] 把当前分支变基到它的上游上。

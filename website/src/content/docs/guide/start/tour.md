@@ -54,17 +54,17 @@ From left to right, the toolbar has these buttons:
 
 - :ui[toolbar.bookmarks]: back to the Repositories view
 - :ui[toolbar.previous] and :ui[toolbar.next]: move back and forward through the views you visited
-- :ui[toolbar.quickActions]: see [Quick Actions](#quick-actions)
+- :ui[toolbar.finder] and :ui[toolbar.terminal]: show the repository folder in Finder, or open it in a terminal
 - :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push]: exchange commits with remotes
-- :ui[toolbar.synchronize]: fetch, pull, and push the current branch in one go
-- :ui[sync.merge] and :ui[sync.rebaseHead]: combine the current branch with another branch
+- :ui[toolbar.forcePush]: replace a remote branch with yours after you rewrite commits
 - :ui[toolbar.applyStash] and :ui[toolbar.saveStash]: bring back changes you set aside, or set your current changes aside
+- :ui[toolbar.createBranch]: start a new branch
 - :ui[action.refresh]: read the repository again
 - :ui[action.search]: filter the list of the current view
 
-Hold <kbd>⌥</kbd> and the buttons from :ui[sync.fetch] to :ui[sync.rebaseHead] become quick versions, such as :ui[sync.quickPush]. A quick version works with the tracking branch right away, without opening a dialog.
+Hold <kbd>⌥</kbd> and :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] become quick versions, such as :ui[sync.quickPush]. A quick version works with the tracking branch right away, without opening a dialog.
 
-:ui[toolbar.clone] appears while you have recent clones. See [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder], and :ui[toolbar.terminal].
+:ui[toolbar.clone] appears while you have recent clones. See [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] and :ui[sync.rebaseHead], and :ui[toolbar.pushTo].
 
 ### The three columns {#columns}
 
@@ -74,7 +74,7 @@ The right column shows the details of what you select in the middle. In :ui[work
 
 ### Quick Actions {#quick-actions}
 
-Click :ui[toolbar.quickActions] or press <kbd>⇧⌘A</kbd> to open a panel. Type to find a view, a branch, a file, or a commit, then run an action on it without leaving the keyboard. [Windows and Navigation](/guide/repositories/navigation/) explains what it finds and which keys it uses.
+Choose :ui[menu.file > quickActions.menu] or press <kbd>⇧⌘A</kbd> to open a panel. Type to find a view, a branch, a file, or a commit, then run an action on it without leaving the keyboard. [Windows and Navigation](/guide/repositories/navigation/) explains what it finds and which keys it uses.
 
 ## See also
 

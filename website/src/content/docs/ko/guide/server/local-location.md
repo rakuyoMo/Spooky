@@ -12,7 +12,7 @@ Finder는 Mac에 있는 폴더만 보여 줄 수 있습니다. 서버 저장소�
 :ui[action.revealFinder]는 서버 저장소에서 항상 사용할 수 있습니다. 다음 위치에 있습니다.
 
 - :ui[menu.file] 메뉴
-- 도구 막대의 :ui[toolbar.finder]. 추가하려면 :ui[menu.view > menu.customizeToolbar]를 선택하고 도구 막대로 드래그합니다.
+- 도구 막대의 :ui[toolbar.finder]
 - 사이드바의 :ui[workspace.title] 행을 오른쪽 클릭했을 때
 - [빠른 동작](/guide/repositories/navigation/#quick-actions)
 - 저장소 윈도우에서 서버 저장소를 오른쪽 클릭했을 때

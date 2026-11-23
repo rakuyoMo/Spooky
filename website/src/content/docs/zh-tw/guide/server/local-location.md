@@ -12,7 +12,7 @@ Finder 只能顯示 Mac 上的資料夾，伺服器儲存庫的檔案卻在伺�
 在伺服器儲存庫裡，:ui[action.revealFinder] 一直可以按。它在這些地方：
 
 - :ui[menu.file] 選單
-- 工具列上的 :ui[toolbar.finder]。要把它加進工具列，選 :ui[menu.view > menu.customizeToolbar]，把它拖上去。
+- 工具列上的 :ui[toolbar.finder]
 - 在側邊欄的 :ui[workspace.title] 一列上按右鍵
 - [快速操作](/guide/repositories/navigation/#quick-actions)
 - 在儲存庫管理視窗裡對伺服器儲存庫按右鍵

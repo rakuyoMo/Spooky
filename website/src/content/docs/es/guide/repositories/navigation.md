@@ -42,7 +42,7 @@ Si vas atrás y después abres algo nuevo, los lugares a los que podías ir haci
 
 ## Acciones rápidas {#quick-actions}
 
-Las acciones rápidas te permiten encontrar algo escribiendo y actuar sobre ello sin soltar el teclado. Están disponibles mientras se muestra un repositorio. Selecciona :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>) o haz clic en :ui[toolbar.quickActions] en la barra de herramientas.
+Las acciones rápidas te permiten encontrar algo escribiendo y actuar sobre ello sin soltar el teclado. Están disponibles mientras se muestra un repositorio. Selecciona :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>).
 
 ::screenshot[Las acciones rápidas abiertas sobre una ventana de repositorio, con “dark” escrito. El primer resultado, la rama feature/dark-mode, está seleccionado y muestra su acción predeterminada y la indicación para ver más acciones. Debajo están la rama remota origin/feature/dark-mode, la apariencia oscura, el tema predeterminado (oscuro) y dos commits cuyos mensajes mencionan dark.]{name="quick-actions" frame="window"}
 

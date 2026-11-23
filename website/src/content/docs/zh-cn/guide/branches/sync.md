@@ -9,7 +9,7 @@ description: "获取、拉取与推送，首次发布分支，同步、安全强
 - 拉取：获取一个远端分支，再把它的提交并进当前所在的分支。
 - 推送：把你的提交发到远端分支上。
 
-工具栏上并排放着 :ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push]，旁边是 :ui[sync.sync]。:ui[menu.repository] 菜单里也有这些操作。
+工具栏上并排放着 :ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push]，旁边是 :ui[toolbar.forcePush]。这些操作和 :ui[sync.sync] 都在 :ui[menu.repository] 菜单里。
 
 获取、拉取、推送与同步不会记进撤销记录，所以撤销不了。发布分支可以撤销。
 
@@ -83,7 +83,7 @@ Spooky 会记住标签与子模块这两个选项。
 
 同步会对当前分支依次获取、拉取、推送。
 
-1. 点工具栏上的 :ui[sync.sync]，或者选 :ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）。
+1. 选 :ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）。
 2. 在 :ui[sync.remoteBranch] 里选分支。一开始是当前分支的上游。
 3. 需要的话勾选 :ui[sync.rebase]。下方的预览会告诉你拉取会不会遇到冲突。
 4. 设置选项：:ui[merge.verify]、:ui[sync.pushAllTags]、:ui[sync.pushSubmodules] 与 :ui[sync.skipHooks] 的作用和拉取、推送时一样。
@@ -110,7 +110,7 @@ Spooky 会记住标签与子模块这两个选项。
 
 Spooky 只做安全强推：只有远端分支还停在你上次获取时的位置，推送才会成功。这期间有人推送过的话，Git 会拒绝，什么都不会被覆盖。Spooky 不会退回到没有保护的强推。
 
-1. 选 :ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>），或者右键点按一个本地分支，在菜单里选这一项。
+1. 点工具栏上的 :ui[toolbar.forcePush]，或者选 :ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>）。也可以右键点按一个本地分支，在菜单里选这一项。
 2. 在 :ui[branch.target] 里选本地分支，在 :ui[sync.destination] 里选远端分支。
 3. 看一下下方的比对。它会说明推送后远端分支新增几个提交、有几个提交被覆盖。接着：
    - 绿色的一行表示远端分支正是你的分支改写前的版本。通常都是这样。
@@ -125,12 +125,12 @@ Spooky 只做安全强推：只有远端分支还停在你上次获取时的位�
 推送对话框里的 :ui[sync.forcePush] 选项用的是同样的保护。
 
 :::tip
-可以用 :ui[menu.view > menu.customizeToolbar] 把 :ui[toolbar.forcePush] 与 :ui[toolbar.pushTo] 加到工具栏上。
+可以用 :ui[menu.view > menu.customizeToolbar] 把 :ui[toolbar.synchronize] 与 :ui[toolbar.pushTo] 加到工具栏上。
 :::
 
 ## 快速版本 {#quick}
 
-按住 <kbd>⌥</kbd>，工具栏上的 :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] 与 :ui[sync.sync] 会变成 :ui[sync.quickFetch]、:ui[sync.quickPull]、:ui[sync.quickPush] 与 :ui[sync.quickSync]。菜单项也一样会变，比如 :ui[sync.quickPushMenu]。
+按住 <kbd>⌥</kbd>，工具栏上的 :ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 会变成 :ui[sync.quickFetch]、:ui[sync.quickPull] 与 :ui[sync.quickPush]。:ui[sync.sync] 加到工具栏上之后，也会变成 :ui[sync.quickSync]。菜单项也一样会变，比如 :ui[sync.quickPushMenu]。
 
 快速版本不弹对话框，直接执行：
 

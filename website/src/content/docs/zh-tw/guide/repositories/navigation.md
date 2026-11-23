@@ -42,7 +42,7 @@ description: "使用視窗與標籤頁、上一頁與下一頁、快速操作、
 
 ## 快速操作 {#quick-actions}
 
-快速操作讓你輸入幾個字就找到想要的東西，直接對它執行操作，手不用離開鍵盤。視窗裡顯示著儲存庫時才能用。選 :ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>），或按一下工具列上的 :ui[toolbar.quickActions]。
+快速操作讓你輸入幾個字就找到想要的東西，直接對它執行操作，手不用離開鍵盤。視窗裡顯示著儲存庫時才能用。選 :ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>）。
 
 ::screenshot[快速操作面板蓋在儲存庫視窗上，輸入框裡是「dark」。選取的第一個結果是分支 feature/dark-mode，右側顯示它的預設操作與查看更多操作的提示。下面依序是遠端分支 origin/feature/dark-mode、深色外觀、Default (Dark) 主題，以及兩個說明裡提到 dark 的提交。]{name="quick-actions" frame="window"}
 

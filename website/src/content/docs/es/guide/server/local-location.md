@@ -12,7 +12,7 @@ Esta página explica cómo encuentra o monta Spooky esa carpeta, y cómo abren T
 :ui[action.revealFinder] está siempre disponible en un repositorio de servidor. Lo encontrarás en estos lugares:
 
 - El menú :ui[menu.file]
-- :ui[toolbar.finder] en la barra de herramientas. Para añadirlo, selecciona :ui[menu.view > menu.customizeToolbar] y arrástralo a la barra de herramientas.
+- :ui[toolbar.finder] en la barra de herramientas
 - La fila :ui[workspace.title] de la barra lateral, al hacer clic derecho en ella
 - Las [acciones rápidas](/guide/repositories/navigation/#quick-actions)
 - La ventana Repositorios, al hacer clic derecho en un repositorio de servidor

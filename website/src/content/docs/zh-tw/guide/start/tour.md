@@ -54,17 +54,17 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 
 - :ui[toolbar.bookmarks]：回到儲存庫管理
 - :ui[toolbar.previous] 與 :ui[toolbar.next]：在去過的視圖之間往回、往前
-- :ui[toolbar.quickActions]：見 [快速操作](#quick-actions)
+- :ui[toolbar.finder] 與 :ui[toolbar.terminal]：在 Finder 裡顯示儲存庫資料夾，或在終端機裡開啟它
 - :ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push]：與遠端交換提交
-- :ui[toolbar.synchronize]：對目前分支一次完成擷取、拉取與推送
-- :ui[sync.merge] 與 :ui[sync.rebaseHead]：把目前分支與另一個分支合到一起
+- :ui[toolbar.forcePush]：改寫過提交之後，用你的分支取代遠端分支
 - :ui[toolbar.applyStash] 與 :ui[toolbar.saveStash]：取回收起來的變更，或把目前的變更收起來
+- :ui[toolbar.createBranch]：新增一個分支
 - :ui[action.refresh]：重新讀取儲存庫
 - :ui[action.search]：篩選目前視圖的列表
 
-按住 <kbd>⌥</kbd> 時，從 :ui[sync.fetch] 到 :ui[sync.rebaseHead] 的按鈕會換成快速版本，例如 :ui[sync.quickPush]。快速版本直接對追蹤分支執行，不跳出對話框。
+按住 <kbd>⌥</kbd> 時，:ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 會換成快速版本，例如 :ui[sync.quickPush]。快速版本直接對追蹤分支執行，不跳出對話框。
 
-有最近的複製時，工具列上還會出現 :ui[toolbar.clone]，見 [儲存庫管理視窗](/guide/repositories/manager/)。想增減按鈕，選 :ui[menu.view > menu.customizeToolbar]。除了上面這些，還可以加上 :ui[toolbar.createBranch]、:ui[toolbar.forcePush]、:ui[toolbar.pushTo]、:ui[toolbar.finder] 與 :ui[toolbar.terminal]。
+有最近的複製時，工具列上還會出現 :ui[toolbar.clone]，見 [儲存庫管理視窗](/guide/repositories/manager/)。想增減按鈕，選 :ui[menu.view > menu.customizeToolbar]。除了上面這些，還可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 與 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。
 
 ### 三欄 {#columns}
 
@@ -74,7 +74,7 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 
 ### 快速操作 {#quick-actions}
 
-按一下 :ui[toolbar.quickActions] 或按 <kbd>⇧⌘A</kbd>，會開啟一個面板。輸入文字找到某個視圖、分支、檔案或提交，再對它執行操作，手不用離開鍵盤。它能找到什麼、用哪些按鍵，見 [視窗與導覽](/guide/repositories/navigation/)。
+選 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，會開啟一個面板。輸入文字找到某個視圖、分支、檔案或提交，再對它執行操作，手不用離開鍵盤。它能找到什麼、用哪些按鍵，見 [視窗與導覽](/guide/repositories/navigation/)。
 
 ## 相關頁面
 

@@ -42,7 +42,7 @@ description: "ウインドウとタブ、戻ると進む、クイックアクシ
 
 ## クイックアクション {#quick-actions}
 
-クイックアクションでは、入力して目的のものを探し、キーボードから手を離さずに操作できます。リポジトリを表示している間に使えます。:ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>）を選ぶか、ツールバーの :ui[toolbar.quickActions] をクリックします。
+クイックアクションでは、入力して目的のものを探し、キーボードから手を離さずに操作できます。リポジトリを表示している間に使えます。:ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>）を選びます。
 
 ::screenshot[リポジトリのウインドウの上に開いたクイックアクション。「dark」と入力されています。最初の結果であるブランチ feature/dark-mode が選択されていて、デフォルトのアクションと、ほかのアクションを表示するためのヒントが表示されています。その下に、リモートブランチ origin/feature/dark-mode、ダークの外観、Default (Dark) テーマ、メッセージに dark を含む 2 つのコミットが並んでいます。]{name="quick-actions" frame="window"}
 

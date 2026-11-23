@@ -8,11 +8,11 @@ description: "ブランチのマージとリベース、始める前の競合の
 - マージは、2 つの履歴をつなぎます。たいていマージコミットができます。
 - リベースは、自分のコミットを別のブランチのコミットの後ろへ移します。履歴は一直線のままですが、自分のコミットは書き換えられます。
 
-ツールバーには :ui[sync.merge] と :ui[sync.rebaseHead] が並んでいます。どちらも :ui[workspace.title] メニューから始めることもできます。
+どちらも :ui[workspace.title] メニューから始めます。:ui[sync.merge] と :ui[sync.rebaseHead] をツールバーに置くには、:ui[menu.view > menu.customizeToolbar] を選んでツールバーにドラッグします。
 
 ## マージ {#merge}
 
-1. ツールバーの :ui[sync.merge] をクリックするか、:ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）を選びます。サイドバーで現在のブランチを右クリックしてメニューから :ui[workspace.mergeMenu] を選ぶか、別のブランチをその上へドラッグすることもできます。
+1. :ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）を選びます。サイドバーで現在のブランチを右クリックしてメニューから :ui[workspace.mergeMenu] を選ぶか、別のブランチをその上へドラッグすることもできます。
 2. :ui[branch.target] でマージするものを選びます。ローカルブランチ、リモートブランチ、タグのどれかです。最初は現在のブランチの上流になっています。
 3. コミットのしかたを選びます。
    - :ui[merge.squash] は、すべての変更をステージして、自分の 1 つのコミットにまとめられるようにします。マージコミットは作りません。
@@ -32,7 +32,7 @@ Spooky は :ui[merge.alwaysCommit]、:ui[merge.autoCommit]、:ui[merge.verify] �
 
 ## リベース {#rebase}
 
-1. ツールバーの :ui[sync.rebaseHead] をクリックするか、:ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）を選びます。現在のブランチを右クリックしてメニューから :ui[workspace.rebaseMenu] を選ぶこともできます。
+1. :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）を選びます。現在のブランチを右クリックしてメニューから :ui[workspace.rebaseMenu] を選ぶこともできます。
 2. :ui[branch.target] でリベース先のブランチを選びます。最初は現在のブランチの上流になっています。
 3. プレビューを確かめて、必要なら :ui[sync.skipHooks] を選択します。
 4. :ui[sync.rebaseHead] をクリックします。
@@ -66,7 +66,7 @@ Spooky は :ui[merge.alwaysCommit]、:ui[merge.autoCommit]、:ui[merge.verify] �
 
 ## クイック版 {#quick}
 
-<kbd>⌥</kbd> を押している間、ツールバーの :ui[sync.merge] と :ui[sync.rebaseHead] は :ui[sync.quickMerge] と :ui[sync.quickRebase] に変わります。ダイアログを出さずにすぐ実行されます。
+<kbd>⌥</kbd> を押している間、ツールバーに追加した :ui[sync.merge] と :ui[sync.rebaseHead] は :ui[sync.quickMerge] と :ui[sync.quickRebase] に変わります。ダイアログを出さずにすぐ実行されます。
 
 - :ui[sync.quickMerge] は、現在のブランチの上流をマージします。
 - :ui[sync.quickRebase] は、現在のブランチをその上流へリベースします。

@@ -42,7 +42,7 @@ Wenn Sie zurückgehen und dann etwas Neues öffnen, entfallen die Orte, zu denen
 
 ## Schnellaktionen {#quick-actions}
 
-Mit den Schnellaktionen finden Sie etwas durch Tippen und bearbeiten es, ohne die Tastatur zu verlassen. Sie sind verfügbar, solange ein Repository angezeigt wird. Wählen Sie :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>) oder klicken Sie in der Symbolleiste auf :ui[toolbar.quickActions].
+Mit den Schnellaktionen finden Sie etwas durch Tippen und bearbeiten es, ohne die Tastatur zu verlassen. Sie sind verfügbar, solange ein Repository angezeigt wird. Wählen Sie :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>).
 
 ::screenshot[Die Schnellaktionen über einem Repository-Fenster, eingegeben ist „dark“. Das erste Ergebnis, der Branch feature/dark-mode, ist ausgewählt und zeigt seine Standardaktion und den Hinweis auf weitere Aktionen. Darunter stehen der Remote-Branch origin/feature/dark-mode, das dunkle Erscheinungsbild, das Thema Default (Dark) und zwei Commits, deren Nachrichten dark erwähnen.]{name="quick-actions" frame="window"}
 

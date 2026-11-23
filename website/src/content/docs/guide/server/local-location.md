@@ -12,7 +12,7 @@ This page covers how Spooky finds or mounts that folder, and how Terminal and ot
 :ui[action.revealFinder] is always available in a server repository. You’ll find it in these places:
 
 - The :ui[menu.file] menu
-- :ui[toolbar.finder] in the toolbar. To add it, choose :ui[menu.view > menu.customizeToolbar] and drag it into the toolbar.
+- :ui[toolbar.finder] in the toolbar
 - The :ui[workspace.title] row in the sidebar, when you right-click it
 - [Quick Actions](/guide/repositories/navigation/#quick-actions)
 - The Repositories window, when you right-click a server repository

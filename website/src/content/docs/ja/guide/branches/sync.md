@@ -9,7 +9,7 @@ description: "フェッチ、プル、プッシュ、ブランチの初回公開
 - プルは、リモートブランチをフェッチして、そのコミットを現在のブランチに取り込みます。
 - プッシュは、自分のコミットをリモートブランチへ送ります。
 
-ツールバーには :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] が並び、その隣に :ui[sync.sync] があります。同じ操作は :ui[menu.repository] メニューにもあります。
+ツールバーには :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] が並び、その隣に :ui[toolbar.forcePush] があります。これらの操作と :ui[sync.sync] は :ui[menu.repository] メニューにあります。
 
 フェッチ、プル、プッシュ、同期は取り消し履歴に記録されないので、取り消せません。ブランチの公開は取り消せます。
 
@@ -83,7 +83,7 @@ Spooky はタグとサブモジュールのオプションを覚えています�
 
 同期は、現在のブランチのフェッチ、プル、プッシュを順に行います。
 
-1. ツールバーの :ui[sync.sync] をクリックするか、:ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）を選びます。
+1. :ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）を選びます。
 2. :ui[sync.remoteBranch] でブランチを選びます。最初は現在のブランチの上流になっています。
 3. 必要なら :ui[sync.rebase] を選択します。下のプレビューは、プルで競合が起きるかどうかを示します。
 4. オプションを設定します：:ui[merge.verify]、:ui[sync.pushAllTags]、:ui[sync.pushSubmodules]、:ui[sync.skipHooks] は、プルとプッシュのときと同じように働きます。
@@ -110,7 +110,7 @@ Spooky はタグとサブモジュールのオプションを覚えています�
 
 Spooky の強制プッシュは、必ずリース付きです。プッシュが通るのは、リモートブランチが最後にフェッチしたときの位置のままである場合だけです。その間に誰かがプッシュしていれば、Git が拒否し、何も上書きされません。Spooky が保護のない強制プッシュに切り替えることはありません。
 
-1. :ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>）を選ぶか、ローカルブランチを右クリックしてメニューから選びます。
+1. ツールバーの :ui[toolbar.forcePush] をクリックするか、:ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>）を選びます。ローカルブランチを右クリックしてメニューから選ぶこともできます。
 2. :ui[branch.target] でローカルブランチを、:ui[sync.destination] でリモートブランチを選びます。
 3. その下の比較を読みます。プッシュでリモートブランチに加わるコミットの数と、上書きされるコミットの数が書かれています。そのうえで、次の点を確認します。
    - 緑の行は、リモートブランチが、書き換える前の自分のブランチと同じバージョンにあることを意味します。通常はこうなります。
@@ -125,12 +125,12 @@ Spooky の強制プッシュは、必ずリース付きです。プッシュが�
 プッシュのダイアログにある :ui[sync.forcePush] オプションも、同じ保護を使います。
 
 :::tip
-:ui[menu.view > menu.customizeToolbar] を選ぶと、:ui[toolbar.forcePush] と :ui[toolbar.pushTo] をツールバーに追加できます。
+:ui[menu.view > menu.customizeToolbar] を選ぶと、:ui[toolbar.synchronize] と :ui[toolbar.pushTo] をツールバーに追加できます。
 :::
 
 ## クイック版 {#quick}
 
-<kbd>⌥</kbd> を押している間、ツールバーの :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push]、:ui[sync.sync] は :ui[sync.quickFetch]、:ui[sync.quickPull]、:ui[sync.quickPush]、:ui[sync.quickSync] に変わります。メニュー項目も同じように変わります。たとえば :ui[sync.quickPushMenu] です。
+<kbd>⌥</kbd> を押している間、ツールバーの :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] は :ui[sync.quickFetch]、:ui[sync.quickPull]、:ui[sync.quickPush] に変わります。:ui[sync.sync] も、ツールバーに追加してあれば :ui[sync.quickSync] に変わります。メニュー項目も同じように変わります。たとえば :ui[sync.quickPushMenu] です。
 
 クイック版は、ダイアログを出さずにすぐ実行されます。
 

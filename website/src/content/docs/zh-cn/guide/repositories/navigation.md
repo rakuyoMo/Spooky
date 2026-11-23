@@ -42,7 +42,7 @@ description: "使用窗口与标签页、后退与前进、快捷操作、窗口
 
 ## 快捷操作 {#quick-actions}
 
-快捷操作让你输入几个字就找到想要的东西，直接对它执行操作，手不用离开键盘。窗口里显示着仓库时才能用。选 :ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>），或点工具栏上的 :ui[toolbar.quickActions]。
+快捷操作让你输入几个字就找到想要的东西，直接对它执行操作，手不用离开键盘。窗口里显示着仓库时才能用。选 :ui[menu.file > quickActions.menu]（<kbd>⇧⌘A</kbd>）。
 
 ::screenshot[快捷操作面板盖在仓库窗口上，输入框里是 “dark”。选中的第一个结果是分支 feature/dark-mode，右侧显示它的默认操作与查看更多操作的提示。下面依次是远端分支 origin/feature/dark-mode、深色外观、Default (Dark) 主题，以及两个说明里提到 dark 的提交。]{name="quick-actions" frame="window"}
 

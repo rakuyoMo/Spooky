@@ -9,7 +9,7 @@ Ces opérations échangent des commits avec les [dépôts distants](/guide/branc
 - Tirer récupère une branche distante et intègre ses commits dans la branche actuelle.
 - Pousser envoie vos commits vers une branche distante.
 
-La barre d’outils affiche :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] côte à côte, et :ui[sync.sync] juste à côté. Les mêmes opérations figurent dans le menu :ui[menu.repository].
+La barre d’outils affiche :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] côte à côte, et :ui[toolbar.forcePush] juste à côté. Ces opérations et :ui[sync.sync] figurent dans le menu :ui[menu.repository].
 
 Récupérer, tirer, pousser et synchroniser ne sont pas consignés dans l’historique d’annulation : ces opérations ne peuvent donc pas être annulées. La publication d’une branche peut l’être.
 
@@ -83,7 +83,7 @@ Pour revenir en arrière, choisissez :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>
 
 La synchronisation récupère, tire et pousse la branche actuelle, dans cet ordre.
 
-1. Cliquez sur :ui[sync.sync] dans la barre d’outils, ou choisissez :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
+1. Choisissez :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
 2. Choisissez la branche dans :ui[sync.remoteBranch]. Au début, c’est la branche amont de la branche actuelle.
 3. Sélectionnez :ui[sync.rebase] si vous le souhaitez. L’aperçu en dessous indique si le tirage va provoquer des conflits.
 4. Réglez les options : :ui[merge.verify], :ui[sync.pushAllTags], :ui[sync.pushSubmodules] et :ui[sync.skipHooks] fonctionnent comme pour tirer et pousser.
@@ -110,7 +110,7 @@ Après avoir réécrit des commits déjà poussés, par exemple en corrigeant un
 
 Spooky ne pousse de force qu’avec bail. La poussée n’aboutit que si la branche distante est toujours là où elle était lors de votre dernière récupération. Si quelqu’un a poussé entre-temps, Git refuse et rien n’est écrasé. Spooky ne se rabat jamais sur une poussée forcée sans protection.
 
-1. Choisissez :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>), ou cliquez avec le bouton droit sur une branche locale et choisissez cet élément dans le menu.
+1. Cliquez sur :ui[toolbar.forcePush] dans la barre d’outils, ou choisissez :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>). Vous pouvez aussi cliquer avec le bouton droit sur une branche locale et choisir cet élément dans le menu.
 2. Choisissez la branche locale dans :ui[branch.target], et la branche distante dans :ui[sync.destination].
 3. Lisez la comparaison en dessous. Elle indique combien de commits la poussée ajoute à la branche distante et combien elle en écrase. Ensuite :
    - Une ligne verte signifie que la branche distante est à la version qu’avait votre branche avant que vous la réécriviez. C’est le cas habituel.
@@ -125,12 +125,12 @@ Spooky ne pousse de force qu’avec bail. La poussée n’aboutit que si la bran
 L’option :ui[sync.forcePush] de la zone de dialogue de poussée utilise la même protection.
 
 :::tip
-Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter :ui[toolbar.forcePush] et :ui[toolbar.pushTo] à la barre d’outils.
+Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter :ui[toolbar.synchronize] et :ui[toolbar.pushTo] à la barre d’outils.
 :::
 
 ## Versions rapides {#quick}
 
-Maintenez <kbd>⌥</kbd>, et :ui[sync.fetch], :ui[sync.pull], :ui[sync.push] et :ui[sync.sync] dans la barre d’outils deviennent :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush] et :ui[sync.quickSync]. Les éléments de menu changent de la même façon, par exemple :ui[sync.quickPushMenu].
+Maintenez <kbd>⌥</kbd>, et :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] dans la barre d’outils deviennent :ui[sync.quickFetch], :ui[sync.quickPull] et :ui[sync.quickPush]. :ui[sync.sync] devient :ui[sync.quickSync] une fois ajouté à la barre d’outils. Les éléments de menu changent de la même façon, par exemple :ui[sync.quickPushMenu].
 
 Une version rapide s’exécute tout de suite, sans zone de dialogue :
 

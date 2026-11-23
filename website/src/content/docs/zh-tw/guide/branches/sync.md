@@ -9,7 +9,7 @@ description: "擷取、拉取與推送，首次發布分支，同步、安全強
 - 拉取：擷取一個遠端分支，再把它的提交併進目前所在的分支。
 - 推送：把你的提交送到遠端分支上。
 
-工具列上並排放著 :ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push]，旁邊是 :ui[sync.sync]。:ui[menu.repository] 選單裡也有這些操作。
+工具列上並排放著 :ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push]，旁邊是 :ui[toolbar.forcePush]。這些操作和 :ui[sync.sync] 都在 :ui[menu.repository] 選單裡。
 
 擷取、拉取、推送與同步不會記進還原記錄，所以還原不了。發布分支可以還原。
 
@@ -83,7 +83,7 @@ Spooky 會記住標籤與子模組這兩個選項。
 
 同步會對目前分支依序擷取、拉取、推送。
 
-1. 按一下工具列上的 :ui[sync.sync]，或者選 :ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）。
+1. 選 :ui[menu.repository > sync.syncMenu]（<kbd>⇧⌘Y</kbd>）。
 2. 在 :ui[sync.remoteBranch] 裡選分支。一開始是目前分支的上游。
 3. 需要的話勾選 :ui[sync.rebase]。下方的預覽會告訴你拉取會不會遇到衝突。
 4. 設定選項：:ui[merge.verify]、:ui[sync.pushAllTags]、:ui[sync.pushSubmodules] 與 :ui[sync.skipHooks] 的作用和拉取、推送時一樣。
@@ -110,7 +110,7 @@ Spooky 會記住標籤與子模組這兩個選項。
 
 Spooky 只做安全強制推送：只有遠端分支還停在你上次擷取時的位置，推送才會成功。這期間有人推送過的話，Git 會拒絕，什麼都不會被覆寫。Spooky 不會退回到沒有保護的強制推送。
 
-1. 選 :ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>），或者在一個本機分支上按右鍵，在選單裡選這一項。
+1. 按一下工具列上的 :ui[toolbar.forcePush]，或者選 :ui[menu.repository > sync.forcePushMenu]（<kbd>⌃⌘U</kbd>）。也可以在一個本機分支上按右鍵，在選單裡選這一項。
 2. 在 :ui[branch.target] 裡選本機分支，在 :ui[sync.destination] 裡選遠端分支。
 3. 看一下下方的比對。它會說明推送後遠端分支新增幾個提交、有幾個提交被覆寫。接著：
    - 綠色的一行表示遠端分支正是你的分支改寫前的版本。通常都是這樣。
@@ -125,12 +125,12 @@ Spooky 只做安全強制推送：只有遠端分支還停在你上次擷取時�
 推送對話框裡的 :ui[sync.forcePush] 選項用的是同樣的保護。
 
 :::tip
-可以用 :ui[menu.view > menu.customizeToolbar] 把 :ui[toolbar.forcePush] 與 :ui[toolbar.pushTo] 加到工具列上。
+可以用 :ui[menu.view > menu.customizeToolbar] 把 :ui[toolbar.synchronize] 與 :ui[toolbar.pushTo] 加到工具列上。
 :::
 
 ## 快速版本 {#quick}
 
-按住 <kbd>⌥</kbd>，工具列上的 :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] 與 :ui[sync.sync] 會變成 :ui[sync.quickFetch]、:ui[sync.quickPull]、:ui[sync.quickPush] 與 :ui[sync.quickSync]。選單裡的項目也一樣會變，例如 :ui[sync.quickPushMenu]。
+按住 <kbd>⌥</kbd>，工具列上的 :ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 會變成 :ui[sync.quickFetch]、:ui[sync.quickPull] 與 :ui[sync.quickPush]。:ui[sync.sync] 加到工具列上之後，也會變成 :ui[sync.quickSync]。選單裡的項目也一樣會變，例如 :ui[sync.quickPushMenu]。
 
 快速版本不跳出對話框，直接執行：
 

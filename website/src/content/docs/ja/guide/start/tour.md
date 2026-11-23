@@ -54,17 +54,17 @@ Spooky を初めて開くと、「リポジトリ」ビューが表示されま�
 
 - :ui[toolbar.bookmarks]：「リポジトリ」ビューに戻ります
 - :ui[toolbar.previous] と :ui[toolbar.next]：表示したビューの間を戻ったり進んだりします
-- :ui[toolbar.quickActions]：[クイックアクション](#quick-actions) を参照してください
+- :ui[toolbar.finder] と :ui[toolbar.terminal]：リポジトリのフォルダを Finder に表示するか、ターミナルで開きます
 - :ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push]：リモートとコミットをやり取りします
-- :ui[toolbar.synchronize]：現在のブランチのフェッチ、プル、プッシュを一度に行います
-- :ui[sync.merge] と :ui[sync.rebaseHead]：現在のブランチを別のブランチと統合します
+- :ui[toolbar.forcePush]：コミットを書き換えたあと、リモートブランチを自分のブランチで置き換えます
 - :ui[toolbar.applyStash] と :ui[toolbar.saveStash]：退避しておいた変更を戻すか、現在の変更を退避します
+- :ui[toolbar.createBranch]：新しいブランチを作ります
 - :ui[action.refresh]：リポジトリを読み込み直します
 - :ui[action.search]：現在のビューの一覧を絞り込みます
 
-<kbd>⌥</kbd> を押している間、:ui[sync.fetch] から :ui[sync.rebaseHead] までのボタンは :ui[sync.quickPush] のようなクイック版に変わります。クイック版はダイアログを開かずに、すぐ追跡ブランチに対して実行します。
+<kbd>⌥</kbd> を押している間、:ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] は :ui[sync.quickPush] のようなクイック版に変わります。クイック版はダイアログを開かずに、すぐ追跡ブランチに対して実行します。
 
-:ui[toolbar.clone] は、最近のクローンがある間だけ表示されます。[リポジトリウインドウ](/guide/repositories/manager/) を参照してください。ボタンを追加または削除するには、:ui[menu.view > menu.customizeToolbar] を選びます。上のボタンのほかに、:ui[toolbar.createBranch]、:ui[toolbar.forcePush]、:ui[toolbar.pushTo]、:ui[toolbar.finder]、:ui[toolbar.terminal] を追加できます。
+:ui[toolbar.clone] は、最近のクローンがある間だけ表示されます。[リポジトリウインドウ](/guide/repositories/manager/) を参照してください。ボタンを追加または削除するには、:ui[menu.view > menu.customizeToolbar] を選びます。上のボタンのほかに、:ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] と :ui[sync.rebaseHead]、:ui[toolbar.pushTo] を追加できます。
 
 ### 3 つのカラム {#columns}
 
@@ -74,7 +74,7 @@ Spooky を初めて開くと、「リポジトリ」ビューが表示されま�
 
 ### クイックアクション {#quick-actions}
 
-:ui[toolbar.quickActions] をクリックするか <kbd>⇧⌘A</kbd> を押すと、パネルが開きます。入力してビュー、ブランチ、ファイル、コミットを探し、キーボードから手を離さずにアクションを実行できます。何が見つかるか、どのキーを使うかは [ウインドウとナビゲーション](/guide/repositories/navigation/) で説明しています。
+:ui[menu.file > quickActions.menu] を選ぶか <kbd>⇧⌘A</kbd> を押すと、パネルが開きます。入力してビュー、ブランチ、ファイル、コミットを探し、キーボードから手を離さずにアクションを実行できます。何が見つかるか、どのキーを使うかは [ウインドウとナビゲーション](/guide/repositories/navigation/) で説明しています。
 
 ## 関連ページ
 
