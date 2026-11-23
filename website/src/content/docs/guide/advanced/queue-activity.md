@@ -84,7 +84,7 @@ Passwords and tokens are left out of the logs.
 
 Spooky posts a notification when:
 
-- A clone finishes. It shows the remote address, without any user name or password in it, and where the repository was cloned to. See [Clone a repository](/guide/repositories/manager/#clone).
+- A clone finishes. It shows the remote address, without any username or password in it, and where the repository was cloned to. See [Clone a repository](/guide/repositories/manager/#clone).
 - Branches are archived automatically. It shows how many. See [Archive automatically](/guide/branches/review/#auto-archive).
 
 Spooky doesn’t ask for permission, so macOS delivers them quietly to **Notification Center** at first. To choose how they appear, choose **Apple menu › System Settings**, click **Notifications** in the sidebar, then click **Spooky**. Clicking a notification brings Spooky to the front.

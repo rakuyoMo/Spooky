@@ -3,7 +3,7 @@ title: "Hosting Accounts"
 description: "Connect GitHub, GitLab.com, and self-managed GitLab accounts, and learn where their tokens are stored and what they are used for."
 ---
 
-Add your GitHub or GitLab account to work with pull requests and merge requests in Spooky. Git also uses the account to sign in to HTTPS remotes on that service, so you aren’t asked for a user name and password.
+Add your GitHub or GitLab account to work with pull requests and merge requests in Spooky. Git also uses the account to sign in to HTTPS remotes on that service, so you aren’t asked for a username and password.
 
 ## Add an account {#add}
 
@@ -13,16 +13,16 @@ Open :ui[app.name > settings.title] and click :ui[settings.accounts]. Click the 
 |---|---|---|
 | :ui[accounts.add.github] | github.com | Your browser, or a personal access token |
 | :ui[accounts.add.gitlab] | GitLab.com | A personal access token |
-| :ui[accounts.add.gitlabSelfManaged] | GitLab on your own server | A personal access token, or a user name and password |
+| :ui[accounts.add.gitlabSelfManaged] | GitLab on your own server | A personal access token, or a username and password |
 
-::screenshot[The sheet for adding a self-managed GitLab account. The host is https://gitlab.example.com, and the authentication method is user name and password.]{name="hosting-add-account" frame="dialog" markers="79.2,62.8 83.3,54.6"}
+::screenshot[The sheet for adding a self-managed GitLab account. The host is https://gitlab.example.com, and the authentication method is username and password.]{name="hosting-add-account" frame="dialog" markers="79.2,62.8 83.3,54.6"}
 
 1. The host
 2. The authentication method
 
 While Spooky checks the account, :ui[accounts.validating] shows at the bottom of the dialog. :ui[action.cancel] stops the check and leaves the dialog open, so you can fix what you entered. If the check fails, a message says why, and what you entered is still there.
 
-Each account appears in the list with its service, instance, and user name. You can add more than one account on the same service.
+Each account appears in the list with its service, instance, and username. You can add more than one account on the same service.
 
 ### GitHub {#github}
 
@@ -47,7 +47,7 @@ Next to :ui[accounts.host], enter the address of your GitLab server. Include its
 - :ui[accounts.authentication.token]: a token with the `api` scope.
 - :ui[accounts.authentication.password]: Spooky uses the password only to get a token, and doesn’t save the password.
 
-Signing in with a user name and password works only when all of these are true:
+Signing in with a username and password works only when all of these are true:
 
 - The server runs GitLab 18.11 or earlier. GitLab 19.0 and later don’t trade a password for a token anymore.
 - The server doesn’t require OAuth application credentials. GitLab 13.9 always does, and GitLab 17.8 or later can be set to.
@@ -96,9 +96,9 @@ When an HTTPS remote belongs to one of your accounts, Git signs in with the acco
 
 - SSH remotes keep using your SSH keys. Accounts don’t change them.
 - For these addresses, Spooky answers in place of any credential helper you’ve set up for Git, such as the macOS keychain helper. Those helpers don’t see or store the token.
-- If you have several accounts on the same instance and haven’t chosen one for the remote, Git asks you for a user name and password as usual.
+- If you have several accounts on the same instance and haven’t chosen one for the remote, Git asks you for a username and password as usual.
 
-If Git rejects the token, that command fails. After that, Git asks you for a user name and password on that account’s remotes, and the dialog says the account’s token wasn’t accepted. Re-authenticate the account to go back to signing in with it.
+If Git rejects the token, that command fails. After that, Git asks you for a username and password on that account’s remotes, and the dialog says the account’s token wasn’t accepted. Re-authenticate the account to go back to signing in with it.
 
 :::note[Server repositories]
 Git on the server signs in with the token too. It gets the token from Spooky on your Mac each time it needs it. The token isn’t saved on the server.
@@ -108,7 +108,7 @@ Git on the server signs in with the token too. It gets the token from Spooky on 
 
 - The list of accounts is in Spooky’s preferences, without the tokens.
 - Tokens are in your keychain, in items named `com.rakuyo.spooky.hosting.<address>`.
-- If you sign in to a self-managed GitLab with a user name and password, Spooky keeps the tokens it gets in return. It doesn’t keep the password.
+- If you sign in to a self-managed GitLab with a username and password, Spooky keeps the tokens it gets in return. It doesn’t keep the password.
 
 Tokens don’t go into :ui[activity.title] records or Spooky’s logs.
 
@@ -119,7 +119,7 @@ Spooky talks to the service from your Mac, even for server repositories:
 - GitHub: `github.com` while you authorize in the browser, and `api.github.com` for everything else.
 - GitLab: `gitlab.com`, or the address of your own GitLab.
 
-It does this when you add or re-authenticate an account, and when you use what the account is for: the pull request and merge request list and what you do there, issue numbers after `#`, the status in Branches Review, and publishing a repository. Accounts signed in with a user name and password also renew their tokens there.
+It does this when you add or re-authenticate an account, and when you use what the account is for: the pull request and merge request list and what you do there, issue numbers after `#`, the status in Branches Review, and publishing a repository. Accounts signed in with a username and password also renew their tokens there.
 
 Each of these requests shows up on the :ui[activity.service] page of the :ui[activity.title] window.
 

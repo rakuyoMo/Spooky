@@ -1,12 +1,12 @@
 ---
-title: "合併與變基"
-description: "合併與變基分支，開始前預覽衝突，用父分支更新分支，以及在側邊欄裡拖放分支。"
+title: "合併與重定基底"
+description: "合併與重定基底分支，開始前預覽衝突，用父分支更新分支，以及在側邊欄裡拖放分支。"
 ---
 
-合併和變基都會把另一個分支的提交帶進目前所在的分支：
+合併和重定基底都會把另一個分支的提交帶進目前所在的分支：
 
 - 合併把兩段歷史接在一起，通常會多一個合併提交。
-- 變基把你的提交挪到另一個分支的提交後面。歷史保持一條直線，但你的提交會被改寫。
+- 重定基底把你的提交挪到另一個分支的提交後面。歷史保持一條直線，但你的提交會被改寫。
 
 工具列上並排放著 :ui[sync.merge] 與 :ui[sync.rebaseHead]。:ui[workspace.title] 選單裡也能開始這兩個操作。
 
@@ -30,32 +30,32 @@ Spooky 會記住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 與 :ui[merge.v
 
 <kbd>⌘Z</kbd> 可以還原合併。合併停在衝突上時，還原就是中止它。
 
-## 變基 {#rebase}
+## 重定基底 {#rebase}
 
 1. 按一下工具列上的 :ui[sync.rebaseHead]，或者選 :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）。也可以在目前所在的分支上按右鍵，選 :ui[workspace.rebaseMenu]。
-2. 在 :ui[branch.target] 裡選要變基到哪個分支上。一開始是目前分支的上游。
+2. 在 :ui[branch.target] 裡選要重定基底到哪個分支上。一開始是目前分支的上游。
 3. 看一下預覽，需要的話勾選 :ui[sync.skipHooks]。
 4. 按一下 :ui[sync.rebaseHead]。
 
-完成的變基可以用 <kbd>⌘Z</kbd> 還原。停在衝突上的變基不能還原：解決衝突後繼續，或者在橫幅上中止它。
+完成的重定基底可以用 <kbd>⌘Z</kbd> 還原。停在衝突上的重定基底不能還原：解決衝突後繼續，或者在橫幅上中止它。
 
-只想把一部分提交挪到另一個基底上，見 [把提交變基到別處](/guide/history/rewrite/#rebase-onto)。
+只想把一部分提交挪到另一個基底上，見 [把提交重定基底到別處](/guide/history/rewrite/#rebase-onto)。
 
 :::caution
-變基會改寫你的提交。這些提交已經推送過的話，下一次推送就得用 [安全強制推送](/guide/branches/sync/#force-push)。
+重定基底會改寫你的提交。這些提交已經推送過的話，下一次推送就得用 [安全強制推送](/guide/branches/sync/#force-push)。
 :::
 
 ## 本機變更 {#local-changes}
 
 合併時，已追蹤的檔案不能有變更。新檔案只有在合併會覆寫它們時才會擋路。
 
-變基和用父分支更新分支時，工作區裡不能有任何變更，新檔案也不行。
+重定基底和用父分支更新分支時，工作區裡不能有任何變更，新檔案也不行。
 
 本機變更擋住了其中一個操作時，Spooky 會提議先把變更儲藏起來，見 [自動儲藏](/guide/work/stash/#auto-stash)。
 
 ## 預覽衝突 {#preview}
 
-開始之前，合併、變基、拉取與同步對話框會檢查兩邊會不會衝突，並在對話框裡顯示結果：
+開始之前，合併、重定基底、拉取與同步對話框會檢查兩邊會不會衝突，並在對話框裡顯示結果：
 
 - Spooky 比對時顯示 :ui[merge.checking]。
 - 有幾個檔案衝突。把指標停在這一行上，可以看到是哪些檔案。
@@ -69,9 +69,9 @@ Spooky 會記住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 與 :ui[merge.v
 按住 <kbd>⌥</kbd>，工具列上的 :ui[sync.merge] 與 :ui[sync.rebaseHead] 會變成 :ui[sync.quickMerge] 與 :ui[sync.quickRebase]。它們不跳出對話框，直接執行：
 
 - :ui[sync.quickMerge] 合併目前分支的上游。
-- :ui[sync.quickRebase] 把目前分支變基到它的上游上。
+- :ui[sync.quickRebase] 把目前分支重定基底到它的上游上。
 
-快速合併用你上次在合併對話框裡選的提交方式與簽名選項。兩者和對話框一樣，會提議先儲藏本機變更。
+快速合併用你上次在合併對話框裡選的提交方式與簽署選項。兩者和對話框一樣，會提議先儲藏本機變更。
 
 側邊欄選單裡的項目也一樣會變。例如 :ui[workspace.mergeMenu] 會變成 :ui[sync.quickMergeInto]{1="origin/main" 2="main"}。
 
@@ -86,9 +86,9 @@ Spooky 會記住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 與 :ui[merge.v
 5. 設定選項：:ui[merge.verify]（只用於合併）與 :ui[sync.skipHooks]。
 6. 按一下 :ui[review.update.button]。
 
-Spooky 會先簽出這個分支，再合併或變基。只有父分支有這個分支沒有的提交、又沒有別的操作在進行時，才能更新。
+Spooky 會先簽出這個分支，再合併或重定基底。只有父分支有這個分支沒有的提交、又沒有別的操作在進行時，才能更新。
 
-對目前所在的分支，側邊欄選單裡的 :ui[branch.mergeWith]{1="main"} 與 :ui[branch.rebaseOn]{1="main"} 會開啟合併與變基對話框，父分支已經選好。
+對目前所在的分支，側邊欄選單裡的 :ui[branch.mergeWith]{1="main"} 與 :ui[branch.rebaseOn]{1="main"} 會開啟合併與重定基底對話框，父分支已經選好。
 
 :::tip
 開啟選單後按住 <kbd>⌥</kbd>，:ui[branch.updateNamed]{1="feature/units-toggle"} 會變成 :ui[branch.quickUpdateNamed]{1="feature/units-toggle"}。它不跳出對話框，直接合併父分支。
@@ -100,7 +100,7 @@ Spooky 會先簽出這個分支，再合併或變基。只有父分支有這個�
 
 | 拖移 | 拖到 | 結果 |
 |---|---|---|
-| 本機分支 | :ui[workspace.title] 或目前所在的分支 | 合併對話框。按住 <kbd>⌥</kbd> 是變基對話框。 |
+| 本機分支 | :ui[workspace.title] 或目前所在的分支 | 合併對話框。按住 <kbd>⌥</kbd> 是重定基底對話框。 |
 | 遠端分支 | :ui[workspace.title] 或目前所在的分支 | 拉取對話框 |
 | 遠端分支，按住 <kbd>⌥</kbd> | 目前所在的分支 | 它成為目前分支的上游。 |
 | 本機分支、標籤或提交 | :ui[branch.group] | 從它新增分支的對話框 |

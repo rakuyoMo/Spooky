@@ -97,8 +97,8 @@ Spooky は先にリクエストのコミットを取得してから、ブラン�
 
 詳細の下端にある :ui[pullRequests.close] をクリックして、確認します。もう一度オープンするには、ホスティングサービスで操作します。
 
-:::note[サーバーリポジトリ]
-一覧と、サービス上で行うすべての操作は、Mac から送られます。リクエストのコミットのフェッチ、チェックアウト、マージ後のフェッチは、サーバーで実行されます。:ui[pullRequests.commits] と :ui[pullRequests.changeset] での比較も同じです。
+:::note[サーバリポジトリ]
+一覧と、サービス上で行うすべての操作は、Mac から送られます。リクエストのコミットのフェッチ、チェックアウト、マージ後のフェッチは、サーバで実行されます。:ui[pullRequests.commits] と :ui[pullRequests.changeset] での比較も同じです。
 :::
 
 サービスへのリクエストは、どれも :ui[activity.title] ウインドウの :ui[activity.service] ページに表示されます。

@@ -49,8 +49,8 @@ Resetting moves the branch you’re on to another commit. The commits after it l
 1. Right-click the commit and choose :ui[rewrite.menu.reset]{1="e2dda2bc"} in the menu. You can also click :ui[history.rollback] in the commit details, or choose :ui[workspace.title > rewrite.reset.menu] in the menu bar.
 2. Check :ui[rewrite.revision]. You can pick a branch, remote branch, or tag, or type a hash. The dialog lists the commits that will leave the branch.
 3. Choose a :ui[rewrite.reset.mode]:
-   - :ui[rewrite.reset.soft] keeps the staging area and the Working Copy as they are. The changes from the commits that leave stay staged.
-   - :ui[rewrite.reset.mixed] resets the staging area and keeps the Working Copy. Those changes become unstaged.
+   - :ui[rewrite.reset.soft] keeps the index and the Working Copy as they are. The changes from the commits that leave stay staged.
+   - :ui[rewrite.reset.mixed] resets the index and keeps the Working Copy. Those changes become unstaged.
    - :ui[rewrite.reset.hard] resets both. Uncommitted changes, and the changes from the commits that leave, are discarded.
 4. Click :ui[rewrite.reset.button].
 

@@ -17,7 +17,7 @@ Spooky を選ぶと、これらのリンクはクローンのダイアログを�
 
 ### SSH エージェント {#ssh-agent}
 
-SSH エージェントは、ロックを解除した鍵を保持します。Spooky は、SSH でサーバーやリモートにログインするときと、SSH 鍵でコミットに署名するときに使います。
+SSH エージェントは、ロックを解除した鍵を保持します。Spooky は、SSH でサーバやリモートにログインするときと、SSH 鍵でコミットに署名するときに使います。
 
 :ui[settings.sshAgent] の選択肢は :ui[settings.sshAgent.system] の 1 つです。Spooky は次の順序でエージェントを探します。
 
@@ -29,8 +29,8 @@ SSH エージェントは、ロックを解除した鍵を保持します。Spoo
 
 エージェントが動いていないと、メニューの横に黄色の警告ボタンが表示されます。クリックすると、対処方法が表示されます。
 
-:::note[サーバーリポジトリ]
-Spooky がエージェントをサーバーに転送することはありません。サーバーの Git は、そのマシン自身のエージェントと鍵を使います。
+:::note[サーバリポジトリ]
+Spooky がエージェントをサーバに転送することはありません。サーバの Git は、そのマシン自身のエージェントと鍵を使います。
 :::
 
 ### クラッシュレポート {#crash-reports}
@@ -72,7 +72,7 @@ Spooky は次のアプリケーションに対応しています。
 
 Spooky には、エディタを選ぶ独自の設定はありません。ファイルをほかのアプリケーションで開くには、作業コピーで右クリックして、:ui[files.open] または :ui[files.openWith] を選びます。:ui[files.openWith] サブメニューには、そのファイルを開けるアプリケーションが、デフォルトのものを先頭にして並びます。同じサブメニューは、コミットのファイルツリーと競合ウィザードにもあります。
 
-サーバーリポジトリでは、Visual Studio Code、Visual Studio Code Insiders、Cursor は、Remote SSH 拡張機能がインストールされていれば、サーバー上のファイルを直接開きます。ほかのアプリケーションには、コピーが渡されます。保存すると、Spooky が変更をサーバーに書き戻します。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
+サーバリポジトリでは、Visual Studio Code、Visual Studio Code Insiders、Cursor は、Remote SSH 拡張機能がインストールされていれば、サーバ上のファイルを直接開きます。ほかのアプリケーションには、コピーが渡されます。保存すると、Spooky が変更をサーバに書き戻します。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
 
 ## ターミナル {#terminal}
 
@@ -88,15 +88,15 @@ Spooky には、エディタを選ぶ独自の設定はありません。ファ�
 - サイドバーのワークツリーのメニュー
 - [クイックアクション](/guide/repositories/navigation/#quick-actions)
 
-ローカルのリポジトリでは、ターミナルはこの Mac 上のフォルダで開きます。サーバーリポジトリでは、SSH でログインして、サーバー上のフォルダに移動します。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
+ローカルのリポジトリでは、ターミナルはこの Mac 上のフォルダで開きます。サーバリポジトリでは、SSH でログインして、サーバ上のフォルダに移動します。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
 
 Spooky がターミナルまたは iTerm を初めて開くとき、macOS は Spooky による制御を許可するかどうかを尋ねます。許可しないと、Spooky は :ui[error.terminal] と表示します。あとで許可するには、**アップルメニュー › システム設定 › プライバシーとセキュリティ › オートメーション** と選択し、Spooky の下でそのアプリケーションをオンにします。
 
 ## Finder {#finder}
 
-- **フォルダを表示する**：:ui[action.revealFinder] は、リポジトリのフォルダまたはファイルを Finder で表示します。サーバーリポジトリでは、この Mac 上の場所が必要です。[Finder で表示する](/guide/server/local-location/#show-in-finder) を参照してください。
+- **フォルダを表示する**：:ui[action.revealFinder] は、リポジトリのフォルダまたはファイルを Finder で表示します。サーバリポジトリでは、この Mac 上の場所が必要です。[Finder で表示する](/guide/server/local-location/#show-in-finder) を参照してください。
 - **リポジトリを追加する**：Finder からリポジトリのフォルダをリポジトリウインドウにドラッグします。[リポジトリを追加する](/guide/repositories/manager/#add) を参照してください。
-- **Dock**：Spooky のアイコンにフォルダをドロップすると、そのフォルダがあるリポジトリが開きます。アイコンを右クリックすると、サーバーリポジトリも含めて、最近使ったリポジトリを選べます。[最近使ったリポジトリと Dock](/guide/repositories/navigation/#recent) を参照してください。
+- **Dock**：Spooky のアイコンにフォルダをドロップすると、そのフォルダがあるリポジトリが開きます。アイコンを右クリックすると、サーバリポジトリも含めて、最近使ったリポジトリを選べます。[最近使ったリポジトリと Dock](/guide/repositories/navigation/#recent) を参照してください。
 - **テーマ**：Finder で `.spookytheme` ファイルを開くと、テーマが追加されます。[テーマを共有する](/guide/settings/appearance/#share-themes) を参照してください。
 
 ## 関連ページ

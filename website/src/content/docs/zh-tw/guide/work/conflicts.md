@@ -1,9 +1,9 @@
 ---
 title: "解決衝突"
-description: "用衝突精靈或外部合併工具解決合併、變基等進行中操作的衝突，然後繼續或中止。"
+description: "用衝突精靈或外部合併工具解決合併、重定基底等進行中操作的衝突，然後繼續或中止。"
 ---
 
-兩邊改了檔案的同一處，Git 判斷不了該留哪一個，就產生了衝突。合併、變基、摘取、反轉會停在這裡，套用儲藏也一樣。你來決定每個檔案裡留下什麼，再把操作做完。
+兩邊改了檔案的同一處，Git 判斷不了該留哪一個，就產生了衝突。合併、重定基底、摘取、反轉會停在這裡，套用儲藏也一樣。你來決定每個檔案裡留下什麼，再把操作做完。
 
 ::screenshot[把「feature/units-toggle」合併到「main」時的工作區。中間一欄頂端的橫幅寫著 1 個未解決衝突（已解決 0 個），帶一個「中止」按鈕。檔案列表裡的 src/units.ts 標著衝突。右邊兩張卡片是兩個分支上的 units.ts，箭頭指向下方空著的結果框，結果框下面是「選擇合併工具」按鈕。]{name="conflict" frame="window" markers="24,18 47,55 76,37 76,73 84,86"}
 
@@ -15,11 +15,11 @@ description: "用衝突精靈或外部合併工具解決合併、變基等進行
 
 ## 進行中的操作 {#banner}
 
-合併、變基、摘取或反轉進行期間，工作區頂端有一條橫幅：
+合併、重定基底、摘取或反轉進行期間，工作區頂端有一條橫幅：
 
 - 標題寫著正在做什麼，例如 :ui[conflict.title.merge]{1="feature/units-toggle" 2="main"}。
 - 下面是未解決衝突的個數。操作在衝突上停下過以後，括號裡還會寫已解決幾個。
-- 一句提示告訴你下一步做什麼。變基或一連串提交的操作進行時，進度列顯示到了第幾步。
+- 一句提示告訴你下一步做什麼。重定基底或一連串提交的操作進行時，進度列顯示到了第幾步。
 - :ui[working.onlyConflicts] 讓檔案列表只留下這次衝突的檔案，已解決的也留著。Spooky 會記住這個選擇，所有儲存庫都一樣。
 - :ui[working.abort] 取消這次操作。見 [繼續或中止](#continue)。
 
@@ -88,10 +88,10 @@ Spooky 支援 Araxis Merge、Beyond Compare、DeltaWalker、FileMerge、Kaleidos
 衝突全部解決以後，提交區重新出現，裡面是 Git 為這次操作準備好的提交訊息。
 
 - **合併，或者只摘取、反轉一個提交**：檢查訊息，按一下 :ui[working.commit]。
-- **變基，或者摘取、反轉好幾個提交**：檢查訊息，按一下 :ui[working.continue]。Spooky 提交這一步，接著做下一步。下一步也可能再停在衝突上。
-- **變基停下來編輯某個提交**：做好你的提交，再按一下橫幅上的 :ui[working.endEditing]。
+- **重定基底，或者摘取、反轉好幾個提交**：檢查訊息，按一下 :ui[working.continue]。Spooky 提交這一步，接著做下一步。下一步也可能再停在衝突上。
+- **重定基底停下來編輯某個提交**：做好你的提交，再按一下橫幅上的 :ui[working.endEditing]。
 
-有時已經沒有可提交的變更，例如你留下的正是原來的版本。這時按一下 :ui[working.commit] 或 :ui[working.continue]，Spooky 會問 :ui[commit.empty.title]按一下 :ui[commit.empty.use] 就做一個空提交。另一個按鈕會中止合併；在變基或一連串提交裡，是略過這一步。變基或一連串提交裡，也可以按一下橫幅上的 :ui[working.skip]。
+有時已經沒有可提交的變更，例如你留下的正是原來的版本。這時按一下 :ui[working.commit] 或 :ui[working.continue]，Spooky 會問 :ui[commit.empty.title]按一下 :ui[commit.empty.use] 就做一個空提交。另一個按鈕會中止合併；在重定基底或一連串提交裡，是略過這一步。重定基底或一連串提交裡，也可以按一下橫幅上的 :ui[working.skip]。
 
 想放棄，按一下橫幅上的 :ui[working.abort]。儲存庫會回到操作開始之前的樣子。
 

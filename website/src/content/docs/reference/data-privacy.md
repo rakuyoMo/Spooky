@@ -14,13 +14,13 @@ There’s no Spooky account, and Spooky doesn’t collect usage data. This page 
 | Small `.spookyrepo` folders that let server repositories show up among recent documents | `~/Library/Application Support/Spooky/Locations/` |
 | Records of remote operations in :ui[activity.title], such as fetch, pull, and push, kept for 7 days | `~/Library/Application Support/Spooky/Activity/` |
 | What :ui[activity.title] compares against to count changes, one file per repository | `~/Library/Application Support/Spooky/Baselines/` |
-| User names and passwords you saved for Git on a server | Keychain, items named `com.rakuyo.spooky.remote.<host alias>` |
+| Usernames and passwords you saved for Git on a server | Keychain, items named `com.rakuyo.spooky.remote.<host alias>` |
 | Hosting account tokens | Keychain, items named `com.rakuyo.spooky.hosting.<address>` |
 | Caches and cookies that macOS keeps for Spooky’s network requests | `~/Library/Caches/com.rakuyo.spooky/`, and the items in `~/Library/HTTPStorages/` whose names begin with `com.rakuyo.spooky` |
 | Connection files for server repositories | `/tmp/spooky-*` folders, removed when the connection closes |
 | Copies of files you open in Quick Look or other apps | Temporary `spooky-files-*` folders, removed when the repository closes |
 
-If you sign in to a self-managed GitLab with a user name and password, Spooky keeps the tokens it gets in return. It doesn’t keep the password.
+If you sign in to a self-managed GitLab with a username and password, Spooky keeps the tokens it gets in return. It doesn’t keep the password.
 
 To remove all of this, see [Uninstall](/guide/start/install/#uninstall).
 
@@ -72,7 +72,7 @@ If Spooky quit unexpectedly last time, it reads the crash report that macOS save
 - Click :ui[crash.report] to open a new issue page on GitHub in your browser, filled in with a summary of the crash.
 - Click :ui[crash.dontReport] to skip it. Spooky doesn’t ask about that crash again.
 
-The summary has the Spooky version and build, the macOS version, the type of crash, and up to 30 lines of the call stack of the thread that crashed. Before it leaves your Mac, Spooky replaces your home folder, user name, email addresses, IP addresses, tokens, and passwords in web addresses with placeholders.
+The summary has the Spooky version and build, the macOS version, the type of crash, and up to 30 lines of the call stack of the thread that crashed. Before it leaves your Mac, Spooky replaces your home folder, username, email addresses, IP addresses, tokens, and passwords in web addresses with placeholders.
 
 The summary is part of the page’s web address. GitHub receives it as soon as the page opens. The issue is created only when you submit it in the browser. You can edit the text first, or close the page.
 
@@ -91,7 +91,7 @@ The report contains:
 - The names, times, and results of the last 20 operations
 - Spooky’s log from the last hour of the current run, up to 500 lines
 
-It doesn’t contain repository paths, host aliases, passwords, or values of environment variables. Spooky replaces your home folder, user name, email addresses, IP addresses, and tokens with placeholders, the same way as in crash reports. Open the file and read it before you share it.
+It doesn’t contain repository paths, host aliases, passwords, or values of environment variables. Spooky replaces your home folder, username, email addresses, IP addresses, and tokens with placeholders, the same way as in crash reports. Open the file and read it before you share it.
 
 Spooky’s log notes connection changes, and when operations start, finish, or fail. It doesn’t record command arguments or output, commit messages, passwords, or tokens.
 

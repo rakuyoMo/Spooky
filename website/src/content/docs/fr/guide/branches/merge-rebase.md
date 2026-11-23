@@ -86,7 +86,7 @@ Quand une branche a une [branche parente](/guide/branches/branches/#parent), la 
 5. Réglez les options : :ui[merge.verify] (pour la fusion uniquement) et :ui[sync.skipHooks].
 6. Cliquez sur :ui[review.update.button].
 
-Spooky bascule d’abord sur la branche, puis fusionne ou rebase. La mise à jour n’est disponible que si la branche parente a des commits que la branche n’a pas, et qu’aucune autre opération n’est en cours.
+Spooky extrait d’abord la branche, puis fusionne ou rebase. La mise à jour n’est disponible que si la branche parente a des commits que la branche n’a pas, et qu’aucune autre opération n’est en cours.
 
 Pour la branche actuelle, :ui[branch.mergeWith]{1="main"} et :ui[branch.rebaseOn]{1="main"} dans le menu de la barre latérale ouvrent les zones de dialogue de fusion et de rebasage avec la branche parente déjà choisie.
 

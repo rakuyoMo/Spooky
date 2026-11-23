@@ -1,6 +1,6 @@
 ---
 title: "改寫歷史"
-description: "反轉、摘取與重設提交，互動式變基，以及修補更早的提交。"
+description: "反轉、摘取與重設提交，互動式重定基底，以及修補更早的提交。"
 ---
 
 這裡的大多數操作都從 [歷史](/guide/history/browse/) 列表開始：在提交上按右鍵，或者先選取幾個。反轉與摘取會新增提交，其餘的操作則改寫已有的提交。
@@ -11,7 +11,7 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 
 除了摘取與重設，下面這些操作只在列表只顯示你所在的分支時，才會出現在提交的選單裡。要切過去，選 :ui[menu.view > history.showHead]（<kbd>⌘0</kbd>），或者按一下側邊欄裡的這個分支。
 
-::screenshot[列表顯示所在分支時，對提交 2daa6982 按右鍵跳出的選單。裡面有重設、反轉與變基到別處，再往下是這個提交的修補、編輯、編輯提交訊息與刪除。]{name="history-commit-menu" frame="closeup"}
+::screenshot[列表顯示所在分支時，對提交 2daa6982 按右鍵跳出的選單。裡面有重設、反轉與重定基底到別處，再往下是這個提交的修補、編輯、編輯提交訊息與刪除。]{name="history-commit-menu" frame="closeup"}
 
 ## 反轉提交 {#revert}
 
@@ -60,7 +60,7 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 :ui[rewrite.reset.hard] 會丟掉已追蹤檔案裡未提交的變更，有這樣的變更時對話框會提醒你。按 <kbd>⌘Z</kbd> 可以找回它們，但只在你結束 Spooky 之前有效。
 :::
 
-## 把提交變基到別處 {#rebase-onto}
+## 把提交重定基底到別處 {#rebase-onto}
 
 :ui[rewrite.rebaseOnto] 把一些提交挪到另一個提交的上面。
 
@@ -69,7 +69,7 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 
 兩個基點都不能是目前簽出的提交。對話框會列出將被改寫的提交，其中有已經推送或已經在別的分支裡的，會給出警告。:ui[sync.skipHooks] 讓這一次略過儲存庫的 pre-rebase 掛鉤。按一下 :ui[rewrite.rebaseOnto.button] 開始。
 
-想把一個分支變基到另一個分支上，見 [變基](/guide/branches/merge-rebase/#rebase)。
+想把一個分支重定基底到另一個分支上，見 [重定基底](/guide/branches/merge-rebase/#rebase)。
 
 ## 壓縮、Fixup、刪除與移動 {#interactive}
 
@@ -112,11 +112,11 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 修補更早的提交，就是把變更加進那個提交裡，和 [修補上一次提交](/guide/work/commit/#amend) 一樣。
 
 1. 在這個提交上按右鍵，選 :ui[rewrite.menu.amend]{1="e2dda2bc"}。Spooky 直接開始，不先確認。
-2. 變基停在這個提交上。做好變更並暫存。
+2. 重定基底停在這個提交上。做好變更並暫存。
 3. 在提交區裡勾選 :ui[working.amend]，然後提交。
 4. 按一下橫幅上的 :ui[working.endEditing]。之後的提交會在上面重放。
 
-開始時如果有本機變更，Spooky 會先提議把它們儲藏起來。它們之後還留在儲藏裡，你可以在變基停下時套用，也可以以後再說。
+開始時如果有本機變更，Spooky 會先提議把它們儲藏起來。它們之後還留在儲藏裡，你可以在重定基底停下時套用，也可以以後再說。
 
 ## 自動壓縮 {#autosquash}
 
@@ -145,13 +145,13 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 
 ## 本機變更與衝突 {#local-changes}
 
-反轉、摘取與變基都需要工作區不礙事。本機變更擋住了它們時，Spooky 會提議 [先儲藏起來](/guide/work/stash/#auto-stash)。修補更早的提交則在開始之前就問。
+反轉、摘取與重定基底都需要工作區不礙事。本機變更擋住了它們時，Spooky 會提議 [先儲藏起來](/guide/work/stash/#auto-stash)。修補更早的提交則在開始之前就問。
 
 途中有提交發生衝突時，Spooky 會停下來，顯示 [操作橫幅](/guide/work/conflicts/#banner)。解決衝突以後，在橫幅上繼續或中止。
 
 ## 還原改寫 {#undo}
 
-選 :ui[menu.edit > menu.undo]（<kbd>⌘Z</kbd>），可以收回反轉、摘取、重設或改寫。變基停在中途時，例如在編輯一個提交，要先把它做完或中止。停在衝突上的變基或摘取無法還原。見 [還原與找回](/guide/work/undo/)。
+選 :ui[menu.edit > menu.undo]（<kbd>⌘Z</kbd>），可以收回反轉、摘取、重設或改寫。重定基底停在中途時，例如在編輯一個提交，要先把它做完或中止。停在衝突上的重定基底或摘取無法還原。見 [還原與找回](/guide/work/undo/)。
 
 舊的提交還會在 [Reflog](/guide/work/undo/#reflog) 裡留一段時間。
 
@@ -163,4 +163,4 @@ description: "反轉、摘取與重設提交，互動式變基，以及修補更
 
 - [解決衝突](/guide/work/conflicts/)
 - [還原與找回](/guide/work/undo/)
-- [合併與變基](/guide/branches/merge-rebase/)
+- [合併與重定基底](/guide/branches/merge-rebase/)

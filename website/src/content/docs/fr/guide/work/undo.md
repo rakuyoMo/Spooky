@@ -14,7 +14,7 @@ Vous pouvez annuler, par exemple :
 - L’indexation, la validation et la correction d’un commit
 - L’abandon de modifications et la mise de fichiers à la Corbeille
 - La création, l’application et la suppression de remisages
-- Le basculement sur une branche, la création, le renommage et la suppression de branches, et la création de tags
+- L’extraction d’une branche, la création, le renommage et la suppression de branches, et la création de tags
 - L’épinglage et l’archivage de branches, la définition de la branche amont et l’avance rapide
 - La fusion, le rebasage, le cherry-pick, le revert et la réinitialisation
 - L’ajout, le renommage et la suppression de dépôts distants, et la modification de leurs réglages

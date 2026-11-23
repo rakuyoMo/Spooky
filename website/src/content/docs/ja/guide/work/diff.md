@@ -85,8 +85,8 @@ description: "ファイルの変更の読み方、差分の表示の調整、フ
 破棄した変更は、どのコミットにも入っていません。元に戻す方法は :ui[menu.edit > menu.undo]（<kbd>⌘Z</kbd>）だけで、それもリポジトリが次に変更されるまでです。新しいファイルは、ゴミ箱に残っている間は元に戻せます。
 :::
 
-:::note[サーバーリポジトリ]
-破棄すると、サーバー上のファイルが上書きされます。新しいファイルはサーバーのゴミ箱に入ります。サーバーにゴミ箱がない場合は、完全に削除されます。確認のダイアログには :ui[dialog.doNotAskAgain] があります。もう一度確認されるようにするには、:ui[settings.general] で :ui[settings.warnDiscardingOnServer] をオンにします。
+:::note[サーバリポジトリ]
+破棄すると、サーバ上のファイルが上書きされます。新しいファイルはサーバのゴミ箱に入ります。サーバにゴミ箱がない場合は、完全に削除されます。確認のダイアログには :ui[dialog.doNotAskAgain] があります。もう一度確認されるようにするには、:ui[settings.general] で :ui[settings.warnDiscardingOnServer] をオンにします。
 :::
 
 ## ほかのアプリケーションで比較する {#external}
@@ -98,7 +98,7 @@ FileMerge や Kaleidoscope などの比較ツールで変更を確認するに�
 
 初回は、どのアプリケーションを使うかを Spooky が尋ねます。あとで変更するには、:ui[app.name > settings.title] › :ui[settings.gitConfig] の :ui[externalTool.diffTool] を使います。Spooky は Araxis Merge、BBEdit、Beyond Compare、DeltaWalker、FileMerge、Kaleidoscope、P4Merge、TextMate、Visual Studio Code に対応しています。[比較ツールとマージツール](/guide/settings/integration/#diff-merge-tools) を参照してください。
 
-:::note[サーバーリポジトリ]
+:::note[サーバリポジトリ]
 比較ツールには、Mac 上の一時フォルダにあるファイルのコピーが渡されます。このフォルダは、リポジトリを閉じると削除されます。
 :::
 

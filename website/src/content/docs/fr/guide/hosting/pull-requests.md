@@ -70,9 +70,9 @@ Pour travailler sur le code d’une requête, cliquez sur :ui[pullRequests.check
 
 Saisissez un nom pour la branche locale et cliquez sur :ui[pullRequests.checkout]. Au début, c’est le nom de la branche source. Pour une requête venant d’un fork, c’est `pullrequests/<author>/<branch>`.
 
-Spooky récupère d’abord les commits de la requête, puis bascule sur la branche :
+Spooky récupère d’abord les commits de la requête, puis extrait la branche :
 
-- Si une branche locale de ce nom pointe déjà sur ces commits, Spooky bascule sur elle.
+- Si une branche locale de ce nom pointe déjà sur ces commits, Spooky l’extrait.
 - Si elle pointe ailleurs, la zone de dialogue l’indique. Choisissez un autre nom.
 - Sinon, Spooky crée la branche. Pour une requête du même projet, elle suit la branche source sur le dépôt distant, à condition que celle-ci soit sur le même commit.
 
@@ -85,7 +85,7 @@ L’extraction n’est pas disponible quand la branche locale qui suit la branch
 Cliquez sur :ui[pullRequests.merge] en bas des détails. La fusion se fait sur le service d’hébergement. Elle ne peut pas être annulée.
 
 - **GitHub** : choisissez un :ui[pullRequests.mergeType] parmi ceux que le dépôt autorise : :ui[pullRequests.method.merge], :ui[pullRequests.method.rebase] ou :ui[pullRequests.method.squash]. Spooky propose celui que vous avez utilisé la dernière fois.
-- **GitLab** : la zone de dialogue affiche la :ui[pullRequests.mergeStrategy] du projet. Sélectionnez :ui[pullRequests.squash] pour compresser les commits. L’option est absente quand le projet ne l’autorise pas. Elle reste activée quand le projet l’exige.
+- **GitLab** : la zone de dialogue affiche la :ui[pullRequests.mergeStrategy] du projet. Sélectionnez :ui[pullRequests.squash] pour fusionner les commits en un seul. L’option est absente quand le projet ne l’autorise pas. Elle reste activée quand le projet l’exige.
 
 :ui[pullRequests.deleteBranch] supprime la branche source sur le service. Au début, l’option reprend le réglage du projet.
 

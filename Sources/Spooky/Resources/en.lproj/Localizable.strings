@@ -244,7 +244,7 @@
 "signing.error.title" = "Could Not Sign Data";
 "error.merge" = "Merging Failed";
 "error.rebase" = "Rebase Failed";
-"error.checkout" = "Could Not Checkout Revision";
+"error.checkout" = "Could Not Check Out Revision";
 "sync.error.branch.title" = "Local Branch Required";
 "branch.error.diverged.title" = "Can’t Fast-Forward Branch";
 "branch.error.current.title" = "Can’t Fast-Forward Current Branch";
@@ -269,7 +269,7 @@
 "themes.preview.added" = "Added text";
 "themes.preview.deleted" = "Deleted text";
 "remoteError.invalidHost" = "Invalid SSH Host Alias";
-"remoteError.invalidHost.help" = "Enter one host alias from ~/.ssh/config, without a user name or port.";
+"remoteError.invalidHost.help" = "Enter one host alias from ~/.ssh/config, without a username or port.";
 "remoteError.absolutePathRequired" = "Absolute Path Required";
 "remoteError.absolutePathRequired.help" = "Enter the full repository path on the server, starting with /.";
 "remoteError.unknownHostKey" = "Unknown Host Fingerprint";
@@ -447,7 +447,7 @@
 "branch.trackStart.help" = "The new branch pushes to and pulls from the starting branch.";
 "branch.checkoutCreated" = "Check Out Branch";
 "branch.checkoutCreated.help" = "Switches to the new branch right after creating it.";
-"branch.track.checkout" = "Checkout Branch";
+"branch.track.checkout" = "Check Out Branch";
 "branch.cleanNames" = "Automatically convert ref names into valid format while typing";
 "branch.exists" = "A local branch named “%@” already exists.";
 "branch.groupExists" = "A ref group with this name already exists.";
@@ -654,7 +654,7 @@
 "stash.includeUntracked" = "Include Untracked Files";
 "stash.picker" = "Stash:";
 "stash.deleteAfterApply" = "Delete Stash After Applying Changes";
-"stash.restoreIndex" = "Restore Staging Area Status";
+"stash.restoreIndex" = "Restore Index Status";
 "stash.noStashes" = "This repository has no stashes to apply.";
 "stash.applyNamed" = "Apply Stash “%@”…";
 "stash.deleteNamed" = "Delete Stash “%@”…";
@@ -1062,7 +1062,7 @@
 "history.search.range" = "is in range";
 "history.search.to" = "to";
 "history.search.since" = "Since %@";
-"history.reveal.notFound" = "Commit %@ isn't in this history.";
+"history.reveal.notFound" = "Commit %@ isn’t in this history.";
 "history.reveal.slow" = "Load More Commits";
 "history.reveal.slow.submit" = "Load";
 "history.reveal.slow.message" = "Commit %1$@ comes after the first %2$ld commits of this history. Loading the history up to it may take a while.";
@@ -1213,7 +1213,7 @@
 "rewrite.revert" = "Revert";
 "rewrite.cherryPick" = "Cherry-Pick";
 "rewrite.reset" = "Reset Revision";
-"rewrite.checkout" = "Checkout Revision";
+"rewrite.checkout" = "Check Out Revision";
 "rewrite.rebaseOnto" = "Rebase Onto";
 "rewrite.squash" = "Squash Revisions";
 "rewrite.fixup" = "Fixup Revisions";
@@ -1313,7 +1313,7 @@
 "rewrite.error.autosquash.help" = "No recent commit is marked with fixup!, squash! or amend! for an earlier commit.";
 "rewrite.error.selection" = "Invalid Selection";
 "rewrite.error.selection.help" = "Select at least two commits to squash, and a target that is not among the selected commits.";
-"rewrite.checkout.menu" = "Checkout Revision…";
+"rewrite.checkout.menu" = "Check Out Revision…";
 "rewrite.rebaseOnto.menu" = "Rebase Onto…";
 "rewrite.reset.menu" = "Reset HEAD to Revision…";
 "conflict.hint.rebase.edit" = "Split or rewrite this commit by creating new commits with **Commit**, then click **End Editing** to continue the rebase.";
@@ -1413,14 +1413,14 @@
 "reference.invalidRefspec" = "“%@” is not a valid refspec.";
 "reference.invalidURL" = "“%@” is not a valid remote URL.";
 "reference.error.name" = "The name is not valid.";
-"reference.error.name.help" = "Names can't contain spaces, control characters or any of ~ ^ : ? * [ \\, and can't start with “-”.";
-"reference.name.leadingHyphen" = "Names can't start with “-”.";
-"reference.name.character" = "Names can't contain spaces, control characters or any of ~ ^ : ? * [ \\.";
-"reference.name.sequence" = "Names can't contain “..”, “//” or “@{”.";
-"reference.name.boundary" = "Names can't start or end with “/”, or end with “.”.";
+"reference.error.name.help" = "Names can’t contain spaces, control characters or any of ~ ^ : ? * [ \\, and can’t start with “-”.";
+"reference.name.leadingHyphen" = "Names can’t start with “-”.";
+"reference.name.character" = "Names can’t contain spaces, control characters or any of ~ ^ : ? * [ \\.";
+"reference.name.sequence" = "Names can’t contain “..”, “//” or “@{”.";
+"reference.name.boundary" = "Names can’t start or end with “/”, or end with “.”.";
 "reference.name.component" = "No part of a name between “/” can start with “.” or end with “.lock”.";
-"reference.name.ambiguous" = "Names can't be “HEAD” or a full commit hash.";
-"reference.name.other" = "Git doesn't accept this name.";
+"reference.name.ambiguous" = "Names can’t be “HEAD” or a full commit hash.";
+"reference.name.other" = "Git doesn’t accept this name.";
 "reference.error.refspec" = "The refspec is not valid.";
 "reference.error.refspec.help" = "Enter a refspec such as +refs/heads/*:refs/remotes/origin/*.";
 "reference.error.url" = "The remote URL is not valid.";
@@ -1463,9 +1463,9 @@
 "branch.deleteRemoteMultiple" = "Delete Remote Branches";
 "branch.deleteRemoteMultiple.message" = "Deletes %ld branches on their remotes.";
 "branch.deleteRemoteMenu.multiple" = "Delete %ld Remote Branches…";
-"branch.error.diverged" = "The branch can't be fast-forwarded.";
-"branch.error.diverged.help" = "The branch has commits that its upstream doesn't have. Merge or rebase it instead.";
-"branch.error.current" = "The current branch isn't fast-forwarded here.";
+"branch.error.diverged" = "The branch can’t be fast-forwarded.";
+"branch.error.diverged.help" = "The branch has commits that its upstream doesn’t have. Merge or rebase it instead.";
+"branch.error.current" = "The current branch isn’t fast-forwarded here.";
 "branch.error.current.help" = "Use Pull to update the current branch together with the working copy.";
 "branch.error.remoteExists" = "A remote branch with this name already exists.";
 "branch.error.remoteExists.help" = "Choose another name, or delete the existing remote branch first.";
@@ -1480,7 +1480,7 @@
 "branch.error.checkoutTracking.help" = "The branch keeps its commits and its new upstream. Check the original output, then check out the branch after fixing the problem.";
 "branch.trackExisting.title" = "Check Out Existing Branch";
 "branch.trackExisting.message" = "The local branch “%1$@” will be checked out and will track the remote branch “%2$@”. Its commits stay as they are.";
-"branch.error.unmerged.help" = "Check the branch's commits, or delete it with Force Deletion.";
+"branch.error.unmerged.help" = "Check the branch’s commits, or delete it with Force Deletion.";
 "tag.create" = "Create New Tag";
 "tag.create.message" = "Creates a local tag at the entered revision.";
 "tag.create.submit" = "Create Tag";
@@ -1570,8 +1570,8 @@
 "remote.action.addRefspec" = "Add Refspec";
 "remote.missing" = "Remote Not Found";
 "remote.missing.message" = "The remote “%@” no longer exists in this repository.";
-"remote.error.browser" = "The remote can't be opened in a browser.";
-"remote.error.browser.help" = "Only remotes with an HTTP(S), SSH or git protocol URL have a web page. Local paths and file URLs don't.";
+"remote.error.browser" = "The remote can’t be opened in a browser.";
+"remote.error.browser.help" = "Only remotes with an HTTP(S), SSH or git protocol URL have a web page. Local paths and file URLs don’t.";
 "branch.dragTrack" = "Track";
 "branch.dragPublish" = "Publish";
 
@@ -1648,12 +1648,12 @@
 "history.parentBanner.clean" = "No conflicts, update now!";
 "review.archive.title" = "Archive Branches";
 "review.archive.help" = "Select branches to hide from the main branch list. Archived branches move to Archived Branches in the sidebar and stay available there.";
-"review.archive.automaticHelp" = "These branches haven't been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Select the branches you want to archive.";
+"review.archive.automaticHelp" = "These branches haven’t been updated recently or their pull request or merge request has been merged, and are about to be archived automatically. Select the branches you want to archive.";
 "review.archive.submit" = "Archive";
 "review.archive.empty" = "No Branches to Archive";
-"review.archive.emptyHelp" = "Branches are only suggested for archiving when they haven't been updated recently or their pull request or merge request has been merged.";
+"review.archive.emptyHelp" = "Branches are only suggested for archiving when they haven’t been updated recently or their pull request or merge request has been merged.";
 "review.archive.auto" = "Automatically archive branches";
-"review.archive.autoHelp" = "Once a day, obsolete branches are listed for you to confirm before they're archived.";
+"review.archive.autoHelp" = "Once a day, obsolete branches are listed for you to confirm before they’re archived.";
 "review.archive.count" = "%ld branches can be archived";
 "review.archive.selection" = "%1$ld of %2$ld selected";
 "review.archived.one" = "1 branch archived";
@@ -1672,7 +1672,7 @@
 "history.identicalToParent" = "This branch is identical to its parent “%@”.";
 "history.identicalToBranch" = "This branch is identical to “%@”.";
 "history.hint.stale" = "Branch Appears Stale";
-"history.hint.staleMessage" = "This branch hasn't been updated in over %ld months. Consider archiving or removing it.";
+"history.hint.staleMessage" = "This branch hasn’t been updated in over %ld months. Consider archiving or removing it.";
 "sidebar.needsReview" = "Needs auto archive review";
 "sidebar.markAllReviewed" = "Mark All as Reviewed";
 "branch.mergeWith" = "Merge With “%@”…";
@@ -1765,7 +1765,7 @@
 "reflog.cherryPick" = "Cherry-Pick “%@”…";
 "reflog.restore.title" = "Restore Branch";
 "reflog.restore.submit" = "Restore";
-"reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the staging area are not changed. Commits that leave the branch can still be found in the reflog.";
+"reflog.restore.message" = "Move the branch “%1$@” to %2$@ in %3$@? The working copy and the index are not changed. Commits that leave the branch can still be found in the reflog.";
 
 "appearance.system" = "Automatic";
 "appearance.light" = "Light";
@@ -2291,8 +2291,8 @@
 "submodule.autoUpdate.message" = "The operation changed the recorded revisions of these submodules. Update them now?";
 "submodule.autoUpdate.skip" = "Do Not Update";
 "submodule.autoUpdate.update" = "Update";
-"submodule.checkoutRevision" = "Checkout Revision";
-"submodule.checkoutSubmoduleRevision" = "Checkout Submodule Revision";
+"submodule.checkoutRevision" = "Check Out Revision";
+"submodule.checkoutSubmoduleRevision" = "Check Out Submodule Revision";
 "submodule.default" = "%@ (Default)";
 "submodule.delete" = "Delete Submodule";
 "submodule.delete.keepWorkingTree" = "Keep Working Tree";

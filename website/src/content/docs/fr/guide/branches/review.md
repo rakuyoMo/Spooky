@@ -51,7 +51,7 @@ Vous pouvez sélectionner plusieurs branches à la fois, par exemple pour les ar
 
 Cliquez avec le bouton droit sur une branche pour afficher le même menu que dans la barre latérale. Avec plusieurs branches sélectionnées, le menu s’applique à toutes.
 
-Quand une branche serait en conflit avec la base, son menu contient aussi :ui[review.resolveConflicts]. Spooky bascule sur la branche et y fusionne la base. Vous résolvez ensuite les conflits sur la branche. Consultez [Résoudre les conflits](/guide/work/conflicts/).
+Quand une branche serait en conflit avec la base, son menu contient aussi :ui[review.resolveConflicts]. Spooky extrait la branche et y fusionne la base. Vous résolvez ensuite les conflits sur la branche. Consultez [Résoudre les conflits](/guide/work/conflicts/).
 
 Pour supprimer des branches, sélectionnez-les et appuyez sur <kbd>⌘⌫</kbd>, ou balayez une ligne vers la gauche et cliquez sur :ui[review.delete]. Spooky demande d’abord confirmation, comme dans la barre latérale.
 

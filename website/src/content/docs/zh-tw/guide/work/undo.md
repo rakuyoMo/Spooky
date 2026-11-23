@@ -16,7 +16,7 @@ description: "了解 ⌘Z 能還原什麼、有些操作為什麼無法還原，
 - 儲存、套用與刪除儲藏
 - 簽出、新增、重新命名與刪除分支，新增標籤
 - 釘選與封存分支，設定上游，快轉
-- 合併、變基、摘取、反轉與重設
+- 合併、重定基底、摘取、反轉與重設
 - 加入、重新命名與刪除遠端，修改遠端的設定
 - 發布分支與標籤，重新命名遠端分支
 - 標記 assume-unchanged，啟用 Git LFS，變更子模組
@@ -37,8 +37,8 @@ description: "了解 ⌘Z 能還原什麼、有些操作為什麼無法還原，
 
 - 刪除遠端上的分支與標籤。連同遠端分支一起刪除本機分支是個例外：還原會把兩個都建回來。
 - 修改提交者身分、忽略規則或其他 Git 設定。
-- 合併、變基等操作進行期間做的任何事，包括繼續或中止這個操作。
-- 停在衝突上的變基或摘取。停在衝突上的合併或反轉可以還原，效果就是中止它。
+- 合併、重定基底等操作進行期間做的任何事，包括繼續或中止這個操作。
+- 停在衝突上的重定基底或摘取。停在衝突上的合併或反轉可以還原，效果就是中止它。
 - 被永久刪除的新檔案，例如在沒有垃圾桶的伺服器上。
 - 子模組的初始化、同步與修復，工作樹的各種操作，更新 Git LFS 的掛鉤，以及把儲存庫發布到託管服務。見 [子模組](/guide/advanced/submodules/#undo)、[工作樹](/guide/advanced/worktrees/#undo)、[Git LFS](/guide/advanced/lfs/#undo) 與 [發布儲存庫](/guide/hosting/accounts/#publish)。
 
@@ -52,7 +52,7 @@ description: "了解 ⌘Z 能還原什麼、有些操作為什麼無法還原，
 
 | 原因 | 怎麼辦 |
 |---|---|
-| :ui[undo.reason.busy] | 等正在執行的操作結束，或者先完成進行中的合併、變基等操作 |
+| :ui[undo.reason.busy] | 等正在執行的操作結束，或者先完成進行中的合併、重定基底等操作 |
 | :ui[undo.reason.disconnected] | 重新連上伺服器 |
 | :ui[undo.reason.changed] | 儲存庫在那之後又變了：拉取或同步帶來了新提交，或者終端機、其他 App 變更了它。把它改回去，就又能還原了 |
 
@@ -63,13 +63,13 @@ description: "了解 ⌘Z 能還原什麼、有些操作為什麼無法還原，
 | :ui[undo.error.changed] | 儲存庫已經和 Spooky 記下的狀態對不上 |
 | :ui[undo.error.untracked] | 恢復會覆寫或刪掉未追蹤的檔案 |
 | :ui[undo.error.hidden] | 標記了 assume-unchanged 的檔案有本機變更，或者儲存庫用了 skip-worktree |
-| :ui[undo.error.inProgress] | 先完成或中止合併、變基、摘取或反轉 |
+| :ui[undo.error.inProgress] | 先完成或中止合併、重定基底、摘取或反轉 |
 | :ui[undo.error.conflicts] | 先解決衝突。見 [解決衝突](/guide/work/conflicts/) |
 | :ui[undo.error.trash] | 有些檔案已經不在垃圾桶裡，或者原來的位置上有了別的檔案 |
 
 ## 用 Reflog 找回提交 {#reflog}
 
-Git 會記下 HEAD 和每個本機分支指向過哪些提交。因為重設、變基或刪除分支而遺失的提交，通常還能在這裡找到。從來沒提交過的變更不在其中。
+Git 會記下 HEAD 和每個本機分支指向過哪些提交。因為重設、重定基底或刪除分支而遺失的提交，通常還能在這裡找到。從來沒提交過的變更不在其中。
 
 1. 選 :ui[menu.view > reflog.show]（<kbd>⌘6</kbd>）。
 2. 在頂端的 :ui[reflog.ref] 裡選 HEAD 或一個本機分支。

@@ -49,8 +49,8 @@ description: "커밋을 되돌리고, 체리픽하고, 재설정하고, 대화�
 1. 커밋을 오른쪽 클릭하고 메뉴에서 :ui[rewrite.menu.reset]{1="e2dda2bc"}을 선택합니다. 커밋 세부사항의 :ui[history.rollback]을 클릭하거나 메뉴 막대에서 :ui[workspace.title > rewrite.reset.menu]을 선택해도 됩니다.
 2. :ui[rewrite.revision] 필드를 확인합니다. 브랜치, 원격 브랜치, 태그를 고르거나 해시를 입력할 수 있습니다. 대화상자에 브랜치에서 빠질 커밋이 나열됩니다.
 3. :ui[rewrite.reset.mode] 항목을 선택합니다.
-   - :ui[rewrite.reset.soft]는 스테이징 영역과 작업 사본을 그대로 둡니다. 빠지는 커밋의 변경 사항은 스테이지된 상태로 남습니다.
-   - :ui[rewrite.reset.mixed]는 스테이징 영역을 재설정하고 작업 사본은 그대로 둡니다. 그 변경 사항은 스테이지되지 않은 상태가 됩니다.
+   - :ui[rewrite.reset.soft]는 인덱스과 작업 사본을 그대로 둡니다. 빠지는 커밋의 변경 사항은 스테이지된 상태로 남습니다.
+   - :ui[rewrite.reset.mixed]는 인덱스을 재설정하고 작업 사본은 그대로 둡니다. 그 변경 사항은 스테이지되지 않은 상태가 됩니다.
    - :ui[rewrite.reset.hard]는 둘 다 재설정합니다. 커밋하지 않은 변경과 빠지는 커밋의 변경 사항은 버려집니다.
 4. :ui[rewrite.reset.button]을 클릭합니다.
 

@@ -11,7 +11,7 @@ Git はすべてのコミットに名前とメールアドレスを記録し、�
 
 ## ユーザプロファイル {#profiles}
 
-ユーザプロファイルは、名前、メールアドレス、省略可能な署名鍵を、「仕事」のようなタイトルを付けて保存したものです。Spooky はプロファイルをこの Mac に保存します。ローカルのリポジトリでもサーバーリポジトリでも使えます。
+ユーザプロファイルは、名前、メールアドレス、省略可能な署名鍵を、「仕事」のようなタイトルを付けて保存したものです。Spooky はプロファイルをこの Mac に保存します。ローカルのリポジトリでもサーバリポジトリでも使えます。
 
 プロファイルを追加するには、次のようにします。
 
@@ -39,8 +39,8 @@ Git はすべてのコミットに名前とメールアドレスを記録し、�
 
 [クイックアクション](/guide/repositories/navigation/#quick-actions) にもプロファイルが並びます。:ui[quickActions.setCommitter] は、コミットエリアと同じように働きます。:ui[quickActions.setGlobalUser] は、確認したうえで、リポジトリがあるマシンのグローバルの Git 設定に名前とメールアドレスを設定します。
 
-:::note[サーバーリポジトリ]
-サーバーリポジトリでプロファイルを選ぶと、サーバー上のリポジトリの設定が変わります。そこでコミットするほかのツールも、同じユーザ情報を使います。サーバーリポジトリでの :ui[quickActions.setGlobalUser] は、サーバー上のグローバル設定に書き込みます。
+:::note[サーバリポジトリ]
+サーバリポジトリでプロファイルを選ぶと、サーバ上のリポジトリの設定が変わります。そこでコミットするほかのツールも、同じユーザ情報を使います。サーバリポジトリでの :ui[quickActions.setGlobalUser] は、サーバ上のグローバル設定に書き込みます。
 :::
 
 ## Git 設定 {#git-config}
@@ -60,8 +60,8 @@ Git はすべてのコミットに名前とメールアドレスを記録し、�
 
 一覧にない Git を使うには、:ui[settings.gitProgram.choose] を選んでプログラムを選択します。ファイルが Git でないか、バージョンが古すぎるときは、Spooky が理由を表示し、それまでのプログラムをそのまま使います。メニューの下の行には、Spooky が受け付ける最低バージョンが表示されます。
 
-:::note[サーバーリポジトリ]
-この設定は、ローカルのリポジトリにだけ適用されます。サーバーリポジトリは、サーバーの Git を使います。[システム要件](/reference/requirements/#servers) を参照してください。
+:::note[サーバリポジトリ]
+この設定は、ローカルのリポジトリにだけ適用されます。サーバリポジトリは、サーバの Git を使います。[システム要件](/reference/requirements/#servers) を参照してください。
 :::
 
 ### グローバルのユーザ情報 {#global-identity}
@@ -105,7 +105,7 @@ Git はすべてのコミットに名前とメールアドレスを記録し、�
 | 項目 | 表示される内容 |
 |---|---|
 | :ui[repositorySettings.name] と :ui[repositorySettings.path] | リポジトリのある場所 |
-| :ui[repositorySettings.localLocation] | サーバーリポジトリの場合、リポジトリのフォルダがこの Mac のどこにあるか。[場所を設定する](/guide/server/local-location/#set) を参照してください。 |
+| :ui[repositorySettings.localLocation] | サーバリポジトリの場合、リポジトリのフォルダがこの Mac のどこにあるか。[場所を設定する](/guide/server/local-location/#set) を参照してください。 |
 | :ui[bookmarks.detail.description] | リポジトリの説明。[リポジトリウインドウ](/guide/repositories/manager/) にも表示されます。変更するには :ui[bookmarks.detail.edit] をクリックします。 |
 | :ui[bookmarks.detail.identity] | このリポジトリがコミットに使う名前とメールアドレス。画像をクリックすると [プロファイル](#use-profile) を使えます。:ui[bookmarks.detail.edit] をクリックすると、このリポジトリだけの名前とメールアドレスを入力できます。 |
 
@@ -119,8 +119,8 @@ Git はすべてのコミットに名前とメールアドレスを記録し、�
 
 ルールを変更するには、:ui[repositorySettings.openInEditor] をクリックします。ファイルは、Mac がそのファイルに使うアプリケーションで開きます。ファイルがまだないときは、Spooky が先に作成します。
 
-:::note[サーバーリポジトリ]
-設定はサーバー上で読み書きされます。変更できるのは、リポジトリが接続されている間だけです。:ui[repositorySettings.openInEditor] は、作業コピーがサーバー上のファイルを開くのと同じ方法でファイルを開きます。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
+:::note[サーバリポジトリ]
+設定はサーバ上で読み書きされます。変更できるのは、リポジトリが接続されている間だけです。:ui[repositorySettings.openInEditor] は、作業コピーがサーバ上のファイルを開くのと同じ方法でファイルを開きます。[ターミナルとほかのアプリケーション](/guide/server/local-location/#terminal) を参照してください。
 :::
 
 ## 関連ページ

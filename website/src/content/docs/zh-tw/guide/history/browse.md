@@ -55,7 +55,7 @@ Spooky 先讀出前 100 個提交，捲到底時再讀後面的 100 個。想一
 
 目前所在的分支排在最前面。放不下的徽章會收成一個「…」。
 
-按一下標籤的徽章，可以看到標籤的簽名：用的是哪把金鑰、簽名是否有效，或者 :ui[signature.unsigned]。
+按一下標籤的徽章，可以看到標籤的簽章：用的是哪把金鑰、簽章是否有效，或者 :ui[signature.unsigned]。
 
 ## 搜尋與篩選 {#search}
 
@@ -91,7 +91,7 @@ Spooky 先讀出前 100 個提交，捲到底時再讀後面的 100 個。想一
 | :ui[history.sortBy] | :ui[history.sort.topo] 把同一條開發線上的提交排在一起。:ui[history.sort.date] 按日期排列。顯示提交圖時 :ui[history.sort.topo] 始終開啟。兩項都開啟時按日期排列 |
 | :ui[history.groupBy] | 按天、按週或按月給提交分組並加上小標題，也可以不分組。只在按日期排列時有效 |
 | :ui[history.medium] / :ui[history.small] | 每個提交佔兩行或一行。小號列只在顯示提交圖時有效 |
-| :ui[signature.verify] | 標出帶簽名的提交，見 [簽名](/guide/history/commit-details/#signatures) |
+| :ui[signature.verify] | 標出帶簽章的提交，見 [簽章](/guide/history/commit-details/#signatures) |
 | :ui[history.compareBranches] | 見 [與另一個分支比較](#compare-branches) |
 
 這些選項對所有視窗和所有儲存庫都有效。Spooky 會記住它們。

@@ -197,7 +197,7 @@ Avec la souris, maintenez <kbd>⇧</kbd> et cliquez sur un numéro de ligne pour
 
 Dans les listes où vous pouvez sélectionner plusieurs éléments, un clic avec <kbd>⇧</kbd> sélectionne une plage. Un clic avec <kbd>⌘</kbd> ajoute ou retire un seul élément. Dans la barre latérale, cliquez avec <kbd>⌘</kbd> sur des branches et des tags pour voir leur historique ensemble. Consultez [Ouvrir l’historique](/guide/history/browse/#open).
 
-Maintenez <kbd>⌘</kbd> et double-cliquez sur une branche extraite dans un autre worktree. Ce worktree s’ouvre dans un nouvel onglet. Consultez [Basculer sur une branche](/guide/branches/branches/#checkout).
+Maintenez <kbd>⌘</kbd> et double-cliquez sur une branche extraite dans un autre worktree. Ce worktree s’ouvre dans un nouvel onglet. Consultez [Extraire une branche](/guide/branches/branches/#checkout).
 
 ## Actions rapides {#quick-actions}
 

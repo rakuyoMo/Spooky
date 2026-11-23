@@ -127,7 +127,7 @@ Spooky 也能找出值得封存的分支，還能替你封存，見 [分支整�
 
 - 在歷史裡比較分支時，先拿父分支來比，見 [與另一個分支比較](/guide/history/browse/#compare-branches)。
 - 父分支有你的分支沒有的提交時，這個分支的歷史上方會顯示 :ui[history.parentBanner.title]。分支選單裡的 :ui[branch.updateNamed]{1="feature/units-toggle"} 可以把這些提交併進來，見 [用父分支更新分支](/guide/branches/merge-rebase/#update)。
-- 對目前所在的分支，選單裡的 :ui[branch.mergeWith]{1="main"} 與 :ui[branch.rebaseOn]{1="main"} 會開啟合併與變基對話框，並選好父分支。
+- 對目前所在的分支，選單裡的 :ui[branch.mergeWith]{1="main"} 與 :ui[branch.rebaseOn]{1="main"} 會開啟合併與重定基底對話框，並選好父分支。
 - 父分支本身不會算作陳舊。
 
 ## 篩選與分組 {#filter}
@@ -144,6 +144,6 @@ Spooky 也能找出值得封存的分支，還能替你封存，見 [分支整�
 ## 相關頁面
 
 - [擷取、拉取與推送](/guide/branches/sync/)
-- [合併與變基](/guide/branches/merge-rebase/)
+- [合併與重定基底](/guide/branches/merge-rebase/)
 - [分支整理](/guide/branches/review/)
 - [工作樹](/guide/advanced/worktrees/)

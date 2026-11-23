@@ -12,8 +12,8 @@ description: "システム要件の確認、Spooky のダウンロード、初�
 
 別の Git を選ばない限り、Spooky は `/usr/bin/git` の Git を使います。変更するには、:ui[app.name > settings.title]（<kbd>⌘,</kbd>）を開いて :ui[settings.gitConfig] をクリックし、:ui[settings.gitProgram] メニューからプログラムを選びます。メニューには、Spooky が見つけた Git のうちバージョンが十分に新しいものが並びます。ほかの場所にある Git を使うときは :ui[settings.gitProgram.choose] を選びます。最低バージョンはメニューの下に表示されます。[Git プログラム](/guide/settings/identity/#git-program) を参照してください。
 
-:::note[サーバーリポジトリ]
-サーバーにも Git 2.41 以降が必要です。Spooky は `~/.ssh/config` のホストエイリアスを使って SSH でサーバーに接続します。設定で選んだ Git が使われるのは、この Mac 上のリポジトリだけです。サーバーリポジトリではサーバーの Git を使います。[システム要件](/reference/requirements/) と [SSH を準備する](/guide/server/prepare-ssh/) を参照してください。
+:::note[サーバリポジトリ]
+サーバにも Git 2.41 以降が必要です。Spooky は `~/.ssh/config` のホストエイリアスを使って SSH でサーバに接続します。設定で選んだ Git が使われるのは、この Mac 上のリポジトリだけです。サーバリポジトリではサーバの Git を使います。[システム要件](/reference/requirements/) と [SSH を準備する](/guide/server/prepare-ssh/) を参照してください。
 :::
 
 ## ダウンロード {#download}
@@ -90,7 +90,7 @@ Spooky だけ別の言語にするには、次のようにします。
 - テーマやアクティビティの記録などのデータ：フォルダ `~/Library/Application Support/Spooky/` を削除します。
 - キャッシュ：フォルダ `~/Library/Caches/com.rakuyo.spooky/` と、`~/Library/HTTPStorages/` の中で名前が `com.rakuyo.spooky` で始まる項目を削除します。
 - Spooky が保存したパスワードとトークン：キーチェーンの中で名前が `com.rakuyo.spooky.` で始まる項目を削除します。
-- 使用した各サーバー：そのサーバーのホームフォルダにあるフォルダ `~/.spooky/` を削除します。
+- 使用した各サーバ：そのサーバのホームフォルダにあるフォルダ `~/.spooky/` を削除します。
 
 リポジトリの Git 設定には、Spooky が追加した `branch.<name>.spooky-*` の項目が残ります。Spooky が何をどこに保存するかは [データとプライバシー](/reference/data-privacy/) にまとめてあります。
 

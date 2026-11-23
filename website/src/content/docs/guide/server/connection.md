@@ -37,7 +37,7 @@ Spooky logs in to the server without asking anything. Git on the server sometime
 
 The first line of the dialog names the server. A private key dialog also shows the key’s path on the server.
 
-For a user name or password, select :ui[callback.saveKeychain] to keep the answer. The next time Git on that server asks, Spooky answers from Keychain. If you’ve added a GitHub or GitLab account, Spooky answers with that account first. See [Hosting Accounts](/guide/hosting/accounts/).
+For a username or password, select :ui[callback.saveKeychain] to keep the answer. The next time Git on that server asks, Spooky answers from Keychain. If you’ve added a GitHub or GitLab account, Spooky answers with that account first. See [Hosting Accounts](/guide/hosting/accounts/).
 
 A few things to know:
 

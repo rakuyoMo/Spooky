@@ -42,7 +42,7 @@ When it’s done, `~/.ssh` has `id_ed25519` and `id_ed25519.pub`.
 
 ## Add a host alias {#alias}
 
-A host alias is a short name for a server. You type it in Terminal and in Spooky, in place of the server’s address and your user name. Aliases go in the file `~/.ssh/config`.
+A host alias is a short name for a server. You type it in Terminal and in Spooky, in place of the server’s address and your username. Aliases go in the file `~/.ssh/config`.
 
 1. Open the file in TextEdit. This command creates the file if it doesn’t exist yet:
 
@@ -67,7 +67,7 @@ A host alias is a short name for a server. You type it in Terminal and in Spooky
 |---|---|
 | `Host` | The alias. Use one word without spaces, `@`, `:`, or `/`, and don’t start it with `-`. |
 | `HostName` | The server’s address or name, such as `203.0.113.10` or `server.example.com` |
-| `User` | Your user name on the server |
+| `User` | Your username on the server |
 | `IdentityFile` | The private key you created or found above |
 | `AddKeysToAgent`, `UseKeychain` | The first time you type the passphrase, your Mac saves it in Keychain. After that, SSH unlocks the key without asking. Spooky depends on this, because it never asks for the passphrase when it logs in. |
 

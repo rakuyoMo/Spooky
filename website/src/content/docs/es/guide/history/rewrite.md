@@ -49,8 +49,8 @@ Restablecer mueve la rama en la que estás a otro commit. Los commits posteriore
 1. Haz clic derecho en el commit y selecciona :ui[rewrite.menu.reset]{1="e2dda2bc"} en el menú. También puedes hacer clic en :ui[history.rollback] en los detalles del commit, o seleccionar :ui[workspace.title > rewrite.reset.menu] en la barra de menús.
 2. Comprueba :ui[rewrite.revision]. Puedes elegir una rama, una rama remota o una etiqueta, o escribir un hash. El diálogo muestra los commits que saldrán de la rama.
 3. Elige un :ui[rewrite.reset.mode]:
-   - :ui[rewrite.reset.soft] deja el área de stage y la copia de trabajo como están. Los cambios de los commits que salen se quedan en el stage.
-   - :ui[rewrite.reset.mixed] restablece el área de stage y conserva la copia de trabajo. Esos cambios quedan fuera del stage.
+   - :ui[rewrite.reset.soft] deja el índice y la copia de trabajo como están. Los cambios de los commits que salen se quedan en el stage.
+   - :ui[rewrite.reset.mixed] restablece el índice y conserva la copia de trabajo. Esos cambios quedan fuera del stage.
    - :ui[rewrite.reset.hard] restablece las dos. Se descartan los cambios sin commit y los cambios de los commits que salen.
 4. Haz clic en :ui[rewrite.reset.button].
 

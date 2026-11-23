@@ -85,7 +85,7 @@ Git lleva un registro de adónde han apuntado HEAD y cada rama local. Un commit 
 Haz clic derecho en la entrada para recuperar el commit:
 
 - :ui[reflog.createBranch]{1="9e0d36a7"} crea ahí una rama nueva. Tus ramas actuales se quedan como están.
-- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} devuelve a ese commit la rama que estás viendo. La copia de trabajo y el área de stage no cambian. Spooky pregunta antes, y puedes deshacerlo.
+- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} devuelve a ese commit la rama que estás viendo. La copia de trabajo y el índice no cambian. Spooky pregunta antes, y puedes deshacerlo.
 - :ui[reflog.cherryPick]{1="9e0d36a7"} copia el commit en la rama actual. También puedes arrastrar la entrada a :ui[workspace.title] o a la rama actual en la barra lateral.
 - :ui[reflog.reset]{1="9e0d36a7"} abre el diálogo de restablecer, para mover la rama actual a ese commit.
 - :ui[patch.menu]{1="9e0d36a7"} guarda el commit como un archivo de parche.

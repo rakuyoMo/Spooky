@@ -85,7 +85,7 @@ Git은 HEAD와 각 로컬 브랜치가 가리켜 온 위치를 기록해 둡니�
 커밋을 되찾으려면 항목을 오른쪽 클릭합니다.
 
 - :ui[reflog.createBranch]{1="9e0d36a7"}는 그 지점에서 새 브랜치를 시작합니다. 지금 있는 브랜치는 그대로입니다.
-- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"}은 보고 있는 브랜치를 그 커밋으로 되돌립니다. 작업 사본과 스테이징 영역은 바뀌지 않습니다. Spooky가 먼저 묻고, 실행 취소할 수 있습니다.
+- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"}은 보고 있는 브랜치를 그 커밋으로 되돌립니다. 작업 사본과 인덱스은 바뀌지 않습니다. Spooky가 먼저 묻고, 실행 취소할 수 있습니다.
 - :ui[reflog.cherryPick]{1="9e0d36a7"}은 그 커밋을 현재 브랜치에 복사합니다. 항목을 사이드바의 :ui[workspace.title]이나 현재 브랜치로 드래그해도 됩니다.
 - :ui[reflog.reset]{1="9e0d36a7"}은 재설정 대화상자를 엽니다. 현재 브랜치를 그 커밋으로 옮길 때 씁니다.
 - :ui[patch.menu]{1="9e0d36a7"}은 그 커밋을 패치 파일로 저장합니다.

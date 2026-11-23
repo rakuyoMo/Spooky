@@ -18,7 +18,7 @@ description: "了解這份手冊怎樣編排、從哪裡開始讀。"
 | [伺服器儲存庫](/guide/server/overview/) | Spooky 怎樣處理伺服器上的儲存庫，準備 SSH，加入伺服器儲存庫，連線，本機位置 |
 | [日常工作](/guide/work/working-copy/) | 工作區，檢視與暫存變更，提交，儲藏，衝突，還原 |
 | [歷史](/guide/history/browse/) | 瀏覽歷史，提交詳細資訊，檔案歷史與 Blame，改寫歷史 |
-| [分支與同步](/guide/branches/branches/) | 分支，標籤與遠端，擷取、拉取與推送，合併與變基，整理分支 |
+| [分支與同步](/guide/branches/branches/) | 分支，標籤與遠端，擷取、拉取與推送，合併與重定基底，整理分支 |
 | [協作](/guide/hosting/accounts/) | 託管帳號，Pull Request 與 Merge Request |
 | [更多儲存庫功能](/guide/advanced/submodules/) | 子模組，工作樹，Git LFS，操作怎樣排隊 |
 | [設定與整合](/guide/settings/general/) | 設定，外觀與主題，身分設定檔與 Git 設定，與其他 App 搭配 |

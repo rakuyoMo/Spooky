@@ -1,6 +1,6 @@
 ---
 title: "提交詳細資訊"
-description: "檢視提交的詳細資訊、變更集、檔案樹與簽名狀態，比較版本，以及匯出檔案。"
+description: "檢視提交的詳細資訊、變更集、檔案樹與簽章狀態，比較版本，以及匯出檔案。"
 ---
 
 在 [歷史](/guide/history/browse/) 裡選取一個提交，右邊一欄就顯示它的詳細資訊：誰在什麼時候提交的、完整的提交訊息，以及它變更的檔案。
@@ -14,7 +14,7 @@ description: "檢視提交的詳細資訊、變更集、檔案樹與簽名狀態
 - :ui[history.hash]：完整雜湊
 - :ui[history.parentHash]：每個父提交一行
 - :ui[history.treeHash]
-- 簽名，只有帶簽名的提交才有，見 [簽名](#signatures)
+- 簽章，只有帶簽章的提交才有，見 [簽章](#signatures)
 
 按一下右上角的箭頭，標頭就收合成作者、日期與參照三行。Spooky 會記住你的選擇。標頭下面是完整的提交訊息。
 
@@ -84,15 +84,15 @@ description: "檢視提交的詳細資訊、變更集、檔案樹與簽名狀態
 - :ui[rewrite.cherryPick.button] 把這些提交套用到你所在的分支。列表顯示的就是這個分支時，按鈕換成 :ui[rewrite.revert.button]，見 [改寫歷史](/guide/history/rewrite/)。
 - 剛好選取兩個提交時才有 :ui[compare.submit]，顯示從較早的提交到較新的提交改了什麼。按住 <kbd>⌥</kbd> 就反過來比較。
 
-## 簽名 {#signatures}
+## 簽章 {#signatures}
 
-詳細資訊會驗證所選提交的簽名。展開的標頭寫著金鑰與狀態，例如 :ui[signature.good]。
+詳細資訊會驗證所選提交的簽章。展開的標頭寫著金鑰與狀態，例如 :ui[signature.good]。
 
-想在列表裡也看到簽名，在 [視圖選項](/guide/history/browse/#view-options) 裡開啟 :ui[signature.verify]。帶簽名的提交會在列尾多一個圓點：
+想在列表裡也看到簽章，在 [視圖選項](/guide/history/browse/#view-options) 裡開啟 :ui[signature.verify]。帶簽章的提交會在列尾多一個圓點：
 
-- 綠色：簽名有效。
-- 紅色：簽名無效。
-- 黃色：其他狀態，例如金鑰已過期，或者 Spooky 無法驗證這個簽名。
+- 綠色：簽章有效。
+- 紅色：簽章無效。
+- 黃色：其他狀態，例如金鑰已過期，或者 Spooky 無法驗證這個簽章。
 
 按一下圓點可以看到金鑰與狀態。
 

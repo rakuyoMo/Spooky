@@ -80,7 +80,7 @@ Git 在每个提交里记下姓名与邮箱，还可以用密钥为它签名。S
 |---|---|
 | :ui[gitConfig.sshProgram] | 用 SSH 密钥签名的程序。起初用 :ui[gitConfig.sshProgram.system]。装了 1Password 时，也会列出它的签名程序。 |
 | :ui[gitConfig.gpgProgram] | 用于 OpenPGP 密钥的 GnuPG 程序。列出这台 Mac 上版本够新的几个。选 :ui[gitConfig.gpgProgram.select] 可以换成别的。 |
-| :ui[gitConfig.signingKey] | 用哪把密钥签名：GnuPG 钥匙环里的私钥，或 SSH agent 里载入的密钥。选好密钥后，Git 也就知道该用 OpenPGP 还是 SSH 签名。 |
+| :ui[gitConfig.signingKey] | 用哪把密钥签名：GnuPG 钥匙环里的私钥，或 SSH agent 里加载的密钥。选好密钥后，Git 也就知道该用 OpenPGP 还是 SSH 签名。 |
 | :ui[gitConfig.allowedSigners] | 列出你信任哪些 SSH 签名的文件，Git 核对签名时用。可以选 `~/.ssh/allowed_signers`，选别的文件，或者选 :ui[gitConfig.allowedSigners.none]。 |
 | :ui[gitConfig.signCommits] | 每个提交都签名 |
 | :ui[gitConfig.ensureEmailMatch] | OpenPGP 密钥的邮箱与全局邮箱不同时提示。起初是打开的。 |

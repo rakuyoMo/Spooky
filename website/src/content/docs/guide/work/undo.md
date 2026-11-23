@@ -85,7 +85,7 @@ Git keeps a log of where HEAD and each local branch have pointed. A commit you l
 Right-click the entry to bring the commit back:
 
 - :ui[reflog.createBranch]{1="9e0d36a7"} starts a new branch there. Your current branches stay as they are.
-- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} moves the branch you’re viewing back to that commit. The Working Copy and the staging area don’t change. Spooky asks first, and you can undo it.
+- :ui[reflog.restore]{1="feature/units-toggle" 2="9e0d36a7"} moves the branch you’re viewing back to that commit. The Working Copy and the index don’t change. Spooky asks first, and you can undo it.
 - :ui[reflog.cherryPick]{1="9e0d36a7"} copies the commit onto the current branch. You can also drag the entry onto :ui[workspace.title] or the current branch in the sidebar.
 - :ui[reflog.reset]{1="9e0d36a7"} opens the reset dialog, to move the current branch to that commit.
 - :ui[patch.menu]{1="9e0d36a7"} saves the commit as a patch file.
