@@ -105,3 +105,40 @@ enum PullRequestAssociations {
         defaults.set(try? JSONEncoder().encode(all), forKey: key)
     }
 }
+
+// MARK: - PullRequestServices
+
+/// 各仓库上次认出的托管服务，存在偏好里：打开仓库后、读出远端之前，界面按它取 Pull Request 或 Merge Request 的叫法。
+///
+/// 记录能从远端重新得出，不登记进 `DeveloperPreferences.dataKeys`。
+enum PullRequestServices {
+    /// 偏好键，值以仓库的显示路径为键，记服务的原始值。
+    static let key = "hostingServices"
+
+    /// 上次打开这个仓库时认出的服务；没有记过或记录无法识别时为 nil。
+    ///
+    /// - Parameters:
+    ///   - repository: 打开的仓库。
+    ///   - defaults: 存放记录的偏好，测试使用独立的偏好域。
+    static func stored(for repository: RepositoryLocation, defaults: UserDefaults = .standard) -> HostingService? {
+        let services = defaults.dictionary(forKey: key) as? [String: String]
+
+        return services?[repository.displayPath].flatMap(HostingService.init)
+    }
+
+    /// 记下这个仓库的服务；与已记的相同时不写偏好。
+    ///
+    /// - Parameters:
+    ///   - service: 选中远端对应的服务；对应不上时为 nil，删掉这一项。
+    ///   - repository: 打开的仓库。
+    ///   - defaults: 存放记录的偏好，测试使用独立的偏好域。
+    static func store(_ service: HostingService?, for repository: RepositoryLocation, defaults: UserDefaults = .standard) {
+        guard service != stored(for: repository, defaults: defaults) else {
+            return
+        }
+
+        var services = defaults.dictionary(forKey: key) ?? [:]
+        services[repository.displayPath] = service?.rawValue
+        defaults.set(services, forKey: key)
+    }
+}
