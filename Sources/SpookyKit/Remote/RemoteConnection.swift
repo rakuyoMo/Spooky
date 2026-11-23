@@ -21,8 +21,8 @@ public actor RemoteConnection {
     /// 多个执行器复用同一工作区会话。
     private static let connections = Mutex<[RepositoryLocation: RemoteConnection]>([:])
 
-    /// 连接状态、远端会话与取消结果的日志；主机别名按私有记录。
-    private static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RemoteConnection")
+    /// 连接状态、远端会话、常驻通道与取消结果的日志；主机别名按私有记录。
+    static let logger = Logger(subsystem: "com.rakuyo.spooky", category: "RemoteConnection")
 
     /// SSH 配置中的主机别名。
     public nonisolated let host: String
@@ -49,10 +49,10 @@ public actor RemoteConnection {
     public internal(set) var environment: RemoteHostEnvironment? = nil
 
     /// 同一主机的每条连接使用独立控制目录。
-    private var localDirectory: URL? = nil
+    private(set) var localDirectory: URL? = nil
 
     /// B 上的 0700 会话目录。
-    private var remoteDirectory: String? = nil
+    private(set) var remoteDirectory: String? = nil
 
     /// 没能经当时的主连接关掉的旧会话目录，其中的操作可能仍在 B 上执行；重新连接后先关掉它们。
     private var unclosedSessions: [String] = []
@@ -92,6 +92,18 @@ public actor RemoteConnection {
 
     /// 应用提供的凭据及编辑器交互入口。
     private var callbackHandler: RemoteCallbackHandler? = nil
+
+    /// 主连接上常驻的命令通道，就绪之后才放在这里。
+    var resident: RemoteCommandChannel? = nil
+
+    /// 正在后台重新打开常驻通道的任务。
+    var reopening: Task<Void, Never>? = nil
+
+    /// 连续打不开常驻通道的次数，到上限后等重新连接再试。
+    var channelFailures = 0
+
+    /// 经常驻通道执行完的命令数，测试据此确认命令走了通道。
+    var channelCommands = 0
 
     /// 创建会话不产生网络访问，首次 open 或 execute 才建立连接。
     ///
@@ -282,12 +294,14 @@ public actor RemoteConnection {
         ).value
     }
 
-    /// 只检查主连接，不允许 SSH 因复用失败悄悄新建连接。
+    /// 只检查主连接，不允许 SSH 因复用失败悄悄新建连接；常驻通道连着时主连接一定还在，不另开控制请求。
     public func check() async throws {
         if let canonical {
             try await canonical.check()
             return
         }
+
+        if let resident, resident.isReady { return }
 
         guard localDirectory != nil else { throw RemoteConnectionError(.unavailable) }
         let result = try await ssh(["-O", "check"], arguments: ["connection-check"])
@@ -607,14 +621,7 @@ extension RemoteConnection {
         ], arguments: ["relay-forward"])
         guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
 
-        _ = try await probe(
-            [
-                wrapper, "watch", remoteDirectory,
-                String(configuration.heartbeatTolerance),
-                String(configuration.operationRetention),
-            ],
-            kind: .deployment
-        )
+        try await startWatcher(wrapper: wrapper, remoteDirectory: remoteDirectory)
     }
 
     /// 在本工作区执行 Git：带上全局选项与回调配置，交给包装器在独立进程组里运行。
@@ -703,7 +710,7 @@ extension RemoteConnection {
                 || gitFailure?.category == .outputLimitExceeded
                 || gitFailure?.category == .processIOFailed
             {
-                // 命令通道已由进程执行器关闭，取消确认使用不继承取消状态的控制任务。
+                // 本机已经不再接收这条命令的输出，B 上的进程组由取消确认结束；确认使用不继承取消状态的控制任务。
                 let confirmed = await Task.detached {
                     await self.cancelRemote(operation, directory: remoteDirectory, wrapper: wrapper)
                 }.value
@@ -759,7 +766,7 @@ extension RemoteConnection {
         return confirmed
     }
 
-    /// 每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
+    /// 能经常驻通道执行时经它执行，否则另开会话；每个远端参数独立转义，主连接失效时禁止回退到新连接执行写操作。
     ///
     /// - Parameter inputFile: 标准输入改从这个本机文件读取。
     func commandChannel(
@@ -774,6 +781,16 @@ extension RemoteConnection {
             activeChannels -= 1
             lastCommand = .now
         }
+
+        let channeled = try await executeThroughChannel(
+            command,
+            input: input,
+            inputFile: inputFile,
+            arguments: arguments,
+            onOutput: onOutput
+        )
+
+        if let channeled { return channeled }
 
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
         return try await ssh(
@@ -808,9 +825,7 @@ extension RemoteConnection {
             let result = try await Subprocess.run(
                 .path(FilePath("/usr/bin/ssh")),
                 arguments: Arguments(["-E", log.path] + processArguments),
-                environment: .inherit
-                    .updating(LocalExecutionSettings.current.sshOverrides)
-                    .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+                environment: Self.sshEnvironment,
                 input: .none,
                 output: .discarded,
                 error: .discarded
@@ -834,9 +849,7 @@ extension RemoteConnection {
             executable: "/usr/bin/ssh",
             processArguments: processArguments,
             arguments: arguments,
-            environment: .inherit
-                .updating(LocalExecutionSettings.current.sshOverrides)
-                .updating(["LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8"]),
+            environment: Self.sshEnvironment,
             input: input,
             inputFile: inputFile,
             acceptedExitCodes: Set(0 ... 255),
@@ -924,6 +937,9 @@ extension RemoteConnection {
                 unclosedSessions.append(remoteDirectory)
             }
         }
+
+        // 关闭会话的请求经常驻通道发出并结束之后，才关掉通道
+        closeChannel()
 
         if localDirectory != nil {
             let host = host

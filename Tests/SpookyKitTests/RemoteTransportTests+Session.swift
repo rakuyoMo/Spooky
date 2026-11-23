@@ -230,7 +230,7 @@ extension RemoteTransportTests {
     ///   - arguments: 模式与它的参数。
     ///   - input: 标准输入。
     /// - Returns: 包装器的输出与退出状态。
-    private func runWrapper(_ arguments: [String], input: Data? = nil) async throws -> GitCommandResult {
+    func runWrapper(_ arguments: [String], input: Data? = nil) async throws -> GitCommandResult {
         try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: [Self.wrapper.path] + arguments,
@@ -241,7 +241,7 @@ extension RemoteTransportTests {
     /// 用包装器建一个本机会话目录。
     ///
     /// - Returns: 会话目录的路径。
-    private func createSession() async throws -> String {
+    func createSession() async throws -> String {
         let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
         let created = try await runWrapper(
             ["create-session"],

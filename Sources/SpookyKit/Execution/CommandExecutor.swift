@@ -118,13 +118,13 @@ enum CommandExecutor {
 
 // MARK: - GitOutputLimitError
 
-/// 输出超限时结束读取，由进程库负责回收子进程。
-private struct GitOutputLimitError: Error { }
+/// 输出超限时结束读取，由进程库或常驻通道负责结束命令。
+struct GitOutputLimitError: Error { }
 
 // MARK: - GitOutputCollector
 
-/// 同时收集两条输出管道，失败时仍能取回此前收到的数据。
-private actor GitOutputCollector {
+/// 同时收集两条输出管道，失败时仍能取回此前收到的数据；逐条执行与常驻通道共用同一套上限与转交规则。
+actor GitOutputCollector {
     /// 已收集的标准输出。
     private var standardOutput = Data()
 
@@ -145,28 +145,36 @@ private actor GitOutputCollector {
     /// 连续消费一条管道，输出超限时保留上限内的原始字节。
     func consume(_ sequence: SubprocessOutputSequence, isError: Bool) async throws {
         for try await buffer in sequence {
-            let data = Data(buffer: buffer)
+            try receive(Data(buffer: buffer), isError: isError)
+        }
+    }
 
-            // 写盘的输出可能远超内存上限，原样转交后不再保留
-            if !isError, streamsStandardOutput {
-                onOutput?(.standardOutput(data))
-                continue
-            }
-            let limit = isError ? 1024 * 1024 : 256 * 1024 * 1024
-            let count = isError ? standardError.count : standardOutput.count
-            let retained = data.prefix(max(0, limit - count))
+    /// 收下一块输出并转交订阅者；超出上限时只保留上限内的字节并抛出 ``GitOutputLimitError``。
+    ///
+    /// - Parameters:
+    ///   - data: 这一块输出。
+    ///   - isError: 是否来自标准错误。
+    func receive(_ data: Data, isError: Bool) throws {
+        // 写盘的输出可能远超内存上限，原样转交后不再保留
+        if !isError, streamsStandardOutput {
+            onOutput?(.standardOutput(data))
+            return
+        }
 
-            if isError {
-                standardError.append(retained)
-                onOutput?(.standardError(Data(retained)))
-            } else {
-                standardOutput.append(retained)
-                onOutput?(.standardOutput(Data(retained)))
-            }
+        let limit = isError ? 1024 * 1024 : 256 * 1024 * 1024
+        let count = isError ? standardError.count : standardOutput.count
+        let retained = data.prefix(max(0, limit - count))
 
-            guard data.count <= limit - count else {
-                throw GitOutputLimitError()
-            }
+        if isError {
+            standardError.append(retained)
+            onOutput?(.standardError(Data(retained)))
+        } else {
+            standardOutput.append(retained)
+            onOutput?(.standardOutput(Data(retained)))
+        }
+
+        guard data.count <= limit - count else {
+            throw GitOutputLimitError()
         }
     }
 
