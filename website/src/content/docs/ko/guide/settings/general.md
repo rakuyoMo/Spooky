@@ -19,6 +19,7 @@ description: "설정 윈도우의 구성을 살펴보고, 일반, 업데이트, 
 | :ui[settings.themes] | Diff와 파일의 색상과 서체 | [모양과 테마](/guide/settings/appearance/#themes) |
 | :ui[settings.profiles] | 커밋할 때 바꿔 가며 쓰는 커미터 정보 | [사용자 프로필과 Git 구성](/guide/settings/identity/#profiles) |
 | :ui[settings.accounts] | GitHub와 GitLab 계정 | [호스팅 계정](/guide/hosting/accounts/) |
+| :ui[settings.sshHosts] | 서버의 호스트 별칭. `~/.ssh/config`에 저장됩니다 | [SSH 준비하기](/guide/server/prepare-ssh/#alias) |
 | :ui[settings.integration] | github.com의 링크, SSH 에이전트, 충돌 보고서 | [통합](/guide/settings/integration/#integration-page) |
 | :ui[settings.environment] | 이 Mac의 Git에 쓰는 환경 변수, 서버 환경 확인 | [환경](#environment) |
 | :ui[settings.updates] | Spooky가 스스로 업데이트하는 방식 | [업데이트](#updates) |

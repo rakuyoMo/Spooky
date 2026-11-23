@@ -24,6 +24,8 @@ Si vous vous connectez à un GitLab autogéré avec un nom d’utilisateur et un
 
 Pour supprimer tout cela, consultez [Désinstaller](/guide/start/install/#uninstall).
 
+Les alias d’hôte que vous ajoutez dans :ui[app.name > settings.title] › :ui[settings.sshHosts] vont dans `~/.ssh/config`, le fichier que SSH lit lui-même. Ce fichier n’appartient pas à Spooky, et la désinstallation de Spooky le laisse tel quel. Consultez [Ajouter un alias d’hôte](/guide/server/prepare-ssh/#alias).
+
 ## Sur les serveurs {#servers}
 
 En plus du dépôt lui-même, Spooky écrit à deux endroits sur un serveur :

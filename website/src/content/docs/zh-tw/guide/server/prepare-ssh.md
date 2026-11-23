@@ -42,36 +42,68 @@ ssh-keygen -t ed25519 -C "alex@example.com"
 
 ## 加入主機別名 {#alias}
 
-主機別名是伺服器的簡短名稱。在終端機和 Spooky 裡都用它，代替伺服器的位址和你的使用者名稱。別名寫在 `~/.ssh/config` 這個檔案裡。
+主機別名是伺服器的簡短名稱。在終端機和 Spooky 裡都用它，代替伺服器的位址和你的使用者名稱。別名儲存在 `~/.ssh/config` 這個檔案裡，在 Spooky 的設定裡加入。
 
-1. 用文字編輯開啟這個檔案。檔案還不存在時，這條指令會先建好它：
+1. 選 :ui[app.name > settings.title] › :ui[settings.sshHosts]。
+2. 按一下列表下方的加入按鈕。
+3. 填好各項，換成你自己的資訊。
+4. 按一下 :ui[sshHosts.create.submit]。
+
+::screenshot[加入主機別名對話框。別名是 driftwood-server，伺服器位址是 203.0.113.10，使用者名稱是 alex，連接埠空著，私密金鑰路徑是 ~/.ssh/id_ed25519。按鈕是「取消」與「加入」。]{name="settings-ssh-hosts-add" frame="dialog"}
+
+| 這一項 | 填什麼 |
+|---|---|
+| :ui[sshHosts.alias] | 別名。用一個詞，不帶空格、`@`、`:`、`/`、`*` 或 `?`，也不要以 `-` 或 `!` 開頭。 |
+| :ui[sshHosts.hostName] | 伺服器的位址或名稱，例如 `203.0.113.10` 或 `server.example.com` |
+| :ui[sshHosts.user] | 你在伺服器上的使用者名稱 |
+| :ui[sshHosts.port] | 連接埠。伺服器的 SSH 用的不是 22 連接埠時才填 |
+| :ui[sshHosts.identityFile] | 上面新增或找到的私密金鑰，例如 `~/.ssh/id_ed25519` |
+
+只有 :ui[sshHosts.alias] 必須填。Spooky 把別名和填了的各項寫進 `~/.ssh/config`：
+
+```
+Host driftwood-server
+    HostName 203.0.113.10
+    User alex
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+檔案裡有帶萬用字元的項目（例如 `Host *`）或 `Match` 項目時，新的幾行寫在第一個這樣的項目上面，不會被它蓋掉。沒有這樣的項目，就寫在檔案末尾。
+
+### 修改或刪除別名 {#manage-aliases}
+
+:ui[settings.sshHosts] 頁列出 `~/.ssh/config` 裡的別名，用文字編輯器加的也在裡面。
+
+::screenshot[設定視窗的 SSH 主機頁。列表有別名、伺服器位址、使用者名稱、連接埠與私密金鑰路徑五欄，裡面是 staging、backup-nas 與 driftwood-server 三個別名，選取的是 driftwood-server。列表下方有加入與移除按鈕，右邊是「編輯…」按鈕。]{name="settings-ssh-hosts" frame="window"}
+
+- 想修改別名，選取它，按一下 :ui[sshHosts.edit]。Spooky 只改你動過的那幾項對應的行。這台伺服器別的 SSH 選項、別的伺服器和註解都保持原樣。
+- 想刪除別名，選取它，按一下列表下方的移除按鈕，再確認。Spooky 刪掉它的 `Host` 行和下面的選項。
+
+帶幾個名稱或萬用字元的項目（例如 `Host *`）不在列表裡，Spooky 也不會更動它們。這些項目用文字編輯器改。
+
+每次回到 Spooky，它都會重新讀一遍這個檔案。對話框開著的時候別的程式改了檔案，Spooky 不會儲存你的修改。列表換成檔案現在的內容，你再改一次。
+
+## 讓 Mac 解鎖金鑰 {#keychain}
+
+Spooky 登入時從不詢問金鑰的密語，得由 Mac 替它解鎖。在 `~/.ssh/config` 裡加兩行，對所有伺服器都管用。金鑰沒有密語的話，跳過這一步。
+
+1. 用文字編輯開啟這個檔案：
 
    ```sh
-   touch ~/.ssh/config && open -e ~/.ssh/config
+   open -e ~/.ssh/config
    ```
 
-2. 在檔案末尾加上這幾行，換成你自己的資訊：
+2. 在檔案末尾加上這幾行：
 
    ```
-   Host driftwood-server
-       HostName 203.0.113.10
-       User alex
-       IdentityFile ~/.ssh/id_ed25519
+   Host *
        AddKeysToAgent yes
        UseKeychain yes
    ```
 
 3. 儲存檔案，關掉文字編輯。
 
-| 這一行 | 填什麼 |
-|---|---|
-| `Host` | 別名。用一個詞，不帶空格、`@`、`:` 或 `/`，也不要以 `-` 開頭。 |
-| `HostName` | 伺服器的位址或名稱，例如 `203.0.113.10` 或 `server.example.com` |
-| `User` | 你在伺服器上的使用者名稱 |
-| `IdentityFile` | 上面新增或找到的私密金鑰 |
-| `AddKeysToAgent`、`UseKeychain` | 第一次輸入私鑰密語後，Mac 會把它存進鑰匙圈，之後 SSH 解鎖金鑰時不再詢問。Spooky 登入時從不詢問私鑰密語，所以離不開這兩行。 |
-
-伺服器的 SSH 用的不是 22 連接埠時，再加一行，例如 `Port 2222`。
+第一次輸入私鑰密語後，Mac 會把它存進鑰匙圈，之後 SSH 解鎖金鑰時不再詢問。
 
 ## 先連一次 {#fingerprint}
 
@@ -128,9 +160,9 @@ ssh -o BatchMode=yes driftwood-server git --version
 
 | 看到什麼 | 怎麼辦 |
 |---|---|
-| `Permission denied` | 伺服器還不接受你的金鑰，或者 Mac 解不開它。看看 [把公開金鑰放到伺服器上](#copy-key) 與 [重新啟動 Mac 之後](#after-restart)。 |
+| `Permission denied` | 伺服器還不接受你的金鑰，或者 Mac 解不開它。看看 [讓 Mac 解鎖金鑰](#keychain)、[把公開金鑰放到伺服器上](#copy-key) 與 [重新啟動 Mac 之後](#after-restart)。 |
 | `Host key verification failed` | Mac 還不認識這台伺服器，見 [先連一次](#fingerprint)。 |
-| `Could not resolve hostname`、`Connection refused` 或 `Operation timed out` | 檢查 `~/.ssh/config` 裡的 `HostName` 與 `Port`，確認伺服器開著、連得上。 |
+| `Could not resolve hostname`、`Connection refused` 或 `Operation timed out` | 在 :ui[app.name > settings.title] › :ui[settings.sshHosts] 裡檢查這個別名的 :ui[sshHosts.hostName] 與 :ui[sshHosts.port]，確認伺服器開著、連得上。 |
 | 含有 `command not found` 的提示 | 伺服器上沒裝 Git，或者 SSH 登入時找不到它。問問伺服器管理者。 |
 | 版本低於 2.41.0 | 請伺服器管理者更新 Git。 |
 
@@ -154,7 +186,7 @@ SSH agent 替 SSH 保管已經解鎖的金鑰。Spooky 用的是系統的 agent�
 2. 開啟 **遠端登入**。
 3. 儲存庫放在「文件」「桌面」這類受保護的資料夾裡時，按一下 **遠端登入** 旁邊的資訊按鈕，開啟 **允許遠端使用者取用完整磁碟**。
 
-然後回到你自己的 Mac，照這一頁做一遍，`HostName` 填那台 Mac 的位址。
+然後回到你自己的 Mac，照這一頁做一遍，:ui[sshHosts.hostName] 填那台 Mac 的位址。
 
 ## 相關頁面
 

@@ -19,6 +19,7 @@ Wählen Sie :ui[app.name > settings.title] (<kbd>⌘,</kbd>). Die Seiten stehen 
 | :ui[settings.themes] | Farben und Schrift für Diffs und Dateien | [Erscheinungsbild und Themen](/guide/settings/appearance/#themes) |
 | :ui[settings.profiles] | Identitäten, zwischen denen Sie beim Committen wechseln können | [Benutzerprofile und Git-Konfiguration](/guide/settings/identity/#profiles) |
 | :ui[settings.accounts] | GitHub- und GitLab-Accounts | [Hosting-Accounts](/guide/hosting/accounts/) |
+| :ui[settings.sshHosts] | Host-Aliasse für Ihre Server, gesichert in `~/.ssh/config` | [SSH vorbereiten](/guide/server/prepare-ssh/#alias) |
 | :ui[settings.integration] | Links von github.com, der SSH-Agent und Absturzberichte | [Integration](/guide/settings/integration/#integration-page) |
 | :ui[settings.environment] | Umgebungsvariablen für Git auf diesem Mac und eine Prüfung der Umgebung eines Servers | [Umgebung](#environment) |
 | :ui[settings.updates] | Wie Spooky sich aktualisiert | [Updates](#updates) |

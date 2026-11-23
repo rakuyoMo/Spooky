@@ -15,7 +15,7 @@ description: "サーバリポジトリを追加するダイアログの入力、
 
 | フィールド | 入力する内容 |
 |---|---|
-| :ui[remote.host] | `~/.ssh/config` の `Host` の名前。`driftwood-server` など。ユーザ名やポートは付けず、エイリアスだけを入力します。 |
+| :ui[remote.host] | `~/.ssh/config` の `Host` の名前。`driftwood-server` など。ユーザ名やポートは付けず、エイリアスだけを入力します。エイリアスがまだないときは、[ホストエイリアスを追加する](/guide/server/prepare-ssh/#alias) を参照してください。 |
 | :ui[remote.path] | サーバ上のリポジトリのフルパス。`/` で始まります。`/srv/git/driftwood` など |
 | :ui[remote.mount] | 省略できます。リポジトリのフォルダをこの Mac で使えるようにして、Finder で表示できるようにします。[追加時にマウントする](/guide/server/local-location/#when-adding) を参照してください。 |
 

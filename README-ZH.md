@@ -193,6 +193,7 @@ Spooky 的日志写在 `com.rakuyo.spooky` 子系统下，category 是所在的�
 | “活动” 窗口用来计算增减的上一次清单 | `~/Library/Application Support/Spooky/Baselines/` |
 | 存入钥匙串的凭据 | 钥匙串，服务名 `com.rakuyo.spooky.remote.<主机别名>` |
 | 托管账号的令牌 | 钥匙串，服务名 `com.rakuyo.spooky.hosting.<实例地址>` |
+| 在设置的 “SSH 主机” 页管理的主机别名 | `~/.ssh/config`，系统 SSH 读的那份配置 |
 | 连接与回调 | 私有的 `/tmp/spooky-*` 目录，关闭会话后清理 |
 | 交给 Quick Look 和其它程序的文件副本 | 私有的 `spooky-files-*` 临时目录，关闭仓库后清理 |
 

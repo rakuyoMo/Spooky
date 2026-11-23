@@ -24,6 +24,8 @@ Spooky에는 계정이 없으며, Spooky는 사용 데이터를 수집하지 않
 
 이 모두를 제거하려면 [제거](/guide/start/install/#uninstall)를 참고하세요.
 
+:ui[app.name > settings.title] › :ui[settings.sshHosts]에서 추가한 호스트 별칭은 SSH가 직접 읽는 파일인 `~/.ssh/config`에 저장됩니다. 이 파일은 Spooky의 것이 아니므로, Spooky를 제거해도 그대로 남습니다. [호스트 별칭 추가하기](/guide/server/prepare-ssh/#alias)를 참고하세요.
+
 ## 서버에 저장되는 것 {#servers}
 
 저장소 자체 말고도 Spooky는 서버의 두 곳에 씁니다.

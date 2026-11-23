@@ -15,7 +15,7 @@ description: "서버 저장소 추가 대화상자를 채우고, 연결 확인 �
 
 | 필드 | 입력할 내용 |
 |---|---|
-| :ui[remote.host] | `~/.ssh/config`의 `Host` 이름. 예: `driftwood-server`. 사용자 이름이나 포트 없이 별칭만 입력합니다. |
+| :ui[remote.host] | `~/.ssh/config`의 `Host` 이름. 예: `driftwood-server`. 사용자 이름이나 포트 없이 별칭만 입력합니다. 별칭이 아직 없으면 [호스트 별칭 추가하기](/guide/server/prepare-ssh/#alias)를 참고하세요. |
 | :ui[remote.path] | 서버에 있는 저장소의 전체 경로. `/`로 시작합니다. 예: `/srv/git/driftwood` |
 | :ui[remote.mount] | 선택 사항. 저장소의 폴더를 이 Mac에서 쓸 수 있게 해서 Finder에 표시되게 합니다. [추가하면서 마운트하기](/guide/server/local-location/#when-adding)를 참고하세요. |
 

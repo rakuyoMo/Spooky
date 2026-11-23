@@ -19,6 +19,7 @@ description: "认识设置窗口，以及通用、更新、环境三页的选项
 | :ui[settings.themes] | Diff 与文件的配色和字体 | [外观与主题](/guide/settings/appearance/#themes) |
 | :ui[settings.profiles] | 提交时可以换用的几个身份 | [身份档案与 Git 配置](/guide/settings/identity/#profiles) |
 | :ui[settings.accounts] | GitHub 与 GitLab 账号 | [托管账号](/guide/hosting/accounts/) |
+| :ui[settings.sshHosts] | 服务器的主机别名，保存在 `~/.ssh/config` 里 | [准备 SSH](/guide/server/prepare-ssh/#alias) |
 | :ui[settings.integration] | github.com 的链接、SSH agent 与崩溃报告 | [集成](/guide/settings/integration/#integration-page) |
 | :ui[settings.environment] | 本机 Git 用的环境变量，以及检查服务器的环境 | [环境](#environment) |
 | :ui[settings.updates] | Spooky 怎样更新自己 | [更新](#updates) |

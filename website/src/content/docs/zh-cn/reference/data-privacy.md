@@ -24,6 +24,8 @@ Spooky 没有自己的账号，也不收集使用数据。这一页列出它存�
 
 想把这些全删掉，见 [卸载](/guide/start/install/#uninstall)。
 
+在 :ui[app.name > settings.title] › :ui[settings.sshHosts] 里添加的主机别名保存在 `~/.ssh/config`，也就是 SSH 自己读的那个文件。它不是 Spooky 的文件，卸载 Spooky 不会动它。见 [添加主机别名](/guide/server/prepare-ssh/#alias)。
+
 ## 在服务器上 {#servers}
 
 除了仓库本身，Spooky 只在服务器上写两个地方：

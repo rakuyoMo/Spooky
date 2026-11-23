@@ -24,6 +24,8 @@ Spooky にはアカウントがなく、利用状況のデータも収集しま�
 
 これらをすべて削除するには、[アンインストール](/guide/start/install/#uninstall) を参照してください。
 
+:ui[app.name > settings.title] › :ui[settings.sshHosts] で追加したホストエイリアスは、SSH 自身が読み込む `~/.ssh/config` に保存されます。このファイルは Spooky のものではないので、Spooky をアンインストールしてもそのまま残ります。[ホストエイリアスを追加する](/guide/server/prepare-ssh/#alias) を参照してください。
+
 ## サーバ上 {#servers}
 
 リポジトリそのもののほかに、Spooky はサーバ上の 2 か所に書き込みます。

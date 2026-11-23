@@ -24,6 +24,8 @@ If you sign in to a self-managed GitLab with a username and password, Spooky kee
 
 To remove all of this, see [Uninstall](/guide/start/install/#uninstall).
 
+Host aliases you add in :ui[app.name > settings.title] › :ui[settings.sshHosts] go to `~/.ssh/config`, the file SSH itself reads. That file isn’t Spooky’s, and uninstalling Spooky leaves it as it is. See [Add a host alias](/guide/server/prepare-ssh/#alias).
+
 ## On servers {#servers}
 
 Besides the repository itself, Spooky writes to two places on a server:

@@ -15,7 +15,7 @@ description: "逐項填寫「加入伺服器儲存庫」對話框，看懂連線
 
 | 這一項 | 填什麼 |
 |---|---|
-| :ui[remote.host] | `~/.ssh/config` 裡 `Host` 那一行的名稱，例如 `driftwood-server`。只填別名，不帶使用者名稱和連接埠。 |
+| :ui[remote.host] | `~/.ssh/config` 裡 `Host` 那一行的名稱，例如 `driftwood-server`。只填別名，不帶使用者名稱和連接埠。還沒有別名的話，見 [加入主機別名](/guide/server/prepare-ssh/#alias)。 |
 | :ui[remote.path] | 儲存庫在伺服器上的完整路徑，以 `/` 開頭，例如 `/srv/git/driftwood` |
 | :ui[remote.mount] | 可以不選。選了之後，儲存庫資料夾在這台 Mac 上也能看到，Finder 就能顯示它，見 [加入時掛載](/guide/server/local-location/#when-adding)。 |
 
