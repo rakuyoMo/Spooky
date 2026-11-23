@@ -23,3 +23,6 @@ AGENTS.override.md
 website/node_modules/
 website/dist/
 website/.astro/
+
+# Claude Code 目录
+.claude/
