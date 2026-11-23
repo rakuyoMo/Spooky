@@ -50,7 +50,9 @@ extension RepositorySession {
     func pullRequest(forBranch branch: String) -> PullRequest? {
         let project = pullRequests.project
 
-        return pullRequests.items.first { $0.source.branch == branch && $0.source.project == project }
+        return pullRequests.items.first {
+            $0.state == .open && $0.source.branch == branch && $0.source.project == project
+        }
     }
 }
 

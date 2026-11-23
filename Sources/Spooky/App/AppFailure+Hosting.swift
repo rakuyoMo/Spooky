@@ -102,4 +102,14 @@ extension AppFailure {
             ("pullRequests.error.branchMismatch", .repository, "pullRequests.error.branchMismatch.help", nil, name)
         }
     }
+
+    /// 托管服务不再保留请求的引用：原文是引用名。
+    static func classification(
+        of fetch: PullRequestFetchError
+    ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
+        switch fetch {
+        case .headUnavailable(let reference):
+            ("pullRequests.error.headUnavailable", .repository, "pullRequests.error.headUnavailable.help", nil, reference)
+        }
+    }
 }

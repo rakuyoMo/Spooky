@@ -198,7 +198,7 @@ private struct GitHubPullRequest: Decodable, Sendable {
 
     /// 字段名：解码器先把蛇形字段转成驼峰，`html_url` 转成 `htmlUrl`。
     private enum CodingKeys: String, CodingKey {
-        case number, title, body, state, draft, user, createdAt, updatedAt, mergedAt, assignees, head, base
+        case number, title, body, state, draft, user, createdAt, updatedAt, mergedAt, assignees, labels, head, base
         case mergeable, mergeableState
         case htmlURL = "htmlUrl"
     }
@@ -236,6 +236,9 @@ private struct GitHubPullRequest: Decodable, Sendable {
     /// 指派的用户。
     let assignees: [GitHubUserReference]?
 
+    /// 标签。
+    let labels: [GitHubLabel]?
+
     /// 源分支。
     let head: Branch
 
@@ -262,9 +265,24 @@ private struct GitHubPullRequest: Decodable, Sendable {
             source: PullRequestBranch(project: head.repo?.fullName, branch: head.ref, sha: head.sha),
             target: PullRequestBranch(project: base.repo?.fullName ?? project, branch: base.ref, sha: base.sha),
             assignees: assignees?.map { GitHubUserReference.user($0) } ?? [],
+            labels: labels?.map { PullRequestLabel(name: $0.name, color: $0.color, description: $0.description ?? "") } ?? [],
             webURL: htmlURL
         )
     }
+}
+
+// MARK: - GitHubLabel
+
+/// GitHub 请求上的标签。
+private struct GitHubLabel: Decodable, Sendable {
+    /// 名称。
+    let name: String
+
+    /// 底色，6 位十六进制。
+    let color: String?
+
+    /// 说明；没有时为 null。
+    let description: String?
 }
 
 // MARK: - GitHubUserReference

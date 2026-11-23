@@ -8,6 +8,16 @@ public enum PullRequestCheckoutError: Error, Sendable, Equatable {
     case branchMismatch(String)
 }
 
+// MARK: - PullRequestFetchError
+
+/// 取回请求的源分支提交时的失败。
+public enum PullRequestFetchError: Error, Sendable, Equatable {
+    /// 托管服务已不再保留请求的源分支引用，提交取不回来；带上引用名。
+    ///
+    /// GitLab 16.6 起默认在请求关闭或合并 14 天后删掉这个引用。
+    case headUnavailable(String)
+}
+
 // MARK: - RepositoryPullRequests
 
 /// 请求在仓库所在机器上的 Git 动作：取回源分支的提交、确定比较基准与检出成本地分支；服务器仓库都在服务器上执行。
@@ -71,6 +81,8 @@ public struct RepositoryPullRequests: Sendable {
 
     /// 从远端取回请求的源分支提交，只写进 FETCH_HEAD，不改动本地与远端跟踪分支。
     ///
+    /// 获取失败而远端已没有请求的引用时，抛出 ``PullRequestFetchError/headUnavailable(_:)``；其余失败照原样抛出。
+    ///
     /// - Parameters:
     ///   - id: 请求。
     ///   - remote: 指向目标项目的远端名。
@@ -80,14 +92,26 @@ public struct RepositoryPullRequests: Sendable {
         from remote: String,
         onOutput: (@Sendable (GitOutputEvent) -> Void)? = nil
     ) async throws {
-        _ = try await runner.execute(
-            ["fetch", "--progress", "--no-recurse-submodules", "--no-auto-maintenance", "--", remote, Self.headReference(of: id)],
-            onOutput: onOutput
-        )
+        let reference = Self.headReference(of: id)
+
+        do {
+            _ = try await runner.execute(
+                ["fetch", "--progress", "--no-recurse-submodules", "--no-auto-maintenance", "--", remote, reference],
+                onOutput: onOutput
+            )
+        } catch let error as GitError where !error.isCancelled {
+            guard await isMissing(reference, on: remote) else {
+                throw error
+            }
+
+            throw PullRequestFetchError.headUnavailable(reference)
+        }
     }
 
     /// 检出请求：先取回源分支的提交；同名本地分支已指向它时直接检出，指向别处时报错；否则新建分支，
     /// 同仓库的请求在远端跟踪分支正好是源分支提交时跟踪它。
+    ///
+    /// 托管服务不再保留请求的引用时，源分支的提交已在仓库里就照常检出，否则报出取不回来。
     ///
     /// - Parameters:
     ///   - request: 要检出的请求。
@@ -103,7 +127,14 @@ public struct RepositoryPullRequests: Sendable {
         try await runner.writeTransaction {
             let references = RepositoryReferences(runner: runner)
             try await references.validate(name: name)
-            try await fetchHead(of: request.id, from: remote, onOutput: onOutput)
+
+            do {
+                try await fetchHead(of: request.id, from: remote, onOutput: onOutput)
+            } catch let error as PullRequestFetchError {
+                guard try await hasCommit(request.source.sha) else {
+                    throw error
+                }
+            }
 
             if let existing = try await commit(of: "refs/heads/" + name) {
                 guard existing == request.source.sha else {
@@ -133,5 +164,19 @@ public struct RepositoryPullRequests: Sendable {
 
         let value = String(decoding: result.standardOutput, as: UTF8.self).trimmingCharacters(in: .newlines)
         return result.exitCode == 0 && GitObjectID.isValid(value) ? value : nil
+    }
+
+    /// 远端确实已没有这个引用：`ls-remote --exit-code` 找不到匹配的引用时以 2 退出；连不上远端等其余结果都不算。
+    ///
+    /// 这是获取失败后的核对，不再询问凭据。
+    private func isMissing(_ reference: String, on remote: String) async -> Bool {
+        let result = try? await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
+            try await runner.execute(
+                ["ls-remote", "--exit-code", "--", remote, reference],
+                acceptedExitCodes: [0, 2]
+            )
+        }
+
+        return result?.exitCode == 2
     }
 }

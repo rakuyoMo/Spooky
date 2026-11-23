@@ -63,6 +63,46 @@ public struct PullRequestBranch: Sendable, Hashable {
     }
 }
 
+// MARK: - PullRequestLabel
+
+/// 请求上的一个标签。
+public struct PullRequestLabel: Sendable, Hashable {
+    /// 名称。
+    public let name: String
+
+    /// 底色：6 位小写十六进制，不带 “#”；托管服务没有给出或写法认不出时为 nil。
+    public let color: String?
+
+    /// 说明；没有时为空字符串。
+    public let description: String
+
+    /// 创建标签。
+    ///
+    /// - Parameters:
+    ///   - name: 名称。
+    ///   - color: 托管服务给的底色：6 位或 3 位十六进制，可以带 “#”；其余写法当作没有颜色。
+    ///   - description: 说明。
+    public init(name: String, color: String? = nil, description: String = "") {
+        self.name = name
+        self.color = color.flatMap(Self.normalized)
+        self.description = description
+    }
+
+    /// 把颜色写成 6 位小写十六进制：去掉开头的 “#”，3 位的写法每位重复一遍；认不出时为 nil。
+    private static func normalized(_ color: String) -> String? {
+        let digits = Array((color.hasPrefix("#") ? color.dropFirst() : color[...]).utf8)
+
+        // 逐字节判断，只认 ASCII 的十六进制数字
+        guard [3, 6].contains(digits.count), digits.allSatisfy({ Character(UnicodeScalar($0)).isHexDigit }) else {
+            return nil
+        }
+
+        let text = String(decoding: digits, as: UTF8.self).lowercased()
+
+        return text.count == 3 ? text.map { "\($0)\($0)" }.joined() : text
+    }
+}
+
 // MARK: - PullRequest
 
 /// 托管服务上的一个 Pull Request 或 Merge Request。
@@ -100,6 +140,9 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
     /// 指派的用户。
     public let assignees: [HostingUser]
 
+    /// 标签，按托管服务给出的顺序。
+    public let labels: [PullRequestLabel]
+
     /// 网页地址。
     public let webURL: URL?
 
@@ -124,6 +167,7 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
         source: PullRequestBranch,
         target: PullRequestBranch,
         assignees: [HostingUser] = [],
+        labels: [PullRequestLabel] = [],
         webURL: URL? = nil,
         mergeBase: String? = nil
     ) {
@@ -138,6 +182,7 @@ public struct PullRequest: Sendable, Hashable, Identifiable {
         self.source = source
         self.target = target
         self.assignees = assignees
+        self.labels = labels
         self.webURL = webURL
         self.mergeBase = mergeBase
     }

@@ -8,7 +8,7 @@ import Testing
 /// Pull Request 与 Merge Request：列表与 Fork、新建、合并选项与合并的请求和解析；与 ``HostingClientTests`` 同属一组依次执行。
 extension HostingClientTests {
     /// GitHub 列表：Fork 的源仓库与目标仓库不同，已合并的按 merged_at 认出，下一页取 Link 头里 `rel="next"` 的页码；
-    /// 从 Fork 新建时 head 写成 `owner:branch`，请求发到目标仓库。
+    /// 标签带名称、颜色与说明，颜色统一成小写；从 Fork 新建时 head 写成 `owner:branch`，请求发到目标仓库。
     @Test("GitHub 的 Pull Request 列表与从 Fork 新建")
     func githubList() async throws {
         let body = """
@@ -16,6 +16,8 @@ extension HostingClientTests {
               "user":{"login":"alice","avatar_url":"https://avatars.githubusercontent.com/u/1?v=4"},
               "created_at":"2026-10-01T00:00:00Z","updated_at":"2026-10-02T00:00:00Z","merged_at":null,
               "html_url":"https://github.com/o/r/pull/7","assignees":[{"login":"bob"}],
+              "labels":[{"name":"bug","color":"D73A4A","description":"出错了"},
+                        {"name":"help wanted","color":"008672","description":null}],
               "head":{"ref":"fix/登录","sha":"aaa","repo":{"full_name":"alice/r"}},
               "base":{"ref":"main","sha":"bbb","repo":{"full_name":"o/r"}}}]
             """
@@ -35,6 +37,13 @@ extension HostingClientTests {
         #expect(request.isDraft && request.isFromFork && request.state == .open)
         #expect(request.source == PullRequestBranch(project: "alice/r", branch: "fix/登录", sha: "aaa"))
         #expect(request.assignees.map(\.username) == ["bob"] && request.body.isEmpty)
+
+        #expect(
+            request.labels == [
+                PullRequestLabel(name: "bug", color: "d73a4a", description: "出错了"),
+                PullRequestLabel(name: "help wanted", color: "008672"),
+            ]
+        )
 
         #expect(
             request.author
@@ -186,6 +195,59 @@ extension HostingClientTests {
 
         try Self.expectLegacyFields()
     }
+
+    /// GitLab 列请求时带上 `with_labels_details`：标签带颜色与说明，3 位的颜色补成 6 位，认不出的颜色当作没有；
+    /// 12.7 以前不认这个参数，标签只有名称。单个请求的接口只给名称，有标签时按编号再列一次取颜色与说明。
+    @Test("GitLab 的标签：列表带颜色与说明，单个请求另读一次")
+    func gitlabLabels() async throws {
+        let detailed = ##"[{"id":1,"name":"bug","color":"#F00","description":"出错了","text_color":"#FFFFFF"},"##
+            + ##"{"id":2,"name":"group::runner","color":"#6699CC","description":null},"##
+            + ##"{"id":3,"name":"旧","color":"red","description":""}]"##
+        let names = #"["bug","group::runner","旧"]"#
+        let api = "https://gitlab.com/api/v4/projects/group%2Fproject/merge_requests"
+        let client = HostingClient(instance: .gitlabCom, token: "t", session: HostingStub.session())
+
+        let labels = [
+            PullRequestLabel(name: "bug", color: "ff0000", description: "出错了"),
+            PullRequestLabel(name: "group::runner", color: "6699cc"),
+            PullRequestLabel(name: "旧"),
+        ]
+
+        // 列表：一个请求带颜色与说明，一个只有名称
+        let listed = HostingStub.respond { _ in
+            let first = Self.gitlabRequest(iid: 3, source: 1, labels: detailed)
+            let second = Self.gitlabRequest(iid: 4, source: 1, labels: names)
+
+            return (200, [:], Data("[\(first),\(second)]".utf8))
+        }
+
+        let (items, _) = try await client.pullRequests(in: "group/project")
+
+        #expect(items.map(\.labels) == [labels, labels.map { PullRequestLabel(name: $0.name) }])
+        #expect(
+            listed.withLock { $0.map { $0.url?.absoluteString ?? "" } } == [
+                api + "?state=opened&with_labels_details=true&per_page=50&page=1",
+            ]
+        )
+
+        // 单个请求只给名称，再按编号列一次
+        let detail = HostingStub.respond { sent in
+            let single = Self.gitlabRequest(iid: 3, source: 1, labels: names)
+            let list = "[" + Self.gitlabRequest(iid: 3, source: 1, labels: detailed) + "]"
+
+            return (200, [:], Data((sent.url?.path().hasSuffix("/merge_requests") ?? false ? list : single).utf8))
+        }
+
+        let request = try await client.pullRequest(PullRequestID(instance: .gitlabCom, project: "group/project", number: 3))
+
+        #expect(request.labels == labels)
+        #expect(
+            detail.withLock { $0.map { $0.url?.absoluteString ?? "" } } == [
+                api + "/3",
+                api + "?iids%5B%5D=3&with_labels_details=true",
+            ]
+        )
+    }
 }
 
 // MARK: - Fixtures
@@ -218,13 +280,13 @@ extension HostingClientTests {
         """
     }
 
-    /// GitLab 请求的 JSON；source 是源项目编号，目标项目编号是 1。
-    static func gitlabRequest(iid: Int, source: Int) -> String {
+    /// GitLab 请求的 JSON；source 是源项目编号，目标项目编号是 1，labels 是标签数组的 JSON。
+    static func gitlabRequest(iid: Int, source: Int, labels: String = "[]") -> String {
         """
         {"iid":\(iid),"title":"t","description":"d","state":"opened","draft":false,"author":{"username":"alice"},
          "created_at":"2026-10-01T00:00:00.000Z","updated_at":"2026-10-02T00:00:00.000Z",
          "source_branch":"feature","target_branch":"main","source_project_id":\(source),"target_project_id":1,
-         "sha":"aaa","web_url":"https://gitlab.com/group/project/-/merge_requests/\(iid)",
+         "sha":"aaa","web_url":"https://gitlab.com/group/project/-/merge_requests/\(iid)","labels":\(labels),
          "diff_refs":{"base_sha":"mmm","head_sha":"aaa","start_sha":"bbb"},
          "detailed_merge_status":"mergeable","user":{"can_merge":false},"squash":false}
         """

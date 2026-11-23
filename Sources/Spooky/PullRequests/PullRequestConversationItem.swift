@@ -3,10 +3,13 @@ import SpookyKit
 
 // MARK: - PullRequestConversationItem
 
-/// 讨论列表的一行：头部、描述、评论、提交组与组里的提交，最后是发表评论。
+/// 讨论列表的一行：头部、标签、描述、评论、提交组与组里的提交，最后是发表评论。
 enum PullRequestConversationItem {
     /// 标题与编号、状态与合并说明、指派人与作者头像。
     case header
+
+    /// 请求的标签；没有标签的请求没有这一行。
+    case labels
 
     /// 请求的描述。
     case description
@@ -31,6 +34,9 @@ enum PullRequestConversationItem {
         /// 头部。
         case header
 
+        /// 标签。
+        case labels
+
         /// 描述。
         case description
 
@@ -54,6 +60,7 @@ enum PullRequestConversationItem {
     var key: Key {
         switch self {
         case .header: .header
+        case .labels: .labels
         case .description: .description
         case .comment(let comment): .comment(comment.id)
         case .group(let group): .group(group.day)
@@ -63,11 +70,11 @@ enum PullRequestConversationItem {
         }
     }
 
-    /// 描述、评论、提交组与提交可以选中；头部、组末的空白与发表评论不能。
+    /// 描述、评论、提交组与提交可以选中；头部、标签、组末的空白与发表评论不能。
     var isSelectable: Bool {
         switch self {
         case .description, .comment, .group, .commit: true
-        case .header, .spacer, .addComment: false
+        case .header, .labels, .spacer, .addComment: false
         }
     }
 

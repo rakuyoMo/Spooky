@@ -203,10 +203,10 @@ extension HostingClient {
 
 // MARK: - GitLabMergeDetail
 
-/// 合并前读取的 Merge Request 详情：请求本身，加上最新的流水线。
+/// 单个 Merge Request 的详情：请求本身，加上最新的流水线；合并前的检查与 CI/CD 状态都读它。
 ///
 /// 流水线要区分响应里没有这个键（旧版本，判断不了）与值为 null（没有流水线），所以单独解码。
-private struct GitLabMergeDetail: Decodable, Sendable {
+struct GitLabMergeDetail: Decodable, Sendable {
     /// 流水线的字段名：解码器先把蛇形字段转成驼峰。
     private enum PipelineKeys: String, CodingKey {
         case headPipeline, pipeline
@@ -236,7 +236,19 @@ private struct GitLabMergeDetail: Decodable, Sendable {
 // MARK: - GitLabPipeline
 
 /// GitLab 流水线里用到的字段。
-private struct GitLabPipeline: Decodable, Sendable {
+struct GitLabPipeline: Decodable, Sendable {
+    /// 字段名：解码器先把蛇形字段转成驼峰，`project_id` 转成 `projectId`。
+    private enum CodingKeys: String, CodingKey {
+        case id, status
+        case projectID = "projectId"
+    }
+
+    /// 流水线编号。
+    let id: Int?
+
+    /// 流水线所在项目的编号，来自 Fork 的请求可能是源项目；旧版本没有这个字段。
+    let projectID: Int?
+
     /// 状态，如 `success`、`failed`、`running`。
     let status: String?
 }

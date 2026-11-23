@@ -54,14 +54,17 @@ extension PullRequestConversationView {
         /// 上次重建行时的输入。
         private var snapshot: Snapshot? = nil
 
-        /// 描述与评论量出的行高。
+        /// 标签、描述与评论量出的行高。
         private var heights: [PullRequestConversationItem.Key: CGFloat] = [:]
 
         /// 量行高时的列宽，列宽变化后重新量。
         private var measuredWidth: CGFloat = 0
 
-        /// 量行高用的 SwiftUI 宿主，第一次量时创建。
+        /// 量描述与评论行高用的 SwiftUI 宿主，第一次量时创建。
         private var sizing: NSHostingController<PullRequestConversationTextRow>? = nil
+
+        /// 量标签行高用的 SwiftUI 宿主，第一次量时创建。
+        private var labelSizing: NSHostingController<PullRequestLabelsRow>? = nil
 
         /// 程序重建与恢复期间不改写选择与折叠的记忆。
         private var updating = false
@@ -93,7 +96,12 @@ extension PullRequestConversationView {
             defer { updating = false }
 
             heights = [:]
-            roots = Self.nodes(comments: parent.comments, commits: parent.commits ?? [])
+            roots = Self.nodes(
+                hasLabels: !parent.request.labels.isEmpty,
+                comments: parent.comments,
+                commits: parent.commits ?? []
+            )
+
             outline.reloadData()
 
             // 换上新行后按这个请求的记忆恢复折叠与选择
@@ -116,13 +124,13 @@ extension PullRequestConversationView {
             !((item as? Node)?.children.isEmpty ?? true)
         }
 
-        /// 头部 98；描述与评论按列宽量出；提交组 34，提交 24，组末的空白 8，发表评论 62。
+        /// 头部 98；标签、描述与评论按列宽量出；提交组 34，提交 24，组末的空白 8，发表评论 62。
         func outlineView(_: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
             guard let node = item as? Node else { return 1 }
 
             switch node.item {
             case .header: return 98
-            case .description, .comment: return measuredHeight(of: node.item)
+            case .labels, .description, .comment: return measuredHeight(of: node.item)
             case .group: return 34
             case .commit: return 24
             case .spacer: return 8
@@ -143,12 +151,12 @@ extension PullRequestConversationView {
             proposed.filteredIndexSet { (outlineView.item(atRow: $0) as? Node)?.item.isSelectable ?? false }
         }
 
-        /// 头部没有分隔线；描述、评论与发表评论顶边一条分隔线；提交组与组里的行用交替行的底色。
+        /// 头部与标签没有分隔线；描述、评论与发表评论顶边一条分隔线；提交组与组里的行用交替行的底色。
         func outlineView(_: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
             guard let node = item as? Node else { return nil }
 
             switch node.item {
-            case .header: return PullRequestConversationRowView(style: .plain)
+            case .header, .labels: return PullRequestConversationRowView(style: .plain)
             case .description, .comment, .addComment: return PullRequestConversationRowView(style: .separated)
             case .group: return PullRequestConversationRowView(style: .eventGroup)
             case .commit, .spacer: return PullRequestConversationRowView(style: .event)
@@ -163,6 +171,10 @@ extension PullRequestConversationView {
             case .header:
                 let row = PullRequestConversationHeader(request: parent.request, commitCount: parent.commits?.count)
                 return Self.fill(outlineView.hostingView(row, identifier: "conversation-header"))
+
+            case .labels:
+                let row = PullRequestLabelsRow(labels: parent.request.labels)
+                return Self.fill(outlineView.hostingView(row, identifier: "conversation-labels"))
 
             case .description, .comment:
                 let row = PullRequestConversationTextRow(session: parent.session, request: parent.request, item: node.item)
@@ -207,7 +219,7 @@ extension PullRequestConversationView {
             rememberExpansion(notification, collapsed: true)
         }
 
-        /// 列宽变化后重新量描述与评论的行高。
+        /// 列宽变化后重新量标签、描述与评论的行高。
         func outlineViewColumnDidResize(_: Notification) {
             guard let outline, outline.numberOfRows > 0 else { return }
 
@@ -224,8 +236,9 @@ extension PullRequestConversationView {
 // MARK: - Private
 
 extension PullRequestConversationView.Coordinator {
-    /// 头部、描述、时间线与发表评论；提交组的子行是组里的提交，最后是一个空白行。
+    /// 头部、有标签时的标签行、描述、时间线与发表评论；提交组的子行是组里的提交，最后是一个空白行。
     private static func nodes(
+        hasLabels: Bool,
         comments: [PullRequestComment],
         commits: [HistoryCommit]
     ) -> [PullRequestConversationView.Node] {
@@ -239,7 +252,21 @@ extension PullRequestConversationView.Coordinator {
             return Node(item, children: group.commits.map { Node(.commit($0)) } + [Node(.spacer(group.day))])
         }
 
-        return [Node(.header), Node(.description)] + timeline + [Node(.addComment)]
+        return [Node(.header)] + (hasLabels ? [Node(.labels)] : []) + [Node(.description)] + timeline
+            + [Node(.addComment)]
+    }
+
+    /// 把一行的内容换进量行高用的宿主，按宽度量出高度；宿主第一次用到时创建。
+    private static func fittingHeight<Row: View>(
+        of row: Row,
+        in host: inout NSHostingController<Row>?,
+        width: CGFloat
+    ) -> CGFloat {
+        let controller = host ?? NSHostingController(rootView: row)
+        controller.rootView = row
+        host = controller
+
+        return controller.sizeThatFits(in: NSSize(width: width, height: .greatestFiniteMagnitude)).height
     }
 
     /// 单元格铺满表格给的位置，不按 SwiftUI 内容的尺寸加约束。
@@ -265,7 +292,7 @@ extension PullRequestConversationView.Coordinator {
         return cell
     }
 
-    /// 描述或评论在当前列宽下的高度；列宽变化后丢弃量过的结果。
+    /// 标签、描述或评论在当前列宽下的高度；列宽变化后丢弃量过的结果。
     private func measuredHeight(of item: PullRequestConversationItem) -> CGFloat {
         let indentation = PullRequestConversationView.ConversationOutlineView.indentation
         let width = (outline?.tableColumns.first?.width ?? 0) - indentation
@@ -284,14 +311,19 @@ extension PullRequestConversationView.Coordinator {
             return height
         }
 
-        // 同一个 SwiftUI 宿主换上这一行的内容，按列宽量出高度
-        let row = PullRequestConversationTextRow(session: parent.session, request: parent.request, item: item)
-        let sizing = sizing ?? NSHostingController(rootView: row)
-        sizing.rootView = row
-        self.sizing = sizing
+        // 同一种行共用一个 SwiftUI 宿主，换上这一行的内容按列宽量出高度
+        let fitting =
+            if case .labels = item {
+                Self.fittingHeight(of: PullRequestLabelsRow(labels: parent.request.labels), in: &labelSizing, width: width)
+            } else {
+                Self.fittingHeight(
+                    of: PullRequestConversationTextRow(session: parent.session, request: parent.request, item: item),
+                    in: &sizing,
+                    width: width
+                )
+            }
 
-        let size = sizing.sizeThatFits(in: NSSize(width: width, height: .greatestFiniteMagnitude))
-        let height = max(1, ceil(size.height))
+        let height = max(1, ceil(fitting))
         heights[item.key] = height
         return height
     }
