@@ -9,24 +9,36 @@ extension RemoteTransportTests {
     /// 帧头与负载跨任意块到达时照样切开，空负载的帧不产出输出；长度或类型不对的帧让通道不能再用。
     @Test("常驻通道的帧跨块切开、空负载与格式错误")
     func channelFrames() throws {
-        // 请求帧：参数个数、逐个参数的长度与内容，余下的是标准输入
+        // 请求帧：标志、参数个数、逐个参数的长度与内容，余下的是标准输入；要求压缩时标志的第 0 位是 1
         let request = RemoteCommandChannel.Frame.request(identifier: 7, arguments: ["run", "中文"], input: Data([0, 1]))
-        let expected = Data([0, 0, 0, 28, 1, 0, 0, 0, 7, 0, 0, 0, 2, 0, 0, 0, 3])
+        let expected = Data([0, 0, 0, 29, 1, 0, 0, 0, 7, 0, 0, 0, 0, 2, 0, 0, 0, 3])
             + Data("run".utf8)
             + Data([0, 0, 0, 6])
             + Data("中文".utf8)
             + Data([0, 1])
 
+        let compressing = RemoteCommandChannel.Frame.request(
+            identifier: 7,
+            arguments: ["run", "中文"],
+            input: Data([0, 1]),
+            compressesOutput: true
+        )
+
         #expect(request == expected)
+        #expect(compressing == expected.prefix(9) + Data([1]) + expected.dropFirst(10))
         #expect(RemoteCommandChannel.Frame.requestSize(arguments: ["run", "中文"], input: Data([0, 1])) == expected.count)
         #expect(RemoteCommandChannel.Frame.abort(identifier: 7) == Data([0, 0, 0, 5, 2, 0, 0, 0, 7]))
+        #expect(RemoteCommandChannel.Frame.probe(identifier: 7) == Data([0, 0, 0, 5, 3, 0, 0, 0, 7]))
 
-        // 整块输出含 NUL、0x1E 与 0x1F，按长短不一的块喂进去
+        // 整块输出含 NUL、0x1E 与 0x1F，按长短不一的块喂进去；压缩的输出与探测的应答夹在中间
         let payload = Data((0 ..< RemoteCommandChannel.FrameReader.chunkLimit).map { UInt8(truncatingIfNeeded: $0) })
-        let stream = frame(type: 0, identifier: 1)
+        let compressed = Data((0 ..< RemoteCommandChannel.FrameReader.compressedChunkLimit).map { UInt8($0 % 251) })
+        let stream = frame(type: 0, identifier: 2, payload: Data([1]))
             + frame(type: 1, identifier: 3)
             + frame(type: 2, identifier: 3, payload: Data("err".utf8))
             + frame(type: 1, identifier: 3, payload: payload)
+            + frame(type: 4, identifier: 3, payload: compressed)
+            + frame(type: 5, identifier: 9)
             + frame(type: 3, identifier: 3, payload: Data([137]))
 
         var reader = RemoteCommandChannel.FrameReader()
@@ -42,17 +54,28 @@ extension RemoteTransportTests {
             round += 1
         }
 
-        #expect(events.first == .ready(version: 1))
+        let received = events.reduce(into: Data()) { received, event in
+            if case .compressedOutput(3, let data) = event {
+                received.append(data)
+            }
+        }
+
+        #expect(events.first == .ready(version: 2, capabilities: 1))
         #expect(events.last == .exit(identifier: 3, code: 137))
+        #expect(events.contains(.probeReply(identifier: 9)))
         #expect(output(of: events, identifier: 3, isError: false) == payload)
         #expect(output(of: events, identifier: 3, isError: true) == Data("err".utf8))
+        #expect(received == compressed)
 
-        // 未知类型、带负载的就绪帧、负载不是 1 字节的结束帧、超过一块上限的输出、长度不足帧头
+        // 未知类型、负载不是 1 字节的就绪帧与结束帧、带负载的探测应答、超过上限的输出与压缩输出、长度不足帧头
         let invalid = [
             frame(type: 9, identifier: 1),
-            frame(type: 0, identifier: 1, payload: Data([0])),
+            frame(type: 0, identifier: 1),
+            frame(type: 0, identifier: 1, payload: Data([0, 0])),
             frame(type: 3, identifier: 1, payload: Data([0, 0])),
+            frame(type: 5, identifier: 1, payload: Data([0])),
             frame(type: 1, identifier: 1, payload: Data(count: RemoteCommandChannel.FrameReader.chunkLimit + 1)),
+            frame(type: 4, identifier: 1, payload: Data(count: RemoteCommandChannel.FrameReader.compressedChunkLimit + 1)),
             Data([0, 0, 0, 4, 1, 0, 0, 0, 1]),
         ]
 
@@ -187,7 +210,7 @@ extension RemoteTransportTests {
     /// 单独启动包装器执行一个模式，接受任何退出码。
     ///
     /// - Parameter arguments: 模式与它的参数。
-    private func standaloneWrapper(_ arguments: [String]) async throws -> GitCommandResult {
+    func standaloneWrapper(_ arguments: [String]) async throws -> GitCommandResult {
         try await CommandExecutor.execute(
             executable: "/usr/bin/perl",
             processArguments: [Self.wrapper.path] + arguments,
@@ -201,7 +224,7 @@ extension RemoteTransportTests {
     ///   - type: 帧的类型。
     ///   - identifier: 请求标识，就绪帧里是协议版本。
     ///   - payload: 负载。
-    private func frame(type: UInt8, identifier: UInt32, payload: Data = Data()) -> Data {
+    func frame(type: UInt8, identifier: UInt32, payload: Data = Data()) -> Data {
         var frame = Data()
         withUnsafeBytes(of: UInt32(5 + payload.count).bigEndian) { frame.append(contentsOf: $0) }
         frame.append(type)

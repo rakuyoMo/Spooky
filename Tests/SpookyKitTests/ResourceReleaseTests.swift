@@ -85,10 +85,11 @@ struct ResourceReleaseTests {
         }
     }
 
-    /// 常驻通道反复经历持有者关闭、通道进程被结束与没有就绪之后，进程打开的描述符数量不随次数增长。
+    /// 常驻通道反复经历持有者关闭、通道进程被结束、没有就绪、前导没写完就结束与等前导时被取消之后，
+    /// 进程打开的描述符数量不随次数增长。
     ///
     /// 与 ``descriptors()`` 一样在只运行这一项的子进程里计数；通道进程直接以 serve 模式运行本机的包装器。
-    @Test("常驻通道的三条结束路径都释放文件描述符")
+    @Test("常驻通道的各条结束路径都释放文件描述符")
     func channelDescriptors() async {
         await #expect(processExitsWith: .success) {
             let transport = RemoteTransportTests()
@@ -127,6 +128,9 @@ struct ResourceReleaseTests {
                 await #expect(throws: RemoteCommandChannel.NotExecuted.self) {
                     try await starting.execute(["inspect"], input: Data(), resultArguments: [])
                 }
+
+                // 前导没写完就结束，或等前导时被取消
+                try await endPreambleChannels()
             }
 
             let after = try openDescriptors()
@@ -243,6 +247,32 @@ private func cancelAfterStart(_ runner: GitRunner) async throws -> Int32 {
     #expect(error?.isCancelled ?? false)
 
     return try #require(Int32(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .newlines)))
+}
+
+/// 让两条帧之前带前导的通道在前导阶段结束：一条没写转入通道的标记就退出，一条在等前导时被取消。
+private func endPreambleChannels() async throws {
+    let open: ([String]) -> RemoteCommandChannel = {
+        RemoteCommandChannel(
+            executable: "/bin/sh",
+            arguments: $0,
+            environment: .inherit,
+            preamble: RemoteCommandChannel.Preamble(arguments: []),
+            onDisconnect: { _ in }
+        )
+    }
+
+    // 以 3 退出，没写转入通道的标记：前导带着结束状态，通道随之关闭
+    let unfinished = open(["-c", "exit 3"])
+
+    #expect(try await unfinished.preambleResult().exitCode == 3)
+    #expect(await !unfinished.waitUntilReady())
+
+    // 等前导期间被取消：通道关闭，通道进程随之结束
+    let waiting = open(["-c", "exec /bin/sleep 60"])
+    let task = Task { try await waiting.preambleResult() }
+    task.cancel()
+
+    await #expect(throws: GitError.self) { try await task.value }
 }
 
 /// 当前进程打开的文件描述符数量。

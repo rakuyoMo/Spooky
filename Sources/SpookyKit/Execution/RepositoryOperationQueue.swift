@@ -44,6 +44,20 @@ actor OperationPermitPool {
         waiters.removeFirst().1.resume()
     }
 
+    /// 占着一个执行槽执行 `action`，任何退出路径都释放；排队中被取消时不执行 `action`，抛出 `CancellationError`。
+    nonisolated func withPermit<T: Sendable>(_ action: @Sendable () async throws -> T) async throws -> T {
+        try await acquire()
+
+        do {
+            let result = try await action()
+            await release()
+            return result
+        } catch {
+            await release()
+            throw error
+        }
+    }
+
     /// 只取消仍在队列里的请求；已获得执行槽的请求由执行层回收。
     private func cancel(_ id: UUID) {
         guard let index = waiters.firstIndex(where: { $0.0 == id }) else {
@@ -65,9 +79,15 @@ actor RepositoryOperationQueue {
     /// 应用进程中的统一调度器。
     static let shared = RepositoryOperationQueue()
 
-    /// 同一主机同时执行的命令数；加上常驻通道（通道不在时是取消通道）与一个还没释放的会话，
-    /// 不超过 OpenSSH 默认的每条连接 10 个会话（`MaxSessions`）。
-    static let maximumHostCommands = 8
+    /// 同一服务器同时执行的命令数：经常驻通道执行的命令不另开会话，另开的会话由 ``maximumConnectionSessions`` 限量。
+    static let maximumHostCommands = 16
+
+    /// 本机同时执行的命令数。
+    static let maximumLocalCommands = 8
+
+    /// 每条连接同时另开的会话数：逐条执行的命令、SFTP 与重新打开常驻通道各占一个；
+    /// 加上常驻通道（通道不在时是取消通道）与一个还没释放的会话，不超过 OpenSSH 默认的每条连接 10 个会话（`MaxSessions`）。
+    static let maximumConnectionSessions = 8
 
     /// 同一主机同时打开的取消通道数：被取消的命令在 B 上结束之前一直占着会话，取消得到确认时那个会话也可能还没释放，取消通道只开一条；
     /// 常驻通道在时取消经它发出，不另开会话。
@@ -183,13 +203,13 @@ actor RepositoryOperationQueue {
 
     /// 取得共享门闩，所有写入路径都必须持有对应仓库的槽。
     func permits(for location: RepositoryLocation) -> (host: OperationPermitPool, write: OperationPermitPool) {
-        let host: String =
+        let (host, capacity): (String, Int) =
             switch location {
-            case .remote(let alias, _): alias
-            case .local: ""
+            case .remote(let alias, _): (alias, Self.maximumHostCommands)
+            case .local: ("", Self.maximumLocalCommands)
             }
 
-        let hostPool = hosts[host] ?? OperationPermitPool(capacity: Self.maximumHostCommands)
+        let hostPool = hosts[host] ?? OperationPermitPool(capacity: capacity)
         let writePool = writers[location] ?? OperationPermitPool(capacity: 1)
         hosts[host] = hostPool
         writers[location] = writePool
@@ -239,16 +259,7 @@ actor RepositoryOperationQueue {
         let pool = cancellations[host] ?? OperationPermitPool(capacity: Self.maximumHostCancellations)
         cancellations[host] = pool
 
-        try await pool.acquire()
-
-        do {
-            let result = try await action()
-            await pool.release()
-            return result
-        } catch {
-            await pool.release()
-            throw error
-        }
+        return try await pool.withPermit(action)
     }
 
 }

@@ -36,10 +36,10 @@ struct RepositoryOperationQueueTests {
 
     /// 同一主机同时打开的取消通道不超过名额，多出的依次执行，最后都执行完；
     /// 被取消的命令在服务器上结束之前一直占着会话，取消得到确认时那个会话也可能还没释放，
-    /// 执行与取消的名额再加上这一个超过 OpenSSH 默认的每条连接 10 个会话时，服务器拒绝开新会话。
-    @Test("取消通道按主机限量，执行与取消的名额留出一个还没释放的会话")
+    /// 另开会话与取消的名额再加上这一个超过 OpenSSH 默认的每条连接 10 个会话时，服务器拒绝开新会话。
+    @Test("取消通道按主机限量，另开会话与取消的名额留出一个还没释放的会话")
     func cancellationsPerHost() async throws {
-        let sessions = RepositoryOperationQueue.maximumHostCommands
+        let sessions = RepositoryOperationQueue.maximumConnectionSessions
             + RepositoryOperationQueue.maximumHostCancellations
 
         #expect(sessions + 1 <= 10)

@@ -194,7 +194,7 @@ extension WorkingCopyOperations {
             )
         }
 
-        // SFTP 的 rm 只删除文件；整个目录交给 git clean，嵌套的仓库会被 git 跳过
+        // 永久删除只删文件；整个目录交给 git clean，嵌套的仓库会被 git 跳过
         let directories = paths.filter { $0.hasSuffix("/") }
 
         try await files.remove(

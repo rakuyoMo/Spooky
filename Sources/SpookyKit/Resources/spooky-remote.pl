@@ -6,7 +6,7 @@ use warnings;
 # 每条 Git 命令都经 run 启动一次包装器，这里只加载 run 用到的模块；其余模块在用到它们的地方 require。
 use IO::Select;
 use IO::Socket::UNIX;
-use POSIX qw(EAGAIN EINTR ENOENT setsid WNOHANG);
+use POSIX qw(EAGAIN EEXIST EINTR ENOENT ENOTDIR setsid WNOHANG);
 use Time::HiRes qw(time sleep);
 
 # 登录时的 umask：run 启动的命令按它运行，替换写入的新文件按它取权限。
@@ -228,11 +228,21 @@ sub record_use {
 }
 
 # 看守经中继的心跳确认 A 仍连着，心跳失败时返回；
+# 看守在写入令牌之后分出，这时 A 可能还没把中继转发进来：转发的 socket 出现之前不发心跳，
+# 等满容忍期仍没有出现按心跳失败处理。
 # 第一轮先清理一遍过期的操作并记下包装器的使用，之后每过保留期的五分之一做一遍。
 # 没有回应算网络停顿，SSH 连接这时可能还撑得住，连续超过容忍期都没有成功的心跳才返回；
 # 连不上转发的 socket、通道被关闭或请求被拒绝说明主连接或中继已经没了，立即返回。
 sub watch_session {
     my ($session, $tolerance, $retention) = @_;
+    my $started = time();
+
+    until (-S "$session/relay.sock") {
+        return if !-d $session || time() - $started > $tolerance;
+
+        sleep(0.5);
+    }
+
     my $answered = time();
     my $pruned = 0;
 
@@ -256,6 +266,44 @@ sub watch_session {
 
         sleep(0.5);
     }
+}
+
+# 分出会话的看守进程，看守结束后清理会话；分不出来时删掉刚写的令牌再报错，会话目录留给 A 的关闭流程。
+# 看守脱离调用方的进程组，不留调用方的标准输入输出与其它描述符：调用方读到输出结束就能继续，不被看守拖住。
+# 等看守脱离进程组、写好进程标题才返回：调用方随即退出也不会连带结束它，按进程标题立即就能找到它。
+sub start_watcher {
+    my ($session, $tolerance, $retention) = @_;
+    my $fail = sub { unlink "$session/session.json"; die "cannot watch session\n" };
+
+    pipe(my $ready_read, my $ready_write) or $fail->();
+    my $pid = fork();
+    $fail->() unless defined $pid;
+
+    if ($pid) {
+        close $ready_write;
+        read($ready_read, my $ready, 1);
+        close $ready_read;
+        return;
+    }
+
+    close $ready_read;
+    setsid();
+    open STDIN, '<', '/dev/null';
+    open STDOUT, '>', '/dev/null';
+    open STDERR, '>', '/dev/null';
+    $SIG{HUP} = 'IGNORE';
+
+    # 进程标题写成 “包装器 watch 会话目录”，按命令行能找到某个会话的看守
+    $0 = "$wrapper watch $session";
+    syswrite($ready_write, '1');
+
+    # 调用方可能把别的管道留在 3 号及以后的描述符上，连同握手的管道逐个关掉
+    my $limit = POSIX::sysconf(POSIX::_SC_OPEN_MAX()) // 256;
+    POSIX::close($_) for 3 .. ($limit < 4096 ? $limit : 4096) - 1;
+
+    watch_session($session, $tolerance, $retention);
+    clean_session($session);
+    exit 0;
 }
 
 # 子进程独占一个进程组，控制连接只终止这组中的进程。
@@ -330,6 +378,10 @@ sub start_process {
         $ENV{SPOOKY_SESSION} = $session;
         $ENV{SPOOKY_OPERATION} = $operation;
         $ENV{GIT_SSH_VARIANT} = 'ssh';
+
+        # 包装器自己的模式直接在这个子进程里执行；serve 只由单独启动的包装器打开，照旧 exec
+        my ($program, @arguments) = @command;
+        execute_mode(@arguments) if $program eq $wrapper && ($arguments[0] // '') ne 'serve';
 
         # 命令按登录时的 umask 运行，Git 新建的文件与直接登录执行时权限相同
         umask $login_umask;
@@ -500,13 +552,22 @@ sub sign_with_relay {
 }
 
 # 常驻通道的帧，两个方向相同：长度（其后的字节数）、类型、请求标识、负载，整数都是大端。
-# A 发来的类型：1 执行，负载是参数个数、逐个参数的长度与内容，其余字节是标准输入；2 放弃，不再要这个请求的输出。
-# 发给 A 的类型：0 就绪，标识是协议版本；1、2 是标准输出、标准错误的一块；3 退出，负载是 1 字节退出码。
+# A 发来的类型：
+#   1 执行，负载是 1 字节的标志（第 0 位：标准输出可以压缩）、参数个数、逐个参数的长度与内容，其余字节是标准输入；
+#   2 放弃，不再要这个请求的输出；3 探测，没有负载。
+# 发给 A 的类型：
+#   0 就绪，标识是协议版本，负载是 1 字节的能力标志（第 0 位：能压缩）；
+#   1、2 是标准输出、标准错误的一块；3 退出，负载是 1 字节退出码；
+#   4 压缩过的一块标准输出；5 探测的应答，标识与探测帧相同，没有负载。
+# 一个请求的压缩块连起来是一条 raw deflate 流，每块以同步刷新结尾，A 收到一块就能解出一块。
 use constant {
-    SERVE_VERSION => 1,
+    SERVE_VERSION => 2,
     SERVE_REQUEST_LIMIT => 8 * 1024 * 1024,
     SERVE_CHUNK => 64 * 1024,
 };
+
+# 不到这个字节数的标准输出块原样发，不喂给压缩器。
+use constant SERVE_COMPRESS_MINIMUM => 512;
 
 # 命令退出之后，每个输出管道最多再转发的字节数。
 # 命令退出时管道里它写下的内容不超过管道容量：macOS 上最大 64 KiB，Linux 上非特权进程默认最多调到 1 MiB，转发这么多足以送完；
@@ -528,10 +589,13 @@ sub serve {
         wake => [$wake_read, $wake_write],
         requests => {},
         processes => {},
-        pending => ''
+        pending => '',
+
+        # 加载不了 zlib 时照常工作，只是不压缩
+        compresses => eval { require Compress::Raw::Zlib; 1 } ? 1 : 0
     };
     my $checked = time();
-    write_frame(0, SERVE_VERSION, '');
+    write_frame(0, SERVE_VERSION, pack('C', $state->{compresses}));
 
     while (1) {
         my $selector = IO::Select->new(\*STDIN, $wake_read, serve_outputs($state));
@@ -611,7 +675,13 @@ sub relay_chunk {
 
     do {
         $count = sysread($request->{$stream}, my $chunk, SERVE_CHUNK);
-        write_frame($stream eq 'output' ? 1 : 2, $id, $chunk) if $count;
+
+        if ($count && $stream eq 'output') {
+            relay_output($request, $id, $chunk);
+        } elsif ($count) {
+            # 标准错误不压缩
+            write_frame(2, $id, $chunk);
+        }
     } while (!defined($count) && $! == EINTR);
 
     return $count if $count;
@@ -642,6 +712,9 @@ sub read_requests {
             start_request($state, $id, request_arguments($payload));
         } elsif ($type == 2) {
             abort_request($state, $id);
+        } elsif ($type == 3) {
+            # 探测不 fork、立即应答，A 据此量出往返时间
+            write_frame(5, $id, '');
         } else {
             die "invalid request frame\n";
         }
@@ -650,12 +723,12 @@ sub read_requests {
     return 1;
 }
 
-# 解开执行帧的负载：参数个数，逐个参数的长度与内容，其余字节是标准输入。
+# 解开执行帧的负载：1 字节的标志，参数个数，逐个参数的长度与内容，其余字节是标准输入。
 sub request_arguments {
     my ($payload) = @_;
-    die "invalid request frame\n" if length($payload) < 4;
-    my $count = unpack('N', $payload);
-    my $offset = 4;
+    die "invalid request frame\n" if length($payload) < 5;
+    my ($flags, $count) = unpack('C N', $payload);
+    my $offset = 5;
     my @arguments;
 
     for (1 .. $count) {
@@ -667,12 +740,13 @@ sub request_arguments {
         $offset += $length;
     }
 
-    return (\@arguments, substr($payload, $offset));
+    return ($flags, \@arguments, substr($payload, $offset));
 }
 
 # 在子进程里执行一个请求；有标准输入时另起一个进程写入，命令不读输入也不会卡住通道。
+# 标志的第 0 位表示 A 要求压缩标准输出，B 能压缩时才压缩。
 sub start_request {
-    my ($state, $id, $arguments, $input) = @_;
+    my ($state, $id, $flags, $arguments, $input) = @_;
     die "duplicate request\n" if $state->{requests}{$id};
     pipe(my $output_read, my $output_write) or die "cannot start request\n";
     pipe(my $error_read, my $error_write) or die "cannot start request\n";
@@ -696,7 +770,13 @@ sub start_request {
 
     close $_ for $output_write, $error_write;
     IO::Handle::blocking($_, 0) for $output_read, $error_read;
-    $state->{requests}{$id} = { pid => $pid, output => $output_read, error => $error_read };
+
+    $state->{requests}{$id} = {
+        pid => $pid,
+        output => $output_read,
+        error => $error_read,
+        compresses => $state->{compresses} && ($flags & 1)
+    };
     $state->{processes}{$pid} = $id;
     return unless defined $input_read;
 
@@ -713,6 +793,46 @@ sub abort_request {
     my $request = delete $state->{requests}{$id} or return;
     delete $state->{processes}{$request->{pid}};
     close $_ for grep { defined } @{$request}{qw(output error)};
+}
+
+# 转发一块标准输出：请求要求压缩时，不到 SERVE_COMPRESS_MINIMUM 字节的块原样发，其余的块压缩后发。
+# 某一块压完不小于原来的 90% 说明内容压不动：这一块已经进了压缩流，照样按压缩帧发出，这个请求之后的块都原样发。
+# 压缩器按请求建、记在请求上，请求结束或被放弃时随请求一起释放。
+sub relay_output {
+    my ($request, $id, $chunk) = @_;
+
+    if (!$request->{compresses} || length($chunk) < SERVE_COMPRESS_MINIMUM) {
+        write_frame(1, $id, $chunk);
+        return;
+    }
+
+    unless ($request->{deflater}) {
+        my $status;
+
+        ($request->{deflater}, $status) = Compress::Raw::Zlib::Deflate->new(
+            -Level => 1,
+            -WindowBits => -15,
+            -AppendOutput => 1
+        );
+
+        die "cannot compress output\n" unless $status == Compress::Raw::Zlib::Z_OK();
+    }
+
+    # 每块以同步刷新结尾，A 收到这一块就能全部解出
+    my $deflater = $request->{deflater};
+    my $compressed = '';
+    my $status = $deflater->deflate($chunk, $compressed);
+
+    $status = $deflater->flush($compressed, Compress::Raw::Zlib::Z_SYNC_FLUSH())
+        if $status == Compress::Raw::Zlib::Z_OK();
+
+    die "cannot compress output\n" unless $status == Compress::Raw::Zlib::Z_OK();
+
+    write_frame(4, $id, $compressed);
+    return if length($compressed) < length($chunk) * 0.9;
+
+    $request->{compresses} = 0;
+    delete $request->{deflater};
 }
 
 # 请求的子进程：只留这个请求自己的管道作标准输入、输出与错误，再按单独启动包装器的方式执行模式。
@@ -732,13 +852,24 @@ sub run_request {
     open(STDOUT, '>&', $output) or POSIX::_exit(126);
     open(STDERR, '>&', $error) or POSIX::_exit(126);
     close $_ for $output, $error;
+    execute_mode(@$arguments);
+}
 
-    # 进程标题照单独启动时的命令行写，按命令行查找 run、watch 等进程的办法照样适用
-    $0 = join(' ', $wrapper, @$arguments);
-    @ARGV = @$arguments;
+# 在分出的子进程里照单独启动包装器时的状态执行一个模式，执行完退出，不再启动一次 Perl；
+# 常驻通道的请求与 run 要执行的包装器自己的模式都经它执行。
+sub execute_mode {
+    my (@arguments) = @_;
+
+    # 单独启动时包装器一开始就设好的状态：会话文件按 0077 建立，写不出去的管道按错误返回
+    umask 0077;
+    $SIG{PIPE} = 'IGNORE';
+
+    # 进程标题照单独启动时的命令行写，按命令行查找 run 等进程的办法照样适用
+    $0 = join(' ', $wrapper, @arguments);
+    @ARGV = @arguments;
     my $mode = shift(@ARGV) // '';
 
-    # die 按 $! 与 $? 取退出码，先清掉通道循环里留下的值
+    # die 按 $! 与 $? 取退出码，先清掉分出子进程之前留下的值
     $! = 0;
     $? = 0;
     dispatch($mode);
@@ -783,39 +914,162 @@ sub write_frame {
     }
 }
 
+# 文件操作失败：按 “路径: 原因” 写进标准错误并以 1 退出。
+# 不用 die：die 的退出码随 errno 变化，会与移动时 “目标已存在” 的专用退出码相撞。
+sub fail_path {
+    my ($path, $reason) = @_;
+    print STDERR "$path: ", ($reason // "$!"), "\n";
+    exit 1;
+}
+
+# 把数据写全到标准输出；写不出去说明 A 已经放弃这个请求，立即退出。
+sub write_output {
+    my ($data) = @_;
+
+    while (length $data) {
+        my $count = syswrite(STDOUT, $data);
+        next if !defined($count) && $! == EINTR;
+        exit 1 unless $count;
+        substr($data, 0, $count, '');
+    }
+}
+
+# 按顺序为每个路径写出一条记录，第一个字节是类别：0 不存在，1 带内容，2 超出内联预算、不带内容；
+# 1 与 2 接着是修改时间（整秒）与大小，见 record_header，1 的内容紧跟在后面。
+# 前面已内联的字节数加上这个文件的大小不超过预算时才内联；不存在指 ENOENT 与 ENOTDIR，其余失败按 fail_path 结束。
+sub read_files {
+    my ($budget, @paths) = @_;
+    die "invalid read budget\n" unless ($budget // '') =~ /\A\d+\z/;
+    my $remaining = $budget;
+
+    for my $path (@paths) {
+        # 先看类型再打开：打开 FIFO 等特殊文件会一直等下去
+        unless (stat $path) {
+            fail_path($path) unless $! == ENOENT || $! == ENOTDIR;
+            write_output("\0");
+            next;
+        }
+
+        fail_path($path, 'Is a directory') if -d _;
+        fail_path($path, 'Not a regular file') unless -f _;
+        open(my $file, '<:raw', $path) or fail_path($path);
+
+        # 修改时间在读之前取：读的过程中文件又被改动时，记下的时间早于内容，A 下次比对仍会发现变化
+        my ($size, $modified) = (stat $file)[7, 9];
+        my $content = '';
+        my $inline = $size <= $remaining;
+
+        # 读进内存再写出，记录里的大小就是随后写出的字节数；读的过程中变大、超出剩余的预算时改按超出预算记录
+        while ($inline) {
+            my $count = sysread($file, $content, 65536, length $content);
+            next if !defined($count) && $! == EINTR;
+            fail_path($path) unless defined $count;
+            last unless $count;
+            $inline = length($content) <= $remaining;
+        }
+
+        unless ($inline) {
+            $size = (stat $file)[7];
+            close $file;
+            write_output(record_header(2, $modified, $size));
+            next;
+        }
+
+        close $file;
+        $remaining -= length $content;
+        write_output(record_header(1, $modified, length $content));
+        write_output($content);
+    }
+}
+
+# 读取记录的头：类别 1 字节，修改时间与大小各写成高 32 位、低 32 位两个大端整数；
+# 不按 64 位整数打包，Perl 不带 64 位整数时同样写得出。修改时间早于 1970 年时按 0 记。
+sub record_header {
+    my ($kind, $modified, $size) = @_;
+    my $header = pack('C', $kind);
+
+    # 拆分用浮点除法：时间与大小都远小于 2^53，结果是精确的整数
+    for my $value ($modified < 0 ? 0 : $modified, $size) {
+        my $high = int($value / 4294967296);
+        $header .= pack('N N', $high, $value - $high * 4294967296);
+    }
+
+    return $header;
+}
+
+# 按顺序删除文件，遇到第一个失败就停下；不删目录。
+sub delete_files {
+    for my $path (@_) {
+        unlink($path) or fail_path($path);
+    }
+}
+
+# 把文件或目录移到新位置；目标已存在时以 3 退出、不覆盖，悬空的符号链接同样算已存在。
+sub move_file {
+    my ($source, $destination) = @_;
+    die "invalid move\n" unless @_ == 2;
+    exit 3 if lstat $destination;
+    rename($source, $destination) or fail_path($source);
+}
+
+# 从根目录起逐级建出目录，已存在的目录不算失败；新目录按登录时的 umask 取权限。
+sub make_directory {
+    my ($path) = @_;
+    die "invalid directory\n" unless @_ == 1 && $path =~ m{\A/};
+    umask $login_umask;
+    my $level = '';
+
+    for my $component (grep { length } split m{/}, $path) {
+        $level .= "/$component";
+        next if mkdir $level;
+        fail_path($level) unless $! == EEXIST && -d $level;
+    }
+}
+
 # 按模式执行一次包装器；单独启动与常驻通道里的请求都从这里进入，模式的参数在 @ARGV 里。
 sub dispatch {
     my ($mode) = @_;
 
     if ($mode eq 'create-session') {
-        require File::Temp;
-        require JSON::PP;
-        my $request = read_message(\*STDIN);
-        die "invalid session token\n" unless ($request->{token} // '') =~ /\A[a-f0-9]{64}\z/;
-        my $session = File::Temp::tempdir('spooky-XXXXXXXX', DIR => '/tmp', CLEANUP => 0);
-        chmod 0700, $session;
-        open my $file, '>:raw', "$session/session.json" or die "cannot initialize session\n";
-        print {$file} JSON::PP::encode_json({ token => $request->{token} });
-        close $file;
+        # 这一步在建立连接的关键路径上，不加载 File::Temp：目录名取内核的随机数，名字已被占用时换一个；
+        # 名字取 16 个字符，操作目录里控制 socket 的路径才不会超出 Unix socket 的长度上限
+        my $session;
+
+        for (1 .. 16) {
+            my $candidate = '/tmp/spooky-' . substr(identifier(), 0, 16);
+
+            if (mkdir($candidate, 0700)) {
+                $session = $candidate;
+                last;
+            }
+
+            die "cannot create session: $!\n" unless $! == EEXIST;
+        }
+
+        die "cannot create session\n" unless defined $session;
 
         record_use();
         print "$session\n";
-    } elsif ($mode eq 'watch') {
+    } elsif ($mode eq 'start-session') {
+        # 令牌只经标准输入交来，是一行 64 个小写十六进制字符；内容格式固定，直接拼成 JSON，不加载 JSON::PP。
+        # 先写进同一目录的临时文件再改名，读到的 session.json 要么没有、要么完整；写好令牌才分出看守
         my ($session, $tolerance, $retention) = @ARGV;
-        check_session($session);
         die "invalid heartbeat tolerance\n" unless ($tolerance // '') =~ /\A\d+(?:\.\d+)?\z/;
         die "invalid operation retention\n" unless ($retention // '') =~ /\A\d+(?:\.\d+)?\z/;
-        my $pid = fork();
-        die "cannot watch session\n" unless defined $pid;
-        exit 0 if $pid;
-        setsid();
-        open STDIN, '<', '/dev/null';
-        open STDOUT, '>', '/dev/null';
-        open STDERR, '>', '/dev/null';
-        $SIG{HUP} = 'IGNORE';
+        check_session($session);
 
-        watch_session($session, $tolerance, $retention);
-        clean_session($session);
+        my $line = <STDIN> // '';
+        my ($token) = ($line =~ /\A([a-f0-9]{64})\n\z/) or die "invalid session token\n";
+        die "session token already written\n" if -e "$session/session.json";
+
+        my $temporary = "$session/session.json." . identifier();
+        my $fail = sub { unlink $temporary; die "$_[0]\n" };
+
+        open(my $file, '>:raw', $temporary) or die "cannot write session token: $!\n";
+        print {$file} qq({"token":"$token"}) or $fail->("cannot write session token: $!");
+        close($file) or $fail->("cannot write session token: $!");
+        rename($temporary, "$session/session.json") or $fail->("cannot write session token: $!");
+        start_watcher($session, $tolerance, $retention);
     } elsif ($mode eq 'close') {
         my $session = shift @ARGV;
 
@@ -915,6 +1169,14 @@ sub dispatch {
         $ENV{DISPLAY} = 'spooky:0';
         $ENV{SPOOKY_SIGNING} = '1';
         exec_program($program, @ARGV);
+    } elsif ($mode eq 'read') {
+        read_files(@ARGV);
+    } elsif ($mode eq 'delete') {
+        delete_files(@ARGV);
+    } elsif ($mode eq 'move') {
+        move_file(@ARGV);
+    } elsif ($mode eq 'mkdir') {
+        make_directory(@ARGV);
     } elsif ($mode eq 'inspect') {
         # 路径由 git rev-parse --git-path 提供，只检查存在性，不读取元数据内容。
         for my $path (@ARGV) {

@@ -9,7 +9,7 @@ extension RepositorySession {
         repository != nil && entries.contains(where: \.isOpenable)
     }
 
-    /// 所选文件在本机的路径：本机仓库是原文件，服务器文件先经 SFTP 取到会话缓存，远端路径不交给本机程序。
+    /// 所选文件在本机的路径：本机仓库是原文件，服务器文件先下载到会话缓存，远端路径不交给本机程序。
     ///
     /// 读取失败时报告错误，并返回已经取到的文件；仓库切换后返回空数组。
     func localFiles(_ entries: [StatusEntry]) async -> [URL] {
@@ -35,7 +35,7 @@ extension RepositorySession {
     /// 用默认程序或指定的程序打开所选文件。
     ///
     /// 本机仓库直接打开工作区文件；服务器文件交给编辑器：支持远程编辑的编辑器直接远程打开，
-    /// 其余经 SFTP 取到临时副本，保存后核对服务器上的版本再写回。
+    /// 其余下载到临时副本，保存后核对服务器上的版本再写回。
     ///
     /// - Parameters:
     ///   - entries: 所选条目，目录与工作区里没有的文件跳过。

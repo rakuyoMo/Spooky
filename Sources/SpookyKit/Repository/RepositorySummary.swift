@@ -82,14 +82,14 @@ extension GitRunner {
         )
     }
 
-    /// 读取 `description` 文件；不存在时为 nil。服务器仓库经 SFTP 读取。
+    /// 读取 `description` 文件；不存在时为 nil。服务器仓库由 B 上的包装器读取。
     public func repositoryDescription() async throws -> String? {
         let path = try await descriptionPath()
         let contents = try await RepositoryFiles(runner: self).read([path])
         return contents[path].map { String(decoding: $0, as: UTF8.self) }
     }
 
-    /// 改写 `description` 文件的内容；文件不存在时新建。服务器仓库经 SFTP 写入。
+    /// 改写 `description` 文件的内容；文件不存在时新建。服务器仓库由 B 上的包装器写入。
     public func setRepositoryDescription(_ text: String) async throws {
         let path = try await descriptionPath()
         try await RepositoryFiles(runner: self).write(Data(text.utf8), to: path)

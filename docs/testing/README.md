@@ -52,7 +52,7 @@ SPOOKY_REMOTE_TESTS=1 swift test --filter RemoteConnectionTests
 | 测试套件 | 覆盖 |
 |---|---|
 | `RemoteConnectionTests` | 连接、连接体检、包装器的安装与复用、常驻通道、断线恢复与回调 |
-| `RemoteWorkingCopyTests` | SFTP、文件的替换写入、服务器提交与服务器文件缓存 |
+| `RemoteWorkingCopyTests` | 服务器文件的读写与替换写入、服务器提交与服务器文件缓存 |
 | `RemoteHistorySyncTests` | 历史、同步与取消，以及 Sync、变基、安全强推、Push To、不询问用户的获取与停在冲突上的合并 |
 | `RemoteBranchSyncTests` | 分支的新建、跟踪、改名与删除，两种获取映射的清理，只有未跟踪文件的拉取与合并，租约拒绝，自动储藏，获取的取消与断线，自动获取的远端筛选 |
 | `RemoteWorkingCopyFilesTests` | 文件操作与应用补丁 |

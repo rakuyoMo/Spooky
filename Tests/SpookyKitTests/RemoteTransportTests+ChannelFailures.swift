@@ -18,7 +18,7 @@ extension RemoteTransportTests {
         }
 
         var events = serve.events.makeAsyncIterator()
-        #expect(await events.next() == .ready(version: 1))
+        #expect(await events.next() == .ready(version: 2, capabilities: RemoteCommandChannel.compressionCapability))
 
         // 请求 1 一直输出，收到它的第一段输出后放弃它，紧接着发请求 2 与请求 3
         let endless = ["/usr/bin/perl", "-e", "$| = 1; while (1) { print 'x'; select(undef, undef, undef, 0.01) }"]
@@ -201,15 +201,16 @@ extension RemoteTransportTests {
         _ = try await runWrapper(["close", session])
     }
 
+    /// 写入一直等着时，开始写之前任务已被取消的请求与排在后面时被取消的请求都不交给 B；
     /// 通道进程不再读取标准输入后被结束：正在写的请求与之后的请求都不执行，测试进程不会收到 SIGPIPE。
-    @Test("通道进程退出后写入请求不触发 SIGPIPE")
+    @Test("写出之前取消的请求不执行，通道进程退出后写入请求不触发 SIGPIPE")
     func channelWriteAfterExit() async throws {
         let tag = UUID().uuidString
 
         // 读到请求的第一个字节就发出就绪帧，之后不再读取
         let channel = RemoteCommandChannel(
             executable: "/usr/bin/perl",
-            arguments: ["-e", "sysread STDIN, my $byte, 1; syswrite STDOUT, pack('NCN', 5, 0, 1); sleep 600", tag],
+            arguments: ["-e", "sysread STDIN, my $byte, 1; syswrite STDOUT, pack('NCNC', 6, 0, 2, 0); sleep 600", tag],
             environment: .inherit,
             onDisconnect: { _ in }
         )
@@ -222,6 +223,24 @@ extension RemoteTransportTests {
         }
 
         #expect(await channel.waitUntilReady())
+
+        // 开始之前任务已被取消的请求
+        let cancelledFirst = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+
+            return try await channel.execute(["inspect"], input: Data(), resultArguments: [])
+        }
+
+        await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await cancelledFirst.value }
+
+        // 排在一直等着的写入后面时被取消的请求
+        let queued = Task {
+            try await channel.execute(["inspect"], input: Data(), resultArguments: [])
+        }
+
+        queued.cancel()
+        await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await queued.value }
+
         _ = try await CommandExecutor.execute(executable: "/usr/bin/pkill", processArguments: ["-f", tag])
 
         await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await pending.value }
@@ -230,8 +249,8 @@ extension RemoteTransportTests {
         }
     }
 
-    /// 通道进程没有发出就绪帧就退出：等待就绪得到失败，已经写进去的请求不执行。
-    @Test("常驻通道没有就绪时请求不执行")
+    /// 通道进程没有发出就绪帧就退出时，等待就绪得到失败，已经写进去的请求不执行；等待就绪期间被取消时关闭通道。
+    @Test("常驻通道没有就绪时请求不执行，等待就绪可以取消")
     func channelNeverReady() async throws {
         // 读到请求的第一个字节就退出
         let channel = RemoteCommandChannel(
@@ -247,6 +266,19 @@ extension RemoteTransportTests {
         #expect(await !channel.waitUntilReady())
         #expect(!channel.isReady)
         await #expect(throws: RemoteCommandChannel.NotExecuted.self) { try await pending.value }
+
+        // 带前导的通道在转入通道的标记之前不计就绪期限，通道进程也一直不退出：等待被取消时关闭通道，等待随之结束
+        let waiting = RemoteCommandChannel(
+            executable: "/bin/sh",
+            arguments: ["-c", "exec /bin/cat > /dev/null"],
+            environment: .inherit,
+            preamble: RemoteCommandChannel.Preamble(arguments: []),
+            onDisconnect: { _ in }
+        )
+        let wait = Task { await waiting.waitUntilReady() }
+        wait.cancel()
+
+        #expect(await !wait.value)
     }
 
     /// 经通道发出一条一直执行的请求，等它的命令打印出第一行后返回。
@@ -255,7 +287,7 @@ extension RemoteTransportTests {
     ///   - arguments: 包装器 run 模式的参数。
     ///   - channel: 常驻通道。
     /// - Returns: 执行请求的任务。
-    private func startLongRequest(
+    func startLongRequest(
         _ arguments: [String],
         through channel: RemoteCommandChannel
     ) async throws -> Task<GitCommandResult, any Error> {
@@ -273,10 +305,13 @@ extension RemoteTransportTests {
 
     /// 直接启动 serve 模式的包装器，逐帧读出它发回的事件；读到 EOF 或格式错误的帧时事件流结束。
     ///
-    /// - Parameter session: 会话目录。
+    /// - Parameters:
+    ///   - session: 会话目录。
+    ///   - perlOptions: 加在包装器路径之前的 Perl 选项。
     /// - Returns: 写请求的标准输入，以及发回的事件。
-    private func startServe(
-        in session: String
+    func startServe(
+        in session: String,
+        perlOptions: [String] = []
     ) throws -> (input: FileHandle, events: AsyncStream<RemoteCommandChannel.FrameReader.Event>) {
         let process = Process()
         let input = Pipe()
@@ -285,7 +320,7 @@ extension RemoteTransportTests {
         let (events, continuation) = AsyncStream<RemoteCommandChannel.FrameReader.Event>.makeStream()
 
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
-        process.arguments = [Self.wrapper.path, "serve", session]
+        process.arguments = perlOptions + [Self.wrapper.path, "serve", session]
         process.standardInput = input
         process.standardOutput = output
 
@@ -308,11 +343,12 @@ extension RemoteTransportTests {
         return (input.fileHandleForWriting, events)
     }
 
-    /// 事件所属的请求；就绪帧不属于任何请求。
-    private func identifier(of event: RemoteCommandChannel.FrameReader.Event) -> UInt32? {
+    /// 事件所属的请求；就绪帧与探测的应答不属于任何请求。
+    func identifier(of event: RemoteCommandChannel.FrameReader.Event) -> UInt32? {
         switch event {
-        case .ready: nil
+        case .ready, .probeReply: nil
         case .output(let identifier, _, _): identifier
+        case .compressedOutput(let identifier, _): identifier
         case .exit(let identifier, _): identifier
         }
     }

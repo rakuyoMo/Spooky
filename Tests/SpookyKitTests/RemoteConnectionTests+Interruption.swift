@@ -52,49 +52,6 @@ extension RemoteConnectionTests {
         }
     }
 
-    /// SFTP 写入没有可确认退出的远端进程组：取消按取消未确认报告，重连核对之前拒绝写入，核对之后恢复。
-    @Test("SFTP 写入取消与重连核对")
-    func sftpWriteCancellation() async throws {
-        let fixture = try await RemoteFixture.create()
-        let connection = fixture.connection()
-        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-sftp-gate-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        do {
-            let gate = try ProcessGate(in: directory)
-            _ = try await connection.open()
-
-            // 批处理里 “!” 开头的命令在本机执行：SFTP 停在闸门上时取消
-            let transfer = Task {
-                try await connection.transferSFTP(Data(("!" + gate.command + "\n").utf8), writing: true)
-            }
-
-            await gate.arrival()
-            transfer.cancel()
-
-            let cancelled = await #expect(throws: RemoteConnectionError.self) { try await transfer.value }
-            #expect(cancelled?.kind == .cancellationUnconfirmed)
-
-            // 核对之前拒绝写入；重连核对之后取得核对结果，可以继续写入
-            let blocked = await #expect(throws: RemoteConnectionError.self) {
-                try await connection.execute(["commit", "--allow-empty", "-m", "blocked"])
-            }
-            #expect(blocked?.kind == .interruptedWrite)
-
-            _ = try await connection.reconnect()
-            #expect(await connection.recovery != nil)
-            _ = try await connection.execute(["commit", "--allow-empty", "-m", "after reconciliation"])
-
-            await connection.close()
-            try await fixture.remove()
-        } catch {
-            await connection.close()
-            try await fixture.remove()
-            throw error
-        }
-    }
-
     /// 仅关闭 Spooky 的主连接来模拟断线，原写入不重试；旧会话的看守停住时，重连先关掉旧会话、结束其中的命令，再读取仓库事实。
     @Test("主动断线、写入不重试与重连核对")
     func disconnectionAndRecovery() async throws {
@@ -235,8 +192,9 @@ extension RemoteConnectionTests {
         }
     }
 
-    /// 被取消的命令在 B 上结束之前仍占着会话；同时取消占满主机名额的读取时，每个取消都得到确认，随后的写入照常执行。
-    @Test("同时取消占满主机名额的读取")
+    /// 占满主机名额的读取经常驻通道同时在 B 上执行；同时取消它们时每个取消都得到确认，随后的写入照常执行。
+    /// 发出之前就被取消的命令直接以取消结束，不为它发出取消。
+    @Test("占满主机名额的读取同时执行与取消")
     func cancellingFullHostCapacity() async throws {
         let fixture = try await RemoteFixture.create()
         let connection = fixture.connection()
@@ -250,18 +208,31 @@ extension RemoteConnectionTests {
             ])
             _ = try await connection.open()
 
-            // 外部 Diff 程序报告开始后一直等待，每条读取都占着一个执行名额与 B 上的一个会话
+            // 发出之前就被取消的写入：不经通道发出命令与取消，也不要求重连核对
+            let channeled = await connection.channelCommands
+
+            let unsent = Task {
+                withUnsafeCurrentTask { $0?.cancel() }
+
+                return try await connection.runOperation(["/usr/bin/true"], arguments: ["true"], writing: true) { _ in }
+            }
+
+            await #expect(throws: CancellationError.self) { try await unsent.value }
+            #expect(await connection.channelCommands == channeled)
+            #expect(await !connection.requiresReconciliation)
+
+            // 外部 Diff 程序报到后停在闸门上：每条读取都报到，说明它们同时在 B 上执行
+            let gate = try ProcessGate(in: URL(fileURLWithPath: fixture.root))
+
             let reads = (0 ..< RepositoryOperationQueue.maximumHostCommands).map { _ in
-                connection.operation(["-c", "diff.external=printf ready; sleep 60; :", "diff"])
+                connection.operation(["-c", "diff.external=" + gate.command + "; :", "diff"])
             }
 
-            for read in reads {
-                for await event in read.events {
-                    if case .output(.standardOutput(let data)) = event, data == Data("ready".utf8) { break }
-                }
+            for _ in reads {
+                await gate.arrival()
             }
 
-            // 一起取消后马上写入：写入要等某条取消得到确认、放出执行名额才开始，这时 B 上被取消的会话可能还没释放
+            // 一起取消后马上写入：写入要等某条取消得到确认、放出执行名额才开始
             for read in reads {
                 read.cancel()
             }

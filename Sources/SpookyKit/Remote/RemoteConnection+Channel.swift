@@ -53,94 +53,121 @@ extension RemoteConnection {
         }
     }
 
-    /// 新建会话并启动会话看守：体检没能复用已安装的包装器时先安装它。
+    /// 等会话准备好并启用常驻通道。
     ///
-    /// 打开常驻通道与把本机中继转发进会话目录同时进行，转发成功之后才启动看守。
+    /// 体检会话转成通道时，等体检期间开始的转发中继与写入令牌完成，这条通道直接等它就绪。
+    /// 其余情况先转发中继：体检没能复用已安装的包装器时先安装它，部署脚本同时新建会话、写入令牌；
+    /// 使用常驻通道时另开 serve 会话，与转发同时进行。
+    /// B 的会话看守在写入令牌时分出，等到转发的 socket 出现才开始心跳。
+    /// 通道没有就绪时关掉它并记一次失败，命令逐条另开会话执行，之后在后台重新打开。
     func startSession() async throws {
-        if wrapper == nil { try await deployWrapper() }
+        if let setup = sessionSetup {
+            try await withTaskCancellationHandler {
+                try await setup.forward.value
+                try await setup.token.value
+            } onCancel: {
+                setup.forward.cancel()
+                setup.token.cancel()
+            }
 
-        guard let relay, let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
+            sessionSetup = nil
+        } else {
+            if wrapper == nil { try await deployWrapper() }
 
-        // 常驻通道与中继转发同时打开：转发成功之后才把启动看守写进通道，看守的心跳要经这个转发
-        let channel = configuration.usesResidentChannel
-            ? makeChannel(wrapper: wrapper, remoteDirectory: remoteDirectory)
-            : nil
+            guard let wrapper, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
 
-        do {
-            let forward = try await ssh([
-                "-O", "forward",
-                "-o", "ExitOnForwardFailure=yes",
-                "-o", "StreamLocalBindUnlink=yes",
-                "-R", remoteDirectory + "/relay.sock:" + relay.path,
-            ], arguments: ["relay-forward"])
+            if configuration.usesResidentChannel {
+                pendingChannel = makeChannel([wrapper, "serve", remoteDirectory])
+            }
 
-            guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
-        } catch {
-            channel?.close()
-            throw error
+            try await forwardRelay()
         }
 
-        try await startWatcher(wrapper: wrapper, remoteDirectory: remoteDirectory, channel: channel)
+        guard let channel = pendingChannel else { return }
+
+        let ready = await channel.waitUntilReady()
+        pendingChannel = nil
+
+        // 建立连接被取消时不启用通道，也不记作打不开
+        guard !Task.isCancelled else {
+            channel.close()
+            throw CancellationError()
+        }
+
+        guard ready else {
+            channel.close()
+            channelFailures = 1
+            logChannelFailure()
+            return
+        }
+
+        adoptChannel(channel)
     }
 
-    /// 关掉常驻通道，并停下正在进行的重新打开。
+    /// 把本机中继转发进会话目录的 relay.sock；转发失败时连接建立失败，关闭连接的流程关掉还没启用的通道。
+    func forwardRelay() async throws {
+        guard let relay, let remoteDirectory else { throw RemoteConnectionError(.deployment) }
+
+        let forward = try await ssh([
+            "-O", "forward",
+            "-o", "ExitOnForwardFailure=yes",
+            "-o", "StreamLocalBindUnlink=yes",
+            "-R", remoteDirectory + "/relay.sock:" + relay.path,
+        ], arguments: ["relay-forward"])
+
+        guard forward.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: forward) }
+    }
+
+    /// 关掉常驻通道与还没启用的通道，并停下正在进行的重新打开。
     func closeChannel() {
         reopening?.cancel()
         reopening = nil
 
-        let channel = resident
+        let channels = [resident, pendingChannel]
         resident = nil
-        channel?.close()
+        pendingChannel = nil
+
+        for channel in channels {
+            channel?.close()
+        }
+    }
+
+    /// 在主连接上开一个会话运行 `command`，作为常驻通道；`command` 套上与逐条执行相同的环境前缀。
+    ///
+    /// - Parameters:
+    ///   - command: B 上的命令：包装器的 serve 模式，或带前导的连接体检。
+    ///   - preamble: 帧之前的前导，``RemoteCommandChannel/Preamble``。
+    func makeChannel(_ command: [String], preamble: RemoteCommandChannel.Preamble? = nil) -> RemoteCommandChannel? {
+        guard let localDirectory else { return nil }
+
+        let control = localDirectory.appending(path: "master.sock").path
+        let shell = (configuration.environmentPrefix + command)
+            .map(GitRunner.shellQuoted)
+            .joined(separator: " ")
+
+        return RemoteCommandChannel(
+            executable: "/usr/bin/ssh",
+            arguments: configuration.options + [
+                "-S", control,
+                "-o", "ControlMaster=no",
+                "-o", "ProxyCommand=/usr/bin/false",
+                "--", host, shell,
+            ],
+            environment: Self.sshEnvironment,
+            preamble: preamble,
+            onDisconnect: { [weak self] channel in
+                Task { await self?.channelDidClose(channel) }
+            }
+        )
     }
 }
 
 // MARK: - Private
 
 extension RemoteConnection {
-    /// 启动会话看守：传入常驻通道时作为它的第一个请求写进去，没有通道或通道没有就绪时另开会话启动。
-    ///
-    /// 看守在就绪之前就写进通道，等待就绪与启动看守共用一次往返；通道执行了看守之后启用它，否则关掉。
-    private func startWatcher(wrapper: String, remoteDirectory: String, channel: RemoteCommandChannel?) async throws {
-        let watch = [
-            wrapper, "watch", remoteDirectory,
-            String(configuration.heartbeatTolerance),
-            String(configuration.operationRetention),
-        ]
-
-        guard let channel else {
-            _ = try await probe(watch, kind: .deployment)
-            return
-        }
-
-        // B 在就绪帧之后才执行请求，看守执行完就说明通道已就绪
-        do {
-            let result = try await channel.execute(
-                Array(watch.dropFirst()),
-                input: Data(),
-                resultArguments: [RemoteConnectionError.Kind.deployment.rawValue]
-            )
-
-            if result.exitCode == 255 { throw RemoteConnectionError.ssh(result) }
-            guard result.exitCode == 0 else { throw RemoteConnectionError(.deployment, result: result) }
-        } catch is RemoteCommandChannel.NotExecuted {
-            // 通道没有就绪时看守没有执行，照常另开会话启动
-            channel.close()
-            channelFailures = 1
-            logChannelFailure()
-
-            _ = try await probe(watch, kind: .deployment)
-            return
-        } catch {
-            channel.close()
-            throw error
-        }
-
-        adoptChannel(channel)
-    }
-
     /// 在后台重新打开常驻通道：只在连接可用、通道不在且没有连续失败到上限时进行。
     ///
-    /// 新通道就绪之前占着主机的一个执行槽，同时打开的会话数不超过 B 的上限。
+    /// 新通道就绪之前占着本连接的一个会话名额，同时打开的会话数不超过 B 的上限。
     private func reopenChannel() {
         guard
             configuration.usesResidentChannel,
@@ -153,11 +180,9 @@ extension RemoteConnection {
             let remoteDirectory
         else { return }
 
-        let location = repository?.location ?? .remote(host: host, path: requestedPath)
-
         reopening = Task {
-            let opened = try? await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
-                let channel = await self.makeChannel(wrapper: wrapper, remoteDirectory: remoteDirectory)
+            let opened = try? await sessions.withPermit {
+                let channel = await self.makeChannel([wrapper, "serve", remoteDirectory])
                 return (channel: channel, ready: await channel?.waitUntilReady() ?? false)
             }
 
@@ -185,10 +210,11 @@ extension RemoteConnection {
         adoptChannel(channel)
     }
 
-    /// 启用就绪的通道并清零连续失败的次数。
+    /// 启用就绪的通道并清零连续失败的次数，再定下经它执行的命令的输出是否压缩。
     private func adoptChannel(_ channel: RemoteCommandChannel) {
         resident = channel
         channelFailures = 0
+        channel.chooseOutputCompression(configuration.outputCompression)
 
         let host = host
         Self.logger.info("常驻通道已就绪：\(host, privacy: .private)")
@@ -206,30 +232,6 @@ extension RemoteConnection {
         guard state == .connected else { return }
 
         try? await check()
-    }
-
-    /// 在主连接上开一个运行包装器 serve 模式的会话。
-    private func makeChannel(wrapper: String, remoteDirectory: String) -> RemoteCommandChannel? {
-        guard let localDirectory else { return nil }
-
-        let control = localDirectory.appending(path: "master.sock").path
-        let command = (configuration.environmentPrefix + [wrapper, "serve", remoteDirectory])
-            .map(GitRunner.shellQuoted)
-            .joined(separator: " ")
-
-        return RemoteCommandChannel(
-            executable: "/usr/bin/ssh",
-            arguments: configuration.options + [
-                "-S", control,
-                "-o", "ControlMaster=no",
-                "-o", "ProxyCommand=/usr/bin/false",
-                "--", host, command,
-            ],
-            environment: Self.sshEnvironment,
-            onDisconnect: { [weak self] channel in
-                Task { await self?.channelDidClose(channel) }
-            }
-        )
     }
 
     /// 记下一次没能打开常驻通道。

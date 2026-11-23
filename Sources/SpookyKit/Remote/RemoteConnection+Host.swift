@@ -135,7 +135,10 @@ extension RemoteConnection {
         let full: [String] =
             switch command {
             case .git(let arguments):
-                ["git"] + GitRunner.globalOptions + Self.callbackOptions(wrapper: wrapper) + arguments
+                [Self.gitCommand(for: arguments, executable: gitExecutable)]
+                    + GitRunner.globalOptions
+                    + Self.callbackOptions(wrapper: wrapper)
+                    + arguments
 
             case .program(let program):
                 program

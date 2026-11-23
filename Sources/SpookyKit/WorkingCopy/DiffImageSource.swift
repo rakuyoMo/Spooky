@@ -4,7 +4,7 @@ import Foundation
 
 /// 图片 Diff 两侧的原始字节：对象库里的版本按对象哈希读取，工作区版本读取工作区所在机器上的文件。
 ///
-/// 服务器仓库的对象经 Git 输出取回，工作区文件经 SFTP 取回；单侧内容受 256 MiB 的读取上限约束。
+/// 服务器仓库的对象经 Git 输出取回，工作区文件由包装器取回；单侧内容受 256 MiB 的读取上限约束。
 public struct DiffImageSource: Sendable {
     /// 本机或服务器执行器。
     public let runner: GitRunner

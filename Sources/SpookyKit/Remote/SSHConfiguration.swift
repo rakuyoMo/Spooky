@@ -2,6 +2,18 @@ import Foundation
 
 /// 系统 SSH 的连接选项；测试可使用临时配置和 known_hosts，不修改用户配置。
 struct SSHConfiguration: Sendable {
+    /// 常驻通道里命令的标准输出是否由 B 压缩。
+    enum OutputCompression: Sendable {
+        /// 按通道量到的往返时间决定，见 ``RemoteCommandChannel/compressesOutput(roundTrip:capable:mode:)``。
+        case automatic
+
+        /// B 能压缩时一律压缩。
+        case always
+
+        /// 一律不压缩。
+        case never
+    }
+
     /// 可选的独立配置文件，生产环境使用系统默认路径。
     var file: String?
 
@@ -27,6 +39,9 @@ struct SSHConfiguration: Sendable {
 
     /// 是否在主连接上打开常驻通道；为 false 时每条命令都另开会话执行，测试据此核对逐条执行的路径。
     var usesResidentChannel = true
+
+    /// 常驻通道里命令的标准输出是否压缩；测试据此固定压缩与否，生产环境按往返时间自动决定。
+    var outputCompression = OutputCompression.automatic
 
     /// 按参数边界传递配置路径，认证失败快速返回且绝不静默接受指纹。
     var options: [String] {

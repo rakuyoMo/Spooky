@@ -47,6 +47,9 @@ public actor RemoteConnection {
     /// 最近一次体检读到的 B 端环境，体检失败时同样保留，供界面给出修复方向。
     public internal(set) var environment: RemoteHostEnvironment? = nil
 
+    /// 最近一次体检找到的 Git 的绝对路径，只读命令直接执行它；没有找到绝对路径时为 nil。
+    var gitExecutable: String? = nil
+
     /// 同一主机的每条连接使用独立控制目录。
     private(set) var localDirectory: URL? = nil
 
@@ -95,6 +98,13 @@ public actor RemoteConnection {
     /// 主连接上常驻的命令通道，就绪之后才放在这里。
     var resident: RemoteCommandChannel? = nil
 
+    /// 建立连接期间打开、还没启用的常驻通道；连接到一半失败或关闭时随 ``closeChannel()`` 关掉。
+    var pendingChannel: RemoteCommandChannel? = nil
+
+    /// 体检新建会话之后、与其余步骤同时开始的转发中继与写入令牌，由 ``startSession()`` 等它们完成；
+    /// 连接到一半失败或关闭时先停下它们，再关会话。
+    var sessionSetup: (forward: Task<Void, any Error>, token: Task<Void, any Error>)? = nil
+
     /// 正在后台重新打开常驻通道的任务。
     var reopening: Task<Void, Never>? = nil
 
@@ -103,6 +113,9 @@ public actor RemoteConnection {
 
     /// 经常驻通道执行完的命令数，测试据此确认命令走了通道。
     var channelCommands = 0
+
+    /// 另开会话的名额，见 ``RepositoryOperationQueue/maximumConnectionSessions``。
+    let sessions = OperationPermitPool(capacity: RepositoryOperationQueue.maximumConnectionSessions)
 
     /// 创建会话不产生网络访问，首次 open 或 execute 才建立连接。
     ///
@@ -329,16 +342,14 @@ public actor RemoteConnection {
         return ("/usr/bin/sftp", arguments)
     }
 
-    /// 文件传输共用主机队列和写入核对规则，取消只终止本次 SFTP 通道。
-    func transferSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
-        if let canonical { return try await canonical.transferSFTP(input, writing: writing) }
-        guard !writing || !requiresReconciliation else {
-            throw RemoteConnectionError(.interruptedWrite)
-        }
+    /// 经 SFTP 取回大文件：与只读命令一样占用主机槽，另占本连接的一个会话名额；取消只终止本次 SFTP 通道。
+    func transferSFTP(_ input: Data) async throws -> GitCommandResult {
+        if let canonical { return try await canonical.transferSFTP(input) }
 
         let location = repository?.location ?? .remote(host: host, path: requestedPath)
-        return try await RepositoryOperationQueue.shared.perform(at: location, writing: writing) {
-            try await self.runSFTP(input, writing: writing)
+
+        return try await RepositoryOperationQueue.shared.perform(at: location, writing: false) {
+            try await self.sessions.withPermit { try await self.runSFTP(input) }
         }
     }
 
@@ -369,7 +380,7 @@ public actor RemoteConnection {
 // MARK: - Private
 
 extension RemoteConnection {
-    /// 同一仓库写入串行，同一主机最多同时执行八条命令。
+    /// 同一仓库写入串行，同一服务器同时执行的命令数不超过 ``RepositoryOperationQueue/maximumHostCommands``。
     private func perform(
         _ arguments: [String],
         input: Data?,
@@ -432,11 +443,7 @@ extension RemoteConnection {
     }
 
     /// 活跃传输阻止空闲回收，失败后检查主连接以区分文件错误与断线。
-    private func runSFTP(_ input: Data, writing: Bool) async throws -> GitCommandResult {
-        guard !writing || !requiresReconciliation else {
-            throw RemoteConnectionError(.interruptedWrite)
-        }
-
+    private func runSFTP(_ input: Data) async throws -> GitCommandResult {
         let command = try await sftpCommand()
         activeChannels += 1
         defer {
@@ -458,20 +465,11 @@ extension RemoteConnection {
             let original = error
             let result = (error as? GitError)?.result
 
-            if Task.isCancelled {
-                guard writing else { throw original }
-
-                // SFTP 没有可确认退出的远端进程组：写入被取消时按取消未确认报告，会话据此重连核对，核对之前不能继续写入
-                requiresReconciliation = true
-                let host = host
-                Self.logger.error("SFTP 写入已取消，未能确认服务器上已停止：\(host, privacy: .private)")
-                throw RemoteConnectionError(.cancellationUnconfirmed, result: result)
-            }
+            if Task.isCancelled { throw original }
 
             do { try await check() }
             catch {
-                requiresReconciliation = writing || requiresReconciliation
-                let failure = RemoteConnectionError(writing ? .interruptedWrite : .unavailable, result: result)
+                let failure = RemoteConnectionError(.unavailable, result: result)
                 self.failure = failure
                 updateState(.unavailable)
                 throw failure
@@ -514,14 +512,13 @@ extension RemoteConnection {
             "-o", "ClearAllForwardings=yes",
         ], arguments: ["connection-open"])
         guard master.exitCode == 0 else { throw RemoteConnectionError.ssh(master) }
-        try await check()
 
-        // 中继先于体检启动：体检的最后一步用它的令牌新建会话
+        // 中继先于体检启动：体检新建会话之后就要把它的令牌写进会话
         try startRelay(in: directory)
 
         // 主机连接没有工作区：体检 Git 与 B 端环境后直接启动会话
         if isHostScoped {
-            try await verifyHost()
+            try await verifyWhileChecking { try await verifyHost() }
             try await startSession()
 
             // 先关掉上一个会话里的操作，再算连上
@@ -533,7 +530,7 @@ extension RemoteConnection {
             return
         }
 
-        let repository = try await verifyRepository()
+        let repository = try await verifyWhileChecking { try await verifyRepository() }
         let existing = Self.connections.withLock { connections -> RemoteConnection? in
             if let existing = connections[repository.location], existing !== self {
                 connections[.remote(host: host, path: requestedPath)] = existing
@@ -618,8 +615,10 @@ extension RemoteConnection {
     ) async throws -> GitCommandResult {
         guard let wrapper else { throw RemoteConnectionError(.unavailable) }
 
+        let git = Self.gitCommand(for: arguments, executable: gitExecutable)
+
         return try await runOperation(
-            ["git", "-C", repository?.path ?? requestedPath]
+            [git, "-C", repository?.path ?? requestedPath]
                 + GitRunner.globalOptions
                 + Self.callbackOptions(wrapper: wrapper)
                 + arguments,
@@ -676,6 +675,9 @@ extension RemoteConnection {
             }
 
             return result
+        } catch let error as CancellationError {
+            // 命令发出之前就被取消：B 上没有开始执行，不必确认取消
+            throw error
         } catch {
             let redacted: any Error =
                 if let remote = error as? RemoteConnectionError {
@@ -753,6 +755,7 @@ extension RemoteConnection {
     /// - Parameters:
     ///   - inputFile: 标准输入改从这个本机文件读取。
     ///   - cancelling: 这条命令是取消：经常驻通道执行时直接发出，另开会话时先取得主机的取消名额。
+    /// - Throws: 命令发出之前任务已被取消时抛出 `CancellationError`，B 上没有开始执行。
     func commandChannel(
         _ command: [String],
         input: Data? = nil,
@@ -780,7 +783,10 @@ extension RemoteConnection {
 
         let shell = (configuration.environmentPrefix + command).map(GitRunner.shellQuoted).joined(separator: " ")
         let separate: @Sendable () async throws -> GitCommandResult = {
-            try await self.ssh(
+            // 发出之前任务已被取消时不开会话，B 上没有开始执行
+            try Task.checkCancellation()
+
+            return try await self.ssh(
                 ["-o", "ControlMaster=no", "-o", "ProxyCommand=/usr/bin/false"],
                 command: shell,
                 input: input,
@@ -790,7 +796,8 @@ extension RemoteConnection {
             )
         }
 
-        guard cancelling else { return try await separate() }
+        // 另开的会话占本连接的一个会话名额
+        guard cancelling else { return try await sessions.withPermit(separate) }
 
         // 被取消的命令在 B 上结束之前仍占着会话，另开会话的取消按主机限量，B 才不会拒绝开新会话
         return try await RepositoryOperationQueue.shared.performCancellation(on: host, action: separate)
@@ -919,6 +926,15 @@ extension RemoteConnection {
     private func tearDown() async {
         monitor?.cancel()
         monitor = nil
+
+        // 先停下体检期间开始的转发与写入令牌，再关会话
+        if let setup = sessionSetup {
+            setup.forward.cancel()
+            setup.token.cancel()
+            _ = await (setup.forward.result, setup.token.result)
+        }
+
+        sessionSetup = nil
 
         if let wrapper, let remoteDirectory {
             let closed = try? await commandChannel([wrapper, "close", remoteDirectory], arguments: ["session-close"])
