@@ -13,7 +13,7 @@ struct RemoteHealthCheck {
         /// 读取 B 的非交互环境。
         case environment
 
-        /// 非交互环境能找到 Git。
+        /// 非交互环境能找到 Git，输出之后各步执行的 Git 的路径，见 ``RemoteHealthCheck/gitExecutable(in:)``。
         case gitPath
 
         /// 读取 Git 版本。
@@ -164,6 +164,20 @@ struct RemoteHealthCheck {
         Data([0x1E]) + Data(marker.utf8) + Data([0x1F])
     }
 
+    /// 找到 Git 那一步输出的绝对路径；输出不是一行以 “/” 开头的路径时为 nil。
+    ///
+    /// - Parameter output: ``Step/gitPath`` 的标准输出。
+    static func gitExecutable(in output: Data) -> String? {
+        guard
+            let text = String(data: output, encoding: .utf8),
+            text.hasPrefix("/"),
+            text.hasSuffix("\n")
+        else { return nil }
+
+        let path = text.dropLast()
+        return path.contains("\n") ? nil : String(path)
+    }
+
     /// 一步的结果，参数记为 `argument`。
     ///
     /// 脚本没写完这一步就结束时按通道的结束状态处理：SSH 的 255 按连接诊断识别，
@@ -217,10 +231,23 @@ extension RemoteHealthCheck {
             "(\n" + RemoteHostEnvironment.script + "\n)"
 
         case .gitPath:
-            "command -v git"
+            // macOS 的 /usr/bin/git 是转发壳，每次执行都先查一遍开发者工具的位置；
+            // xcode-select 指向的开发者目录里有 Git 时直接用它，之后的步骤都执行 spooky_git
+            """
+            spooky_git=$(command -v git) && {
+                if test "$spooky_git" = /usr/bin/git &&
+                    spooky_tools=$(/usr/bin/xcode-select -p 2>/dev/null) &&
+                    test -x "$spooky_tools/usr/bin/git"
+                then
+                    spooky_git=$spooky_tools/usr/bin/git
+                fi
+
+                printf '%s\\n' "$spooky_git"
+            }
+            """
 
         case .gitVersion:
-            "git --version"
+            "\"$spooky_git\" --version"
 
         case .directory:
             "(if ! test -d \"$1\"; then printf '%s\\n' 'Directory does not exist' >&2; exit 2; fi)"
@@ -240,16 +267,16 @@ extension RemoteHealthCheck {
                 + " -- \"$1\""
 
         case .workTree:
-            "git -C \"$1\" rev-parse --is-inside-work-tree"
+            "\"$spooky_git\" -C \"$1\" rev-parse --is-inside-work-tree"
 
         case .status:
-            "git -C \"$1\" "
+            "\"$spooky_git\" -C \"$1\" "
                 + (GitRunner.globalOptions + ["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=normal"])
                 .map(GitRunner.shellQuoted)
                 .joined(separator: " ")
 
         case .root:
-            "git -C \"$1\" rev-parse --show-toplevel"
+            "\"$spooky_git\" -C \"$1\" rev-parse --show-toplevel"
 
         case .session:
             // 包装器与全部回调入口都可执行、字节数与本机一致时才用它；BSD 的 wc 在数字前补空格，不加引号让 shell 去掉

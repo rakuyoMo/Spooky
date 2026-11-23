@@ -18,6 +18,7 @@ struct RemoteConnectionTests {
             let repository = try await connection.open()
             #expect(repository.path == fixture.repository)
             #expect(await connection.state == .connected)
+            #expect(await connection.gitExecutable?.hasPrefix("/") ?? false)
             let status = try await connection.execute(["status", "--porcelain=v2", "-z", "--branch"])
             #expect(try WorkingCopyStatus(porcelainV2: status.standardOutput).branch.head == "main")
             let message = "单引号 ' 空格 $HOME `echo unsafe` \\ [*] 中文\n"

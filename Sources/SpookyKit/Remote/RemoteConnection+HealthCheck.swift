@@ -104,10 +104,11 @@ extension RemoteConnection {
         return try await channel.preambleResult()
     }
 
-    /// 确认非交互环境能找到 Git；找不到时把这个环境的 PATH 写进诊断，修复方向一目了然。
+    /// 确认非交互环境能找到 Git 并记下它的路径；找不到时把这个环境的 PATH 写进诊断，修复方向一目了然。
     private func verifyGitAvailable(_ checks: RemoteHealthCheck) throws {
         do {
-            _ = try checks.require(.gitPath, kind: .gitUnavailable)
+            let found = try checks.require(.gitPath, kind: .gitUnavailable)
+            gitExecutable = RemoteHealthCheck.gitExecutable(in: found.standardOutput)
         } catch let error as RemoteConnectionError where error.kind == .gitUnavailable {
             let path = environment.map { "PATH=" + $0.searchPath.joined(separator: ":") }
             throw RemoteConnectionError(.gitUnavailable, result: error.result, diagnostic: path)

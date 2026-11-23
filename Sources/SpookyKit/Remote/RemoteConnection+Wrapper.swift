@@ -83,6 +83,20 @@ extension RemoteConnection {
             """
     }
 
+    /// 在 B 上执行一条 Git 命令用的程序。
+    ///
+    /// 只读命令直接执行体检找到的 Git，省掉 macOS 上 `/usr/bin/git` 转发壳每次查找开发者工具的开销；
+    /// 其余命令照旧按 PATH 执行 `git`。
+    ///
+    /// - Parameters:
+    ///   - arguments: Git 的参数，不含程序本身。
+    ///   - executable: 体检找到的 Git 的绝对路径；没有时为 nil。
+    static func gitCommand(for arguments: [String], executable: String?) -> String {
+        guard let executable, RepositoryOperationQueue.isReadOnly(arguments) else { return "git" }
+
+        return executable
+    }
+
     /// 每条远端 Git 命令附加的回调配置：凭据、编辑器、SSH 与提交签名的交互都经本会话中继回到 A。
     ///
     /// 编辑器、SSH 命令与凭据助手由 Git 交给 shell 执行，需要转义；askpass 与签名程序直接执行，路径原样传入。

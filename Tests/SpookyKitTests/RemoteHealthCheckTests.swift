@@ -90,6 +90,69 @@ struct RemoteHealthCheckTests {
         #expect(truncated?.kind == .protocolFailure)
     }
 
+    /// 找到 Git 那一步输出之后各步执行的 Git：PATH 里找到的是 /usr/bin/git 时换成开发者目录里的 Git，其余照原样；
+    /// 输出的绝对路径只给只读命令用，写入命令照旧执行 `git`。
+    @Test("体检找到的 Git 只给只读命令用")
+    func gitExecutable() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-git-" + UUID().uuidString)
+        let fake = directory.appending(path: "git")
+
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        // 假的 Git 只回答版本
+        try Data("#!/bin/sh\necho 'git version 2.99.0'\n".utf8).write(to: fake)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: fake.path)
+
+        // 不是 /usr/bin/git 时照原样输出，读版本执行的就是它
+        let found = try await run(
+            through: .gitVersion,
+            path: directory.path,
+            searchPath: directory.path + ":/usr/bin:/bin"
+        )
+        let output = try found.require(.gitPath, kind: .gitUnavailable).standardOutput
+        let version = try found.require(.gitVersion, kind: .gitUnavailable).standardOutput
+        let executable = RemoteHealthCheck.gitExecutable(in: output)
+
+        #expect(output == Data((fake.path + "\n").utf8))
+        #expect(executable == fake.path)
+        #expect(version == Data("git version 2.99.0\n".utf8))
+
+        // 只读命令执行找到的 Git，写入命令与没有找到绝对路径时执行 git
+        let status = ["-c", "core.quotePath=false", "status", "-z"]
+
+        #expect(RemoteConnection.gitCommand(for: status, executable: executable) == fake.path)
+        #expect(RemoteConnection.gitCommand(for: ["commit", "-F", "-"], executable: executable) == "git")
+        #expect(RemoteConnection.gitCommand(for: status, executable: nil) == "git")
+
+        // /usr/bin/git 换成 xcode-select 指向的开发者目录里的 Git；开发者目录里没有 Git 时照原样
+        let tools = try await CommandExecutor.execute(
+            executable: "/usr/bin/xcode-select",
+            processArguments: ["-p"],
+            acceptedExitCodes: Set(0 ... 255)
+        )
+        let developerGit = String(decoding: tools.standardOutput, as: UTF8.self)
+            .trimmingCharacters(in: .newlines) + "/usr/bin/git"
+        let expected = FileManager.default.isExecutableFile(atPath: developerGit) ? developerGit : "/usr/bin/git"
+
+        let shim = try await run(through: .gitPath, path: directory.path, searchPath: "/usr/bin:/bin")
+        #expect(try shim.require(.gitPath, kind: .gitUnavailable).standardOutput == Data((expected + "\n").utf8))
+
+        // 找不到 Git 时这一步失败，没有输出
+        let missing = try await run(through: .gitVersion, path: directory.path, searchPath: "/bin")
+        let error = #expect(throws: RemoteConnectionError.self) {
+            try missing.require(.gitPath, kind: .gitUnavailable)
+        }
+
+        #expect(error?.kind == .gitUnavailable)
+        #expect(error?.result?.standardOutput.isEmpty ?? false)
+
+        // 输出不是一行绝对路径时不用它
+        #expect(RemoteHealthCheck.gitExecutable(in: Data("git\n".utf8)) == nil)
+        #expect(RemoteHealthCheck.gitExecutable(in: Data("/usr/bin/git".utf8)) == nil)
+        #expect(RemoteHealthCheck.gitExecutable(in: Data("/a/git\n/b/git\n".utf8)) == nil)
+    }
+
     /// 新建会话的报文：一行 JSON，带着随机的令牌。
     func sessionRequest() -> Data {
         let token = (0 ..< 32).map { _ in String(format: "%02x", UInt8.random(in: 0 ... 255)) }.joined()
@@ -101,19 +164,30 @@ struct RemoteHealthCheckTests {
     /// - Parameters:
     ///   - last: 最后一个要执行的步骤。
     ///   - path: 要检查的仓库路径。
+    ///   - searchPath: 脚本的 PATH；为 nil 时沿用测试进程的。
     /// - Returns: 切开的各步骤结果。
-    private func run(through last: RemoteHealthCheck.Step, path: String) async throws -> RemoteHealthCheck {
+    private func run(
+        through last: RemoteHealthCheck.Step,
+        path: String,
+        searchPath: String? = nil
+    ) async throws -> RemoteHealthCheck {
         let marker = UUID().uuidString
         let steps = Array(RemoteHealthCheck.Step.allCases.prefix { $0 != last }) + [last]
+
+        var environment: [Environment.Key: String?] = [
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+            "GIT_CONFIG_NOSYSTEM": "1",
+        ]
+
+        if let searchPath {
+            environment["PATH"] = searchPath
+        }
 
         let result = try await CommandExecutor.execute(
             executable: "/bin/sh",
             processArguments: ["-c", RemoteHealthCheck.script(steps, entersChannel: false), "spooky-check", path],
-            environment: .inherit.updating([
-                "GIT_CONFIG_GLOBAL": "/dev/null",
-                "GIT_CONFIG_SYSTEM": "/dev/null",
-                "GIT_CONFIG_NOSYSTEM": "1",
-            ]),
+            environment: .inherit.updating(environment),
             input: Data((marker + "\n").utf8) + sessionRequest()
         )
 

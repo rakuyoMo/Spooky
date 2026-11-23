@@ -47,6 +47,9 @@ public actor RemoteConnection {
     /// 最近一次体检读到的 B 端环境，体检失败时同样保留，供界面给出修复方向。
     public internal(set) var environment: RemoteHostEnvironment? = nil
 
+    /// 最近一次体检找到的 Git 的绝对路径，只读命令直接执行它；没有找到绝对路径时为 nil。
+    var gitExecutable: String? = nil
+
     /// 同一主机的每条连接使用独立控制目录。
     private(set) var localDirectory: URL? = nil
 
@@ -609,8 +612,10 @@ extension RemoteConnection {
     ) async throws -> GitCommandResult {
         guard let wrapper else { throw RemoteConnectionError(.unavailable) }
 
+        let git = Self.gitCommand(for: arguments, executable: gitExecutable)
+
         return try await runOperation(
-            ["git", "-C", repository?.path ?? requestedPath]
+            [git, "-C", repository?.path ?? requestedPath]
                 + GitRunner.globalOptions
                 + Self.callbackOptions(wrapper: wrapper)
                 + arguments,
