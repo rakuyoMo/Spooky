@@ -44,7 +44,7 @@ enum RepositoryToolbar {
     /// 刷新。
     static let refresh = NSToolbarItem.Identifier("refresh")
 
-    /// 最近克隆的气泡；有克隆时才显示。
+    /// 最近克隆的气泡；在工具栏里时有克隆才显示。
     static let clone = NSToolbarItem.Identifier("clone")
 
     /// 过滤当前视图列表的搜索框。
@@ -65,10 +65,11 @@ enum RepositoryToolbar {
     /// 在终端中打开。
     static let terminal = NSToolbarItem.Identifier("terminal")
 
-    /// 默认排布：侧边栏上方是仓库管理入口，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、刷新与搜索框。
+    /// 默认排布：侧边栏上方是仓库管理入口与 Clone，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、
+    /// 刷新与搜索框。
     static let defaultItems: [NSToolbarItem.Identifier] = [
-        .flexibleSpace, repositories, sidebarSeparator, parentRepository, navigation, .flexibleSpace,
-        quickActions, host, sync, synchronize, merge, stashes, refresh, clone, search,
+        .flexibleSpace, repositories, clone, sidebarSeparator, parentRepository, navigation, .flexibleSpace,
+        quickActions, host, sync, synchronize, merge, stashes, refresh, search,
     ]
 
     /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder 与终端，以及系统的空白。
@@ -78,9 +79,9 @@ enum RepositoryToolbar {
         .flexibleSpace, .space,
     ]
 
-    /// 不能移除或移动的项：父仓库在仓库是子模块时出现，主机前缀标明服务器仓库，Clone 在有克隆时出现，
+    /// 不能移除或移动的项：父仓库在仓库是子模块时出现，主机前缀标明服务器仓库，
     /// 跟随内层分栏的分隔符在有内层分栏时出现，不显示时都隐藏而不移除。
-    static let immovableItems: Set<NSToolbarItem.Identifier> = [parentRepository, host, clone, detailSeparator]
+    static let immovableItems: Set<NSToolbarItem.Identifier> = [parentRepository, host, detailSeparator]
 }
 
 // MARK: - Toolbar
@@ -223,7 +224,7 @@ extension RepositoryWindowController {
     func toolbar(
         _: NSToolbar,
         itemForItemIdentifier identifier: NSToolbarItem.Identifier,
-        willBeInsertedIntoToolbar _: Bool
+        willBeInsertedIntoToolbar isInserted: Bool
     ) -> NSToolbarItem? {
         // Fetch | Pull | Push、Sync 与 Merge | Rebase 随 ⌥ 切换成快速操作
         if let item = makeSyncToolbarItem(identifier) {
@@ -244,7 +245,7 @@ extension RepositoryWindowController {
             return makeHostItem()
 
         case RepositoryToolbar.clone:
-            return makeCloneItem()
+            return makeCloneItem(inToolbar: isInserted)
 
         case RepositoryToolbar.stashes:
             return makeStashToolbarItem(identifier)
@@ -375,8 +376,10 @@ extension RepositoryWindowController {
         return group
     }
 
-    /// Clone：有克隆时才显示，点按开关最近克隆的气泡。
-    private func makeCloneItem() -> NSToolbarItem {
+    /// Clone：点按开关最近克隆的气泡；放进工具栏的一份有克隆时才显示，自定义面板里的一份始终列出。
+    ///
+    /// - Parameter inToolbar: 这一份是否放进工具栏。
+    private func makeCloneItem(inToolbar: Bool) -> NSToolbarItem {
         let item = NSToolbarItem(itemIdentifier: RepositoryToolbar.clone)
         item.label = AppLocalization.text("toolbar.clone")
         item.paletteLabel = item.label
@@ -384,11 +387,11 @@ extension RepositoryWindowController {
         item.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: item.label)
         item.target = self
         item.action = #selector(toggleRecentClones(_:))
-        item.isHidden = coordinator?.clones.isEmpty ?? true
+        item.isHidden = inToolbar && coordinator?.clones.isEmpty ?? true
         return item
     }
 
-    /// 有了第一个克隆或清空后，Clone 项随之出现或隐藏。
+    /// 有了第一个克隆或清空后，工具栏里的 Clone 项随之出现或隐藏。
     private func observeClones() {
         withObservationTracking {
             _ = coordinator?.clones.items
