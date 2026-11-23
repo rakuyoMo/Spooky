@@ -51,7 +51,7 @@ enum PullRequestRequest {
 @MainActor
 @Observable
 final class RepositoryPullRequestState {
-    /// 详情的三段。
+    /// 详情的四段。
     enum Page: Hashable {
         /// 描述与评论。
         case conversation
@@ -61,6 +61,9 @@ final class RepositoryPullRequestState {
 
         /// 合并基准到源分支的改动。
         case changeset
+
+        /// CI/CD 的整体状态与各项。
+        case checks
     }
 
     /// 仓库的远端名与获取地址。
@@ -75,7 +78,10 @@ final class RepositoryPullRequestState {
     /// 这个仓库的远端已经读出过；关闭仓库时复原。
     private(set) var hasReadRemotes = false
 
-    /// 已读到的打开着的请求。
+    /// 列表的状态筛选：关闭与已合并的请求也列出，否则只列打开着的；只记在内存里。
+    private(set) var includesClosed = false
+
+    /// 已读到的请求，按状态筛选列出。
     private(set) var items: [PullRequest] = []
 
     /// 下一页的页码；没有更多时为 nil。
@@ -108,6 +114,9 @@ final class RepositoryPullRequestState {
     /// 读取详情的失败。
     private(set) var detailFailure: AppFailure? = nil
 
+    /// 详情读到的次数；CI/CD 一段按它重新读取所选请求的状态。
+    private(set) var detailRevision = 0
+
     /// 源分支的提交还不在仓库里，提交与改动要先获取。
     private(set) var needsFetch = false
 
@@ -125,6 +134,9 @@ final class RepositoryPullRequestState {
 
     /// 讨论列出的提交、Commits 段的参与者，以及讨论里的选择与折叠。
     let conversation = PullRequestConversationState()
+
+    /// 列表各行与所选请求的 CI/CD 状态。
+    let checks = PullRequestChecksState()
 
     /// 对话框由窗口呈现。
     @ObservationIgnored
@@ -217,7 +229,16 @@ final class RepositoryPullRequestState {
         items = []
         nextPage = nil
         selectedID = nil
+        checks.close()
         clearDetail()
+        load(runner: runner)
+    }
+
+    /// 换一种状态筛选并重新读取；读到之前列表留着上一种筛选的请求。
+    func select(includesClosed: Bool, runner: GitRunner) {
+        guard includesClosed != self.includesClosed else { return }
+
+        self.includesClosed = includesClosed
         load(runner: runner)
     }
 
@@ -232,6 +253,7 @@ final class RepositoryPullRequestState {
 
         let title = Self.loadingTitle("load.title", service: client.instance.service)
         let location = location
+        let includesClosed = includesClosed
 
         listTask = Task { [weak self] in
             do {
@@ -239,13 +261,16 @@ final class RepositoryPullRequestState {
                     title: title,
                     repository: location
                 ) {
-                    try await client.pullRequests(in: project, page: page)
+                    try await client.pullRequests(in: project, page: page, includesClosed: includesClosed)
                 }
 
                 guard let self, generation == request else { return }
 
-                items += result.items.filter { item in !items.contains { $0.id == item.id } }
+                let added = result.items.filter { item in !items.contains { $0.id == item.id } }
+
+                items += added
                 nextPage = result.nextPage
+                checks.loadStates(of: added, restarts: false, client: client, repository: location)
             } catch {
                 guard let self, generation == request, !Task.isCancelled else { return }
                 report(error, location: nil)
@@ -270,6 +295,12 @@ final class RepositoryPullRequestState {
     func reloadDetail(runner: GitRunner) {
         guard let selectedID else { return }
         reloadDetail(of: selectedID, runner: runner)
+    }
+
+    /// 读取一个请求的 CI/CD 状态，在运行期间自动刷新，直到任务被取消；没有接口客户端时不读。
+    func watchChecks(of request: PullRequest) async {
+        guard let client else { return }
+        await checks.watch(request, client: client, repository: location)
     }
 
     /// 提交信息 `#` 补全用的打开着的 Issue；远端对应不上账号时没有；一分钟内复用上次的结果。
@@ -377,6 +408,7 @@ final class RepositoryPullRequestState {
         failure = nil
         failureError = nil
         selectedID = nil
+        checks.close()
         clearDetail()
     }
 }
@@ -460,7 +492,7 @@ extension RepositoryPullRequestState {
                 title: Self.loadingTitle("load.title", service: client.instance.service),
                 repository: location
             ) {
-                try await client.pullRequests(in: project)
+                try await client.pullRequests(in: project, includesClosed: includesClosed)
             }
 
             guard generation == request else { return }
@@ -469,6 +501,7 @@ extension RepositoryPullRequestState {
             nextPage = result.nextPage
             failure = nil
             failureError = nil
+            checks.loadStates(of: result.items, restarts: true, client: client, repository: location)
 
             // 选中的请求已不在列表里时清掉详情
             if let selectedID, !items.contains(where: { $0.id == selectedID }) {
@@ -509,6 +542,7 @@ extension RepositoryPullRequestState {
 
                 (detail, comments) = loaded
                 detailFailure = nil
+                detailRevision += 1
 
                 try await openComparison(loaded.0, runner: runner)
             } catch {
@@ -547,7 +581,7 @@ extension RepositoryPullRequestState {
         conversation.load(base: base, target: request.source.sha, runner: runner)
     }
 
-    /// 清掉详情、比较、讨论列出的提交与参与者。
+    /// 清掉详情、比较、讨论列出的提交与参与者，以及所选请求的 CI/CD 状态。
     private func clearDetail() {
         detailTask?.cancel()
         detailTask = nil
@@ -558,6 +592,7 @@ extension RepositoryPullRequestState {
         needsFetch = false
         comparison.close()
         conversation.close()
+        checks.clearSelected()
     }
 
     /// 列表读取结束。

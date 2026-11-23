@@ -5,6 +5,8 @@ import Foundation
 extension HostingClient {
     /// 一页 Merge Request；来自 Fork 的源项目路径另外读取，同一页里只读一次。
     ///
+    /// 带上 `with_labels_details`（12.7 起），标签随之带颜色与说明；更早的版本不认这个参数，标签只有名称。
+    ///
     /// - Parameter state: `opened` 或 `all`。
     func gitlabMergeRequests(
         in project: String,
@@ -16,6 +18,7 @@ extension HostingClient {
             Self.gitlabProject(project) + "/merge_requests",
             query: [
                 URLQueryItem(name: "state", value: state),
+                URLQueryItem(name: "with_labels_details", value: "true"),
                 URLQueryItem(name: "per_page", value: "50"),
                 URLQueryItem(name: "page", value: String(page)),
             ]
@@ -42,7 +45,7 @@ extension HostingClient {
         return (items, response.nextPage)
     }
 
-    /// 一个 Merge Request 的详情。
+    /// 一个 Merge Request 的详情；有标签时另读一次带颜色与说明的标签。
     func gitlabMergeRequest(_ id: PullRequestID) async throws -> PullRequest {
         let response: HostingResponse<GitLabMergeRequest> = try await send(
             "GET",
@@ -54,7 +57,12 @@ extension HostingClient {
             ? id.project
             : try await gitlabProjectPath(payload.sourceProjectID)
 
-        return payload.request(on: instance, project: id.project, sourceProject: source)
+        return payload.request(
+            on: instance,
+            project: id.project,
+            sourceProject: source,
+            labels: try await gitlabLabels(of: payload, in: id.project)
+        )
     }
 
     /// Merge Request 的评论，逐页读完；系统记录（如推送了新提交）不列出。
@@ -160,6 +168,24 @@ extension HostingClient {
             return nil
         }
     }
+
+    /// 请求的标签，带颜色与说明：单个请求的接口只给名称，有标签时按编号再列一次这个请求；列不到时沿用只有名称的标签。
+    private func gitlabLabels(of payload: GitLabMergeRequest, in project: String) async throws -> [GitLabLabel] {
+        guard let names = payload.labels, !names.isEmpty else {
+            return []
+        }
+
+        let response: HostingResponse<[GitLabMergeRequest]> = try await send(
+            "GET",
+            Self.gitlabProject(project) + "/merge_requests",
+            query: [
+                URLQueryItem(name: "iids[]", value: String(payload.iid)),
+                URLQueryItem(name: "with_labels_details", value: "true"),
+            ]
+        )
+
+        return response.value.first { $0.iid == payload.iid }?.labels ?? names
+    }
 }
 
 // MARK: - GitLabMergeRequest
@@ -187,7 +213,7 @@ struct GitLabMergeRequest: Decodable, Sendable {
     /// 字段名：解码器先把蛇形字段转成驼峰，`source_project_id` 转成 `sourceProjectId`。
     private enum CodingKeys: String, CodingKey {
         case iid, title, description, state, draft, workInProgress, author, createdAt, updatedAt
-        case sourceBranch, targetBranch, sha, assignees, assignee, diffRefs, detailedMergeStatus, user
+        case sourceBranch, targetBranch, sha, assignees, assignee, labels, diffRefs, detailedMergeStatus, user
         case mergeStatus, hasConflicts, blockingDiscussionsResolved, mergeError
         case forceRemoveSourceBranch, squash, mergeCommitSha, squashCommitSha
         case sourceProjectID = "sourceProjectId"
@@ -246,6 +272,9 @@ struct GitLabMergeRequest: Decodable, Sendable {
     /// 指派的一个用户；11.11 以前只有这个字段。
     let assignee: GitLabUserReference?
 
+    /// 标签。
+    let labels: [GitLabLabel]?
+
     /// 提交引用；列表里没有。
     let diffRefs: DiffReferences?
 
@@ -285,7 +314,13 @@ struct GitLabMergeRequest: Decodable, Sendable {
     ///   - instance: 所在的实例。
     ///   - project: 目标项目路径。
     ///   - sourceProject: 源项目路径；Fork 删除后为 nil。
-    func request(on instance: HostingInstance, project: String, sourceProject: String?) -> PullRequest {
+    ///   - labels: 另外读到的带颜色与说明的标签；省略时用响应里的标签。
+    func request(
+        on instance: HostingInstance,
+        project: String,
+        sourceProject: String?,
+        labels: [GitLabLabel]? = nil
+    ) -> PullRequest {
         let status: PullRequestState =
             switch state {
             case "merged": .merged
@@ -305,9 +340,46 @@ struct GitLabMergeRequest: Decodable, Sendable {
             source: PullRequestBranch(project: sourceProject, branch: sourceBranch, sha: diffRefs?.headSha ?? sha ?? ""),
             target: PullRequestBranch(project: project, branch: targetBranch, sha: diffRefs?.startSha ?? ""),
             assignees: (assignees ?? assignee.map { [$0] } ?? []).map { GitLabUserReference.user($0) },
+            labels: (labels ?? self.labels ?? []).map {
+                PullRequestLabel(name: $0.name, color: $0.color, description: $0.description ?? "")
+            },
             webURL: webURL,
             mergeBase: diffRefs?.baseSha
         )
+    }
+}
+
+// MARK: - GitLabLabel
+
+/// GitLab 请求上的标签：默认只有名称，带 `with_labels_details` 时另有颜色与说明。
+struct GitLabLabel: Decodable, Sendable {
+    /// 带颜色与说明时的字段名。
+    private enum CodingKeys: String, CodingKey {
+        case name, color, description
+    }
+
+    /// 名称。
+    let name: String
+
+    /// 底色，“#” 加十六进制；只有名称时为 nil。
+    let color: String?
+
+    /// 说明；没有说明或只有名称时为 nil。
+    let description: String?
+
+    /// 只有名称时标签是一个字符串，带颜色与说明时是一个对象。
+    init(from decoder: any Decoder) throws {
+        if let name = try? decoder.singleValueContainer().decode(String.self) {
+            self.name = name
+            color = nil
+            description = nil
+            return
+        }
+
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        color = try container.decodeIfPresent(String.self, forKey: .color)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
     }
 }
 

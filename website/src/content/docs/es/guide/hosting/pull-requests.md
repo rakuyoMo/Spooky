@@ -3,7 +3,7 @@ title: "Pull requests y merge requests"
 description: "Consulta, crea y comenta pull requests en GitHub y merge requests en GitLab, haz checkout de ellas, fusiónalas y ciérralas."
 ---
 
-Spooky muestra las pull requests abiertas en GitHub y las merge requests abiertas en GitLab del remoto de un repositorio. Puedes leerlas y comentarlas, hacer checkout de ellas, fusionarlas y crear otras nuevas, sin salir de la ventana del repositorio.
+Spooky muestra las pull requests de GitHub y las merge requests de GitLab del remoto de un repositorio. Puedes leerlas y comentarlas, ver su estado de CI/CD, hacer checkout de ellas, fusionarlas y crear otras nuevas, sin salir de la ventana del repositorio.
 
 Hace falta una [cuenta de alojamiento](/guide/hosting/accounts/) para el remoto. Cuando el remoto está en GitLab, la barra lateral, los menús y los diálogos dicen merge request en lugar de pull request.
 
@@ -16,8 +16,12 @@ Elige un remoto en el menú de la parte superior de la lista. Cada fila muestra:
 - El título, marcado con :ui[pullRequests.state.draft] en los borradores
 - El número, el autor y cuándo se abrió
 - La rama de origen y la rama a la que va. En una solicitud desde un fork, la rama de origen va con su proyecto.
+- Sus etiquetas, cada una con su color. Deja el puntero sobre una etiqueta para ver su descripción. Las etiquetas que no caben en una línea no se muestran.
+- A la derecha, un icono con su [estado de CI/CD](#checks), cuando lo tiene
 
-Desplázate hasta el final para cargar más. Las solicitudes cerradas y las fusionadas no aparecen.
+Desplázate hasta el final para cargar más.
+
+Al principio la lista solo muestra las solicitudes abiertas. Para ver también las cerradas y las fusionadas, haz clic en el botón de filtro de la parte superior de la lista y elige :ui[pullRequests.filter.all]. Cada fila muestra entonces el estado de la solicitud: :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged] o :ui[pullRequests.state.closed]. Las solicitudes cerradas y las fusionadas no se pueden fusionar ni cerrar. La próxima vez que abras la ventana, la lista vuelve a :ui[pullRequests.filter.open].
 
 Si la lista no se puede cargar, dice por qué. Las solicitudes que ya había cargado siguen debajo. Cuando el token de la cuenta se rechaza o le falta un ámbito, puedes hacer clic en :ui[accounts.reauthenticate] ahí mismo.
 
@@ -25,15 +29,29 @@ Cuando la lista no sabe qué cuenta usar, consulta [Qué cuenta usa un remoto](/
 
 ## Leer una solicitud {#details}
 
-Selecciona una solicitud para verla a la derecha. Arriba puedes cambiar entre tres vistas:
+Selecciona una solicitud para verla a la derecha. Arriba puedes cambiar entre cuatro vistas:
 
-- :ui[pullRequests.conversation]: el título y el estado, la descripción, los comentarios y los commits agrupados por día, del más antiguo al más reciente.
+- :ui[pullRequests.conversation]: el título y el estado, las etiquetas, la descripción, los comentarios y los commits agrupados por día, del más antiguo al más reciente.
 - :ui[pullRequests.commits]: los commits de la solicitud. La barra de encima muestra los colaboradores y cuántos commits hay.
 - :ui[pullRequests.changeset]: lo que cambia la solicitud, comparado con el punto en el que se separó su rama de origen.
+- :ui[pullRequests.checks]: las comprobaciones de la solicitud o los jobs de su pipeline. Consulta [Estado de CI/CD](#checks).
 
 En la conversación, haz doble clic en un commit o pulsa <kbd>Retorno</kbd> para abrirlo. Haz clic derecho en un commit para copiar su hash. Haz clic en un enlace del texto para abrirlo.
 
 :ui[pullRequests.commits] y :ui[pullRequests.changeset] necesitan que los commits de la solicitud estén en tu repositorio. Si aún no están, haz clic en :ui[pullRequests.fetch]. Spooky los trae del remoto sin cambiar tus ramas.
+
+GitLab deja de conservar los commits de una merge request 14 días después de que se cierre o se fusione. A partir de entonces, :ui[pullRequests.fetch] ya no puede traerlos, y Spooky avisa de que los commits ya no están disponibles. Solo te afecta si los commits aún no están en tu repositorio.
+
+## Estado de CI/CD {#checks}
+
+:ui[pullRequests.checks] muestra cómo va el último commit de la solicitud:
+
+- **GitHub**: las comprobaciones y los estados de commit de ese commit
+- **GitLab**: los jobs del último pipeline de la solicitud
+
+Arriba está el estado general, y debajo cada comprobación o job con el suyo. Mientras haya algo pendiente o en ejecución, Spooky mantiene la vista al día por sí solo.
+
+En la lista, el icono de la fila de una solicitud es su estado general. Deja el puntero sobre él para ver el nombre del estado. Una solicitud sin comprobaciones ni pipeline no tiene icono.
 
 ## Crear una solicitud {#create}
 
@@ -80,6 +98,8 @@ Cuando tienes cambios en archivos con seguimiento, Spooky pregunta si quieres gu
 
 El checkout no está disponible cuando la rama local que sigue a la rama de origen tiene commits de los que no has hecho push. Tampoco está disponible cuando esa rama es la rama actual y ya está en el commit de la solicitud.
 
+De una merge request cuyos commits GitLab ya no conserva solo puedes hacer checkout si los commits ya están en tu repositorio.
+
 ## Fusionar una solicitud {#merge}
 
 Haz clic en :ui[pullRequests.merge] en la parte inferior de los detalles. La fusión se hace en el servicio de alojamiento. No se puede deshacer.
@@ -98,10 +118,10 @@ Después de la fusión, Spooky hace fetch del remoto para poner al día sus rama
 Haz clic en :ui[pullRequests.close] en la parte inferior de los detalles, y confirma. Para volver a abrirla, ve al servicio de alojamiento.
 
 :::note[Repositorios de servidor]
-La lista y todo lo que haces en el servicio salen de tu Mac. Traer los commits de una solicitud, hacer checkout de ella y el fetch posterior a una fusión se ejecutan en el servidor. También las comparaciones de :ui[pullRequests.commits] y :ui[pullRequests.changeset].
+La lista, el estado de CI/CD y todo lo que haces en el servicio salen de tu Mac. Traer los commits de una solicitud, hacer checkout de ella y el fetch posterior a una fusión se ejecutan en el servidor. También las comparaciones de :ui[pullRequests.commits] y :ui[pullRequests.changeset].
 :::
 
-Cada solicitud enviada al servicio aparece en la página :ui[activity.service] de la ventana :ui[activity.title].
+Cada solicitud enviada al servicio aparece en la página :ui[activity.service] de la ventana :ui[activity.title]. Las actualizaciones automáticas del estado de CI/CD no aparecen ahí.
 
 ## Consulta también
 

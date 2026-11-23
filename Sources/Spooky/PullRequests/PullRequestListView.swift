@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - PullRequestListView
 
-/// 请求列表：40 pt 头部的远端下拉、读取转圈与新建按钮，下面是打开着的请求或对应不上账号的说明。
+/// 请求列表：40 pt 头部的远端下拉、读取转圈、状态筛选与新建按钮，下面是请求或对应不上账号的说明。
 ///
 /// 远端不属于支持的服务时，列表顶部是说明原因的警告条与手动关联的按钮，列表留空；没有账号时说明要登录哪个服务并可打开 Accounts 页。
 struct PullRequestListView: View {
@@ -30,7 +30,7 @@ extension PullRequestListView {
     /// 列表的状态。
     private var state: RepositoryPullRequestState { session.pullRequests }
 
-    /// 远端下拉、转圈与新建按钮。
+    /// 远端下拉、转圈、状态筛选与新建按钮。
     private var header: some View {
         HStack(spacing: 8) {
             Text(AppLocalization.text("sync.remote"))
@@ -55,6 +55,8 @@ extension PullRequestListView {
 
             Spacer(minLength: 0)
 
+            filterMenu
+
             Button {
                 session.requestPullRequest(.create(sourceBranch: nil))
             } label: {
@@ -69,6 +71,33 @@ extension PullRequestListView {
         .font(.system(size: 13))
         .padding(.horizontal, 12)
         .frame(height: 40)
+    }
+
+    /// 状态筛选下拉：只列打开着的，或者连关闭与已合并的；只列打开着的时图标填色。
+    private var filterMenu: some View {
+        Menu {
+            Toggle(
+                AppLocalization.text("pullRequests.filter.open"),
+                isOn: Binding(get: { !state.includesClosed }, set: { _ in select(includesClosed: false) })
+            )
+
+            Toggle(
+                AppLocalization.text("pullRequests.filter.all"),
+                isOn: Binding(get: { state.includesClosed }, set: { _ in select(includesClosed: true) })
+            )
+        } label: {
+            Image(
+                systemName: state.includesClosed
+                    ? "line.3.horizontal.decrease.circle"
+                    : "line.3.horizontal.decrease.circle.fill"
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(state.client == nil)
+        .accessibilityLabel(session.pullRequestText("stateFilter"))
+        .help(session.pullRequestText("stateFilter"))
     }
 
     /// 列表或对应不上时的说明。
@@ -123,15 +152,19 @@ extension PullRequestListView {
     private var list: some View {
         List(selection: Binding(get: { state.selectedID }, set: { select($0) })) {
             ForEach(state.items) { request in
-                PullRequestRow(request: request)
-                    .tag(request.id)
-                    .onTapGesture(count: 2) { edit(request) }
-                    .contextMenu { menu(for: request) }
-                    .onAppear {
-                        if request.id == state.items.last?.id {
-                            state.loadMore()
-                        }
+                PullRequestRow(
+                    request: request,
+                    showsState: state.includesClosed,
+                    checkState: state.checks.states[request.id]
+                )
+                .tag(request.id)
+                .onTapGesture(count: 2) { edit(request) }
+                .contextMenu { menu(for: request) }
+                .onAppear {
+                    if request.id == state.items.last?.id {
+                        state.loadMore()
                     }
+                }
             }
         }
         .listStyle(.inset)
@@ -161,7 +194,7 @@ extension PullRequestListView {
         } else if state.isLoaded, state.items.isEmpty {
             EmptyStateView(
                 title: session.pullRequestText("empty.title"),
-                message: session.pullRequestText("empty.message"),
+                message: session.pullRequestText(state.includesClosed ? "emptyAll.message" : "empty.message"),
                 symbol: AppSymbol.pullRequest
             )
         } else {
@@ -200,6 +233,12 @@ extension PullRequestListView {
     private func selectRemote(_ name: String) {
         guard let runner = session.runner, !name.isEmpty else { return }
         state.select(remote: name, runner: runner)
+    }
+
+    /// 换一种状态筛选。
+    private func select(includesClosed: Bool) {
+        guard let runner = session.runner else { return }
+        state.select(includesClosed: includesClosed, runner: runner)
     }
 
     /// 选中一个请求。
@@ -241,31 +280,25 @@ extension PullRequestListView {
 
 // MARK: - PullRequestRow
 
-/// 列表的一行：标题与草稿标记、编号与作者、源分支到目标分支。
+/// 列表的一行：标题、草稿标记或状态徽标与 CI/CD 状态的图标，编号与作者，源分支到目标分支，最后是标签。
 private struct PullRequestRow: View {
     /// 显示的请求。
     let request: PullRequest
+
+    /// 列表连关闭与已合并的请求也列出，每一行标出状态。
+    let showsState: Bool
+
+    /// CI/CD 的整体状态；没有检查或流水线、还没读到时为 nil。
+    let checkState: PullRequestCheckState?
 
     /// Settings → General 选的日期格式。
     @AppStorage(CommitDateFormat.key)
     private var dateFormat = CommitDateFormat.absolute
 
-    /// 三行文字。
+    /// 三行文字；有标签时下面再排一行，一行放不下的标签不显示。
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
-                Text(request.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(2)
-
-                if request.isDraft {
-                    Text(AppLocalization.text("pullRequests.state.draft"))
-                        .font(.system(size: 10, weight: .medium))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(.quaternary))
-                }
-            }
+            titleLine
 
             Text(request.id.reference + " · " + request.author.username + " · " + dateFormat.string(from: request.updatedAt))
                 .font(.system(size: 11))
@@ -276,9 +309,44 @@ private struct PullRequestRow: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+
+            if !request.labels.isEmpty {
+                PullRequestLabelFlow(lineLimit: 1) {
+                    ForEach(request.labels, id: \.name) {
+                        PullRequestLabelChip(label: $0)
+                    }
+                }
+                .clipped()
+            }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+
+    /// 标题与它后面的标记：列出全部时是状态徽标，否则只标出草稿；读到 CI/CD 状态时图标靠右。
+    private var titleLine: some View {
+        HStack(spacing: 6) {
+            Text(request.title)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(2)
+
+            if showsState {
+                PullRequestStateBadge(request: request)
+            } else if request.isDraft {
+                Text(AppLocalization.text("pullRequests.state.draft"))
+                    .font(.system(size: 10, weight: .medium))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Capsule().fill(.quaternary))
+            }
+
+            if let checkState {
+                Spacer(minLength: 0)
+
+                PullRequestCheckIcon(state: checkState)
+                    .font(.system(size: 12))
+            }
+        }
     }
 }
 

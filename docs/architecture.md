@@ -295,6 +295,15 @@ Spooky 由两个 target 组成：
   - 这种账号的客户端在每次请求前经 `HostingAccounts.token(for:)` 取令牌：距到期不到 60 秒时先用刷新令牌续期，同一账号的续期串行进行；刷新令牌被拒时账号标为需要重新认证
 - Pull Request 与 Merge Request 的叫法按选中远端对应的服务取（`RepositorySession.usesMergeRequests`）；认出的服务按仓库记在偏好 `hostingServices` 里（`PullRequestServices`），再打开这个仓库时，远端读出之前先按它取
 - 请求的提交与改动在仓库所在的机器上比较：源分支提交不在仓库里时，从目标远端的 `refs/pull/<编号>/head`（GitLab 是 `refs/merge-requests/<编号>/head`）取到 `FETCH_HEAD`；合并时带上源分支提交让服务端核对，合并后在仓库所在的机器上获取目标远端
+  - 取不回来而远端已没有这个引用时（`ls-remote --exit-code` 以 2 退出），报 `PullRequestFetchError.headUnavailable`：GitLab 在请求关闭或合并 14 天后删掉引用，GitHub 一直保留
+  - 检出时遇到这种失败，源分支提交已在仓库里就照常检出
+- 请求列表默认只列打开着的，状态筛选换成全部后关闭与已合并的也列出；筛选只记在内存里
+- 请求的 CI/CD 状态按请求各读一次，列表接口不带
+  - GitHub 读源分支提交上的检查运行与提交状态，整体状态由各项合成，按 `PullRequestCheckState` 声明的先后取最靠前的一种
+  - GitLab 读请求最新的流水线（`head_pipeline`，响应里没有这个键时是 `pipeline`）：列表各行只读它的状态，所选请求再读其中的作业
+  - 列表同时最多读 4 个请求；一分钟内读过、源分支提交没变、也不在等待或运行中的请求不重读
+  - 所选请求的 CI/CD 段在还有等待中或运行中的项时每 15 秒重读一次，只有第一次读取记进 Activity
+- GitLab 的标签在列表里经 `with_labels_details` 带上颜色与说明；单个请求的接口只给名称，有标签时按编号再列一次这个请求
 
 ## 仓库管理与系统集成
 

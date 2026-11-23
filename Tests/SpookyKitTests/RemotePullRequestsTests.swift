@@ -12,6 +12,7 @@ import Testing
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SPOOKY_REMOTE_TESTS"] == "1"))
 struct RemotePullRequestsTests {
     /// 仓库里原本没有请求的提交：GitLab 的 Merge Request 经 `refs/merge-requests` 取回后才有，比较基准在 B 上算出；
+    /// 远端没有引用的请求报出提交取不回来；
     /// 来自 Fork 的 GitHub Pull Request 检出成不跟踪的新分支，同名分支指向别处时拒绝；同项目的请求在远端跟踪分支一致时跟踪它。
     @Test("服务器上取回与检出 Pull Request 和 Merge Request")
     func fetchAndCheckout() async throws {
@@ -32,6 +33,13 @@ struct RemotePullRequestsTests {
 
             #expect(try await !pulls.hasCommit(feature))
             #expect(try await pulls.comparisonBase(for: merge, remote: "origin") == nil)
+
+            // 远端没有请求 3 的引用
+            let gone = Self.request(on: .gitlabCom, number: 3, fork: true, base: base, feature: feature)
+
+            await #expect(throws: PullRequestFetchError.headUnavailable("refs/merge-requests/3/head")) {
+                try await pulls.fetchHead(of: gone.id, from: "origin")
+            }
 
             try await pulls.fetchHead(of: merge.id, from: "origin")
 

@@ -53,7 +53,8 @@ struct LocalizationTests {
                 "title", "show.menu", "create.menu", "create.title", "create.message", "create.submit", "edit.title",
                 "edit.message", "edit.submit", "edit.menu", "accept.title", "accept.message", "accept.submit",
                 "close.title", "close.message", "close.submit", "comment.message", "checkout.title", "checkout.menu",
-                "empty.title", "empty.message", "noSelection", "noAccount.message", "fetchHead.title",
+                "empty.title", "empty.message", "emptyAll.message", "stateFilter", "checks.empty.message",
+                "noSelection", "noAccount.message", "fetchHead.title",
                 "forBranch.create", "forBranch.show", "filter.with", "filter.without",
                 "load.title", "loadDetail.title", "description.title", "comment.title", "editComment.title",
                 "replyComment.title", "deleteComment.title", "deleteComment.message", "editDescription.title",
@@ -63,6 +64,9 @@ struct LocalizationTests {
 
         // 新仓库的可见性
         keys += HostingVisibility.allCases.map { "publish.visibility." + $0.rawValue }
+
+        // 请求 CI/CD 的各种状态
+        keys += PullRequestCheckState.allCases.map { "pullRequests.checks.state." + $0.rawValue }
 
         // 合并方式与 GitLab 项目的合并策略
         keys += PullRequestMergeMethod.allCases.map { "pullRequests.method." + $0.rawValue }

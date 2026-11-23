@@ -70,6 +70,36 @@ struct RepositoryPullRequestsTests {
 
         #expect(upstream == "origin/feature")
     }
+
+    /// 托管服务删掉了请求的引用：取回时报出引用已不在，不是 Git 的原文；检出时源分支提交不在仓库里同样报出，
+    /// 已在仓库里就照常检出。远端本身读不了时仍是 Git 的错误。
+    @Test("请求的引用已不在远端")
+    func unavailableHead() async throws {
+        let temporary = try TemporaryRepository()
+        defer { temporary.remove() }
+
+        let fixture = try await PullRequestFixture(temporary)
+        let pulls = RepositoryPullRequests(runner: fixture.clone)
+        let unavailable = PullRequestFetchError.headUnavailable("refs/pull/2/head")
+
+        // 远端只有请求 1 的引用
+        let gone = fixture.request(fork: true, number: 2)
+
+        await #expect(throws: unavailable) { try await pulls.fetchHead(of: gone.id, from: "origin") }
+        await #expect(throws: unavailable) { try await pulls.checkout(gone, remote: "origin", as: "pr-2") }
+
+        // 源分支提交是克隆里已有的 main
+        try await pulls.checkout(fixture.request(fork: true, number: 2, source: fixture.base), remote: "origin", as: "pr-2")
+
+        #expect(try await fixture.text(["symbolic-ref", "--short", "HEAD"]) == "pr-2")
+        #expect(try await fixture.text(["rev-parse", "HEAD"]) == fixture.base)
+
+        // 没有这个远端
+        let error = await #expect(throws: GitError.self) { try await pulls.fetchHead(of: gone.id, from: "nowhere") }
+
+        #expect(error?.exitCode == 128)
+        #expect(error?.message.contains("does not appear to be a git repository") ?? false)
+    }
 }
 
 // MARK: - PullRequestFixture
@@ -122,10 +152,15 @@ private struct PullRequestFixture {
         _ = try await clone.run(["gc", "-q", "--prune=now"])
     }
 
-    /// 请求 1：来自 Fork 时源项目不同；目标分支默认是带提交的 main。
-    func request(fork: Bool, target: PullRequestBranch? = nil) -> PullRequest {
+    /// 一个请求，默认是请求 1：来自 Fork 时源项目不同；源分支提交默认是 feature 的提交，目标分支默认是带提交的 main。
+    func request(
+        fork: Bool,
+        number: Int = 1,
+        source: String? = nil,
+        target: PullRequestBranch? = nil
+    ) -> PullRequest {
         PullRequest(
-            id: PullRequestID(instance: .github, project: "o/r", number: 1),
+            id: PullRequestID(instance: .github, project: "o/r", number: number),
             title: "t",
             body: "",
             state: .open,
@@ -133,7 +168,7 @@ private struct PullRequestFixture {
             author: HostingUser(username: "alice", name: nil),
             createdAt: Date(),
             updatedAt: Date(),
-            source: PullRequestBranch(project: fork ? "alice/r" : "o/r", branch: "feature", sha: feature),
+            source: PullRequestBranch(project: fork ? "alice/r" : "o/r", branch: "feature", sha: source ?? feature),
             target: target ?? PullRequestBranch(project: "o/r", branch: "main", sha: base)
         )
     }

@@ -3,14 +3,14 @@ import SwiftUI
 
 // MARK: - PullRequestDetailView
 
-/// 所选请求的详情：头部是编号与 Conversation | Commits | Changeset 分段，底部是检出、关闭与合并。
+/// 所选请求的详情：头部是编号与 Conversation | Commits | Changeset | CI/CD 分段，底部是检出、关闭与合并。
 ///
 /// 提交与改动在仓库所在的机器上比较；源分支的提交还不在仓库里时先获取。
 struct PullRequestDetailView: View {
     /// 所在窗口的会话。
     let session: RepositorySession
 
-    /// 没有选中时是空状态，读出详情之前留空，否则是头部、内容与底栏。
+    /// 没有选中时是空状态，读出详情之前留空，否则是头部、内容与底栏；最窄 524 pt，放得下头部的编号与四段。
     var body: some View {
         Group {
             if let request = state.detail {
@@ -40,7 +40,7 @@ struct PullRequestDetailView: View {
                 )
             }
         }
-        .frame(minWidth: 420)
+        .frame(minWidth: 524)
     }
 }
 
@@ -64,6 +64,7 @@ extension PullRequestDetailView {
                 Text(AppLocalization.text("pullRequests.conversation")).tag(RepositoryPullRequestState.Page.conversation)
                 Text(AppLocalization.text("pullRequests.commits")).tag(RepositoryPullRequestState.Page.commits)
                 Text(AppLocalization.text("pullRequests.changeset")).tag(RepositoryPullRequestState.Page.changeset)
+                Text(AppLocalization.text("pullRequests.checks")).tag(RepositoryPullRequestState.Page.checks)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -116,6 +117,9 @@ extension PullRequestDetailView {
                     RevisionComparisonView(state: state.comparison, session: session, showsHeader: false)
                 }
             }
+
+        case .checks:
+            PullRequestChecksView(session: session, request: request)
         }
     }
 
