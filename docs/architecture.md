@@ -293,6 +293,7 @@ Spooky 由两个 target 组成：
   - 个人访问令牌与浏览器授权的令牌存原文
   - 私有部署 GitLab 的用户名与密码经 `GitLabPasswordGrant` 换成 OAuth 令牌，钥匙串存访问令牌、刷新令牌与到期时间的 JSON，密码不保存
   - 这种账号的客户端在每次请求前经 `HostingAccounts.token(for:)` 取令牌：距到期不到 60 秒时先用刷新令牌续期，同一账号的续期串行进行；刷新令牌被拒时账号标为需要重新认证
+- Pull Request 与 Merge Request 的叫法按选中远端对应的服务取（`RepositorySession.usesMergeRequests`）；认出的服务按仓库记在偏好 `hostingServices` 里（`PullRequestServices`），再打开这个仓库时，远端读出之前先按它取
 - 请求的提交与改动在仓库所在的机器上比较：源分支提交不在仓库里时，从目标远端的 `refs/pull/<编号>/head`（GitLab 是 `refs/merge-requests/<编号>/head`）取到 `FETCH_HEAD`；合并时带上源分支提交让服务端核对，合并后在仓库所在的机器上获取目标远端
 
 ## 仓库管理与系统集成
@@ -302,6 +303,8 @@ Spooky 由两个 target 组成：
   - 本机仓库进这台 Mac 的废纸篓（`FileManager.trashItem`）；服务器仓库经它的连接在服务器上移进那台服务器的废纸篓，程序与 Discard 的相同
   - 家目录、它的上级目录与卷或挂载点的顶层不移走：本机按解析后的路径与卷信息判断，服务器在服务器上按它的 `$HOME` 与 `df` 判断
   - 克隆中的仓库先停止克隆、等它结束，再移走还在的目录；没能移走的全部处理完后在一个错误框里列出
+  - 选中或打开服务器仓库时连接体检报出路径不存在的，记进 `RepositoryBookmarks.directoryGone`：这样的仓库没有文件夹可移，不算进勾选框的个数，要问的都是这样的仓库时勾选框置灰
+- 书签的名称平时不能编辑（`BookmarkNameField`），点已选中的行不进入改名；回车、右键 Rename 与新建分组经 `beginRename` 设成可以编辑再开始，提交或取消后复原
 - General 页打开列出工作树时，`BookmarkWorktrees` 在后台读取列表里看得到的仓库的工作树，列出的与仓库窗口侧边栏的 Worktrees 分组同一规则（`RepositoryWorktreeState.others(of:)`）
   - 本机仓库直接读；服务器仓库经它的主连接不交互地读，读完交还连接；连不上或读取失败时那一行不能展开，不弹框
   - 展开了工作树的仓库记在偏好 `repositoryListExpandedWorktrees` 里，下次读到后照样展开
