@@ -9,7 +9,7 @@ These operations exchange commits with [remotes](/guide/branches/tags-remotes/#r
 - Pull fetches a remote branch and brings its commits into the branch you’re on.
 - Push sends your commits to a remote branch.
 
-The toolbar has :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] side by side, and :ui[sync.sync] next to them. The same operations are in the :ui[menu.repository] menu.
+The toolbar has :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] side by side, and :ui[toolbar.forcePush] next to them. These operations and :ui[sync.sync] are in the :ui[menu.repository] menu.
 
 Fetch, pull, push, and sync aren’t recorded in the undo history, so they can’t be undone. Publishing a branch can be undone.
 
@@ -83,7 +83,7 @@ To take it back, choose :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>).
 
 Sync fetches, pulls, and pushes the branch you’re on, one after another.
 
-1. Click :ui[sync.sync] in the toolbar, or choose :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
+1. Choose :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
 2. Pick the branch in :ui[sync.remoteBranch]. At first it’s the upstream of the branch you’re on.
 3. Select :ui[sync.rebase] if you like. The preview below says whether the pull will run into conflicts.
 4. Set the options: :ui[merge.verify], :ui[sync.pushAllTags], :ui[sync.pushSubmodules], and :ui[sync.skipHooks] work as they do for pull and push.
@@ -110,7 +110,7 @@ After you rewrite commits you already pushed, for example by amending or rebasin
 
 Spooky only force pushes with a lease. The push goes through only if the remote branch is still where it was when you last fetched. If someone pushed in the meantime, Git refuses, and nothing is overwritten. Spooky never falls back to an unprotected force push.
 
-1. Choose :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>), or right-click a local branch and choose it from the menu.
+1. Click :ui[toolbar.forcePush] in the toolbar, or choose :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>). You can also right-click a local branch and choose it from the menu.
 2. Pick the local branch in :ui[branch.target], and the remote branch in :ui[sync.destination].
 3. Read the comparison below them. It says how many commits the push adds to the remote branch and how many it overwrites. Then:
    - A green line means the remote branch is at the version your branch had before you rewrote it. This is the usual case.
@@ -125,12 +125,12 @@ Spooky only force pushes with a lease. The push goes through only if the remote 
 The :ui[sync.forcePush] option in the push dialog uses the same protection.
 
 :::tip
-Choose :ui[menu.view > menu.customizeToolbar] to add :ui[toolbar.forcePush] and :ui[toolbar.pushTo] to the toolbar.
+Choose :ui[menu.view > menu.customizeToolbar] to add :ui[toolbar.synchronize] and :ui[toolbar.pushTo] to the toolbar.
 :::
 
 ## Quick versions {#quick}
 
-Hold <kbd>⌥</kbd>, and :ui[sync.fetch], :ui[sync.pull], :ui[sync.push], and :ui[sync.sync] in the toolbar turn into :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush], and :ui[sync.quickSync]. The menu items change the same way, for example :ui[sync.quickPushMenu].
+Hold <kbd>⌥</kbd>, and :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] in the toolbar turn into :ui[sync.quickFetch], :ui[sync.quickPull], and :ui[sync.quickPush]. :ui[sync.sync] turns into :ui[sync.quickSync] once you’ve added it to the toolbar. The menu items change the same way, for example :ui[sync.quickPushMenu].
 
 A quick version runs right away, without the dialog:
 

@@ -65,14 +65,15 @@ enum RepositoryToolbar {
     /// 在终端中打开。
     static let terminal = NSToolbarItem.Identifier("terminal")
 
-    /// 默认排布：侧边栏上方是仓库管理入口与 Clone，主视图上方依次是父仓库、后退 / 前进、快捷操作、主机前缀、同步与合并、储藏、
-    /// 刷新与搜索框。
+    /// 默认排布：侧边栏上方是仓库管理入口与 Clone，主视图上方先是父仓库与后退 / 前进，后面五组之间各隔一段伸缩的空白：
+    /// Finder 与终端，主机前缀、Fetch | Pull | Push 与安全强推，储藏，新建分支与刷新，搜索框。
     static let defaultItems: [NSToolbarItem.Identifier] = [
         .flexibleSpace, repositories, clone, sidebarSeparator, parentRepository, navigation, .flexibleSpace,
-        quickActions, host, sync, synchronize, merge, stashes, refresh, search,
+        finder, terminal, .flexibleSpace, host, sync, forcePush, .flexibleSpace, stashes, .flexibleSpace,
+        createBranch, refresh, .flexibleSpace, search,
     ]
 
-    /// 自定义面板里可选的项：默认项之外另有新建分支、安全强推、推送任意版本、Finder 与终端，以及系统的空白。
+    /// 自定义面板里可选的项：默认项之外另有快捷操作、Sync、Merge | Rebase 与推送任意版本，以及系统的空白。
     static let allowedItems: [NSToolbarItem.Identifier] = [
         repositories, sidebarSeparator, parentRepository, navigation, quickActions, host, sync, synchronize, merge,
         stashes, refresh, clone, search, createBranch, finder, terminal, forcePush, pushTo,

@@ -12,7 +12,7 @@ description: "通过自动查找、SMB 挂载、sshfs 挂载或指定文件夹�
 在服务器仓库里，:ui[action.revealFinder] 一直可以点。它在这些地方：
 
 - :ui[menu.file] 菜单
-- 工具栏上的 :ui[toolbar.finder]。要把它加进工具栏，选 :ui[menu.view > menu.customizeToolbar]，把它拖上去。
+- 工具栏上的 :ui[toolbar.finder]
 - 右键点按侧边栏的 :ui[workspace.title] 一行
 - [快捷操作](/guide/repositories/navigation/#quick-actions)
 - 在仓库管理窗口里右键点按服务器仓库

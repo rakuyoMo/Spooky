@@ -41,39 +41,16 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
     /// Push 的结果说明原文。
     public let summary: String?
 
-    /// Fetch 使用空格分隔的机器格式，首字符本身可能是空格。
+    /// Fetch 的每一行都是一条结果，有一行不合格式就算解析失败。
     static func parseFetch(_ data: Data) throws -> [Self] {
         try String(decoding: data, as: UTF8.self)
             .split(separator: "\n")
             .map { line in
-                guard
-                    line.count > 2,
-                    let flag = line.first,
-                    " *+-=!t".contains(flag),
-                    line.dropFirst().first == " "
-                else {
+                guard let update = Self(fetchLine: line) else {
                     throw RepositoryReadError.malformedOutput("fetch --porcelain")
                 }
 
-                let fields = line.dropFirst(2).split(separator: " ", omittingEmptySubsequences: false)
-
-                guard
-                    fields.count == 3,
-                    GitObjectID.isValid(String(fields[0])),
-                    GitObjectID.isValid(String(fields[1])),
-                    !fields[2].isEmpty
-                else {
-                    throw RepositoryReadError.malformedOutput("fetch --porcelain")
-                }
-
-                return Self(
-                    flag: flag,
-                    reference: String(fields[2]),
-                    oldObject: String(fields[0]),
-                    newObject: String(fields[1]),
-                    source: nil,
-                    summary: nil
-                )
+                return update
             }
     }
 
@@ -116,6 +93,45 @@ public struct RemoteReferenceUpdate: Sendable, Equatable {
         }
 
         return updates
+    }
+}
+
+// MARK: - Fetch Line
+
+extension RemoteReferenceUpdate {
+    /// 解析 `fetch --porcelain` 的一行结果：标志与一个空格，后面是空格分隔的旧对象、新对象与本地引用，标志本身可能是空格；
+    /// 不合这个格式时为 nil。
+    ///
+    /// 写入 `FETCH_HEAD` 的那一行没有旧对象，Git 把它写成全 0。
+    public init?(fetchLine line: some StringProtocol) {
+        guard
+            line.count > 2,
+            let flag = line.first,
+            " *+-=!t".contains(flag),
+            line.dropFirst().first == " "
+        else {
+            return nil
+        }
+
+        let fields = line.dropFirst(2).split(separator: " ", omittingEmptySubsequences: false)
+
+        guard
+            fields.count == 3,
+            GitObjectID.isValid(String(fields[0])),
+            GitObjectID.isValid(String(fields[1])),
+            !fields[2].isEmpty
+        else {
+            return nil
+        }
+
+        self.init(
+            flag: flag,
+            reference: String(fields[2]),
+            oldObject: String(fields[0]),
+            newObject: String(fields[1]),
+            source: nil,
+            summary: nil
+        )
     }
 }
 

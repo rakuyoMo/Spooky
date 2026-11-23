@@ -12,7 +12,7 @@ Cette page explique comment Spooky trouve ou monte ce dossier, et comment Termin
 :ui[action.revealFinder] est toujours disponible dans un dépôt sur un serveur. Vous le trouverez à ces endroits :
 
 - Le menu :ui[menu.file]
-- :ui[toolbar.finder] dans la barre d’outils. Pour l’ajouter, choisissez :ui[menu.view > menu.customizeToolbar] et faites-le glisser dans la barre d’outils.
+- :ui[toolbar.finder] dans la barre d’outils
 - La ligne :ui[workspace.title] de la barre latérale, quand vous cliquez dessus avec le bouton droit
 - Les [Actions rapides](/guide/repositories/navigation/#quick-actions)
 - La fenêtre Dépôts, quand vous cliquez avec le bouton droit sur un dépôt sur un serveur

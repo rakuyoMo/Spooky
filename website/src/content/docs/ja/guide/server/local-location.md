@@ -12,7 +12,7 @@ Finder が表示できるのは、Mac 上のフォルダだけです。サーバ
 :ui[action.revealFinder] は、サーバリポジトリでいつでも使えます。次の場所にあります。
 
 - :ui[menu.file] メニュー
-- ツールバーの :ui[toolbar.finder]。追加するには、:ui[menu.view > menu.customizeToolbar] を選んでツールバーにドラッグします。
+- ツールバーの :ui[toolbar.finder]
 - サイドバーの :ui[workspace.title] の行を右クリックしたとき
 - [クイックアクション](/guide/repositories/navigation/#quick-actions)
 - リポジトリウインドウでサーバリポジトリを右クリックしたとき

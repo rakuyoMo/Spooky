@@ -77,6 +77,61 @@ struct PullRequestTargetTests {
         #expect(PullRequestAssociations.load(from: defaults).isEmpty)
     }
 
+    /// 读出远端后记下它对应的服务；再打开这个仓库时，远端还没读出就按记下的服务取叫法，界面不会先写成另一种。
+    /// 远端换了服务后跟着改，没有远端后不再记。
+    @Test("打开仓库时先按上次认出的服务取叫法")
+    func rememberedService() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "spooky-pr-services-" + UUID().uuidString)
+        let defaults = try #require(UserDefaults(suiteName: directory.appending(path: "defaults").path))
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let folder = directory.appending(path: "repo")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        let location = RepositoryLocation.local(path: folder.path)
+        let runner = try await FileViewsTests.initializeRepository(at: location)
+        _ = try await runner.run(["remote", "add", "origin", "https://gitlab.com/group/project.git"])
+
+        // 账号列表只在内存里，不碰本机的账号
+        let accounts = HostingAccounts(defaults: defaults, credentials: MemoryCredentials())
+
+        // 第一次打开：没有记过，读出远端后认出 GitLab 并记下
+        let first = RepositorySession()
+        first.pullRequests.accounts = accounts
+        first.pullRequests.defaults = defaults
+        first.display(location)
+        #expect(!first.usesMergeRequests)
+
+        first.pullRequests.readRemotes(runner: runner)
+        await until { first.pullRequests.hasReadRemotes }
+        #expect(first.usesMergeRequests)
+        #expect(PullRequestServices.stored(for: location, defaults: defaults) == .gitlab)
+
+        // 再打开：远端还没读出，叫法已经是 Merge Request；这时账号变了也不改
+        let second = RepositorySession()
+        second.pullRequests.accounts = accounts
+        second.pullRequests.defaults = defaults
+        second.display(location)
+        second.pullRequests.resolveTarget()
+        #expect(!second.pullRequests.hasReadRemotes)
+        #expect(second.pullRequestText("title") == AppLocalization.text("mr.title"))
+
+        // 远端换到 github.com：读出后改叫 Pull Request，记下的跟着改
+        _ = try await runner.run(["remote", "set-url", "origin", "https://github.com/owner/project.git"])
+        second.pullRequests.readRemotes(runner: runner)
+        await until { second.pullRequests.hasReadRemotes }
+        #expect(!second.usesMergeRequests)
+        #expect(PullRequestServices.stored(for: location, defaults: defaults) == .github)
+
+        // 没有远端了：读出后不再记
+        _ = try await runner.run(["remote", "remove", "origin"])
+        second.pullRequests.close()
+        second.pullRequests.readRemotes(runner: runner)
+        await until { second.pullRequests.hasReadRemotes }
+        #expect(PullRequestServices.stored(for: location, defaults: defaults) == nil)
+    }
+
     /// 添加、移除与重新认证账号后请求视图重新找对应的账号；令牌被拒时自动加上的标记不再读一次。
     @Test("账号变化后是否重新读取请求")
     func accountsChange() {

@@ -6,7 +6,7 @@ import SpookyKit
 extension RepositorySession {
     /// 选中远端对应 GitLab 时界面叫 Merge Request，其余叫 Pull Request。
     var usesMergeRequests: Bool {
-        pullRequests.target?.service == .gitlab
+        pullRequests.service(in: repository) == .gitlab
     }
 
     /// 按选中远端的服务取 Pull Request 或 Merge Request 的文案：资源键分别以 `pr.` 与 `mr.` 开头。

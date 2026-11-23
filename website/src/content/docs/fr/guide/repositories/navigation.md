@@ -42,7 +42,7 @@ Si vous reculez puis ouvrez autre chose, les endroits vers lesquels vous pouviez
 
 ## Actions rapides {#quick-actions}
 
-Les Actions rapides vous permettent de trouver quelque chose en tapant, puis d’agir dessus sans quitter le clavier. Elles sont disponibles tant qu’un dépôt est affiché. Choisissez :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>) ou cliquez sur :ui[toolbar.quickActions] dans la barre d’outils.
+Les Actions rapides vous permettent de trouver quelque chose en tapant, puis d’agir dessus sans quitter le clavier. Elles sont disponibles tant qu’un dépôt est affiché. Choisissez :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>).
 
 ::screenshot[Les Actions rapides ouvertes par-dessus une fenêtre de dépôt, avec « dark » saisi. Le premier résultat, la branche feature/dark-mode, est sélectionné et affiche son action par défaut ainsi que l’indication pour plus d’actions. En dessous figurent la branche distante origin/feature/dark-mode, l’apparence Sombre, le thème Default (Dark) et deux commits dont le message mentionne dark.]{name="quick-actions" frame="window"}
 

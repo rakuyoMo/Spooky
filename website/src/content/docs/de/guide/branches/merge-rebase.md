@@ -8,11 +8,11 @@ Zusammenführen und Rebase holen beide die Commits eines anderen Branches in den
 - Ein Merge verbindet die beiden Verläufe, meist mit einem Merge-Commit.
 - Ein Rebase verschiebt Ihre Commits hinter die Commits des anderen Branches. Der Verlauf bleibt eine gerade Linie, aber Ihre Commits werden neu geschrieben.
 
-In der Symbolleiste stehen :ui[sync.merge] und :ui[sync.rebaseHead] nebeneinander. Beide lassen sich auch über das Menü :ui[workspace.title] starten.
+Beide starten Sie über das Menü :ui[workspace.title]. Um :ui[sync.merge] und :ui[sync.rebaseHead] in die Symbolleiste zu legen, wählen Sie :ui[menu.view > menu.customizeToolbar] und ziehen Sie sie hinein.
 
 ## Zusammenführen {#merge}
 
-1. Klicken Sie in der Symbolleiste auf :ui[sync.merge] oder wählen Sie :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). In der Seitenleiste können Sie auch mit der rechten Maustaste auf den Branch klicken, auf dem Sie sich befinden, und :ui[workspace.mergeMenu] aus dem Menü wählen oder einen anderen Branch darauf ziehen.
+1. Wählen Sie :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). In der Seitenleiste können Sie auch mit der rechten Maustaste auf den Branch klicken, auf dem Sie sich befinden, und :ui[workspace.mergeMenu] aus dem Menü wählen oder einen anderen Branch darauf ziehen.
 2. Wählen Sie in :ui[branch.target], was zusammengeführt wird: einen lokalen Branch, einen Remote-Branch oder ein Tag. Anfangs ist das der Upstream des Branches, auf dem Sie sich befinden.
 3. Wählen Sie, wie committet wird:
    - :ui[merge.squash] stagt alle Änderungen für einen einzigen eigenen Commit, ohne Merge-Commit.
@@ -32,7 +32,7 @@ Wenn der Merge bei Konflikten anhält, wechselt Spooky zur Arbeitskopie und zeig
 
 ## Rebase {#rebase}
 
-1. Klicken Sie in der Symbolleiste auf :ui[sync.rebaseHead] oder wählen Sie :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). Sie können auch mit der rechten Maustaste auf den Branch klicken, auf dem Sie sich befinden, und :ui[workspace.rebaseMenu] aus dem Menü wählen.
+1. Wählen Sie :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). Sie können auch mit der rechten Maustaste auf den Branch klicken, auf dem Sie sich befinden, und :ui[workspace.rebaseMenu] aus dem Menü wählen.
 2. Wählen Sie in :ui[branch.target] den Branch, auf den rebast wird. Anfangs ist das der Upstream des Branches, auf dem Sie sich befinden.
 3. Prüfen Sie die Vorschau und aktivieren Sie bei Bedarf :ui[sync.skipHooks].
 4. Klicken Sie auf :ui[sync.rebaseHead].
@@ -66,7 +66,7 @@ Das Dialogfenster zum Zusammenführen lässt :ui[merge.clean] und :ui[merge.unch
 
 ## Schnellversionen {#quick}
 
-Halten Sie <kbd>⌥</kbd> gedrückt, dann werden :ui[sync.merge] und :ui[sync.rebaseHead] in der Symbolleiste zu :ui[sync.quickMerge] und :ui[sync.quickRebase]. Sie laufen sofort, ohne Dialogfenster:
+Halten Sie <kbd>⌥</kbd> gedrückt, dann werden :ui[sync.merge] und :ui[sync.rebaseHead], sobald Sie sie zur Symbolleiste hinzugefügt haben, zu :ui[sync.quickMerge] und :ui[sync.quickRebase]. Sie laufen sofort, ohne Dialogfenster:
 
 - :ui[sync.quickMerge] führt den Upstream des Branches zusammen, auf dem Sie sich befinden.
 - :ui[sync.quickRebase] rebast den Branch, auf dem Sie sich befinden, auf seinen Upstream.

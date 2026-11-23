@@ -8,11 +8,11 @@ Tanto la fusión como el rebase traen los commits de otra rama a la rama en la q
 - Una fusión une los dos historiales, normalmente con un commit de fusión.
 - Un rebase mueve tus commits para que queden después de los de la otra rama. El historial sigue siendo una línea recta, pero tus commits se reescriben.
 
-La barra de herramientas tiene :ui[sync.merge] y :ui[sync.rebaseHead] uno junto al otro. Los dos se pueden iniciar también desde el menú :ui[workspace.title].
+Los dos se inician desde el menú :ui[workspace.title]. Para poner :ui[sync.merge] y :ui[sync.rebaseHead] en la barra de herramientas, selecciona :ui[menu.view > menu.customizeToolbar] y arrástralos a ella.
 
 ## Fusionar {#merge}
 
-1. Haz clic en :ui[sync.merge] en la barra de herramientas, o selecciona :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). En la barra lateral, también puedes hacer clic derecho en la rama en la que estás y seleccionar :ui[workspace.mergeMenu] en el menú, o arrastrar otra rama sobre ella.
+1. Selecciona :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). En la barra lateral, también puedes hacer clic derecho en la rama en la que estás y seleccionar :ui[workspace.mergeMenu] en el menú, o arrastrar otra rama sobre ella.
 2. Elige qué fusionar en :ui[branch.target]: una rama local, una rama remota o una etiqueta. Al principio es el upstream de la rama en la que estás.
 3. Elige cómo hacer el commit:
    - :ui[merge.squash] añade todos los cambios al stage para un único commit tuyo, sin commit de fusión.
@@ -32,7 +32,7 @@ Si la fusión se detiene por conflictos, Spooky cambia a la copia de trabajo y m
 
 ## Hacer rebase {#rebase}
 
-1. Haz clic en :ui[sync.rebaseHead] en la barra de herramientas, o selecciona :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). También puedes hacer clic derecho en la rama en la que estás y seleccionar :ui[workspace.rebaseMenu] en el menú.
+1. Selecciona :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). También puedes hacer clic derecho en la rama en la que estás y seleccionar :ui[workspace.rebaseMenu] en el menú.
 2. Elige la rama sobre la que hacer rebase en :ui[branch.target]. Al principio es el upstream de la rama en la que estás.
 3. Revisa la previsión y, si lo necesitas, selecciona :ui[sync.skipHooks].
 4. Haz clic en :ui[sync.rebaseHead].
@@ -66,7 +66,7 @@ El diálogo de fusión no muestra :ui[merge.clean] ni :ui[merge.unchanged]. Los 
 
 ## Versiones rápidas {#quick}
 
-Mantén pulsada <kbd>⌥</kbd>, y :ui[sync.merge] y :ui[sync.rebaseHead] de la barra de herramientas se convierten en :ui[sync.quickMerge] y :ui[sync.quickRebase]. Se ejecutan enseguida, sin el diálogo:
+Mantén pulsada <kbd>⌥</kbd>, y :ui[sync.merge] y :ui[sync.rebaseHead], una vez añadidos a la barra de herramientas, se convierten en :ui[sync.quickMerge] y :ui[sync.quickRebase]. Se ejecutan enseguida, sin el diálogo:
 
 - :ui[sync.quickMerge] fusiona el upstream de la rama en la que estás.
 - :ui[sync.quickRebase] hace rebase de la rama en la que estás sobre su upstream.

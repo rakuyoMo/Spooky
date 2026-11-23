@@ -9,7 +9,7 @@ Estas operaciones intercambian commits con los [remotos](/guide/branches/tags-re
 - Pull hace fetch de una rama remota y trae sus commits a la rama en la que estás.
 - Push envía tus commits a una rama remota.
 
-La barra de herramientas tiene :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] uno junto al otro, y :ui[sync.sync] a su lado. Las mismas operaciones están en el menú :ui[menu.repository].
+La barra de herramientas tiene :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] uno junto al otro, y :ui[toolbar.forcePush] a su lado. Estas operaciones y :ui[sync.sync] están en el menú :ui[menu.repository].
 
 Fetch, pull, push y la sincronización no se registran en el historial de deshacer, así que no se pueden deshacer. Publicar una rama sí se puede deshacer.
 
@@ -83,7 +83,7 @@ Para dar marcha atrás, selecciona :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>).
 
 La sincronización hace fetch, pull y push de la rama en la que estás, uno detrás de otro.
 
-1. Haz clic en :ui[sync.sync] en la barra de herramientas, o selecciona :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
+1. Selecciona :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
 2. Elige la rama en :ui[sync.remoteBranch]. Al principio es el upstream de la rama en la que estás.
 3. Selecciona :ui[sync.rebase] si quieres. La previsión de debajo dice si el pull va a dar conflictos.
 4. Ajusta las opciones: :ui[merge.verify], :ui[sync.pushAllTags], :ui[sync.pushSubmodules] y :ui[sync.skipHooks] funcionan igual que en pull y push.
@@ -110,7 +110,7 @@ Después de reescribir commits de los que ya habías hecho push, por ejemplo al 
 
 Spooky solo hace push forzado con lease. El push solo sale adelante si la rama remota sigue donde estaba la última vez que hiciste fetch. Si alguien hizo push entretanto, Git lo rechaza y no se sobrescribe nada. Spooky nunca recurre a un push forzado sin protección.
 
-1. Selecciona :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>), o haz clic derecho en una rama local y selecciónalo en el menú.
+1. Haz clic en :ui[toolbar.forcePush] en la barra de herramientas, o selecciona :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>). También puedes hacer clic derecho en una rama local y seleccionarlo en el menú.
 2. Elige la rama local en :ui[branch.target], y la rama remota en :ui[sync.destination].
 3. Lee la comparación que hay debajo. Dice cuántos commits añade el push a la rama remota y cuántos sobrescribe. Después:
    - Una línea verde significa que la rama remota está en la versión que tenía tu rama antes de que la reescribieras. Es el caso habitual.
@@ -125,12 +125,12 @@ Spooky solo hace push forzado con lease. El push solo sale adelante si la rama r
 La opción :ui[sync.forcePush] del diálogo de push usa la misma protección.
 
 :::tip
-Selecciona :ui[menu.view > menu.customizeToolbar] para añadir :ui[toolbar.forcePush] y :ui[toolbar.pushTo] a la barra de herramientas.
+Selecciona :ui[menu.view > menu.customizeToolbar] para añadir :ui[toolbar.synchronize] y :ui[toolbar.pushTo] a la barra de herramientas.
 :::
 
 ## Versiones rápidas {#quick}
 
-Mantén pulsada <kbd>⌥</kbd>, y :ui[sync.fetch], :ui[sync.pull], :ui[sync.push] y :ui[sync.sync] de la barra de herramientas se convierten en :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush] y :ui[sync.quickSync]. Los ítems de menú cambian de la misma manera, por ejemplo :ui[sync.quickPushMenu].
+Mantén pulsada <kbd>⌥</kbd>, y :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] de la barra de herramientas se convierten en :ui[sync.quickFetch], :ui[sync.quickPull] y :ui[sync.quickPush]. :ui[sync.sync] se convierte en :ui[sync.quickSync] una vez añadido a la barra de herramientas. Los ítems de menú cambian de la misma manera, por ejemplo :ui[sync.quickPushMenu].
 
 Una versión rápida se ejecuta enseguida, sin el diálogo:
 

@@ -8,11 +8,11 @@ description: "브랜치를 병합하고 리베이스하고, 시작하기 전에 
 - 병합은 두 기록을 합치며, 보통 병합 커밋이 생깁니다.
 - 리베이스는 내 커밋을 다른 브랜치의 커밋 뒤로 옮깁니다. 기록은 한 줄로 이어지지만 내 커밋은 다시 쓰입니다.
 
-도구 막대에 :ui[sync.merge]과 :ui[sync.rebaseHead]가 나란히 있습니다. 둘 다 :ui[workspace.title] 메뉴에서도 시작할 수 있습니다.
+둘 다 :ui[workspace.title] 메뉴에서 시작합니다. :ui[sync.merge]과 :ui[sync.rebaseHead]를 도구 막대에 두려면 :ui[menu.view > menu.customizeToolbar]를 선택하고 도구 막대로 드래그합니다.
 
 ## 병합 {#merge}
 
-1. 도구 막대에서 :ui[sync.merge]을 클릭하거나 :ui[workspace.title > sync.mergeMenu](<kbd>⇧⌘M</kbd>)을 선택합니다. 사이드바에서 현재 브랜치를 오른쪽 클릭하고 메뉴에서 :ui[workspace.mergeMenu]을 선택하거나, 다른 브랜치를 그 위로 드래그해도 됩니다.
+1. :ui[workspace.title > sync.mergeMenu](<kbd>⇧⌘M</kbd>)을 선택합니다. 사이드바에서 현재 브랜치를 오른쪽 클릭하고 메뉴에서 :ui[workspace.mergeMenu]을 선택하거나, 다른 브랜치를 그 위로 드래그해도 됩니다.
 2. :ui[branch.target]에서 병합할 대상을 고릅니다. 로컬 브랜치, 원격 브랜치, 태그 중 하나입니다. 처음에는 현재 브랜치의 업스트림입니다.
 3. 커밋하는 방법을 선택합니다.
    - :ui[merge.squash]는 병합 커밋 없이 모든 변경 사항을 스테이지해 직접 커밋 하나로 만들 수 있게 합니다.
@@ -32,7 +32,7 @@ Spooky는 :ui[merge.alwaysCommit], :ui[merge.autoCommit], :ui[merge.verify]을 �
 
 ## 리베이스 {#rebase}
 
-1. 도구 막대에서 :ui[sync.rebaseHead]를 클릭하거나 :ui[workspace.title > sync.rebaseMenu](<kbd>⇧⌘R</kbd>)를 선택합니다. 현재 브랜치를 오른쪽 클릭하고 메뉴에서 :ui[workspace.rebaseMenu]를 선택해도 됩니다.
+1. :ui[workspace.title > sync.rebaseMenu](<kbd>⇧⌘R</kbd>)를 선택합니다. 현재 브랜치를 오른쪽 클릭하고 메뉴에서 :ui[workspace.rebaseMenu]를 선택해도 됩니다.
 2. :ui[branch.target]에서 리베이스할 대상 브랜치를 고릅니다. 처음에는 현재 브랜치의 업스트림입니다.
 3. 미리 보기를 확인하고, 필요하면 :ui[sync.skipHooks]를 선택합니다.
 4. :ui[sync.rebaseHead]를 클릭합니다.
@@ -66,7 +66,7 @@ Spooky는 :ui[merge.alwaysCommit], :ui[merge.autoCommit], :ui[merge.verify]을 �
 
 ## 빠른 버전 {#quick}
 
-<kbd>⌥</kbd>을 누르고 있으면 도구 막대의 :ui[sync.merge]과 :ui[sync.rebaseHead]가 :ui[sync.quickMerge]과 :ui[sync.quickRebase]로 바뀝니다. 대화상자 없이 곧바로 실행됩니다.
+<kbd>⌥</kbd>을 누르고 있으면 도구 막대에 추가한 :ui[sync.merge]과 :ui[sync.rebaseHead]가 :ui[sync.quickMerge]과 :ui[sync.quickRebase]로 바뀝니다. 대화상자 없이 곧바로 실행됩니다.
 
 - :ui[sync.quickMerge]은 현재 브랜치의 업스트림을 병합합니다.
 - :ui[sync.quickRebase]는 현재 브랜치를 업스트림 위로 리베이스합니다.

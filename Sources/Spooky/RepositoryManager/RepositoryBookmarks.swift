@@ -25,6 +25,9 @@ final class RepositoryBookmarks {
     /// 最近一次检查或打开失败的仓库位置。
     private(set) var missing: Set<RepositoryLocation> = []
 
+    /// 最近一次选中或打开时认出目录已不存在的服务器仓库，是 `missing` 的子集。
+    private(set) var directoryGone: Set<RepositoryLocation> = []
+
     /// 存储只有名称、位置、顺序与打开时间，不含仓库内容或凭据。
     private let defaults: UserDefaults
 
@@ -90,6 +93,11 @@ extension RepositoryBookmarks {
     func isMissing(_ location: RepositoryLocation) -> Bool {
         missing.contains(location)
     }
+
+    /// 服务器上是否已没有这个仓库的目录。
+    func isDirectoryGone(_ location: RepositoryLocation) -> Bool {
+        directoryGone.contains(location)
+    }
 }
 
 // MARK: - Recently Opened
@@ -108,17 +116,28 @@ extension RepositoryBookmarks {
 
 extension RepositoryBookmarks {
     /// 标记打开或检查失败的仓库，书签仍保留供重试。
-    func markMissing(_ location: RepositoryLocation) {
+    ///
+    /// - Parameters:
+    ///   - location: 失败的仓库位置。
+    ///   - directoryGone: 这次失败是否说明服务器上已没有仓库的目录；连不上服务器这类失败传 false。
+    func markMissing(_ location: RepositoryLocation, directoryGone isGone: Bool = false) {
         guard bookmark(for: location) != nil else {
             return
         }
 
         missing.insert(location)
+
+        if isGone {
+            directoryGone.insert(location)
+        } else {
+            directoryGone.remove(location)
+        }
     }
 
     /// 仓库重新可用时去掉失效标记。
     func markAvailable(_ location: RepositoryLocation) {
         missing.remove(location)
+        directoryGone.remove(location)
     }
 
     /// 检查本机仓库是否仍可打开；服务器仓库只在用户选中或打开时检查，不在后台批量连接。
@@ -193,5 +212,6 @@ extension RepositoryBookmarks {
         // 已删除的仓库不再保留失效标记
         let locations = Set(repositories.compactMap(\.location))
         missing.formIntersection(locations)
+        directoryGone.formIntersection(locations)
     }
 }

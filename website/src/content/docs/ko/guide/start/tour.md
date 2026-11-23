@@ -54,17 +54,17 @@ Spooky를 처음 열면 저장소 보기가 나타납니다. 사이드바의 :ui
 
 - :ui[toolbar.bookmarks]: 저장소 보기로 돌아갑니다
 - :ui[toolbar.previous]과 :ui[toolbar.next]: 방문한 보기 사이를 뒤로, 앞으로 이동합니다
-- :ui[toolbar.quickActions]: [빠른 동작](#quick-actions)을 참고하세요
+- :ui[toolbar.finder]와 :ui[toolbar.terminal]: 저장소 폴더를 Finder에서 보거나 터미널에서 엽니다
 - :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]: 원격과 커밋을 주고받습니다
-- :ui[toolbar.synchronize]: 현재 브랜치의 가져오기, 풀, 푸시를 한 번에 실행합니다
-- :ui[sync.merge]과 :ui[sync.rebaseHead]: 현재 브랜치를 다른 브랜치와 합칩니다
+- :ui[toolbar.forcePush]: 커밋을 다시 쓴 뒤, 원격 브랜치를 내 브랜치로 바꿉니다
 - :ui[toolbar.applyStash]과 :ui[toolbar.saveStash]: 보관해 둔 변경 사항을 되돌리거나, 현재 변경 사항을 따로 보관합니다
+- :ui[toolbar.createBranch]: 새 브랜치를 만듭니다
 - :ui[action.refresh]: 저장소를 다시 읽습니다
 - :ui[action.search]: 현재 보기의 목록을 필터링합니다
 
-<kbd>⌥</kbd>을 누르고 있으면 :ui[sync.fetch]부터 :ui[sync.rebaseHead]까지의 버튼이 :ui[sync.quickPush] 같은 빠른 버전으로 바뀝니다. 빠른 버전은 대화상자를 열지 않고 추적 브랜치를 대상으로 바로 실행합니다.
+<kbd>⌥</kbd>을 누르고 있으면 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]가 :ui[sync.quickPush] 같은 빠른 버전으로 바뀝니다. 빠른 버전은 대화상자를 열지 않고 추적 브랜치를 대상으로 바로 실행합니다.
 
-:ui[toolbar.clone]는 최근에 복제한 항목이 있는 동안 나타납니다. [저장소 윈도우](/guide/repositories/manager/)를 참고하세요. 버튼을 추가하거나 제거하려면 :ui[menu.view > menu.customizeToolbar]를 선택합니다. 위의 버튼 외에 :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder], :ui[toolbar.terminal]도 추가할 수 있습니다.
+:ui[toolbar.clone]는 최근에 복제한 항목이 있는 동안 나타납니다. [저장소 윈도우](/guide/repositories/manager/)를 참고하세요. 버튼을 추가하거나 제거하려면 :ui[menu.view > menu.customizeToolbar]를 선택합니다. 위의 버튼 외에 :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge]과 :ui[sync.rebaseHead], :ui[toolbar.pushTo]도 추가할 수 있습니다.
 
 ### 세 개의 열 {#columns}
 
@@ -74,7 +74,7 @@ Spooky를 처음 열면 저장소 보기가 나타납니다. 사이드바의 :ui
 
 ### 빠른 동작 {#quick-actions}
 
-:ui[toolbar.quickActions]을 클릭하거나 <kbd>⇧⌘A</kbd>를 누르면 패널이 열립니다. 입력해서 보기, 브랜치, 파일, 커밋을 찾은 다음, 키보드에서 손을 떼지 않고 그 항목에 동작을 실행합니다. 무엇을 찾아 주고 어떤 키를 쓰는지는 [윈도우와 탐색](/guide/repositories/navigation/)에서 설명합니다.
+:ui[menu.file > quickActions.menu]을 선택하거나 <kbd>⇧⌘A</kbd>를 누르면 패널이 열립니다. 입력해서 보기, 브랜치, 파일, 커밋을 찾은 다음, 키보드에서 손을 떼지 않고 그 항목에 동작을 실행합니다. 무엇을 찾아 주고 어떤 키를 쓰는지는 [윈도우와 탐색](/guide/repositories/navigation/)에서 설명합니다.
 
 ## 함께 보기
 

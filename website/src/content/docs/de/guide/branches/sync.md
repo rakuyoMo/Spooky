@@ -9,7 +9,7 @@ Diese Vorgänge tauschen Commits mit [Remotes](/guide/branches/tags-remotes/#rem
 - Pullen ruft einen Remote-Branch ab und holt dessen Commits in den Branch, auf dem Sie sich befinden.
 - Pushen sendet Ihre Commits an einen Remote-Branch.
 
-In der Symbolleiste stehen :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] nebeneinander, daneben :ui[sync.sync]. Dieselben Vorgänge finden Sie im Menü :ui[menu.repository].
+In der Symbolleiste stehen :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] nebeneinander, daneben :ui[toolbar.forcePush]. Diese Vorgänge und :ui[sync.sync] finden Sie im Menü :ui[menu.repository].
 
 Abrufen, Pullen, Pushen und Synchronisieren werden nicht im Widerrufen-Verlauf festgehalten und lassen sich daher nicht widerrufen. Das Veröffentlichen eines Branches lässt sich widerrufen.
 
@@ -83,7 +83,7 @@ Um das zurückzunehmen, wählen Sie :ui[menu.edit > menu.undo] (<kbd>⌘Z</kbd>)
 
 Synchronisieren ruft ab, pullt und pusht den Branch, auf dem Sie sich befinden, nacheinander.
 
-1. Klicken Sie in der Symbolleiste auf :ui[sync.sync] oder wählen Sie :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
+1. Wählen Sie :ui[menu.repository > sync.syncMenu] (<kbd>⇧⌘Y</kbd>).
 2. Wählen Sie den Branch in :ui[sync.remoteBranch]. Anfangs ist das der Upstream des Branches, auf dem Sie sich befinden.
 3. Aktivieren Sie bei Bedarf :ui[sync.rebase]. Die Vorschau darunter sagt, ob der Pull auf Konflikte stoßen wird.
 4. Legen Sie die Optionen fest: :ui[merge.verify], :ui[sync.pushAllTags], :ui[sync.pushSubmodules] und :ui[sync.skipHooks] funktionieren wie beim Pullen und Pushen.
@@ -110,7 +110,7 @@ Nachdem Sie bereits gepushte Commits umgeschrieben haben, etwa durch Ändern des
 
 Spooky führt Force-Pushes nur mit Lease aus. Der Push geht nur durch, wenn der Remote-Branch noch dort steht, wo er bei Ihrem letzten Abrufen stand. Wenn inzwischen jemand gepusht hat, lehnt Git ab, und nichts wird überschrieben. Spooky weicht nie auf einen ungeschützten Force-Push aus.
 
-1. Wählen Sie :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>), oder klicken Sie mit der rechten Maustaste auf einen lokalen Branch und wählen Sie den Befehl aus dem Menü.
+1. Klicken Sie in der Symbolleiste auf :ui[toolbar.forcePush] oder wählen Sie :ui[menu.repository > sync.forcePushMenu] (<kbd>⌃⌘U</kbd>). Sie können auch mit der rechten Maustaste auf einen lokalen Branch klicken und den Befehl aus dem Menü wählen.
 2. Wählen Sie den lokalen Branch in :ui[branch.target] und den Remote-Branch in :ui[sync.destination].
 3. Lesen Sie den Vergleich darunter. Er sagt, wie viele Commits der Push dem Remote-Branch hinzufügt und wie viele er überschreibt. Dabei gilt:
    - Eine grüne Zeile bedeutet, dass der Remote-Branch auf der Version steht, die Ihr Branch vor dem Umschreiben hatte. Das ist der Normalfall.
@@ -125,12 +125,12 @@ Spooky führt Force-Pushes nur mit Lease aus. Der Push geht nur durch, wenn der 
 Die Option :ui[sync.forcePush] im Dialogfenster zum Pushen verwendet denselben Schutz.
 
 :::tip
-Wählen Sie :ui[menu.view > menu.customizeToolbar], um :ui[toolbar.forcePush] und :ui[toolbar.pushTo] zur Symbolleiste hinzuzufügen.
+Wählen Sie :ui[menu.view > menu.customizeToolbar], um :ui[toolbar.synchronize] und :ui[toolbar.pushTo] zur Symbolleiste hinzuzufügen.
 :::
 
 ## Schnellversionen {#quick}
 
-Halten Sie <kbd>⌥</kbd> gedrückt, dann werden :ui[sync.fetch], :ui[sync.pull], :ui[sync.push] und :ui[sync.sync] in der Symbolleiste zu :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush] und :ui[sync.quickSync]. Die Menüeinträge ändern sich genauso, zum Beispiel zu :ui[sync.quickPushMenu].
+Halten Sie <kbd>⌥</kbd> gedrückt, dann werden :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] in der Symbolleiste zu :ui[sync.quickFetch], :ui[sync.quickPull] und :ui[sync.quickPush]. :ui[sync.sync] wird zu :ui[sync.quickSync], sobald Sie es zur Symbolleiste hinzugefügt haben. Die Menüeinträge ändern sich genauso, zum Beispiel zu :ui[sync.quickPushMenu].
 
 Eine Schnellversion läuft sofort, ohne Dialogfenster:
 

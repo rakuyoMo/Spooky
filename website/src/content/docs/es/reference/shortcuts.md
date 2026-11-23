@@ -187,7 +187,7 @@ Con el ratón, mantén pulsada <kbd>⇧</kbd> y haz clic en un número de línea
 | El campo de filtro de la barra lateral | <kbd>Esc</kbd> | Vacía el campo |
 | Los stashes | <kbd>⌘⌫</kbd> | Elimina los stashes seleccionados, después de preguntar |
 | La revisión de ramas | <kbd>⌘⌫</kbd> | Elimina las ramas seleccionadas, después de preguntar |
-| La ventana Repositorios | <kbd>↩</kbd> | Abre el repositorio seleccionado |
+| La ventana Repositorios | <kbd>↩</kbd> | Renombra la entrada seleccionada |
 | La ventana Repositorios | <kbd>⌫</kbd> o <kbd>⌦</kbd> | Quita las entradas seleccionadas. Consulta [Eliminar repositorios](/guide/repositories/manager/#delete). |
 | La ventana que se muestra al arrancar | <kbd>↩</kbd> | Abre el repositorio seleccionado. Consulta [Seguir donde lo dejaste](/guide/repositories/navigation/#restore). |
 | La conversación de una pull request | <kbd>↩</kbd> | Abre el commit seleccionado |

@@ -54,17 +54,17 @@ Von links nach rechts enthält die Symbolleiste diese Tasten:
 
 - :ui[toolbar.bookmarks]: zurück zur Ansicht „Repositorys“
 - :ui[toolbar.previous] und :ui[toolbar.next]: vor und zurück durch die Ansichten, die Sie besucht haben
-- :ui[toolbar.quickActions]: siehe [Schnellaktionen](#quick-actions)
+- :ui[toolbar.finder] und :ui[toolbar.terminal]: den Ordner des Repositorys im Finder zeigen oder im Terminal öffnen
 - :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push]: Commits mit Remotes austauschen
-- :ui[toolbar.synchronize]: den aktuellen Branch in einem Zug abrufen, pullen und pushen
-- :ui[sync.merge] und :ui[sync.rebaseHead]: den aktuellen Branch mit einem anderen Branch zusammenbringen
+- :ui[toolbar.forcePush]: einen Remote-Branch durch Ihren ersetzen, nachdem Sie Commits umgeschrieben haben
 - :ui[toolbar.applyStash] und :ui[toolbar.saveStash]: beiseitegelegte Änderungen zurückholen oder die aktuellen Änderungen beiseitelegen
+- :ui[toolbar.createBranch]: einen neuen Branch anlegen
 - :ui[action.refresh]: das Repository neu einlesen
 - :ui[action.search]: die Liste der aktuellen Ansicht filtern
 
-Halten Sie <kbd>⌥</kbd> gedrückt, und die Tasten von :ui[sync.fetch] bis :ui[sync.rebaseHead] werden zu Schnellversionen, etwa :ui[sync.quickPush]. Eine Schnellversion arbeitet sofort mit dem Tracking-Branch, ohne ein Dialogfenster zu öffnen.
+Halten Sie <kbd>⌥</kbd> gedrückt, und :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] werden zu Schnellversionen, etwa :ui[sync.quickPush]. Eine Schnellversion arbeitet sofort mit dem Tracking-Branch, ohne ein Dialogfenster zu öffnen.
 
-:ui[toolbar.clone] erscheint, solange es kürzlich geklonte Repositorys gibt. Siehe [Das Fenster „Repositorys“](/guide/repositories/manager/). Wählen Sie :ui[menu.view > menu.customizeToolbar], um Tasten hinzuzufügen oder zu entfernen. Neben den Tasten oben können Sie :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder] und :ui[toolbar.terminal] hinzufügen.
+:ui[toolbar.clone] erscheint, solange es kürzlich geklonte Repositorys gibt. Siehe [Das Fenster „Repositorys“](/guide/repositories/manager/). Wählen Sie :ui[menu.view > menu.customizeToolbar], um Tasten hinzuzufügen oder zu entfernen. Neben den Tasten oben können Sie :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] und :ui[sync.rebaseHead] sowie :ui[toolbar.pushTo] hinzufügen.
 
 ### Die drei Spalten {#columns}
 
@@ -74,7 +74,7 @@ Die rechte Spalte zeigt die Details zu dem, was Sie in der Mitte auswählen. Unt
 
 ### Schnellaktionen {#quick-actions}
 
-Klicken Sie auf :ui[toolbar.quickActions] oder drücken Sie <kbd>⇧⌘A</kbd>, um ein Panel zu öffnen. Tippen Sie, um eine Ansicht, einen Branch, eine Datei oder einen Commit zu finden, und führen Sie dann eine Aktion darauf aus, ohne die Tastatur zu verlassen. [Fenster und Navigation](/guide/repositories/navigation/) erklärt, was es findet und welche Tasten es verwendet.
+Wählen Sie :ui[menu.file > quickActions.menu] oder drücken Sie <kbd>⇧⌘A</kbd>, um ein Panel zu öffnen. Tippen Sie, um eine Ansicht, einen Branch, eine Datei oder einen Commit zu finden, und führen Sie dann eine Aktion darauf aus, ohne die Tastatur zu verlassen. [Fenster und Navigation](/guide/repositories/navigation/) erklärt, was es findet und welche Tasten es verwendet.
 
 ## Siehe auch
 

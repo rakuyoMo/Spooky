@@ -54,17 +54,17 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 - :ui[toolbar.bookmarks]：回到仓库管理
 - :ui[toolbar.previous] 与 :ui[toolbar.next]：在去过的视图之间后退、前进
-- :ui[toolbar.quickActions]：见 [快捷操作](#quick-actions)
+- :ui[toolbar.finder] 与 :ui[toolbar.terminal]：在 Finder 里显示仓库文件夹，或在终端里打开它
 - :ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push]：与远端交换提交
-- :ui[toolbar.synchronize]：对当前分支一次完成获取、拉取与推送
-- :ui[sync.merge] 与 :ui[sync.rebaseHead]：把当前分支与另一个分支合到一起
+- :ui[toolbar.forcePush]：改写过提交之后，用你的分支替换远端分支
 - :ui[toolbar.applyStash] 与 :ui[toolbar.saveStash]：取回收起来的改动，或把当前的改动收起来
+- :ui[toolbar.createBranch]：新建一个分支
 - :ui[action.refresh]：重新读取仓库
 - :ui[action.search]：筛选当前视图的列表
 
-按住 <kbd>⌥</kbd> 时，从 :ui[sync.fetch] 到 :ui[sync.rebaseHead] 的按钮会换成快速版本，例如 :ui[sync.quickPush]。快速版本直接对跟踪分支执行，不弹出对话框。
+按住 <kbd>⌥</kbd> 时，:ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 会换成快速版本，例如 :ui[sync.quickPush]。快速版本直接对跟踪分支执行，不弹出对话框。
 
-有最近的克隆时，工具栏上还会出现 :ui[toolbar.clone]，见 [仓库管理窗口](/guide/repositories/manager/)。想增减按钮，选 :ui[menu.view > menu.customizeToolbar]。除了上面这些，还可以加上 :ui[toolbar.createBranch]、:ui[toolbar.forcePush]、:ui[toolbar.pushTo]、:ui[toolbar.finder] 与 :ui[toolbar.terminal]。
+有最近的克隆时，工具栏上还会出现 :ui[toolbar.clone]，见 [仓库管理窗口](/guide/repositories/manager/)。想增减按钮，选 :ui[menu.view > menu.customizeToolbar]。除了上面这些，还可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 与 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。
 
 ### 三栏 {#columns}
 
@@ -74,7 +74,7 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 ### 快捷操作 {#quick-actions}
 
-点 :ui[toolbar.quickActions] 或按 <kbd>⇧⌘A</kbd>，会打开一个面板。输入文字找到某个视图、分支、文件或提交，再对它执行操作，手不用离开键盘。它能找到什么、用哪些按键，见 [窗口与导航](/guide/repositories/navigation/)。
+选 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，会打开一个面板。输入文字找到某个视图、分支、文件或提交，再对它执行操作，手不用离开键盘。它能找到什么、用哪些按键，见 [窗口与导航](/guide/repositories/navigation/)。
 
 ## 相关页面
 

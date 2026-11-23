@@ -42,7 +42,7 @@ description: "윈도우와 탭을 다루고, 뒤로 및 앞으로 이동하고, 
 
 ## 빠른 동작 {#quick-actions}
 
-빠른 동작을 쓰면 입력해서 무언가를 찾고, 키보드에서 손을 떼지 않고 그 항목에 동작을 실행할 수 있습니다. 저장소가 표시되어 있는 동안 사용할 수 있습니다. :ui[menu.file > quickActions.menu](<kbd>⇧⌘A</kbd>)을 선택하거나 도구 막대의 :ui[toolbar.quickActions]을 클릭합니다.
+빠른 동작을 쓰면 입력해서 무언가를 찾고, 키보드에서 손을 떼지 않고 그 항목에 동작을 실행할 수 있습니다. 저장소가 표시되어 있는 동안 사용할 수 있습니다. :ui[menu.file > quickActions.menu](<kbd>⇧⌘A</kbd>)을 선택합니다.
 
 ::screenshot[개별 저장소 윈도우 위에 열린 빠른 동작. “dark”가 입력되어 있습니다. 첫 번째 결과인 브랜치 feature/dark-mode가 선택되어 있고, 기본 동작과 더 많은 동작에 대한 안내가 표시됩니다. 그 아래에 원격 브랜치 origin/feature/dark-mode, 어두운 모양, Default (Dark) 테마, 메시지에 dark가 들어간 커밋 두 개가 있습니다.]{name="quick-actions" frame="window"}
 

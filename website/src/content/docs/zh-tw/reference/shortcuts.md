@@ -187,7 +187,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 | 側邊欄的篩選欄位 | <kbd>Esc</kbd> | 清空輸入框 |
 | 儲藏 | <kbd>⌘⌫</kbd> | 先問，再刪除所選的儲藏 |
 | 分支整理 | <kbd>⌘⌫</kbd> | 先問，再刪除所選的分支 |
-| 儲存庫管理視窗 | <kbd>↩</kbd> | 開啟所選的儲存庫 |
+| 儲存庫管理視窗 | <kbd>↩</kbd> | 替所選的一項重新命名 |
 | 儲存庫管理視窗 | <kbd>⌫</kbd> 或 <kbd>⌦</kbd> | 刪除所選的項目。見 [刪除儲存庫](/guide/repositories/manager/#delete)。 |
 | 啟動時顯示的視窗 | <kbd>↩</kbd> | 開啟所選的儲存庫。見 [回到上次離開的地方](/guide/repositories/navigation/#restore)。 |
 | Pull Request 的討論 | <kbd>↩</kbd> | 開啟所選的提交 |

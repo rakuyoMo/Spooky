@@ -54,17 +54,17 @@ De gauche à droite, la barre d’outils contient ces boutons :
 
 - :ui[toolbar.bookmarks] : revenir à la vue Dépôts
 - :ui[toolbar.previous] et :ui[toolbar.next] : reculer et avancer parmi les vues visitées
-- :ui[toolbar.quickActions] : consultez [Actions rapides](#quick-actions)
+- :ui[toolbar.finder] et :ui[toolbar.terminal] : afficher le dossier du dépôt dans le Finder, ou l’ouvrir dans un terminal
 - :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] : échanger des commits avec les dépôts distants
-- :ui[toolbar.synchronize] : récupérer, tirer et pousser la branche actuelle en une seule fois
-- :ui[sync.merge] et :ui[sync.rebaseHead] : combiner la branche actuelle avec une autre branche
+- :ui[toolbar.forcePush] : remplacer une branche distante par la vôtre après avoir réécrit des commits
 - :ui[toolbar.applyStash] et :ui[toolbar.saveStash] : reprendre des modifications mises de côté, ou mettre de côté vos modifications actuelles
+- :ui[toolbar.createBranch] : créer une branche
 - :ui[action.refresh] : relire le dépôt
 - :ui[action.search] : filtrer la liste de la vue actuelle
 
-Maintenez <kbd>⌥</kbd> enfoncée et les boutons de :ui[sync.fetch] à :ui[sync.rebaseHead] passent en version rapide, comme :ui[sync.quickPush]. Une version rapide agit tout de suite sur la branche amont, sans ouvrir de zone de dialogue.
+Maintenez <kbd>⌥</kbd> enfoncée et :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] passent en version rapide, comme :ui[sync.quickPush]. Une version rapide agit tout de suite sur la branche amont, sans ouvrir de zone de dialogue.
 
-:ui[toolbar.clone] apparaît tant que vous avez des clones récents. Consultez [La fenêtre Dépôts](/guide/repositories/manager/). Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter ou retirer des boutons. En plus des boutons ci-dessus, vous pouvez ajouter :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder] et :ui[toolbar.terminal].
+:ui[toolbar.clone] apparaît tant que vous avez des clones récents. Consultez [La fenêtre Dépôts](/guide/repositories/manager/). Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter ou retirer des boutons. En plus des boutons ci-dessus, vous pouvez ajouter :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] et :ui[sync.rebaseHead], ainsi que :ui[toolbar.pushTo].
 
 ### Les trois colonnes {#columns}
 
@@ -74,7 +74,7 @@ La colonne de droite affiche les détails de ce que vous sélectionnez au milieu
 
 ### Actions rapides {#quick-actions}
 
-Cliquez sur :ui[toolbar.quickActions] ou appuyez sur <kbd>⇧⌘A</kbd> pour ouvrir un panneau. Tapez pour trouver une vue, une branche, un fichier ou un commit, puis lancez une action dessus sans quitter le clavier. [Fenêtres et navigation](/guide/repositories/navigation/) explique ce qu’il trouve et quelles touches il utilise.
+Choisissez :ui[menu.file > quickActions.menu] ou appuyez sur <kbd>⇧⌘A</kbd> pour ouvrir un panneau. Tapez pour trouver une vue, une branche, un fichier ou un commit, puis lancez une action dessus sans quitter le clavier. [Fenêtres et navigation](/guide/repositories/navigation/) explique ce qu’il trouve et quelles touches il utilise.
 
 ## Voir aussi
 

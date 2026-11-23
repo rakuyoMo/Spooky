@@ -123,9 +123,12 @@ final class RepositoryActivity: Identifiable {
         ended.map { $0.timeIntervalSince(started) }
     }
 
-    /// 日志的最后一个非空行，原样保留行首的空白；与 `log` 的拼法一致，stderr 有内容时取它的，否则取 stdout 的。没有输出时为 nil。
+    /// 日志里最后一个给人读的非空行，原样保留行首的空白；与 `log` 的拼法一致，stderr 有内容时取它的，否则取 stdout 的。
+    /// 没有这样的行时为 nil。
+    ///
+    /// stdout 里 `fetch --porcelain` 的结果行是给程序读的，不算。
     var lastLine: String? {
-        stderr.lastLine ?? stdout.lastLine
+        stderr.lastLine() ?? stdout.lastLine { RemoteReferenceUpdate(fetchLine: $0) == nil }
     }
 
     /// 两路输出整段拼成的日志，进度里的 `\r` 已覆盖当前行。
@@ -466,8 +469,16 @@ private struct ActivityOutput {
     /// 上一个字节是回车；跨数据块保留，回车恰好落在块末尾时下一块仍会覆盖当前行。
     private var returned = false
 
-    /// 最后一个不只有空白的行，原样返回；没有这样的行时为 nil。
-    var lastLine: String? {
+    /// 从已整理好的字节接着写，当前行从最后一个换行之后开始。
+    init(data: Data = Data()) {
+        self.data = data
+        lineStart = data.lastIndex(of: Self.newline).map { $0 + 1 } ?? 0
+    }
+
+    /// 最后一个不只有空白、又符合条件的行，原样返回；没有这样的行时为 nil。
+    ///
+    /// - Parameter isIncluded: 一行算不算；省略时每一行都算。
+    func lastLine(where isIncluded: (String) -> Bool = { _ in true }) -> String? {
         var end = data.endIndex
 
         // 从末尾逐行向前找，只解码扫过的行
@@ -475,7 +486,7 @@ private struct ActivityOutput {
             let start = data[..<end].lastIndex(of: Self.newline).map { $0 + 1 } ?? data.startIndex
             let line = String(decoding: data[start ..< end], as: UTF8.self)
 
-            if !line.trimmingCharacters(in: .whitespaces).isEmpty {
+            if !line.trimmingCharacters(in: .whitespaces).isEmpty, isIncluded(line) {
                 return line
             }
 
@@ -483,12 +494,6 @@ private struct ActivityOutput {
         }
 
         return nil
-    }
-
-    /// 从已整理好的字节接着写，当前行从最后一个换行之后开始。
-    init(data: Data = Data()) {
-        self.data = data
-        lineStart = data.lastIndex(of: Self.newline).map { $0 + 1 } ?? 0
     }
 
     /// 追加一块原始输出。UTF-8 的多字节字符里没有换行与回车的字节，按字节切分不会切坏字符。

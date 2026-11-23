@@ -8,11 +8,11 @@ Merging and rebasing both bring the commits of another branch into the branch yo
 - A merge joins the two histories, usually with a merge commit.
 - A rebase moves your commits so they come after the commits of the other branch. The history stays a straight line, but your commits are rewritten.
 
-The toolbar has :ui[sync.merge] and :ui[sync.rebaseHead] side by side. Both start from the :ui[workspace.title] menu too.
+Both start from the :ui[workspace.title] menu. To put :ui[sync.merge] and :ui[sync.rebaseHead] in the toolbar, choose :ui[menu.view > menu.customizeToolbar] and drag them in.
 
 ## Merge {#merge}
 
-1. Click :ui[sync.merge] in the toolbar, or choose :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). In the sidebar, you can also right-click the branch you’re on and choose :ui[workspace.mergeMenu] from the menu, or drag another branch onto it.
+1. Choose :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). In the sidebar, you can also right-click the branch you’re on and choose :ui[workspace.mergeMenu] from the menu, or drag another branch onto it.
 2. Pick what to merge in :ui[branch.target]: a local branch, a remote branch, or a tag. At first it’s the upstream of the branch you’re on.
 3. Choose how to commit:
    - :ui[merge.squash] stages all the changes for a single commit of your own, without a merge commit.
@@ -32,7 +32,7 @@ If the merge stops on conflicts, Spooky switches to the Working Copy and shows a
 
 ## Rebase {#rebase}
 
-1. Click :ui[sync.rebaseHead] in the toolbar, or choose :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). You can also right-click the branch you’re on and choose :ui[workspace.rebaseMenu] from the menu.
+1. Choose :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). You can also right-click the branch you’re on and choose :ui[workspace.rebaseMenu] from the menu.
 2. Pick the branch to rebase onto in :ui[branch.target]. At first it’s the upstream of the branch you’re on.
 3. Check the preview, and select :ui[sync.skipHooks] if you need to.
 4. Click :ui[sync.rebaseHead].
@@ -66,7 +66,7 @@ The merge dialog leaves out :ui[merge.clean] and :ui[merge.unchanged]. The other
 
 ## Quick versions {#quick}
 
-Hold <kbd>⌥</kbd>, and :ui[sync.merge] and :ui[sync.rebaseHead] in the toolbar turn into :ui[sync.quickMerge] and :ui[sync.quickRebase]. They run right away, without the dialog:
+Hold <kbd>⌥</kbd>, and :ui[sync.merge] and :ui[sync.rebaseHead], once you’ve added them to the toolbar, turn into :ui[sync.quickMerge] and :ui[sync.quickRebase]. They run right away, without the dialog:
 
 - :ui[sync.quickMerge] merges the upstream of the branch you’re on.
 - :ui[sync.quickRebase] rebases the branch you’re on onto its upstream.

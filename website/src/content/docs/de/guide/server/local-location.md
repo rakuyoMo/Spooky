@@ -12,7 +12,7 @@ Diese Seite behandelt, wie Spooky diesen Ordner findet oder einbindet und wie da
 :ui[action.revealFinder] ist in einem Server-Repository immer verfügbar. Sie finden es an diesen Stellen:
 
 - Im Menü :ui[menu.file]
-- Als :ui[toolbar.finder] in der Symbolleiste. Um es hinzuzufügen, wählen Sie :ui[menu.view > menu.customizeToolbar] und ziehen Sie es in die Symbolleiste.
+- Als :ui[toolbar.finder] in der Symbolleiste
 - In der Zeile :ui[workspace.title] in der Seitenleiste, wenn Sie mit der rechten Maustaste darauf klicken
 - In den [Schnellaktionen](/guide/repositories/navigation/#quick-actions)
 - Im Fenster „Repositorys“, wenn Sie mit der rechten Maustaste auf ein Server-Repository klicken

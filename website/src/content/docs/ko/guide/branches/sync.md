@@ -9,7 +9,7 @@ description: "가져오고, 풀하고, 푸시하고, 브랜치를 처음 게시�
 - 풀은 원격 브랜치를 가져와서 그 커밋을 현재 브랜치에 합칩니다.
 - 푸시는 내 커밋을 원격 브랜치로 보냅니다.
 
-도구 막대에 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]가 나란히 있고, 그 옆에 :ui[sync.sync]가 있습니다. 같은 작업이 :ui[menu.repository] 메뉴에도 있습니다.
+도구 막대에 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]가 나란히 있고, 그 옆에 :ui[toolbar.forcePush]가 있습니다. 이 작업들과 :ui[sync.sync]는 :ui[menu.repository] 메뉴에 있습니다.
 
 가져오기, 풀, 푸시, 동기화는 실행 취소 기록에 남지 않으므로 실행 취소할 수 없습니다. 브랜치 게시는 실행 취소할 수 있습니다.
 
@@ -83,7 +83,7 @@ Spooky는 태그 옵션과 하위 모듈 옵션을 기억합니다.
 
 동기화는 현재 브랜치에서 가져오기, 풀, 푸시를 차례로 실행합니다.
 
-1. 도구 막대에서 :ui[sync.sync]를 클릭하거나 :ui[menu.repository > sync.syncMenu](<kbd>⇧⌘Y</kbd>)를 선택합니다.
+1. :ui[menu.repository > sync.syncMenu](<kbd>⇧⌘Y</kbd>)를 선택합니다.
 2. :ui[sync.remoteBranch]에서 브랜치를 고릅니다. 처음에는 현재 브랜치의 업스트림입니다.
 3. 원하면 :ui[sync.rebase]을 선택합니다. 아래의 미리 보기가 풀에서 충돌이 생길지 알려 줍니다.
 4. 옵션을 설정합니다. :ui[merge.verify], :ui[sync.pushAllTags], :ui[sync.pushSubmodules], :ui[sync.skipHooks]는 풀과 푸시에서와 똑같이 동작합니다.
@@ -110,7 +110,7 @@ Spooky는 태그 옵션과 하위 모듈 옵션을 기억합니다.
 
 Spooky는 리스 기반으로만 강제 푸시합니다. 원격 브랜치가 마지막으로 가져왔을 때의 위치에 그대로 있을 때만 푸시가 이루어집니다. 그 사이에 누가 푸시했다면 Git이 거부하고 아무것도 덮어쓰지 않습니다. Spooky는 보호 없는 강제 푸시로 넘어가지 않습니다.
 
-1. :ui[menu.repository > sync.forcePushMenu](<kbd>⌃⌘U</kbd>)를 선택하거나, 로컬 브랜치를 오른쪽 클릭하고 메뉴에서 선택합니다.
+1. 도구 막대에서 :ui[toolbar.forcePush]를 클릭하거나 :ui[menu.repository > sync.forcePushMenu](<kbd>⌃⌘U</kbd>)를 선택합니다. 로컬 브랜치를 오른쪽 클릭하고 메뉴에서 선택해도 됩니다.
 2. :ui[branch.target]에서 로컬 브랜치를, :ui[sync.destination]에서 원격 브랜치를 고릅니다.
 3. 그 아래의 비교 결과를 읽습니다. 푸시가 원격 브랜치에 커밋을 몇 개 추가하고 몇 개를 덮어쓰는지 나옵니다. 그리고 다음과 같이 표시됩니다.
    - 초록색 줄은 원격 브랜치가 내 브랜치를 다시 쓰기 전의 버전에 있다는 뜻입니다. 보통은 이 경우입니다.
@@ -125,12 +125,12 @@ Spooky는 리스 기반으로만 강제 푸시합니다. 원격 브랜치가 마
 푸시 대화상자의 :ui[sync.forcePush] 옵션도 같은 보호를 사용합니다.
 
 :::tip
-:ui[menu.view > menu.customizeToolbar]를 선택하면 도구 막대에 :ui[toolbar.forcePush]와 :ui[toolbar.pushTo]를 추가할 수 있습니다.
+:ui[menu.view > menu.customizeToolbar]를 선택하면 도구 막대에 :ui[toolbar.synchronize]와 :ui[toolbar.pushTo]를 추가할 수 있습니다.
 :::
 
 ## 빠른 버전 {#quick}
 
-<kbd>⌥</kbd>을 누르고 있으면 도구 막대의 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push], :ui[sync.sync]가 :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush], :ui[sync.quickSync]로 바뀝니다. 메뉴 항목도 같은 방식으로 바뀝니다. 예를 들면 :ui[sync.quickPushMenu]입니다.
+<kbd>⌥</kbd>을 누르고 있으면 도구 막대의 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]가 :ui[sync.quickFetch], :ui[sync.quickPull], :ui[sync.quickPush]로 바뀝니다. :ui[sync.sync]도 도구 막대에 추가해 두면 :ui[sync.quickSync]로 바뀝니다. 메뉴 항목도 같은 방식으로 바뀝니다. 예를 들면 :ui[sync.quickPushMenu]입니다.
 
 빠른 버전은 대화상자 없이 곧바로 실행됩니다.
 

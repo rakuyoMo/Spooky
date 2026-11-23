@@ -69,7 +69,7 @@ Los repositorios que ya están en la lista no se muestran otra vez. Puedes busca
 
 - Para añadir un grupo, selecciona :ui[bookmarks.newGroup] en el menú del botón de añadir y escribe un nombre.
 - Para reordenar las entradas o moverlas a otro grupo, arrástralas.
-- Para renombrar una entrada, haz clic derecho en ella y selecciona :ui[bookmarks.rename]. Renombrar un repositorio en la lista no cambia el nombre de su carpeta.
+- Para renombrar una entrada, selecciónala y pulsa <kbd>↩</kbd>, o haz clic derecho en ella y selecciona :ui[bookmarks.rename]. Renombrar un repositorio en la lista no cambia el nombre de su carpeta.
 - Para ordenar por nombre, haz clic derecho y selecciona :ui[bookmarks.sortChildren] para ordenar las entradas de un grupo, o :ui[bookmarks.sortParent] para ordenar el grupo en el que está una entrada.
 
 Dos opciones de :ui[app.name > settings.title] › :ui[settings.general] cambian lo que muestra la lista:
@@ -81,7 +81,7 @@ Consulta [Ventanas y lista de repositorios](/guide/settings/general/#windows).
 
 ## Abrir un repositorio {#open}
 
-Haz doble clic en un repositorio, o selecciónalo y pulsa <kbd>↩</kbd>. Se abre en la misma ventana, en lugar de la lista. Si el repositorio ya está abierto en otra ventana, Spooky trae esa ventana al frente.
+Haz doble clic en un repositorio. Se abre en la misma ventana, en lugar de la lista. Si el repositorio ya está abierto en otra ventana, Spooky trae esa ventana al frente.
 
 Haz clic derecho en un repositorio para ver más opciones:
 
@@ -125,7 +125,7 @@ Trasladar a la papelera se lleva la carpeta entera del repositorio, incluidos lo
 Si una carpeta no se puede mover, Spooky muestra :ui[bookmarks.trashFailed.title] y enumera las carpetas que se han quedado. Spooky nunca traslada a la papelera tu carpeta de inicio, una carpeta que la contenga ni el nivel superior de un disco.
 
 :::note[Repositorios de servidor]
-Spooky siempre pregunta antes de eliminar un repositorio de servidor. Su carpeta va a la papelera de ese servidor, no a la de tu Mac.
+Spooky siempre pregunta antes de eliminar un repositorio de servidor. Su carpeta va a la papelera de ese servidor, no a la de tu Mac. Si la carpeta ya no está en el servidor, la casilla de la papelera aparece atenuada y solo se elimina el marcador.
 :::
 
 ## Consulta también

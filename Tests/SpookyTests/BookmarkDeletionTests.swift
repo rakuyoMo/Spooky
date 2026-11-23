@@ -26,7 +26,8 @@ struct BookmarkDeletionTests {
     }
 
     /// 只剩空分组与目录已不存在的本机仓库时直接删除；有服务器仓库或目录还在的本机仓库时询问，单项与多选相同。
-    /// 询问里勾选框的个数与两种说明；不勾选只移除书签，不移动任何文件夹。
+    /// 询问里勾选框的个数与两种说明；目录已不存在的服务器仓库不算进个数，要问的都是这样的仓库时勾选框不能勾；
+    /// 不勾选只移除书签，不移动任何文件夹。
     @Test("删除书签与分组：要不要询问与询问的内容")
     func prompts() throws {
         let (defaults, directory) = try Self.defaults()
@@ -74,6 +75,30 @@ struct BookmarkDeletionTests {
         #expect(group.checkbox == AppLocalization.text("bookmarks.delete.trashMultiple", 2))
         #expect(group.message == AppLocalization.text("bookmarks.delete.noteServer"))
 
+        #expect(single.isCheckboxEnabled && group.isCheckboxEnabled)
+
+        // 服务器仓库连不上时照常可以勾；认出目录已不存在后不能勾，个数照旧
+        let server = RepositoryLocation.remote(host: "spooky-test", path: "/srv/lost")
+        let lost = try #require(bookmarks.bookmark(bookmarks.add(server)))
+
+        bookmarks.markMissing(server)
+        #expect(manager.deleteBookmarksPrompt([lost]) { }.isCheckboxEnabled)
+
+        bookmarks.markMissing(server, directoryGone: true)
+        let disabled = manager.deleteBookmarksPrompt([lost]) { }
+        #expect(!disabled.isCheckboxEnabled)
+        #expect(disabled.checkbox == AppLocalization.text("bookmarks.delete.trash"))
+
+        // 与目录还在的本机仓库一起删：可以勾，个数只算本机的
+        let both = manager.deleteBookmarksPrompt([lost, try #require(bookmarks.bookmark(local))]) { }
+        #expect(both.isCheckboxEnabled)
+        #expect(both.checkbox == AppLocalization.text("bookmarks.delete.trash"))
+
+        // 重新可用后又可以勾
+        bookmarks.markAvailable(server)
+        #expect(manager.deleteBookmarksPrompt([lost]) { }.isCheckboxEnabled)
+        bookmarks.delete([lost.id])
+
         // 不勾选：书签连同分组里的一起移除，没有移动任何文件夹
         group.submit(false)
         single.submit(false)
@@ -82,8 +107,8 @@ struct BookmarkDeletionTests {
         #expect(recorder.local.isEmpty && recorder.remote.isEmpty)
     }
 
-    /// 勾选后书签立即删除，本机与服务器仓库各走对应的入口；目录已不存在的跳过，家目录与它的上级不移，
-    /// 服务器上受保护、没有废纸篓、连不上的留在原处列进错误框，克隆中的先停止克隆再移走还在的目录。
+    /// 勾选后书签立即删除，本机与服务器仓库各走对应的入口；目录已不存在的跳过，认出目录已不存在的服务器仓库不交给入口，
+    /// 家目录与它的上级不移，服务器上受保护、没有废纸篓、连不上的留在原处列进错误框，克隆中的先停止克隆再移走还在的目录。
     @Test("勾选后移进废纸篓")
     func moving() async throws {
         let (defaults, directory) = try Self.defaults()
@@ -124,10 +149,15 @@ struct BookmarkDeletionTests {
         let locals = [repository, home, directory, failing, cloneTarget, directory.appending(path: "gone")]
             .map { RepositoryLocation.local(path: $0.path) }
 
-        let ids = (locals + servers).map { bookmarks.add($0) }
+        // 认出目录已不存在的服务器仓库
+        let vanished = RepositoryLocation.remote(host: "spooky-test", path: "/srv/vanished")
+
+        let ids = (locals + servers + [vanished]).map { bookmarks.add($0) }
+        bookmarks.markMissing(vanished, directoryGone: true)
+
         let prompt = manager.deleteBookmarksPrompt(ids.compactMap(bookmarks.bookmark)) { }
 
-        // 目录已不存在的本机仓库不算进个数
+        // 目录已不存在的本机与服务器仓库都不算进个数
         #expect(prompt.checkbox == AppLocalization.text("bookmarks.delete.trashMultiple", 10))
 
         prompt.submit(true)
@@ -140,7 +170,7 @@ struct BookmarkDeletionTests {
         #expect(recorder.cloneRunning == [false])
         #expect({ if case .cancelled = clone.state { true } else { false } }())
 
-        // 服务器：每个仓库都交给服务器的入口，不在本机移动
+        // 服务器：认出目录已不存在的没有交给入口，其余每个仓库都交给服务器的入口，不在本机移动
         #expect(recorder.remote == servers)
 
         let protected = AppLocalization.text("bookmarks.trashFailed.protected")

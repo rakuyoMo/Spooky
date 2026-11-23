@@ -187,7 +187,7 @@ With the mouse, hold <kbd>⇧</kbd> and click a line number to select every line
 | The filter field of the sidebar | <kbd>Esc</kbd> | Clears the field |
 | Stashes | <kbd>⌘⌫</kbd> | Deletes the selected stashes, after asking |
 | Branches Review | <kbd>⌘⌫</kbd> | Deletes the selected branches, after asking |
-| The Repositories window | <kbd>↩</kbd> | Opens the selected repository |
+| The Repositories window | <kbd>↩</kbd> | Renames the selected entry |
 | The Repositories window | <kbd>⌫</kbd> or <kbd>⌦</kbd> | Removes the selected entries. See [Remove repositories](/guide/repositories/manager/#delete). |
 | The window shown at launch | <kbd>↩</kbd> | Opens the selected repository. See [Pick up where you left off](/guide/repositories/navigation/#restore). |
 | The conversation of a pull request | <kbd>↩</kbd> | Opens the selected commit |

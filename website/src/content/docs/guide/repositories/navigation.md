@@ -42,7 +42,7 @@ If you go back and then open something new, the places you could go forward to a
 
 ## Quick Actions {#quick-actions}
 
-Quick Actions let you find something by typing and act on it without leaving the keyboard. They’re available while a repository is shown. Choose :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>) or click :ui[toolbar.quickActions] in the toolbar.
+Quick Actions let you find something by typing and act on it without leaving the keyboard. They’re available while a repository is shown. Choose :ui[menu.file > quickActions.menu] (<kbd>⇧⌘A</kbd>).
 
 ::screenshot[Quick Actions open over a repository window with “dark” typed in. The first result, the branch feature/dark-mode, is selected and shows its default action and the hint for more actions. Below it are the remote branch origin/feature/dark-mode, the Dark appearance, the Default (Dark) theme, and two commits whose messages mention dark.]{name="quick-actions" frame="window"}
 

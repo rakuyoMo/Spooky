@@ -187,7 +187,7 @@ description: "查阅 Spooky 的全部键盘快捷键。"
 | 侧边栏的筛选框 | <kbd>Esc</kbd> | 清空输入框 |
 | 储藏 | <kbd>⌘⌫</kbd> | 先问，再删除所选的储藏 |
 | 分支整理 | <kbd>⌘⌫</kbd> | 先问，再删除所选的分支 |
-| 仓库管理窗口 | <kbd>↩</kbd> | 打开所选的仓库 |
+| 仓库管理窗口 | <kbd>↩</kbd> | 给所选的一项改名 |
 | 仓库管理窗口 | <kbd>⌫</kbd> 或 <kbd>⌦</kbd> | 删除所选的项。见 [删除仓库](/guide/repositories/manager/#delete)。 |
 | 启动时显示的窗口 | <kbd>↩</kbd> | 打开所选的仓库。见 [回到上次离开的地方](/guide/repositories/navigation/#restore)。 |
 | Pull Request 的讨论 | <kbd>↩</kbd> | 打开所选的提交 |

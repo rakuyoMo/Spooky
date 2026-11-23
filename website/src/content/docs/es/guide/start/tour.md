@@ -54,17 +54,17 @@ De izquierda a derecha, la barra de herramientas tiene estos botones:
 
 - :ui[toolbar.bookmarks]: vuelve a la vista Repositorios
 - :ui[toolbar.previous] y :ui[toolbar.next]: van atrás y adelante por las vistas que has visitado
-- :ui[toolbar.quickActions]: consulta [Acciones rápidas](#quick-actions)
+- :ui[toolbar.finder] y :ui[toolbar.terminal]: muestran la carpeta del repositorio en el Finder, o la abren en un terminal
 - :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push]: intercambian commits con los remotos
-- :ui[toolbar.synchronize]: hace fetch, pull y push de la rama actual de una vez
-- :ui[sync.merge] y :ui[sync.rebaseHead]: combinan la rama actual con otra rama
+- :ui[toolbar.forcePush]: reemplaza una rama remota por la tuya después de reescribir commits
 - :ui[toolbar.applyStash] y :ui[toolbar.saveStash]: recuperan los cambios que has apartado, o apartan tus cambios actuales
+- :ui[toolbar.createBranch]: crea una rama
 - :ui[action.refresh]: vuelve a leer el repositorio
 - :ui[action.search]: filtra la lista de la vista actual
 
-Mantén pulsada <kbd>⌥</kbd> y los botones de :ui[sync.fetch] a :ui[sync.rebaseHead] pasan a su versión rápida, como :ui[sync.quickPush]. Una versión rápida trabaja directamente con la rama de seguimiento, sin abrir ningún diálogo.
+Mantén pulsada <kbd>⌥</kbd> y :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] pasan a su versión rápida, como :ui[sync.quickPush]. Una versión rápida trabaja directamente con la rama de seguimiento, sin abrir ningún diálogo.
 
-:ui[toolbar.clone] aparece mientras tienes clones recientes. Consulta [La ventana Repositorios](/guide/repositories/manager/). Selecciona :ui[menu.view > menu.customizeToolbar] para añadir o quitar botones. Además de los botones anteriores, puedes añadir :ui[toolbar.createBranch], :ui[toolbar.forcePush], :ui[toolbar.pushTo], :ui[toolbar.finder] y :ui[toolbar.terminal].
+:ui[toolbar.clone] aparece mientras tienes clones recientes. Consulta [La ventana Repositorios](/guide/repositories/manager/). Selecciona :ui[menu.view > menu.customizeToolbar] para añadir o quitar botones. Además de los botones anteriores, puedes añadir :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] y :ui[sync.rebaseHead], y :ui[toolbar.pushTo].
 
 ### Las tres columnas {#columns}
 
@@ -74,7 +74,7 @@ La columna derecha muestra los detalles de lo que seleccionas en la central. En 
 
 ### Acciones rápidas {#quick-actions}
 
-Haz clic en :ui[toolbar.quickActions] o pulsa <kbd>⇧⌘A</kbd> para abrir un panel. Escribe para encontrar una vista, una rama, un archivo o un commit, y ejecuta una acción sobre él sin soltar el teclado. [Ventanas y navegación](/guide/repositories/navigation/) explica qué encuentra y qué teclas usa.
+Selecciona :ui[menu.file > quickActions.menu] o pulsa <kbd>⇧⌘A</kbd> para abrir un panel. Escribe para encontrar una vista, una rama, un archivo o un commit, y ejecuta una acción sobre él sin soltar el teclado. [Ventanas y navegación](/guide/repositories/navigation/) explica qué encuentra y qué teclas usa.
 
 ## Consulta también
 

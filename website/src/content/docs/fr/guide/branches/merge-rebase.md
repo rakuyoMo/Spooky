@@ -8,11 +8,11 @@ La fusion et le rebasage intègrent tous deux les commits d’une autre branche 
 - Une fusion réunit les deux historiques, en général avec un commit de fusion.
 - Un rebasage déplace vos commits pour qu’ils viennent après ceux de l’autre branche. L’historique reste une ligne droite, mais vos commits sont réécrits.
 
-La barre d’outils affiche :ui[sync.merge] et :ui[sync.rebaseHead] côte à côte. Les deux se lancent aussi depuis le menu :ui[workspace.title].
+Les deux se lancent depuis le menu :ui[workspace.title]. Pour placer :ui[sync.merge] et :ui[sync.rebaseHead] dans la barre d’outils, choisissez :ui[menu.view > menu.customizeToolbar] et faites-les glisser dedans.
 
 ## Fusionner {#merge}
 
-1. Cliquez sur :ui[sync.merge] dans la barre d’outils, ou choisissez :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). Dans la barre latérale, vous pouvez aussi cliquer avec le bouton droit sur la branche actuelle et choisir :ui[workspace.mergeMenu] dans le menu, ou faire glisser une autre branche sur elle.
+1. Choisissez :ui[workspace.title > sync.mergeMenu] (<kbd>⇧⌘M</kbd>). Dans la barre latérale, vous pouvez aussi cliquer avec le bouton droit sur la branche actuelle et choisir :ui[workspace.mergeMenu] dans le menu, ou faire glisser une autre branche sur elle.
 2. Choisissez ce qu’il faut fusionner dans :ui[branch.target] : une branche locale, une branche distante ou un tag. Au début, c’est la branche amont de la branche actuelle.
 3. Choisissez comment valider :
    - :ui[merge.squash] indexe toutes les modifications pour un seul commit que vous faites vous-même, sans commit de fusion.
@@ -32,7 +32,7 @@ Si la fusion s’arrête sur des conflits, Spooky passe à la copie de travail e
 
 ## Rebaser {#rebase}
 
-1. Cliquez sur :ui[sync.rebaseHead] dans la barre d’outils, ou choisissez :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). Vous pouvez aussi cliquer avec le bouton droit sur la branche actuelle et choisir :ui[workspace.rebaseMenu] dans le menu.
+1. Choisissez :ui[workspace.title > sync.rebaseMenu] (<kbd>⇧⌘R</kbd>). Vous pouvez aussi cliquer avec le bouton droit sur la branche actuelle et choisir :ui[workspace.rebaseMenu] dans le menu.
 2. Choisissez la branche sur laquelle rebaser dans :ui[branch.target]. Au début, c’est la branche amont de la branche actuelle.
 3. Vérifiez l’aperçu, et sélectionnez :ui[sync.skipHooks] si nécessaire.
 4. Cliquez sur :ui[sync.rebaseHead].
@@ -66,7 +66,7 @@ La zone de dialogue de fusion n’affiche pas :ui[merge.clean] ni :ui[merge.unch
 
 ## Versions rapides {#quick}
 
-Maintenez <kbd>⌥</kbd>, et :ui[sync.merge] et :ui[sync.rebaseHead] dans la barre d’outils deviennent :ui[sync.quickMerge] et :ui[sync.quickRebase]. Ils s’exécutent tout de suite, sans zone de dialogue :
+Maintenez <kbd>⌥</kbd>, et :ui[sync.merge] et :ui[sync.rebaseHead], une fois ajoutés à la barre d’outils, deviennent :ui[sync.quickMerge] et :ui[sync.quickRebase]. Ils s’exécutent tout de suite, sans zone de dialogue :
 
 - :ui[sync.quickMerge] fusionne la branche amont de la branche actuelle.
 - :ui[sync.quickRebase] rebase la branche actuelle sur sa branche amont.

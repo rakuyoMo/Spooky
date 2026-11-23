@@ -72,6 +72,9 @@ final class RepositoryPullRequestState {
     /// 选中远端对应的账号与项目；还没有读取时为 nil。
     private(set) var target: PullRequestTarget? = nil
 
+    /// 这个仓库的远端已经读出过；关闭仓库时复原。
+    private(set) var hasReadRemotes = false
+
     /// 已读到的打开着的请求。
     private(set) var items: [PullRequest] = []
 
@@ -131,6 +134,10 @@ final class RepositoryPullRequestState {
     @ObservationIgnored
     var accounts = HostingAccounts.shared
 
+    /// 记下各仓库服务的偏好；测试使用独立的偏好域。
+    @ObservationIgnored
+    var defaults = UserDefaults.standard
+
     /// 列表读取任务。
     @ObservationIgnored
     private var listTask: Task<Void, Never>? = nil
@@ -151,7 +158,7 @@ final class RepositoryPullRequestState {
     @ObservationIgnored
     private var branchRequestsDate: Date? = nil
 
-    /// 列表所属的仓库，读取下一页时记进 Activity；关闭仓库时清掉。
+    /// 读出过远端的仓库：读取下一页时记进 Activity，认出的服务记在它名下；关闭仓库时清掉。
     @ObservationIgnored
     private var location: RepositoryLocation? = nil
 
@@ -357,6 +364,7 @@ final class RepositoryPullRequestState {
         branchRequestsFailure = nil
         branchRequestsDate = nil
         location = nil
+        hasReadRemotes = false
         listTask?.cancel()
         listTask = nil
         remotes = []
@@ -395,23 +403,40 @@ extension RepositoryPullRequestState {
             let remotes = try? await RepositoryRemotes(runner: runner).configurations()
             guard let self, let remotes, generation == request, !isLoading, !isLoaded else { return }
 
+            location = runner.location
             select(remotes)
             resolveTarget()
         }
     }
 
-    /// 按选中远端的地址、已登录的账号与手动关联，重新找出对应的账号与项目。
+    /// 按选中远端的地址、已登录的账号与手动关联，重新找出对应的账号与项目；远端读出过时，记下它对应的服务。
     func resolveTarget() {
         let associations = PullRequestAssociations.load()
 
         target = remoteURL.map {
             PullRequestTarget.resolve(remoteURL: $0, accounts: accounts.items, associations: associations)
         }
+
+        if hasReadRemotes, let location {
+            PullRequestServices.store(target?.service, for: location, defaults: defaults)
+        }
+    }
+
+    /// 仓库的选中远端对应的服务，对应不上时为 nil；远端读出之前，取上次打开这个仓库时认出的，界面的叫法从一开始就是对的。
+    ///
+    /// - Parameter repository: 会话打开着的仓库。
+    func service(in repository: RepositoryLocation?) -> HostingService? {
+        guard !hasReadRemotes else {
+            return target?.service
+        }
+
+        return repository.flatMap { PullRequestServices.stored(for: $0, defaults: defaults) }
     }
 
     /// 记下读到的远端，沿用已选的远端，否则选 origin 或第一个。
     private func select(_ remotes: [RemoteConfiguration]) {
         self.remotes = remotes
+        hasReadRemotes = true
 
         let names = remotes.map(\.name)
         remote = remote.flatMap { names.contains($0) ? $0 : nil } ?? (names.contains("origin") ? "origin" : names.first)

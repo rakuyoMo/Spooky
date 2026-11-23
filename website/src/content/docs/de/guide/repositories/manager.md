@@ -69,7 +69,7 @@ Repositorys, die schon in der Liste stehen, werden nicht noch einmal gezeigt. Si
 
 - Um eine Gruppe hinzuzufügen, wählen Sie :ui[bookmarks.newGroup] aus dem Menü der Hinzufügen-Taste und geben Sie einen Namen ein.
 - Um Einträge umzusortieren oder in eine andere Gruppe zu verschieben, ziehen Sie sie.
-- Um einen Eintrag umzubenennen, klicken Sie mit der rechten Maustaste darauf und wählen Sie :ui[bookmarks.rename]. Wenn Sie ein Repository in der Liste umbenennen, wird sein Ordner nicht umbenannt.
+- Um einen Eintrag umzubenennen, wählen Sie ihn aus und drücken Sie <kbd>↩</kbd>, oder klicken Sie mit der rechten Maustaste darauf und wählen Sie :ui[bookmarks.rename]. Wenn Sie ein Repository in der Liste umbenennen, wird sein Ordner nicht umbenannt.
 - Um nach Namen zu sortieren, klicken Sie mit der rechten Maustaste und wählen Sie :ui[bookmarks.sortChildren], um die Einträge einer Gruppe zu sortieren, oder :ui[bookmarks.sortParent], um die Gruppe zu sortieren, in der ein Eintrag liegt.
 
 Zwei Optionen unter :ui[app.name > settings.title] › :ui[settings.general] ändern, was die Liste zeigt:
@@ -81,7 +81,7 @@ Siehe [Fenster und die Repository-Liste](/guide/settings/general/#windows).
 
 ## Ein Repository öffnen {#open}
 
-Doppelklicken Sie auf ein Repository oder wählen Sie es aus und drücken Sie <kbd>↩</kbd>. Es öffnet sich im selben Fenster anstelle der Liste. Wenn das Repository bereits in einem anderen Fenster geöffnet ist, holt Spooky stattdessen dieses Fenster nach vorne.
+Doppelklicken Sie auf ein Repository. Es öffnet sich im selben Fenster anstelle der Liste. Wenn das Repository bereits in einem anderen Fenster geöffnet ist, holt Spooky stattdessen dieses Fenster nach vorne.
 
 Klicken Sie mit der rechten Maustaste auf ein Repository, um mehr Möglichkeiten zu erhalten:
 
@@ -125,7 +125,7 @@ Beim Legen in den Papierkorb wird der ganze Repository-Ordner mitgenommen, einsc
 Wenn ein Ordner nicht in den Papierkorb gelegt werden kann, zeigt Spooky :ui[bookmarks.trashFailed.title] und führt die Ordner auf, die geblieben sind. Spooky legt niemals Ihren Benutzerordner, einen Ordner, der ihn enthält, oder die oberste Ebene eines Laufwerks in den Papierkorb.
 
 :::note[Server-Repositorys]
-Spooky fragt immer nach, bevor es ein Server-Repository entfernt. Sein Ordner kommt in den Papierkorb auf diesem Server, nicht auf Ihrem Mac.
+Spooky fragt immer nach, bevor es ein Server-Repository entfernt. Sein Ordner kommt in den Papierkorb auf diesem Server, nicht auf Ihrem Mac. Wenn der Ordner auf dem Server nicht mehr vorhanden ist, ist das Markierungsfeld für den Papierkorb grau dargestellt und nur das Lesezeichen wird entfernt.
 :::
 
 ## Siehe auch

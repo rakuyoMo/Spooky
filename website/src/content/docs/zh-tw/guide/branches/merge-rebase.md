@@ -8,11 +8,11 @@ description: "合併與重定基底分支，開始前預覽衝突，用父分支
 - 合併把兩段歷史接在一起，通常會多一個合併提交。
 - 重定基底把你的提交挪到另一個分支的提交後面。歷史保持一條直線，但你的提交會被改寫。
 
-工具列上並排放著 :ui[sync.merge] 與 :ui[sync.rebaseHead]。:ui[workspace.title] 選單裡也能開始這兩個操作。
+這兩個操作都從 :ui[workspace.title] 選單開始。想把 :ui[sync.merge] 與 :ui[sync.rebaseHead] 放到工具列上，選 :ui[menu.view > menu.customizeToolbar]，把它們拖上去。
 
 ## 合併 {#merge}
 
-1. 按一下工具列上的 :ui[sync.merge]，或者選 :ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）。也可以在側邊欄裡對目前所在的分支按右鍵，選 :ui[workspace.mergeMenu]，或者把另一個分支拖到它上面。
+1. 選 :ui[workspace.title > sync.mergeMenu]（<kbd>⇧⌘M</kbd>）。也可以在側邊欄裡對目前所在的分支按右鍵，選 :ui[workspace.mergeMenu]，或者把另一個分支拖到它上面。
 2. 在 :ui[branch.target] 裡選要合併的內容：本機分支、遠端分支或標籤。一開始是目前分支的上游。
 3. 選擇怎麼提交：
    - :ui[merge.squash]：把全部變更暫存起來，由你自己做成一個提交，不產生合併提交。
@@ -32,7 +32,7 @@ Spooky 會記住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 與 :ui[merge.v
 
 ## 重定基底 {#rebase}
 
-1. 按一下工具列上的 :ui[sync.rebaseHead]，或者選 :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）。也可以在目前所在的分支上按右鍵，選 :ui[workspace.rebaseMenu]。
+1. 選 :ui[workspace.title > sync.rebaseMenu]（<kbd>⇧⌘R</kbd>）。也可以在目前所在的分支上按右鍵，選 :ui[workspace.rebaseMenu]。
 2. 在 :ui[branch.target] 裡選要重定基底到哪個分支上。一開始是目前分支的上游。
 3. 看一下預覽，需要的話勾選 :ui[sync.skipHooks]。
 4. 按一下 :ui[sync.rebaseHead]。
@@ -66,7 +66,7 @@ Spooky 會記住 :ui[merge.alwaysCommit]、:ui[merge.autoCommit] 與 :ui[merge.v
 
 ## 快速版本 {#quick}
 
-按住 <kbd>⌥</kbd>，工具列上的 :ui[sync.merge] 與 :ui[sync.rebaseHead] 會變成 :ui[sync.quickMerge] 與 :ui[sync.quickRebase]。它們不跳出對話框，直接執行：
+按住 <kbd>⌥</kbd>，加到工具列上的 :ui[sync.merge] 與 :ui[sync.rebaseHead] 會變成 :ui[sync.quickMerge] 與 :ui[sync.quickRebase]。它們不跳出對話框，直接執行：
 
 - :ui[sync.quickMerge] 合併目前分支的上游。
 - :ui[sync.quickRebase] 把目前分支重定基底到它的上游上。
