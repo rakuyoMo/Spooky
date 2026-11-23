@@ -69,32 +69,7 @@ enum CommandExecutor {
                     )
                 }
         } catch {
-            let cancelled = Task.isCancelled || error is CancellationError
-            let result = await collector.result(
-                arguments: arguments,
-                termination: nil,
-                cancelled: cancelled
-            )
-            let category: GitError.Category =
-                if cancelled {
-                    .cancelled
-                } else if error is GitOutputLimitError {
-                    .outputLimitExceeded
-                } else if
-                    let processError = error as? SubprocessError,
-                    [.spawnFailed, .executableNotFound, .failedToChangeWorkingDirectory]
-                        .contains(processError.code)
-                {
-                    .launchFailed
-                } else {
-                    .processIOFailed
-                }
-
-            throw GitError(
-                result: result,
-                category: category,
-                diagnostic: cancelled || error is GitOutputLimitError ? nil : String(describing: error)
-            )
+            throw await failure(error, collector: collector, arguments: arguments)
         }
 
         let result = await collector.result(
@@ -113,6 +88,43 @@ enum CommandExecutor {
         }
 
         return result
+    }
+
+    /// 把启动进程或读取输出时抛出的错误转成 ``GitError``，结果带上此前收到的输出；常驻通道的前导同样按它处理。
+    ///
+    /// - Parameters:
+    ///   - error: 抛出的错误。
+    ///   - collector: 这次执行的输出收集器。
+    ///   - arguments: 记进结果与错误的业务参数。
+    static func failure(_ error: any Error, collector: GitOutputCollector, arguments: [String]) async -> GitError {
+        let cancelled = Task.isCancelled || error is CancellationError
+
+        let result = await collector.result(
+            arguments: arguments,
+            termination: nil,
+            cancelled: cancelled
+        )
+
+        let category: GitError.Category =
+            if cancelled {
+                .cancelled
+            } else if error is GitOutputLimitError {
+                .outputLimitExceeded
+            } else if
+                let processError = error as? SubprocessError,
+                [.spawnFailed, .executableNotFound, .failedToChangeWorkingDirectory]
+                    .contains(processError.code)
+            {
+                .launchFailed
+            } else {
+                .processIOFailed
+            }
+
+        return GitError(
+            result: result,
+            category: category,
+            diagnostic: cancelled || error is GitOutputLimitError ? nil : String(describing: error)
+        )
     }
 }
 
