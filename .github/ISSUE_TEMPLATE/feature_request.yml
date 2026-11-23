@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest a new feature or improvement for Spooky.
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, search [existing issues](https://github.com/rakuyoMo/Spooky/issues) to avoid duplicates.
+
+        Remove tokens, private keys, and other sensitive information before uploading any materials.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use case and problem
+      description: Describe what you were trying to do and what made it difficult.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like Spooky to provide.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround
+      description: Describe how you currently accomplish this task.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Include examples, sketches, screenshots, or relevant links.
