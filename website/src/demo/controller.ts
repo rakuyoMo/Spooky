@@ -296,9 +296,6 @@ class Demo {
             case 'toggle-metadata':
                 this.update(this.state, { metadataCollapsed: !this.ui.metadataCollapsed });
                 break;
-            case 'quick':
-                this.openOverlay('quick', source);
-                break;
             case 'push':
                 this.openOverlay('push', source);
                 break;
