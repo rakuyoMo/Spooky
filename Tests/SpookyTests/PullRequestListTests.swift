@@ -88,7 +88,13 @@ extension PullRequestListTests {
         var task = Task { await checks.watch(request, client: client, repository: location) }
         await until { gate.isWaiting }
 
-        let job = PullRequestCheck(id: "job-1", name: "build", group: "build", state: .running)
+        let job = PullRequestCheck(
+            id: "job-1",
+            name: "build",
+            group: "build",
+            state: .running,
+            logPath: "projects/1/jobs/1/trace"
+        )
 
         #expect(checks.selected == PullRequestChecks(state: .running, items: [job]))
         #expect(checks.states[request.id] == .running)
@@ -135,14 +141,15 @@ extension PullRequestListTests {
 
         let request = try #require(fixture.session.pullRequests.items.first)
 
-        // 没有标签的请求：头部、描述与发表评论
+        // 可以增删标签时，没有标签的请求也有标签行，里面是添加按钮
         let coordinator = Self.conversation(of: request, in: fixture).makeCoordinator()
         let outline = PullRequestCommentRulesTests.outline(for: coordinator)
 
         coordinator.update(Self.conversation(of: request, in: fixture))
-        #expect(Self.keys(of: outline) == [.header, .description, .addComment])
+        #expect(fixture.session.canEditLabels)
+        #expect(Self.keys(of: outline) == [.header, .labels, .description, .addComment])
 
-        // 有标签的请求在头部下面多一行，不能选中
+        // 有标签的请求的标签行不能选中
         let few = Self.request(request, labels: [PullRequestLabel(name: "bug", color: "d73a4a")])
 
         coordinator.update(Self.conversation(of: few, in: fixture))
@@ -164,6 +171,17 @@ extension PullRequestListTests {
         let wrapped = try #require(outline.item(atRow: 1) as? PullRequestConversationView.Node)
 
         #expect(coordinator.outlineView(outline, heightOfRowByItem: wrapped) > height)
+
+        // 账号要重新认证时不能增删：没有标签的请求没有标签行，有标签的照常显示
+        let accounts = fixture.session.pullRequests.accounts
+
+        accounts.markNeedsReauthentication(try #require(fixture.session.pullRequests.account))
+        coordinator.update(Self.conversation(of: request, in: fixture))
+        #expect(!fixture.session.canEditLabels)
+        #expect(Self.keys(of: outline) == [.header, .description, .addComment])
+
+        coordinator.update(Self.conversation(of: few, in: fixture))
+        #expect(Self.keys(of: outline) == [.header, .labels, .description, .addComment])
     }
 }
 
@@ -269,7 +287,7 @@ extension PullRequestListTests {
 
 extension PullRequestListTests {
     /// 没有评论、提交还没读完的讨论。
-    private static func conversation(of request: PullRequest, in fixture: Fixture) -> PullRequestConversationView {
+    static func conversation(of request: PullRequest, in fixture: Fixture) -> PullRequestConversationView {
         PullRequestConversationView(
             session: fixture.session,
             request: request,
@@ -280,14 +298,14 @@ extension PullRequestListTests {
     }
 
     /// 讨论列表各行的身份。
-    private static func keys(of outline: NSOutlineView) -> [PullRequestConversationItem.Key] {
+    static func keys(of outline: NSOutlineView) -> [PullRequestConversationItem.Key] {
         (0 ..< outline.numberOfRows).compactMap {
             (outline.item(atRow: $0) as? PullRequestConversationView.Node)?.item.key
         }
     }
 
     /// 换上一组标签的同一个请求。
-    private static func request(_ request: PullRequest, labels: [PullRequestLabel]) -> PullRequest {
+    static func request(_ request: PullRequest, labels: [PullRequestLabel]) -> PullRequest {
         PullRequest(
             id: request.id,
             title: request.title,
@@ -308,7 +326,7 @@ extension PullRequestListTests {
 
 /// 两次自动刷新之间的等待，由测试放行。
 @MainActor
-private final class RefreshGate {
+final class RefreshGate {
     /// 等着放行的那次等待。
     private var continuation: CheckedContinuation<Void, Never>? = nil
 
@@ -329,11 +347,12 @@ private final class RefreshGate {
 
 // MARK: - RequestServer
 
-/// 假的 GitLab：按主机名各存一份 Merge Request 并记下收到的请求；只拦截本测试的独立域名，不访问真实托管服务。
+/// 假的 GitLab：按主机名各存一份 Merge Request、项目的标签与作业的日志，并记下收到的请求；
+/// 只拦截本测试的独立域名，不访问真实托管服务。
 /// 父类要求重申 Sendable；共享的内容由 Mutex 保护，实例没有可变字段。
 
 // swiftlint:disable:next no_unchecked_sendable
-private final class RequestServer: URLProtocol, @unchecked Sendable {
+final class RequestServer: URLProtocol, @unchecked Sendable {
     /// 一个 Merge Request。
     struct Entry {
         /// 项目里的编号。
@@ -351,6 +370,9 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
         /// 最新流水线的状态；没有流水线时为 nil。
         var pipeline: String? = nil
 
+        /// 请求上的标签名。
+        var labels: [String] = []
+
         /// 创建一个请求；源分支提交由一个字符重复 40 次而成。
         init(iid: Int, state: String, branch: String, character: Character, pipeline: String?) {
             self.iid = iid
@@ -367,7 +389,7 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
             return """
                 {"iid":\(iid),"title":"t","state":"\(state)","source_branch":"\(branch)","target_branch":"main",
                 "source_project_id":1,"target_project_id":1,"created_at":"2023-11-14T00:00:00Z",
-                "updated_at":"2023-11-14T00:00:00Z","sha":"\(sha)","labels":[],"head_pipeline":\(pipeline)}
+                "updated_at":"2023-11-14T00:00:00Z","sha":"\(sha)","labels":\(labels),"head_pipeline":\(pipeline)}
                 """
         }
     }
@@ -377,11 +399,20 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
         /// 项目里的请求，从新到旧。
         var entries: [Entry]
 
-        /// 读取详情与作业时回 500。
+        /// 项目里的标签名。
+        var projectLabels = ["bug", "docs"]
+
+        /// 各个作业日志的原文。
+        var trace = "section_start:1:step_script\r\u{1B}[0KRunning\nfirst\n"
+
+        /// 读取详情、作业与日志时回 500。
         var fails = false
 
         /// 收到的请求的地址，按先后。
         var log: [String] = []
+
+        /// 收到的写请求，写成 “方法 路径 请求体”，按先后。
+        var writes: [String] = []
     }
 
     /// 测试域名的后缀。
@@ -410,6 +441,11 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
         contents.withLock { $0[host]?.log ?? [] }
     }
 
+    /// 一个主机收到过的写请求。
+    static func writes(of host: String) -> [String] {
+        contents.withLock { $0[host]?.writes ?? [] }
+    }
+
     /// 清掉一个主机上的内容。
     static func remove(_ host: String) {
         _ = contents.withLock { $0.removeValue(forKey: host) }
@@ -435,7 +471,7 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
         guard
             let url = request.url,
             let host = url.host,
-            let (status, body) = Self.respond(to: url, on: host),
+            let (status, body) = Self.respond(to: request, url: url, on: host),
             let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
         else {
             client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
@@ -454,41 +490,115 @@ private final class RequestServer: URLProtocol, @unchecked Sendable {
 // MARK: - Responses
 
 extension RequestServer {
-    /// 记下请求，按路径给出列表、作业或详情；列表按 `state` 参数只给打开着的或全部。
-    private static func respond(to url: URL, on host: String) -> (Int, String)? {
+    /// 记下请求：写请求改动主机上的内容，读请求按路径给出列表、标签、作业、日志或详情；列表按 `state` 参数只给打开着的或全部。
+    private static func respond(to request: URLRequest, url: URL, on host: String) -> (Int, String)? {
         contents.withLock { contents -> (Int, String)? in
             guard var content = contents[host] else { return nil }
 
             content.log.append(url.absoluteString)
+
+            let response =
+                request.httpMethod == "GET"
+                    ? read(url, in: content)
+                    : write(request, path: url.path, in: &content)
+
             contents[host] = content
-
-            let path = url.path
-
-            if path.hasSuffix("/merge_requests") {
-                let opened = url.query?.contains("state=opened") ?? false
-                let listed = content.entries.filter { !opened || $0.state == "opened" }
-
-                return (200, "[" + listed.map(\.json).joined(separator: ",") + "]")
-            }
-
-            guard !content.fails else {
-                return (500, #"{"message":"500 Internal Server Error"}"#)
-            }
-
-            // 作业的状态与所在流水线的相同
-            if path.hasSuffix("/jobs") {
-                let entry = content.entries.first { path.contains("/pipelines/\(100 + $0.iid)/") }
-                let status = entry?.pipeline ?? "success"
-                let iid = entry?.iid ?? 0
-
-                return (200, #"[{"id":\#(iid),"name":"build","stage":"build","status":"\#(status)"}]"#)
-            }
-
-            guard let entry = content.entries.first(where: { path.hasSuffix("/merge_requests/\($0.iid)") }) else {
-                return (404, #"{"message":"404 Not Found"}"#)
-            }
-
-            return (200, entry.json)
+            return response
         }
+    }
+
+    /// 新建标签，或按 `add_labels` 与 `remove_labels` 改动请求的标签。
+    private static func write(_ request: URLRequest, path: String, in content: inout Content) -> (Int, String) {
+        let body = body(of: request)
+        let fields = (try? JSONSerialization.jsonObject(with: body)) as? [String: String] ?? [:]
+
+        // 请求体的键按字母排序后记下
+        let sorted = (try? JSONSerialization.data(withJSONObject: fields, options: [.sortedKeys])) ?? body
+
+        content.writes.append((request.httpMethod ?? "") + " " + path + " " + String(decoding: sorted, as: UTF8.self))
+
+        if path.hasSuffix("/labels"), let name = fields["name"] {
+            content.projectLabels.append(name)
+            return (201, "{}")
+        }
+
+        guard let index = content.entries.firstIndex(where: { path.hasSuffix("/merge_requests/\($0.iid)") }) else {
+            return (404, #"{"message":"404 Not Found"}"#)
+        }
+
+        if let added = fields["add_labels"] {
+            content.entries[index].labels.append(added)
+        }
+
+        content.entries[index].labels.removeAll { $0 == fields["remove_labels"] }
+        return (200, content.entries[index].json)
+    }
+
+    /// 读请求的响应。
+    private static func read(_ url: URL, in content: Content) -> (Int, String) {
+        let path = url.path
+
+        if path.hasSuffix("/merge_requests") {
+            let opened = url.query?.contains("state=opened") ?? false
+            let listed = content.entries.filter { !opened || $0.state == "opened" }
+
+            return (200, "[" + listed.map(\.json).joined(separator: ",") + "]")
+        }
+
+        if path.hasSuffix("/labels") {
+            let labels = content.projectLabels.map { ##"{"name":"\##($0)","color":"#d73a4a"}"## }
+
+            return (200, "[" + labels.joined(separator: ",") + "]")
+        }
+
+        // 请求都没有评论
+        if path.hasSuffix("/notes") {
+            return (200, "[]")
+        }
+
+        guard !content.fails else {
+            return (500, #"{"message":"500 Internal Server Error"}"#)
+        }
+
+        if path.hasSuffix("/trace") {
+            return (200, content.trace)
+        }
+
+        // 作业的状态与所在流水线的相同
+        if path.hasSuffix("/jobs") {
+            let entry = content.entries.first { path.contains("/pipelines/\(100 + $0.iid)/") }
+            let status = entry?.pipeline ?? "success"
+            let iid = entry?.iid ?? 0
+
+            return (200, #"[{"id":\#(iid),"name":"build","stage":"build","status":"\#(status)"}]"#)
+        }
+
+        guard let entry = content.entries.first(where: { path.hasSuffix("/merge_requests/\($0.iid)") }) else {
+            return (404, #"{"message":"404 Not Found"}"#)
+        }
+
+        return (200, entry.json)
+    }
+
+    /// 请求体：经会话发出的请求把它放在流里。
+    private static func body(of request: URLRequest) -> Data {
+        guard let stream = request.httpBodyStream else {
+            return request.httpBody ?? Data()
+        }
+
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+
+            guard count > 0 else { break }
+            data.append(buffer, count: count)
+        }
+
+        return data
     }
 }

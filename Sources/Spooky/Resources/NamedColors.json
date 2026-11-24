@@ -479,6 +479,56 @@
       "alpha": 0.85
     }
   },
+  "repository_pullrequests_state_open_color": {
+    "light": {
+      "hex": "#1A7F37",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#3FB950",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_state_draft_color": {
+    "light": {
+      "hex": "#59636E",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#9198A1",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_state_closed_color": {
+    "light": {
+      "hex": "#D1242F",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#F85149",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_state_merged_color": {
+    "light": {
+      "hex": "#8250DF",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#AB7DF8",
+      "alpha": 1.0
+    }
+  },
+  "repository_pullrequests_label_initial_color": {
+    "light": {
+      "hex": "#EDEDED",
+      "alpha": 1.0
+    },
+    "dark": {
+      "hex": "#EDEDED",
+      "alpha": 1.0
+    }
+  },
   "repository_diff_image_checkerboard_background_color": {
     "light": {
       "hex": "#FFFFFF",

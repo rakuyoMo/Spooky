@@ -21,6 +21,15 @@ extension HostingClient {
             try await gitlabPipeline(of: request.id)?.status.map { PullRequestCheckState(gitlabStatus: $0) }
         }
     }
+
+    /// 一项的日志；没有日志可读的项为 nil。
+    public func log(of check: PullRequestCheck) async throws -> PullRequestCheckLog? {
+        guard let path = check.logPath else {
+            return nil
+        }
+
+        return PullRequestCheckLog(text: try await text(path), service: instance.service)
+    }
 }
 
 // MARK: - GitHub
@@ -34,9 +43,10 @@ extension HostingClient {
             return PullRequestChecks(state: nil, items: [])
         }
 
-        let commit = Self.githubRepository(request.id.project) + "/commits/" + Self.encodedSegment(request.source.sha)
+        let repository = Self.githubRepository(request.id.project)
+        let commit = repository + "/commits/" + Self.encodedSegment(request.source.sha)
 
-        async let runs = githubCheckRuns(at: commit)
+        async let runs = githubCheckRuns(at: commit, in: repository)
         async let statuses = githubStatuses(at: commit)
 
         let items = try await runs + statuses
@@ -45,7 +55,9 @@ extension HostingClient {
     }
 
     /// 提交上的检查运行，逐页读完，按创建的先后排列；同名的检查只有最近的一次。
-    private func githubCheckRuns(at commit: String) async throws -> [PullRequestCheck] {
+    ///
+    /// GitHub Actions 写的检查运行对应一个编号相同的作业，结束后日志可以下载；被跳过的作业没有运行过，没有日志。
+    private func githubCheckRuns(at commit: String, in repository: String) async throws -> [PullRequestCheck] {
         var runs: [GitHubCheckRuns.Run] = []
         var page: Int? = 1
 
@@ -61,12 +73,15 @@ extension HostingClient {
         }
 
         // 接口从新到旧给出，编号随创建递增
-        return runs.sorted { $0.id < $1.id }.map {
-            PullRequestCheck(
-                id: "run-\($0.id)",
-                name: $0.name,
-                group: $0.app?.name,
-                state: PullRequestCheckState(githubStatus: $0.status, conclusion: $0.conclusion)
+        return runs.sorted { $0.id < $1.id }.map { run in
+            let hasLog = run.app?.slug == "github-actions" && run.status == "completed" && run.conclusion != "skipped"
+
+            return PullRequestCheck(
+                id: "run-\(run.id)",
+                name: run.name,
+                group: run.app?.name,
+                state: PullRequestCheckState(githubStatus: run.status, conclusion: run.conclusion),
+                logPath: hasLog ? repository + "/actions/jobs/\(run.id)/logs" : nil
             )
         }
     }
@@ -145,7 +160,8 @@ extension HostingClient {
                 id: "job-\($0.id)",
                 name: $0.name,
                 group: $0.stage,
-                state: PullRequestCheckState(gitlabStatus: $0.status)
+                state: PullRequestCheckState(gitlabStatus: $0.status),
+                logPath: project + "/jobs/\($0.id)/trace"
             )
         }
 
@@ -163,6 +179,9 @@ private struct GitHubCheckRuns: Decodable, Sendable {
         struct App: Decodable, Sendable {
             /// 应用的名字，如 `GitHub Actions`。
             let name: String?
+
+            /// 应用的标识，GitHub Actions 是 `github-actions`。
+            let slug: String?
         }
 
         /// 编号。

@@ -64,22 +64,25 @@ struct AboutTests {
         #expect(window.attachedSheet == nil)
     }
 
-    /// 许可证文件都在时，三个库按顺序出现，每个库的名称与版本、主页、许可证名称后面接着它的许可证全文，主页可以点开；
+    /// 许可证文件都在时，四个库按顺序出现，每个库的名称与版本、主页、许可证名称后面接着它的许可证全文，主页可以点开；
     /// 许可证文件不在时（`swift run` 没有 App 包），每个库只列名称与版本、主页与许可证名称。
     @Test("Acknowledgements 接上各库的许可证")
     func acknowledgements() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "spooky-about-" + UUID().uuidString)
         let highlightJS = directory.appending(path: "HighlightJS")
+        let octicons = directory.appending(path: "Octicons")
 
         try FileManager.default.createDirectory(at: highlightJS, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: octicons, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
         try Data("Sparkle license text".utf8).write(to: directory.appending(path: "Sparkle-LICENSE.txt"))
         try Data("highlight.js license text".utf8).write(to: highlightJS.appending(path: "LICENSE"))
+        try Data("Octicons license text".utf8).write(to: octicons.appending(path: "LICENSE"))
         try Data("Subprocess license text".utf8).write(to: directory.appending(path: "Subprocess-LICENSE.txt"))
 
         let document = AboutDocument.acknowledgements(
-            AboutLibrary.bundled(resources: directory, highlightJS: highlightJS)
+            AboutLibrary.bundled(resources: directory, highlightJS: highlightJS, octicons: octicons)
         )
 
         let text = document.string
@@ -87,6 +90,7 @@ struct AboutTests {
         let order = try [
             "Sparkle 2.10.0\nhttps://sparkle-project.org\nMIT License\n\nSparkle license text\n",
             "highlight.js 11.12.0\nhttps://highlightjs.org\nBSD 3-Clause License\n\nhighlight.js license text\n",
+            "Octicons 19.43.0\nhttps://primer.style/octicons\nMIT License\n\nOcticons license text\n",
             "swift-subprocess 1.0.1\nhttps://github.com/swiftlang/swift-subprocess\nApache License 2.0\n\n"
                 + "Subprocess license text\n",
         ].map { try #require(text.range(of: $0)).lowerBound }
@@ -101,7 +105,9 @@ struct AboutTests {
 
         // 缺少许可证文件
         let missing = directory.appending(path: "missing")
-        let bare = AboutDocument.acknowledgements(AboutLibrary.bundled(resources: missing, highlightJS: nil))
+        let bare = AboutDocument.acknowledgements(
+            AboutLibrary.bundled(resources: missing, highlightJS: nil, octicons: nil)
+        )
 
         #expect(bare.string == """
             \(AppLocalization.text("about.acknowledgements"))
@@ -113,6 +119,10 @@ struct AboutTests {
             highlight.js 11.12.0
             https://highlightjs.org
             BSD 3-Clause License
+
+            Octicons 19.43.0
+            https://primer.style/octicons
+            MIT License
 
             swift-subprocess 1.0.1
             https://github.com/swiftlang/swift-subprocess

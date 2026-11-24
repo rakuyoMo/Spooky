@@ -140,22 +140,13 @@ struct PullRequestStateBadge: View {
 
     /// 11 pt 的状态名，左右各留 6、上下各留 1；底色是圆角 4 的矩形，向内收 0.5。
     var body: some View {
-        Text(title)
+        Text(request.stateTitle)
             .font(.system(size: 11))
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 4).inset(by: 0.5).fill(color))
             .fixedSize()
-    }
-
-    /// 状态名。
-    private var title: String {
-        switch request.state {
-        case .open: AppLocalization.text(request.isDraft ? "pullRequests.state.draft" : "pullRequests.state.open")
-        case .closed: AppLocalization.text("pullRequests.state.closed")
-        case .merged: AppLocalization.text("pullRequests.state.merged")
-        }
     }
 
     /// 底色。

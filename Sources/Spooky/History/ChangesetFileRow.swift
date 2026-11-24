@@ -5,7 +5,8 @@ import SwiftUI
 
 /// 变更集里的一个文件：上面是文件行，展开时下面接这个文件的 Diff。
 ///
-/// 提交详情（含 Reflog）、储藏详情与比较视图（比较两个版本、Branches Review、Pull Request）共用，文件行一样高。
+/// 提交详情（含 Reflog）、储藏详情与比较视图（比较两个版本、Branches Review、Pull Request）共用，文件行一样高；
+/// 请求 CI/CD 里有日志可读的项也用这种行，展开时下面接的是日志。
 /// 点文件行左侧的三角切换展开；点行里其它任何位置，包括三角的上下左右与行的上下边缘，都交给 `select`。
 /// 右键菜单与拖动同样在整行生效。
 struct ChangesetFileRow<Label: View, Menu: View, Diff: View>: View {

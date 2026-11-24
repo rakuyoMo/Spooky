@@ -19,12 +19,13 @@ struct AboutLibrary: Equatable {
     /// 许可证全文的位置；文件不存在时只列上面几项。
     let licenseURL: URL?
 
-    /// 编进 App 的三个库，版本与 `Package.resolved`、README 的第三方列表一致。
+    /// 编进 App 的四个库，版本与 `Package.resolved`、README 的第三方列表一致。
     ///
     /// - Parameters:
     ///   - resources: App 包的 `Contents/Resources`，放着打包时拷进来的 Sparkle 与 swift-subprocess 的许可证。
     ///   - highlightJS: 资源包里 highlight.js 的目录，许可证与脚本放在一起。
-    static func bundled(resources: URL?, highlightJS: URL?) -> [Self] {
+    ///   - octicons: 资源包里 Octicons 的目录，许可证与图标放在一起。
+    static func bundled(resources: URL?, highlightJS: URL?, octicons: URL?) -> [Self] {
         [
             Self(
                 name: "Sparkle",
@@ -39,6 +40,13 @@ struct AboutLibrary: Equatable {
                 homepage: "https://highlightjs.org",
                 licenseName: "BSD 3-Clause License",
                 licenseURL: highlightJS?.appending(path: "LICENSE")
+            ),
+            Self(
+                name: "Octicons",
+                version: "19.43.0",
+                homepage: "https://primer.style/octicons",
+                licenseName: "MIT License",
+                licenseURL: octicons?.appending(path: "LICENSE")
             ),
             Self(
                 name: "swift-subprocess",
@@ -63,11 +71,12 @@ enum AboutDocument {
         Bundle.main.url(forResource: "LICENSE", withExtension: "txt")
     }
 
-    /// 这个构建里的第三方库：Sparkle 与 swift-subprocess 的许可证在 App 包里，highlight.js 的在资源包里。
+    /// 这个构建里的第三方库：Sparkle 与 swift-subprocess 的许可证在 App 包里，highlight.js 与 Octicons 的在资源包里。
     static var libraries: [AboutLibrary] {
         AboutLibrary.bundled(
             resources: Bundle.main.resourceURL,
-            highlightJS: Bundle.module.url(forResource: "HighlightJS", withExtension: nil)
+            highlightJS: Bundle.module.url(forResource: "HighlightJS", withExtension: nil),
+            octicons: PullRequestStateIcon.directory
         )
     }
 

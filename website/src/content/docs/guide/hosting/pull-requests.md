@@ -13,7 +13,7 @@ Click :ui[pr.title] in the sidebar, or choose :ui[menu.view > pr.show.menu] (<kb
 
 Choose a remote from the menu at the top of the list. Each row shows:
 
-- The title, marked :ui[pullRequests.state.draft] for drafts
+- An icon for its state, then the title. The icon is green for an open request, gray for a draft, red for a closed one, and purple for a merged one. Hold the pointer over it to see the state by name.
 - The number, the author, and when it was opened
 - The source branch and the branch it goes into. For a request from a fork, the source branch comes with its project.
 - Its labels, each in its own color. Hold the pointer over a label to see its description. Labels that don’t fit on one line are left out.
@@ -21,7 +21,7 @@ Choose a remote from the menu at the top of the list. Each row shows:
 
 Scroll to the bottom to load more.
 
-The list starts with open requests only. To see closed and merged ones too, click the filter button at the top of the list and choose :ui[pullRequests.filter.all]. Each row then shows the request’s state: :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged], or :ui[pullRequests.state.closed]. Closed and merged requests can’t be merged or closed. The next time you open the window, the list is back to :ui[pullRequests.filter.open].
+The list starts with open requests only. To see closed and merged ones too, click the filter button at the top of the list and choose :ui[pullRequests.filter.all]. Closed and merged requests can’t be merged or closed. The next time you open the window, the list is back to :ui[pullRequests.filter.open].
 
 If the list can’t load, it says why. The requests it already loaded stay below. When the account’s token is rejected or lacks a scope, you can click :ui[accounts.reauthenticate] right there.
 
@@ -53,6 +53,13 @@ The overall status is at the top, and each check or job is listed below with its
 
 In the list, the icon on a request’s row is its overall status. Hold the pointer over it to see the status by name. A request without checks or a pipeline has no icon.
 
+A check or job that has a log has a disclosure triangle on the left of its row. Click it to show the log below the row. Click it again to hide the log.
+
+- **GitHub**: GitHub Actions jobs have a log once they finish. Skipped jobs, commit statuses, and checks from other apps don’t.
+- **GitLab**: every job of the pipeline can be expanded. While a job is running, its log updates along with the status.
+
+The log leaves out the timestamps and color codes. You can select and copy its text.
+
 ## Create a request {#create}
 
 The source branch has to be on a remote already. Push it first, then do one of these:
@@ -81,6 +88,16 @@ For your own request, you can also:
 
 - Change the description: click :ui[pullRequests.edit] next to it, or right-click it and choose :ui[pullRequests.editDescription.menu] from the menu.
 - Change the title, description, and target branch: double-click the request in the list, or right-click it and choose :ui[pr.edit.menu]{1="#12"} from the menu. The source and the target project stay as they are.
+
+## Edit labels {#labels}
+
+A request’s labels are in :ui[pullRequests.conversation], below the title.
+
+- To remove a label, click the × after its name.
+- To add a label, click :ui[pullRequests.labels.add] and choose one of the project’s labels. Type in the field at the top to filter them.
+- To create a label, click :ui[pullRequests.labels.add], then :ui[pullRequests.labels.new]. Enter a name, choose a color, and click :ui[pullRequests.createLabel.title]. Spooky creates the label in the project and adds it to the request.
+
+The list shows the change right after. If your account isn’t allowed to change labels, Spooky shows the service’s answer and the labels stay as they are.
 
 ## Check out a request {#checkout}
 

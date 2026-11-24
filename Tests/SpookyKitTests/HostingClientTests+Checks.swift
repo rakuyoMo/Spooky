@@ -144,11 +144,11 @@ extension HostingClientTests {
         #expect(checks.state == .running && checks.isActive)
         #expect(
             checks.items == [
-                PullRequestCheck(id: "job-30", name: "notify", group: ".pre", state: .pending),
-                PullRequestCheck(id: "job-31", name: "compile", group: "build", state: .success),
-                PullRequestCheck(id: "job-32", name: "lint", group: "test", state: .failure),
-                PullRequestCheck(id: "job-33", name: "rspec", group: "test", state: .running),
-                PullRequestCheck(id: "job-34", name: "deploy", group: "deploy", state: .manual),
+                Self.job(30, "notify", ".pre", .pending),
+                Self.job(31, "compile", "build", .success),
+                Self.job(32, "lint", "test", .failure),
+                Self.job(33, "rspec", "test", .running),
+                Self.job(34, "deploy", "deploy", .manual),
             ]
         )
 
@@ -187,5 +187,14 @@ extension HostingClientTests {
         #expect(try await client.checks(for: request) == PullRequestChecks(state: nil, items: []))
         #expect(try await client.checkState(for: request) == nil)
         #expect(empty.withLock { $0.count } == 2)
+    }
+}
+
+// MARK: - Helpers
+
+extension HostingClientTests {
+    /// 项目 42 里的一个作业，日志按项目编号读。
+    private static func job(_ id: Int, _ name: String, _ stage: String, _ state: PullRequestCheckState) -> PullRequestCheck {
+        PullRequestCheck(id: "job-\(id)", name: name, group: stage, state: state, logPath: "projects/42/jobs/\(id)/trace")
     }
 }

@@ -13,7 +13,7 @@ Klicken Sie in der Seitenleiste auf :ui[pr.title] oder wählen Sie :ui[menu.view
 
 Wählen Sie im Menü oben in der Liste ein Remote. Jede Zeile zeigt:
 
-- Den Titel, bei Entwürfen mit dem Vermerk :ui[pullRequests.state.draft]
+- Ein Symbol für den Status, dann den Titel. Das Symbol ist bei einem offenen Request grün, bei einem Entwurf grau, bei einem geschlossenen rot und bei einem zusammengeführten violett. Bewegen Sie den Zeiger darüber, um den Namen des Status zu sehen.
 - Die Nummer, den Autor und wann der Request geöffnet wurde
 - Den Quell-Branch und den Branch, in den er geht. Bei einem Request aus einem Fork steht beim Quell-Branch sein Projekt.
 - Die Labels, jedes in seiner Farbe. Bewegen Sie den Zeiger über ein Label, um seine Beschreibung zu sehen. Labels, die nicht in eine Zeile passen, werden weggelassen.
@@ -21,7 +21,7 @@ Wählen Sie im Menü oben in der Liste ein Remote. Jede Zeile zeigt:
 
 Scrollen Sie nach unten, um mehr zu laden.
 
-Die Liste zeigt zunächst nur offene Requests. Um auch geschlossene und zusammengeführte zu sehen, klicken Sie oben in der Liste auf die Filtertaste und wählen Sie :ui[pullRequests.filter.all]. Jede Zeile zeigt dann den Status des Requests: :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged] oder :ui[pullRequests.state.closed]. Geschlossene und zusammengeführte Requests lassen sich nicht zusammenführen oder schließen. Wenn Sie das Fenster das nächste Mal öffnen, steht die Liste wieder auf :ui[pullRequests.filter.open].
+Die Liste zeigt zunächst nur offene Requests. Um auch geschlossene und zusammengeführte zu sehen, klicken Sie oben in der Liste auf die Filtertaste und wählen Sie :ui[pullRequests.filter.all]. Geschlossene und zusammengeführte Requests lassen sich nicht zusammenführen oder schließen. Wenn Sie das Fenster das nächste Mal öffnen, steht die Liste wieder auf :ui[pullRequests.filter.open].
 
 Wenn die Liste nicht geladen werden kann, nennt sie den Grund. Die bereits geladenen Requests bleiben darunter stehen. Wenn das Token des Accounts abgelehnt wird oder ihm ein Scope fehlt, können Sie gleich dort auf :ui[accounts.reauthenticate] klicken.
 
@@ -53,6 +53,13 @@ Oben steht der Gesamtstatus, darunter jeder Check oder Job mit seinem eigenen. S
 
 In der Liste zeigt das Symbol in der Zeile eines Requests seinen Gesamtstatus. Bewegen Sie den Zeiger darüber, um den Namen des Status zu sehen. Ein Request ohne Checks und ohne Pipeline hat kein Symbol.
 
+Ein Check oder Job mit Protokoll hat links in seiner Zeile ein Dreiecksymbol. Klicken Sie darauf, um das Protokoll unter der Zeile einzublenden. Ein weiterer Klick blendet es wieder aus.
+
+- **GitHub**: Jobs von GitHub Actions haben ein Protokoll, sobald sie beendet sind. Übersprungene Jobs, Commit-Status und Checks anderer Apps haben keins.
+- **GitLab**: Jeder Job der Pipeline lässt sich aufklappen. Solange ein Job läuft, wird sein Protokoll zusammen mit dem Status aktualisiert.
+
+Das Protokoll zeigt keine Zeitstempel und Farbcodes. Sie können den Text auswählen und kopieren.
+
 ## Einen Request erstellen {#create}
 
 Der Quell-Branch muss bereits auf einem Remote liegen. Pushen Sie ihn zuerst und führen Sie dann einen der folgenden Schritte aus:
@@ -81,6 +88,16 @@ Bei Ihrem eigenen Request können Sie außerdem:
 
 - Die Beschreibung ändern: Klicken Sie daneben auf :ui[pullRequests.edit], oder klicken Sie mit der rechten Maustaste darauf und wählen Sie :ui[pullRequests.editDescription.menu] aus dem Menü.
 - Titel, Beschreibung und Ziel-Branch ändern: Doppelklicken Sie in der Liste auf den Request, oder klicken Sie mit der rechten Maustaste darauf und wählen Sie :ui[pr.edit.menu]{1="#12"} aus dem Menü. Die Quelle und das Zielprojekt bleiben, wie sie sind.
+
+## Labels bearbeiten {#labels}
+
+Die Labels eines Requests stehen in :ui[pullRequests.conversation] unter dem Titel.
+
+- Um ein Label zu entfernen, klicken Sie auf das × hinter seinem Namen.
+- Um ein Label hinzuzufügen, klicken Sie auf :ui[pullRequests.labels.add] und wählen Sie eines der Labels des Projekts. Tippen Sie in das Feld oben, um sie zu filtern.
+- Um ein Label zu erstellen, klicken Sie auf :ui[pullRequests.labels.add] und dann auf :ui[pullRequests.labels.new]. Geben Sie einen Namen ein, wählen Sie eine Farbe und klicken Sie auf :ui[pullRequests.createLabel.title]. Spooky erstellt das Label im Projekt und fügt es dem Request hinzu.
+
+Die Liste zeigt die Änderung gleich danach. Wenn Ihr Account keine Labels ändern darf, zeigt Spooky die Antwort des Dienstes, und die Labels bleiben, wie sie sind.
 
 ## Einen Request auschecken {#checkout}
 

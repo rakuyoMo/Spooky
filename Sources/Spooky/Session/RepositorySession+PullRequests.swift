@@ -240,12 +240,14 @@ extension RepositorySession {
     /// - Parameters:
     ///   - title: Activity 的标题。
     ///   - client: 账号的客户端；省略时用选中远端对应的账号。
+    ///   - completion: 写操作结束、重新读取开始之后调用。
     ///   - action: 用账号的客户端执行写操作，返回要写进日志的服务端结果。
     /// - Returns: 是否已开始执行；没有可用的账号时为 false。
     @discardableResult
     func performHosting(
         title: String,
         client: HostingClient? = nil,
+        completion: (() -> Void)? = nil,
         _ action: @escaping @Sendable (HostingClient) async throws -> String?
     ) -> Bool {
         guard let client = client ?? pullRequests.client, let repository else {
@@ -268,6 +270,7 @@ extension RepositorySession {
             }
 
             self?.reloadPullRequests()
+            completion?()
         }
 
         return true

@@ -58,7 +58,7 @@ struct LocalizationTests {
                 "forBranch.create", "forBranch.show", "filter.with", "filter.without",
                 "load.title", "loadDetail.title", "description.title", "comment.title", "editComment.title",
                 "replyComment.title", "deleteComment.title", "deleteComment.message", "editDescription.title",
-                "editDescription.message", "archive.merged",
+                "editDescription.message", "archive.merged", "createLabel.message",
             ].map { prefix + $0 }
         }
 

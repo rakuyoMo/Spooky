@@ -13,7 +13,7 @@ Cliquez sur :ui[pr.title] dans la barre latérale, ou choisissez :ui[menu.view >
 
 Choisissez un dépôt distant dans le menu en haut de la liste. Chaque ligne affiche :
 
-- Le titre, marqué :ui[pullRequests.state.draft] pour les brouillons
+- Une icône pour son état, puis le titre. L’icône est verte pour une requête ouverte, grise pour un brouillon, rouge pour une requête fermée et violette pour une requête fusionnée. Placez le pointeur dessus pour voir le nom de l’état.
 - Le numéro, l’auteur et la date d’ouverture
 - La branche source et la branche de destination. Pour une requête venant d’un fork, la branche source est accompagnée de son projet.
 - Ses étiquettes, chacune dans sa couleur. Placez le pointeur sur une étiquette pour voir sa description. Les étiquettes qui ne tiennent pas sur une ligne ne sont pas affichées.
@@ -21,7 +21,7 @@ Choisissez un dépôt distant dans le menu en haut de la liste. Chaque ligne aff
 
 Faites défiler jusqu’en bas pour en charger d’autres.
 
-La liste n’affiche d’abord que les requêtes ouvertes. Pour voir aussi les requêtes fermées et fusionnées, cliquez sur le bouton de filtre en haut de la liste et choisissez :ui[pullRequests.filter.all]. Chaque ligne indique alors l’état de la requête : :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged] ou :ui[pullRequests.state.closed]. Les requêtes fermées et fusionnées ne peuvent être ni fusionnées ni fermées. À la prochaine ouverture de la fenêtre, la liste revient à :ui[pullRequests.filter.open].
+La liste n’affiche d’abord que les requêtes ouvertes. Pour voir aussi les requêtes fermées et fusionnées, cliquez sur le bouton de filtre en haut de la liste et choisissez :ui[pullRequests.filter.all]. Les requêtes fermées et fusionnées ne peuvent être ni fusionnées ni fermées. À la prochaine ouverture de la fenêtre, la liste revient à :ui[pullRequests.filter.open].
 
 Si la liste ne peut pas se charger, elle indique pourquoi. Les requêtes déjà chargées restent en dessous. Quand le jeton du compte est rejeté ou qu’il lui manque une portée, vous pouvez cliquer sur :ui[accounts.reauthenticate] directement à cet endroit.
 
@@ -53,6 +53,13 @@ Le statut global est en haut, et chaque vérification ou job figure en dessous a
 
 Dans la liste, l’icône sur la ligne d’une requête représente son statut global. Placez le pointeur dessus pour voir le nom du statut. Une requête sans vérification ni pipeline n’a pas d’icône.
 
+Une vérification ou un job qui a un journal porte un triangle d’affichage à gauche de sa ligne. Cliquez dessus pour afficher le journal sous la ligne. Cliquez à nouveau pour le masquer.
+
+- **GitHub** : les jobs de GitHub Actions ont un journal une fois terminés. Les jobs ignorés, les statuts de commit et les vérifications d’autres apps n’en ont pas.
+- **GitLab** : chaque job du pipeline peut être développé. Tant qu’un job est en cours, son journal se met à jour avec le statut.
+
+Le journal n’affiche ni les horodatages ni les codes de couleur. Vous pouvez sélectionner et copier son texte.
+
 ## Créer une requête {#create}
 
 La branche source doit déjà se trouver sur un dépôt distant. Poussez-la d’abord, puis faites l’une de ces actions :
@@ -81,6 +88,16 @@ Pour votre propre requête, vous pouvez aussi :
 
 - Modifier la description : cliquez sur :ui[pullRequests.edit] à côté d’elle, ou cliquez dessus avec le bouton droit et choisissez :ui[pullRequests.editDescription.menu] dans le menu.
 - Modifier le titre, la description et la branche cible : double-cliquez sur la requête dans la liste, ou cliquez dessus avec le bouton droit et choisissez :ui[pr.edit.menu]{1="#12"} dans le menu. La source et le projet cible restent tels quels.
+
+## Modifier les étiquettes {#labels}
+
+Les étiquettes d’une requête se trouvent dans :ui[pullRequests.conversation], sous le titre.
+
+- Pour retirer une étiquette, cliquez sur le × après son nom.
+- Pour ajouter une étiquette, cliquez sur :ui[pullRequests.labels.add] et choisissez l’une des étiquettes du projet. Saisissez du texte dans le champ du haut pour les filtrer.
+- Pour créer une étiquette, cliquez sur :ui[pullRequests.labels.add], puis sur :ui[pullRequests.labels.new]. Saisissez un nom, choisissez une couleur et cliquez sur :ui[pullRequests.createLabel.title]. Spooky crée l’étiquette dans le projet et l’ajoute à la requête.
+
+La liste affiche la modification aussitôt. Si votre compte n’est pas autorisé à modifier les étiquettes, Spooky affiche la réponse du service et les étiquettes restent telles quelles.
 
 ## Extraire une requête {#checkout}
 

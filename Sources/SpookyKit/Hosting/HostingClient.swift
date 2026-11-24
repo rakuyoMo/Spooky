@@ -103,6 +103,32 @@ public struct HostingClient: Sendable {
         }
     }
 
+    /// 读取纯文本的响应体，如作业的日志。
+    ///
+    /// 服务以跳转给出一个短时有效的地址时，不带令牌另取一次：令牌不交给别的主机，存储服务也不接受多出的认证头。
+    ///
+    /// - Parameter path: API 根地址之后的路径，已按需转义。
+    func text(_ path: String) async throws -> String {
+        var request = try makeRequest("GET", knownGitLabProjectPath(path), query: [], body: nil, token: try await token())
+        request.setValue("*/*", forHTTPHeaderField: "Accept")
+
+        var (data, http) = try await load(request, delegate: RedirectRefusal())
+
+        if
+            (300 ..< 400).contains(http.statusCode),
+            let location = http.value(forHTTPHeaderField: "Location").flatMap({ URL(string: $0, relativeTo: request.url) })
+        {
+            (data, http) = try await load(URLRequest(url: location, cachePolicy: .reloadIgnoringLocalCacheData))
+        }
+
+        guard (200 ..< 300).contains(http.statusCode) else {
+            Self.logger.error("托管服务的文本读取失败：\(http.statusCode, privacy: .public)")
+            throw Self.classify(status: http.statusCode, data: data, response: http)
+        }
+
+        return String(decoding: data, as: UTF8.self)
+    }
+
     /// 发出不需要解码结果的请求，如删除与没有响应体的操作。
     func perform(_ method: String, _ path: String, body: Data? = nil) async throws {
         _ = try await perform(method, path, query: [], body: body)
@@ -185,23 +211,37 @@ extension HostingClient {
         body: Data?
     ) async throws -> (Data, HTTPURLResponse) {
         let request = try makeRequest(method, path, query: query, body: body, token: try await token())
+        let (data, http) = try await load(request)
+
+        guard (200 ..< 300).contains(http.statusCode) else {
+            let error = Self.classify(status: http.statusCode, data: data, response: http)
+            Self.logger.error("托管服务 API 请求失败：\(method, privacy: .public) \(http.statusCode, privacy: .public)")
+            throw error
+        }
+
+        return (data, http)
+    }
+
+    /// 发出一个请求，返回响应体与 HTTP 响应；网络失败按类别抛出，状态码由调用方判断。
+    ///
+    /// - Parameters:
+    ///   - request: 要发出的请求。
+    ///   - delegate: 这一个请求的代理。
+    private func load(
+        _ request: URLRequest,
+        delegate: (any URLSessionTaskDelegate)? = nil
+    ) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
 
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await session.data(for: request, delegate: delegate)
         } catch let error as URLError {
             throw Self.classify(error)
         }
 
         guard let http = response as? HTTPURLResponse else {
             throw HostingError.incompatible(String(describing: type(of: response)))
-        }
-
-        guard (200 ..< 300).contains(http.statusCode) else {
-            let error = Self.classify(status: http.statusCode, data: data, response: http)
-            Self.logger.error("托管服务 API 请求失败：\(method, privacy: .public) \(http.statusCode, privacy: .public)")
-            throw error
         }
 
         return (data, http)
@@ -379,6 +419,21 @@ extension HostingClient {
         @unknown default:
             return String(describing: error)
         }
+    }
+}
+
+// MARK: - RedirectRefusal
+
+/// 不跟随跳转的请求代理：跳转的响应原样交回，由调用方决定怎么取跳转到的地址。
+private final class RedirectRefusal: NSObject, URLSessionTaskDelegate {
+    /// 不发出跳转后的请求。
+    func urlSession(
+        _: URLSession,
+        task _: URLSessionTask,
+        willPerformHTTPRedirection _: HTTPURLResponse,
+        newRequest _: URLRequest
+    ) async -> URLRequest? {
+        nil
     }
 }
 

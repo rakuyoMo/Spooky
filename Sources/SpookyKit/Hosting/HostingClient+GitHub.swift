@@ -273,8 +273,8 @@ private struct GitHubPullRequest: Decodable, Sendable {
 
 // MARK: - GitHubLabel
 
-/// GitHub 请求上的标签。
-private struct GitHubLabel: Decodable, Sendable {
+/// GitHub 请求上或仓库里的标签。
+struct GitHubLabel: Decodable, Sendable {
     /// 名称。
     let name: String
 

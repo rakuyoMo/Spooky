@@ -253,22 +253,22 @@ extension PullRequestCommentRulesTests {
         let outline = Self.outline(for: coordinator)
         coordinator.update(view)
 
-        // 行依次是头部、描述、两条评论与发表评论
-        #expect(Self.menu(of: coordinator, selecting: [2], in: outline) == [
+        // 行依次是头部、标签行、描述、两条评论与发表评论
+        #expect(Self.menu(of: coordinator, selecting: [3], in: outline) == [
             "pullRequests.editComment.menu:on",
             "pullRequests.replyComment.menu:on",
             "-",
             "pullRequests.deleteComment.menu:on",
         ])
 
-        #expect(Self.menu(of: coordinator, selecting: [3], in: outline) == [
+        #expect(Self.menu(of: coordinator, selecting: [4], in: outline) == [
             "pullRequests.editComment.menu:off",
             "pullRequests.replyComment.menu:on",
             "-",
             "pullRequests.deleteComment.menu:off",
         ])
 
-        #expect(Self.menu(of: coordinator, selecting: [2, 3], in: outline).isEmpty)
-        #expect(Self.menu(of: coordinator, selecting: [1], in: outline) == ["pullRequests.editDescription.menu:off"])
+        #expect(Self.menu(of: coordinator, selecting: [3, 4], in: outline).isEmpty)
+        #expect(Self.menu(of: coordinator, selecting: [2], in: outline) == ["pullRequests.editDescription.menu:off"])
     }
 }

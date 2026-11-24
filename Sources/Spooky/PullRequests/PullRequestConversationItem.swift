@@ -8,7 +8,7 @@ enum PullRequestConversationItem {
     /// 标题与编号、状态与合并说明、指派人与作者头像。
     case header
 
-    /// 请求的标签；没有标签的请求没有这一行。
+    /// 请求的标签；没有标签、也不能增删标签时没有这一行。
     case labels
 
     /// 请求的描述。

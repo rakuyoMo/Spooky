@@ -109,12 +109,16 @@ public struct PullRequestCheck: Sendable, Hashable, Identifiable {
     /// 状态。
     public let state: PullRequestCheckState
 
+    /// 读取日志的 API 路径：GitHub Actions 已结束的作业与 GitLab 流水线里的作业才有；没有日志可读的项为 nil。
+    public let logPath: String?
+
     /// 创建一项；解析与测试使用。
-    public init(id: String, name: String, group: String?, state: PullRequestCheckState) {
+    public init(id: String, name: String, group: String?, state: PullRequestCheckState, logPath: String? = nil) {
         self.id = id
         self.name = name
         self.group = group
         self.state = state
+        self.logPath = logPath
     }
 }
 
