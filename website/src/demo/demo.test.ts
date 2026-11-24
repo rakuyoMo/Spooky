@@ -12,6 +12,7 @@ import {
     fileBadges,
     fileCheck,
     headBranch,
+    multilineParts,
     push,
     remainingCharacters,
     selectFile,
@@ -157,6 +158,29 @@ test('文案：任何一种语言缺键时报错并列出缺的键，格式说�
     assert.equal(format('%@ (%ld Commits)', ['History', 66]), 'History (66 Commits)');
     assert.equal(format('%2$@ → %1$@', ['a', 'b']), 'b → a');
     assert.equal(format('100%%', []), '100%');
+});
+
+test('标题框粘贴多行文字：开头的空行之后第一行是标题，其余去掉首尾空行后另起一行接到正文后面', () => {
+    assert.deepEqual(multilineParts('\n\nSubject\r\n\r\nFirst\rSecond\u2028Third\n\n', ''), {
+        subject: 'Subject',
+        body: 'First\nSecond\nThird',
+    });
+
+    // 已有正文时另起一行接在后面
+    assert.deepEqual(multilineParts('Subject\nMore', 'Existing'), {
+        subject: 'Subject',
+        body: 'Existing\nMore',
+    });
+
+    // 第一行之后只有空行、或者全是空行时，正文不变
+    assert.deepEqual(multilineParts('Subject\n\n', 'Existing'), {
+        subject: 'Subject',
+        body: 'Existing',
+    });
+    assert.deepEqual(multilineParts('\n\n', 'Existing'), {
+        subject: '',
+        body: 'Existing',
+    });
 });
 
 // MARK: - Helpers
