@@ -310,6 +310,9 @@ struct CommitMessageEditor: NSViewRepresentable {
     /// 标题按回车或 Tab 时转到正文。
     let onSubmit: () -> Void
 
+    /// 标题收到含换行的文字时交给外层：外层把第一行之后的内容接到正文后面，返回写进标题的那一行。
+    let onMultilineInput: (String) -> String
+
     /// 正文按 Tab（参数为 true）或 ⇧Tab（false）时把焦点交给下一个或上一个视图。
     let onTab: (_ forward: Bool) -> Void
 
@@ -412,7 +415,7 @@ struct CommitMessageEditor: NSViewRepresentable {
 // MARK: CommitMessageEditor.Coordinator
 
 extension CommitMessageEditor {
-    /// 文本视图的代理：回写内容、限制标题为单行、驱动补全弹窗。
+    /// 文本视图的代理：回写内容、限制标题为单行并把多出的行交给外层、驱动补全弹窗。
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         /// 最近一次 SwiftUI 传入的配置。
@@ -452,7 +455,7 @@ extension CommitMessageEditor {
             updateCompletion()
         }
 
-        /// 标题不接受换行：粘贴的多行文字合成一行。
+        /// 标题不接受换行：粘贴的多行文字只写进外层返回的那一行，其余由外层接到正文后面。
         func textView(
             _ textView: NSTextView,
             shouldChangeTextIn range: NSRange,
@@ -460,8 +463,7 @@ extension CommitMessageEditor {
         ) -> Bool {
             guard parent.role == .subject, let string, string.contains(where: \.isNewline) else { return true }
 
-            let line = string.split(whereSeparator: \.isNewline).joined(separator: " ")
-            textView.insertText(line, replacementRange: range)
+            textView.insertText(parent.onMultilineInput(string), replacementRange: range)
             return false
         }
 

@@ -9,7 +9,7 @@ A commit saves the staged changes in the repository’s history, together with a
 
 The message has two parts:
 
-- :ui[working.subject] is one short line that sums up the change. Press <kbd>Return</kbd> or <kbd>Tab</kbd> to move on to the description.
+- :ui[working.subject] is one short line that sums up the change. Press <kbd>Return</kbd> or <kbd>Tab</kbd> to move on to the description. Paste several lines here, and the first one stays in the subject. The rest goes to the end of the description.
 - :ui[working.body] is optional. Use it to explain what changed and why.
 
 ::screenshot[The commit area, expanded. The subject reads Add a units toggle, with a two-line description below. At the bottom of the description are the pin and wrapping buttons. Below are the Amend and Sign Off checkboxes, with the author’s name, email, and picture on the right. The Stage All and Commit buttons are at the bottom.]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}

@@ -1,14 +1,16 @@
 import AppKit
+import SwiftUI
 import Testing
 
 @testable import Spooky
 
 // MARK: - CommitMessageEditorTests
 
-/// 提交正文的折行方式：软折行按视图宽度折行、只标出超出上限的部分；硬折行只改显示，不折行、超长的行整行标出。
+/// 提交信息的文本视图：正文的两种折行方式，以及标题框收到多行文字时的写入。
 @MainActor
 struct CommitMessageEditorTests {
-    /// 切到硬折行后正文不折行、可以横向滚动，超长的行整行铺警告底色；切回软折行后回到可见宽度。
+    /// 软折行按视图宽度折行、只标出超出上限的部分；切到硬折行后正文不折行、可以横向滚动，超长的行整行铺警告底色；
+    /// 切回软折行后回到可见宽度。
     @Test("硬折行不折行，超长的行整行标出")
     func hardWrapDisplay() throws {
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
@@ -51,6 +53,41 @@ struct CommitMessageEditorTests {
         #expect(!text.isHorizontallyResizable)
         #expect(container.widthTracksTextView)
         #expect(text.frame.width == scroll.contentSize.width)
+    }
+
+    /// 标题框只有一行：整段提交信息贴进去时，换行不能写进标题，其余的行也不能丢，要接到已有正文的后面；
+    /// 不含换行的文字照常写入，不动正文。
+    @Test("贴进标题框的多行文字第一行留在标题，其余接到正文后面")
+    func multilineSubjectInput() throws {
+        let session = RepositorySession()
+        session.commitBody = "已有的正文"
+
+        let host = NSHostingView(rootView: WorkingCopyCommitView(session: session))
+        host.frame = NSRect(x: 0, y: 0, width: 480, height: 400)
+        host.layoutSubtreeIfNeeded()
+
+        let subject = try #require(
+            SettingsWindowTests.subviews(CommitMessageTextView.self, in: host)
+                .first { $0.accessibilityIdentifier() == "commit-subject" }
+        )
+
+        // 不含换行的文字照常写入
+        subject.insertText("fix:  done", replacementRange: NSRange(location: 0, length: 0))
+        #expect(session.commitSubject == "fix:  done")
+        #expect(session.commitBody == "已有的正文")
+
+        // 粘贴走的是从剪贴板读入选区；用单独的剪贴板，不碰系统的那一块
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+
+        pasteboard.setString("第一行\n\n第二行\n第三行", forType: .string)
+        subject.setSelectedRange(NSRange(location: 5, length: 0))
+
+        // 多行文字的第一行写在光标处，其余的行另起一行接到正文后面
+        #expect(subject.readSelection(from: pasteboard, type: .string))
+        #expect(subject.string == "fix: 第一行 done")
+        #expect(session.commitSubject == "fix: 第一行 done")
+        #expect(session.commitBody == "已有的正文\n第二行\n第三行")
     }
 }
 

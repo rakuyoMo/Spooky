@@ -17,6 +17,24 @@ public enum CommitMessage {
         return (subject, body)
     }
 
+    /// 把写进标题的多行文字分到标题与正文：开头的空行之后第一行是标题，其余去掉首尾空行后接到已有正文后面，
+    /// 已有正文时另起一行；CRLF 等各种换行都算换行，接上去的内容里一律写成 `\n`。
+    ///
+    /// - Parameters:
+    ///   - text: 写进标题的文字。
+    ///   - body: 已有的正文。
+    /// - Returns: 写进标题的那一行，与接上其余内容之后的正文。
+    public static func parts(ofMultiline text: String, appendingTo body: String) -> (subject: String, body: String) {
+        let lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).drop(while: \.isEmpty)
+        let (subject, rest) = parts(of: lines.joined(separator: "\n"))
+
+        guard !rest.isEmpty else {
+            return (subject, body)
+        }
+
+        return (subject, body.isEmpty ? rest : body + "\n" + rest)
+    }
+
     /// 是否有以注释前缀开头的行；前缀为 nil 时没有注释行。
     public static func hasComments(_ message: String, prefix: String?) -> Bool {
         guard let prefix else {

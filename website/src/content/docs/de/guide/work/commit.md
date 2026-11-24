@@ -9,7 +9,7 @@ Ein Commit sichert die gestagten Änderungen zusammen mit einer Nachricht im Ver
 
 Die Nachricht hat zwei Teile:
 
-- :ui[working.subject] ist eine kurze Zeile, die die Änderung zusammenfasst. Drücken Sie den <kbd>Zeilenschalter</kbd> oder <kbd>Tab</kbd>, um zur Beschreibung zu wechseln.
+- :ui[working.subject] ist eine kurze Zeile, die die Änderung zusammenfasst. Drücken Sie den <kbd>Zeilenschalter</kbd> oder <kbd>Tab</kbd>, um zur Beschreibung zu wechseln. Wenn Sie hier mehrere Zeilen einsetzen, bleibt die erste im Betreff. Der Rest kommt ans Ende der Beschreibung.
 - :ui[working.body] ist optional. Erklären Sie dort, was sich geändert hat und warum.
 
 ::screenshot[Der Commit-Bereich, erweitert. Der Betreff lautet Add a units toggle, darunter steht eine zweizeilige Beschreibung. Unten in der Beschreibung liegen die Tasten zum Anheften und für den Umbruch. Darunter stehen die Markierungsfelder zum Ändern des letzten Commits und zum Abzeichnen, rechts davon Name, E-Mail-Adresse und Bild des Autors. Ganz unten liegen die Tasten zum Stagen aller Änderungen und zum Committen.]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}

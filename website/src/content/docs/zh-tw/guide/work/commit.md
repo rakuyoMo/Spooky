@@ -9,7 +9,7 @@ description: "寫提交的標題與內文，使用自動補全，修補上一次
 
 提交訊息分兩部分：
 
-- :ui[working.subject] 是一行簡短的概括。按 <kbd>Return</kbd> 或 <kbd>Tab</kbd> 就到了內文。
+- :ui[working.subject] 是一行簡短的概括。按 <kbd>Return</kbd> 或 <kbd>Tab</kbd> 就到了內文。在這裡貼上多行文字時，第一行留在標題框裡，其餘的接到內文後面。
 - :ui[working.body] 可以不寫，用來說明改了什麼、為什麼改。
 
 ::screenshot[展開的提交區。標題是 Add a units toggle，下面是兩行內文。內文底部有圖釘和換行兩個按鈕。再往下是「修補最近提交」和「署名」兩個註記框，右邊是作者的姓名、電子郵件和大頭貼。最下面是「全部暫存」與「提交」兩個按鈕。]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}
