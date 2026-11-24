@@ -15,6 +15,7 @@
     "footer.releaseNotes": "릴리스 노트",
     "footer.issues": "문제 신고",
     "footer.license": "라이선스",
+    "404.text": "페이지를 찾을 수 없습니다. 웹 주소를 확인하거나 홈으로 돌아가세요.",
     "notFound.home": "홈으로 가기",
     "themeToggle.label": "라이트 모드와 다크 모드 전환",
     "demo.skip": "데모 건너뛰기",

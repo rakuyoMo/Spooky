@@ -1,0 +1,17 @@
+---
+import NotFoundPage from '../../components/NotFoundPage.astro';
+import { defaultLocale, siteLocales } from '../../site/locales.ts';
+
+/*
+ * 英文以外各语言的 404 页，如 `/zh-cn/404/`：在 404 页的页头切换语言时，打开所选语言的这一页。
+ */
+
+/** 英文以外的每种语言各生成一页。 */
+export function getStaticPaths() {
+    return siteLocales
+        .filter(({ code }) => code !== defaultLocale.code)
+        .map(({ code }) => ({ params: { locale: code } }));
+}
+---
+
+<NotFoundPage />
