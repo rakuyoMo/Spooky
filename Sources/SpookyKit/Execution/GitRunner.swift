@@ -387,6 +387,11 @@ extension GitRunner {
             return .signingFailed
         }
 
+        // Git 经 /bin/sh 启动 LFS 过滤器，找不到 git-lfs 时 bash 报 “git-lfs: command not found”，dash 报 “git-lfs: not found”
+        if stderr.contains(/git-lfs: (command )?not found/) {
+            return .lfsUnavailable
+        }
+
         guard result.exitCode == 128 else {
             return .commandFailed
         }

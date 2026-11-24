@@ -169,9 +169,10 @@ struct AppFailure: Identifiable {
             (key, recoveryKey, diagnostic) = Self.classification(of: file)
 
         case let git as GitError:
-            output = git.result
-            diagnostic = git.diagnostic
-            (key, kind) = Self.classification(of: git.category)
+            (key, kind, recoveryKey, output, diagnostic) = Self.classification(
+                of: git,
+                remote: location?.host != nil
+            )
             exceededOutputLimit = git.category == .outputLimitExceeded
 
         case let problem as RepositoryOpenError:
@@ -324,7 +325,26 @@ struct AppFailure: Identifiable {
         }
     }
 
-    /// Git 失败按分类取文案键与类别：启动与管道问题属于环境，位置与所有权问题属于仓库，
+    /// Git 失败的文案键、类别、恢复说明与原文；只有找不到 Git LFS 时另有恢复说明。
+    ///
+    /// - Parameters:
+    ///   - git: 失败的 Git 调用。
+    ///   - remote: 出错的仓库是否在服务器上，决定 Git LFS 的修复方向。
+    private static func classification(
+        of git: GitError,
+        remote: Bool
+    ) -> (key: String, kind: FailureKind, recoveryKey: String?, output: GitCommandResult?, diagnostic: String?) {
+        let (key, kind) = classification(of: git.category)
+
+        // 找不到 git-lfs 时修复方向按仓库位置取；其余失败用写入、刷新或打开的通用恢复说明
+        let recoveryKey = git.category == .lfsUnavailable
+            ? lfsUnavailableRecoveryKey(remote: remote)
+            : nil
+
+        return (key, kind, recoveryKey, git.result, git.diagnostic)
+    }
+
+    /// Git 失败按分类取文案键与类别：启动、管道与找不到 Git LFS 属于环境，位置与所有权问题属于仓库，
     /// 取消与输出超限各自成类，其余属于 Git 失败。
     private static func classification(of category: GitError.Category) -> (key: String, kind: FailureKind) {
         switch category {
@@ -341,6 +361,7 @@ struct AppFailure: Identifiable {
         case .commandFailed: ("error.command", .git)
         case .launchFailed: ("error.launch", .environment)
         case .processIOFailed: ("error.process", .environment)
+        case .lfsUnavailable: ("hostError.lfsUnavailable", .environment)
         case .notRepository: ("error.notRepository", .repository)
         case .notWorkingTree: ("error.notWorkingTree", .repository)
         case .pathUnavailable: ("error.path", .repository)

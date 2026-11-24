@@ -190,6 +190,9 @@ public struct GitError: Error, Sendable {
         /// gpg 或 ssh-keygen 没能为提交签名。
         case signingFailed
 
+        /// Git 执行 LFS 过滤器时找不到 git-lfs。
+        case lfsUnavailable
+
         /// 命令因 Swift 任务取消而结束。
         case cancelled
 

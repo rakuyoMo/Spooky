@@ -196,6 +196,35 @@ extension FailurePresentationTests {
     }
 }
 
+// MARK: - LFS
+
+extension FailurePresentationTests {
+    /// Git 执行 LFS 过滤器时找不到 git-lfs：标题是 Git LFS 不可用，属于环境问题，写操作也不接通用的恢复说明；
+    /// 修复方向按仓库位置取，本机仓库指向 设置 → 环境，服务器仓库指向服务器上非交互 SSH 会话的 PATH。
+    @Test("找不到 git-lfs 时按仓库位置给出修复方向")
+    func lfsUnavailable() {
+        let error = Self.gitError(.lfsUnavailable, ["switch", "--", "main"])
+        let local = AppFailure(
+            error: error,
+            opening: false,
+            location: .local(path: "/tmp/仓 库"),
+            writing: true
+        )
+
+        let server = AppFailure(
+            error: error,
+            opening: false,
+            location: .remote(host: "spooky-test", path: "/tmp/仓 库"),
+            writing: true
+        )
+
+        #expect(local.title == AppLocalization.text("hostError.lfsUnavailable"))
+        #expect(local.kind == .environment)
+        #expect(local.message == AppLocalization.text("lfs.unavailable.local"))
+        #expect(server.message == AppLocalization.text("lfs.unavailable.remote"))
+    }
+}
+
 // MARK: - Helpers
 
 extension FailurePresentationTests {
