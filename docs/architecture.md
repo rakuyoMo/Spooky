@@ -266,7 +266,11 @@ Spooky 由两个 target 组成：
 
 - 口令、密码、签名口令与编辑器的请求经 `CallbackRelay` 回到 A：服务器仓库经当前主连接上的反向 Unix socket，本机仓库经私有的 Unix socket
   - 每个请求带会话令牌，只能应答一次，120 秒后超时
-  - 凭据不进入记录、日志或错误对象；用户选择保存时只写 A 的钥匙串
+  - 凭据不进入记录、日志或错误对象；用户选择保存时只写 A 的钥匙串，服务名 `com.rakuyo.spooky.remote.<主机别名>`，本机仓库是 `com.rakuyo.spooky.remote.<仓库路径>`
+  - 钥匙串里的条目经系统的 `security` 命令读写（`SecurityKeychain`），托管账号的令牌也一样：钥匙串按代码签名辨认能读条目的程序，而 Spooky 的签名每个版本都不同，由 `security` 创建与读取的条目在更新后不用再输钥匙串密码
+    - 内容存成 Base64，经标准输入交给 `security -i`，不出现在进程参数里
+    - 存下的条目带创建者代码 `spky`；没有它的是旧版本在本进程里存的条目，读到时由本进程读出内容，再由 `security` 删掉重建
+    - 读过的条目留在内存里，之后的读取不再启动进程
   - 命令参数里地址带的口令（`scheme://user:password@host`）在结果与错误的参数里换成 `[REDACTED]`，输出里原样或解码后的同一口令一并替换；执行的参数不变
 - 不由用户直接发起的操作（如自动获取）放在 `RemoteCallbackRequest.$allowsInteraction.withValue(false)` 里执行：回调只用账号令牌与钥匙串里已存的凭据，取不到按取消处理，不弹出输入框
 - HTTPS 远端属于已登录的托管账号时，Git 用账号的令牌认证：

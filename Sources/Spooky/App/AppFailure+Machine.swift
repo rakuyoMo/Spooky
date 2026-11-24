@@ -31,8 +31,8 @@ extension AppFailure {
         case let hosting as HostingError:
             classification(of: hosting)
 
-        case let account as HostingAccountError:
-            classification(of: account)
+        case let keychain as KeychainError:
+            classification(of: keychain)
 
         case let checkout as PullRequestCheckoutError:
             classification(of: checkout)

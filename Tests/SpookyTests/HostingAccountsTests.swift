@@ -1,5 +1,4 @@
 import Foundation
-import Security
 import SpookyKit
 import Synchronization
 import Testing
@@ -81,8 +80,8 @@ struct HostingAccountsTests {
         #expect(accounts.items.count == 3 && !accounts.items.contains(account))
         #expect(credentials.token(for: account) == nil)
 
-        credentials.failure.withLock { $0 = errSecInteractionNotAllowed }
-        #expect(throws: HostingAccountError.keychain(errSecInteractionNotAllowed)) {
+        credentials.failure.withLock { $0 = .exit(36) }
+        #expect(throws: KeychainError.exit(36)) {
             try accounts.save(
                 HostingUser(username: "rakuyo", name: nil),
                 on: .github,
@@ -232,8 +231,8 @@ final class MemoryCredentials: HostingCredentialStore {
     /// 按账号标识存放的令牌。
     private let tokens = Mutex<[UUID: String]>([:])
 
-    /// 不为 nil 时写入失败并抛出这个状态码。
-    let failure = Mutex<OSStatus?>(nil)
+    /// 不为 nil 时写入失败并抛出这个错误。
+    let failure = Mutex<KeychainError?>(nil)
 
     /// 读出令牌。
     func token(for account: HostingAccount) -> String? {
@@ -243,7 +242,7 @@ final class MemoryCredentials: HostingCredentialStore {
     /// 写入令牌，或按设置失败。
     func setToken(_ token: String, for account: HostingAccount) throws {
         if let failure = failure.withLock({ $0 }) {
-            throw HostingAccountError.keychain(failure)
+            throw failure
         }
 
         tokens.withLock { $0[account.id] = token }

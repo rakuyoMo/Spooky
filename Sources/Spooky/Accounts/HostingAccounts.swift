@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import Security
 import SpookyKit
 
 // MARK: - HostingCredentialStore
@@ -17,64 +16,36 @@ protocol HostingCredentialStore: Sendable {
     func removeToken(for account: HostingAccount)
 }
 
-// MARK: - HostingAccountError
-
-/// 保存账号时钥匙串的失败。
-enum HostingAccountError: Error, Equatable {
-    /// 钥匙串拒绝写入，带上它返回的状态码。
-    case keychain(OSStatus)
-}
-
 // MARK: - KeychainHostingCredentials
 
 /// 系统钥匙串里的令牌：服务名带实例地址，账户名是账号标识，按实例与账号隔离。
 struct KeychainHostingCredentials: HostingCredentialStore {
     /// 读出令牌。
     func token(for account: HostingAccount) -> String? {
-        var query = Self.query(for: account)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var value: CFTypeRef?
-
-        guard SecItemCopyMatching(query as CFDictionary, &value) == errSecSuccess, let data = value as? Data else {
-            return nil
-        }
-
-        return String(data: data, encoding: .utf8)
+        SecurityKeychain.shared.password(service: Self.service(for: account), account: account.id.uuidString)
     }
 
     /// 已有条目时替换令牌，否则新建条目。
     func setToken(_ token: String, for account: HostingAccount) throws {
-        let query = Self.query(for: account)
-        let attributes = [kSecValueData as String: Data(token.utf8)]
-        var status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-
-        if status == errSecItemNotFound {
-            status = SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil)
-        }
-
-        guard status == errSecSuccess else {
-            throw HostingAccountError.keychain(status)
-        }
+        try SecurityKeychain.shared.setPassword(
+            token,
+            service: Self.service(for: account),
+            account: account.id.uuidString
+        )
     }
 
     /// 删除条目。
     func removeToken(for account: HostingAccount) {
-        SecItemDelete(Self.query(for: account) as CFDictionary)
+        SecurityKeychain.shared.removePassword(service: Self.service(for: account), account: account.id.uuidString)
     }
 }
 
-// MARK: - Keychain Query
+// MARK: - Keychain Service
 
 extension KeychainHostingCredentials {
-    /// 一个账号的钥匙串条目。
-    private static func query(for account: HostingAccount) -> [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.rakuyo.spooky.hosting." + account.instance.webURL.absoluteString,
-            kSecAttrAccount as String: account.id.uuidString,
-        ]
+    /// 一个账号的条目在钥匙串里的服务名。
+    private static func service(for account: HostingAccount) -> String {
+        "com.rakuyo.spooky.hosting." + account.instance.webURL.absoluteString
     }
 }
 
