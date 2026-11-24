@@ -40,6 +40,35 @@ struct CommitMessageTests {
         )
     }
 
+    /// 标题框只留一行：整段提交信息贴进去时其余的行不能丢，也不能挤进标题，要落到正文里；
+    /// 已有的正文留着，只带一个结尾换行的单行文字不动正文。
+    @Test("写进标题框的多行文字分到标题与正文")
+    func multilineSubject() {
+        // 标题与正文之间有没有空行都按第一行拆开，正文首尾的空行去掉、中间的留着
+        var parts = CommitMessage.parts(ofMultiline: "标题\n\n第一段\n\n第二段\n", appendingTo: "")
+        #expect(parts.subject == "标题")
+        #expect(parts.body == "第一段\n\n第二段")
+
+        parts = CommitMessage.parts(ofMultiline: "标题\n正文", appendingTo: "")
+        #expect(parts.subject == "标题")
+        #expect(parts.body == "正文")
+
+        // 已有正文时另起一行接在后面
+        parts = CommitMessage.parts(ofMultiline: "标题\n\n新的一段", appendingTo: "已有的正文")
+        #expect(parts.subject == "标题")
+        #expect(parts.body == "已有的正文\n新的一段")
+
+        // 只有一行、带着结尾的换行：正文不变
+        parts = CommitMessage.parts(ofMultiline: "只有一行\n", appendingTo: "已有的正文")
+        #expect(parts.subject == "只有一行")
+        #expect(parts.body == "已有的正文")
+
+        // 开头的空行不算标题，CRLF 与单独的 CR 都按换行拆
+        parts = CommitMessage.parts(ofMultiline: "\r\n\n标题\r\n\r\n第一行\r第二行", appendingTo: "")
+        #expect(parts.subject == "标题")
+        #expect(parts.body == "第一行\n第二行")
+    }
+
     /// Unicode 信息经 stdin 规范化后提交，修补改写当前提交并可追加 Sign Off 尾注；
     /// 钩子失败保持 HEAD 与暂存区，跳过钩子时失败的 pre-commit 不拦截提交。
     @Test("提交正文、身份、Amend、Sign Off 与钩子")

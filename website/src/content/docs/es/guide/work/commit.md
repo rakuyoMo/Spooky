@@ -9,7 +9,7 @@ Un commit guarda los cambios del stage en el historial del repositorio, junto co
 
 El mensaje tiene dos partes:
 
-- :ui[working.subject] es una línea corta que resume el cambio. Pulsa <kbd>Retorno</kbd> o <kbd>Tab</kbd> para pasar a la descripción.
+- :ui[working.subject] es una línea corta que resume el cambio. Pulsa <kbd>Retorno</kbd> o <kbd>Tab</kbd> para pasar a la descripción. Si pegas varias líneas aquí, la primera se queda en el asunto. El resto va al final de la descripción.
 - :ui[working.body] es opcional. Úsala para explicar qué ha cambiado y por qué.
 
 ::screenshot[El área de commit, expandida. El asunto dice Add a units toggle, con una descripción de dos líneas debajo. En la parte inferior de la descripción están los botones de fijar y de ajuste de línea. Debajo están las casillas Enmendar y Firmar (Signed-off-by), con el nombre, el correo y la imagen del autor a la derecha. Los botones Añadir todo al stage y Hacer commit están abajo.]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}

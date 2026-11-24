@@ -9,7 +9,7 @@ Un commit enregistre les modifications indexées dans l’historique du dépôt,
 
 Le message comporte deux parties :
 
-- :ui[working.subject] est une ligne courte qui résume la modification. Appuyez sur <kbd>Retour</kbd> ou <kbd>Tab</kbd> pour passer à la description.
+- :ui[working.subject] est une ligne courte qui résume la modification. Appuyez sur <kbd>Retour</kbd> ou <kbd>Tab</kbd> pour passer à la description. Si vous collez plusieurs lignes ici, la première reste dans l’objet. Le reste va à la fin de la description.
 - :ui[working.body] est facultatif. Servez-vous-en pour expliquer ce qui a changé et pourquoi.
 
 ::screenshot[La zone de commit, développée. L’objet indique Add a units toggle, avec une description de deux lignes en dessous. En bas de la description se trouvent les boutons d’épinglage et de retour à la ligne. En dessous figurent les cases Corriger et Signer, avec le nom, l’adresse e-mail et l’image de l’auteur à droite. Les boutons Tout indexer et Valider sont en bas.]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}

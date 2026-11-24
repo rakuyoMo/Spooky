@@ -5,7 +5,7 @@ import type { RenderContext } from './context.ts';
 import { button, esc, icon, shortRef } from './format.ts';
 
 /**
- * 工具栏：中间一栏上方是后退、前进与窗口标题，右边一栏上方是快捷操作、获取、拉取、推送等按钮。
+ * 工具栏：中间一栏上方是后退、前进与窗口标题，右边一栏上方是 Finder、终端、获取、拉取、推送等按钮。
  */
 
 /** 后退、前进与标题、副标题。 */
@@ -52,16 +52,17 @@ export function renderActions(context: RenderContext): string {
     });
 
     return (
-        `<div class="sd-glass sd-round">${tool('quick', 'wand', 'toolbar.quickActions')}</div>` +
+        `<div class="sd-glass sd-cluster">${tool('unavailable', 'folderOpen', 'toolbar.finder')}` +
+        `${tool('unavailable', 'terminal', 'toolbar.terminal')}</div>` +
         `<span class="sd-host" data-tier="3" translate="no">${esc(data.host)}:</span>` +
         `<div class="sd-glass sd-capsule">${fetch}${tool('unavailable', 'pull', 'sync.pull')}` +
         `${tool('push', 'push', 'sync.push', 'push')}</div>` +
-        `<div class="sd-glass sd-round" data-tier="3">${tool('unavailable', 'sync', 'sync.sync')}</div>` +
-        `<div class="sd-glass sd-capsule" data-tier="2">${tool('unavailable', 'merge', 'sync.merge')}` +
-        `${tool('unavailable', 'rebase', 'sync.rebaseHead')}</div>` +
+        `<div class="sd-glass sd-round" data-tier="3">${tool('unavailable', 'forcePush', 'toolbar.forcePush')}</div>` +
         `<div class="sd-glass sd-capsule" data-tier="2">${tool('unavailable', 'trayDown', 'toolbar.applyStash')}` +
         `${tool('unavailable', 'trayUp', 'toolbar.saveStash')}</div>` +
-        `<div class="sd-glass sd-round" data-tier="1">${tool('unavailable', 'refresh', 'action.refresh')}</div>` +
+        `<div class="sd-glass sd-cluster" data-tier="1">` +
+        `${tool('unavailable', 'createBranch', 'toolbar.createBranch')}` +
+        `${tool('unavailable', 'refresh', 'action.refresh')}</div>` +
         `<div class="sd-glass sd-round" data-tier="1">${tool('unavailable', 'search', 'action.search')}</div>`
     );
 }

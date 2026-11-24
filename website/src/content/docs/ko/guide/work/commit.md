@@ -9,7 +9,7 @@ description: "커밋 제목과 설명을 쓰고, 자동 완성을 사용하고, 
 
 메시지는 두 부분으로 되어 있습니다.
 
-- :ui[working.subject]은 변경을 요약하는 짧은 한 줄입니다. <kbd>Return</kbd>이나 <kbd>Tab</kbd>을 누르면 설명으로 넘어갑니다.
+- :ui[working.subject]은 변경을 요약하는 짧은 한 줄입니다. <kbd>Return</kbd>이나 <kbd>Tab</kbd>을 누르면 설명으로 넘어갑니다. 여기에 여러 줄을 붙여넣으면 첫 줄은 제목에 남고, 나머지는 설명 끝에 추가됩니다.
 - :ui[working.body]은 쓰지 않아도 됩니다. 무엇이 왜 바뀌었는지 설명할 때 씁니다.
 
 ::screenshot[펼쳐진 커밋 영역. 제목은 Add a units toggle이고 그 아래에 두 줄짜리 설명이 있습니다. 설명 아래쪽에 고정 버튼과 줄 바꿈 버튼이 있습니다. 그 아래에 최근 커밋 수정과 사인오프 체크상자가 있고, 오른쪽에 작성자의 이름, 이메일, 사진이 있습니다. 맨 아래에는 모두 스테이지 버튼과 커밋 버튼이 있습니다.]{name="work-commit-area" frame="closeup" markers="62,12 24,56 94.6,69.1"}

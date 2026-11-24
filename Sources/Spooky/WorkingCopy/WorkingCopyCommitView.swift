@@ -210,7 +210,7 @@ extension WorkingCopyCommitView {
         wrapping == CommitEditorSettings.Wrapping.hard.rawValue
     }
 
-    /// 单行标题，右端是剩余字数；回车或 Tab 转到正文。
+    /// 单行标题，右端是剩余字数；回车或 Tab 转到正文，粘贴的多行文字第一行留在标题、其余接到正文后面。
     ///
     /// 框的底与描边由提交区的材质在同一位置画出，剩余字数只在显示时占用标题右侧的空间。
     private var subjectField: some View {
@@ -229,6 +229,11 @@ extension WorkingCopyCommitView {
                 focusRequest: session.commitFocusRequest,
                 onFocusChange: { focusChanged(.subject, focused: $0) },
                 onSubmit: { bodyFocusRequest += 1 },
+                onMultilineInput: {
+                    let parts = CommitMessage.parts(ofMultiline: $0, appendingTo: session.commitBody)
+                    session.commitBody = parts.body
+                    return parts.subject
+                },
                 onTab: { _ in },
                 completions: { await session.completions(for: $0) }
             )
@@ -296,6 +301,7 @@ extension WorkingCopyCommitView {
                 focusRequest: bodyFocusRequest,
                 onFocusChange: { focusChanged(.body, focused: $0) },
                 onSubmit: { },
+                onMultilineInput: { $0 },
                 onTab: { forward in
                     // Tab 交给下面的文件列表，⇧Tab 回到标题
                     if forward {
