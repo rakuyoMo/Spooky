@@ -13,7 +13,7 @@ Spooky 會列出儲存庫遠端上的 GitHub Pull Request 和 GitLab Merge Reque
 
 在列表頂部的選單裡選遠端。每一列寫著：
 
-- 標題，草稿另外標著 :ui[pullRequests.state.draft]
+- 狀態圖示和標題。開啟著的請求圖示是綠色，草稿是灰色，已關閉是紅色，已合併是紫色。把指標停在圖示上，可以看到狀態的名稱。
 - 編號、作者和開啟的時間
 - 來源分支和要併入的分支。來自 Fork 的請求，來源分支前會寫出它所在的專案。
 - 標籤，底色是標籤自己的顏色。把指標停在標籤上，可以看到它的說明。一行放不下的標籤不顯示。
@@ -21,7 +21,7 @@ Spooky 會列出儲存庫遠端上的 GitHub Pull Request 和 GitLab Merge Reque
 
 捲到底部會接著讀取更多。
 
-列表一開始只列開啟著的請求。想連已關閉和已合併的一起看，按一下列表頂部的篩選按鈕，選 :ui[pullRequests.filter.all]。這時每一列會標出請求的狀態：:ui[pullRequests.state.open]、:ui[pullRequests.state.draft]、:ui[pullRequests.state.merged] 或 :ui[pullRequests.state.closed]。已關閉和已合併的請求不能再合併或關閉。下次開啟視窗時，列表回到 :ui[pullRequests.filter.open]。
+列表一開始只列開啟著的請求。想連已關閉和已合併的一起看，按一下列表頂部的篩選按鈕，選 :ui[pullRequests.filter.all]。已關閉和已合併的請求不能再合併或關閉。下次開啟視窗時，列表回到 :ui[pullRequests.filter.open]。
 
 列表讀取失敗時會說明原因，已經讀到的請求留在下面。帳號的權杖被拒絕或缺少權限範圍時，可以直接在那裡按一下 :ui[accounts.reauthenticate]。
 
@@ -53,6 +53,13 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 
 列表裡，請求那一列的圖示是它的整體狀態，把指標停在上面，可以看到狀態的名稱。沒有檢查或流水線的請求沒有圖示。
 
+有記錄的檢查或作業，那一列左邊有一個展開三角形。按一下它，記錄顯示在這一列下面。再按一下收起。
+
+- **GitHub**：GitHub Actions 的作業結束後有記錄。被略過的作業、提交狀態和其他 App 寫的檢查沒有。
+- **GitLab**：流水線裡的每個作業都能展開。作業還在執行時，記錄跟著狀態一起更新。
+
+記錄裡不顯示時間戳記和顏色碼。文字可以選取拷貝。
+
 ## 新增請求 {#create}
 
 來源分支必須已經在遠端上，要先推送它。然後任選一種方式：
@@ -81,6 +88,16 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 
 - 修改描述：按一下描述旁邊的 :ui[pullRequests.edit]，或者在它上面按右鍵，選 :ui[pullRequests.editDescription.menu]。
 - 修改標題、描述和目標分支：在列表裡按兩下這個請求，或者在它上面按右鍵，選 :ui[pr.edit.menu]{1="#12"}。來源和目標專案不能改。
+
+## 編輯標籤 {#labels}
+
+請求的標籤在 :ui[pullRequests.conversation] 裡，標題下面。
+
+- 想移除一個標籤，按一下它名稱後面的 ×。
+- 想加入標籤，按一下 :ui[pullRequests.labels.add]，在專案的標籤裡選一個。在頂部的輸入框裡打字可以篩選。
+- 想新增標籤，按一下 :ui[pullRequests.labels.add]，再按 :ui[pullRequests.labels.new]。填名稱、選顏色，按一下 :ui[pullRequests.createLabel.title]。Spooky 會在專案裡建好這個標籤，並加到請求上。
+
+改完後列表隨即更新。帳號沒有權限改標籤時，Spooky 會顯示服務給出的原因，標籤保持不變。
 
 ## 簽出請求 {#checkout}
 

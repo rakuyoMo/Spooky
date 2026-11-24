@@ -13,7 +13,7 @@ Spooky 会列出仓库远端上的 GitHub Pull Request 和 GitLab Merge Request�
 
 在列表顶部的菜单里选远端。每一行写着：
 
-- 标题，草稿另外标着 :ui[pullRequests.state.draft]
+- 状态图标和标题。打开着的请求图标是绿色，草稿是灰色，已关闭是红色，已合并是紫色。把指针停在图标上，可以看到状态的名称。
 - 编号、作者和打开的时间
 - 源分支和要并入的分支。来自 Fork 的请求，源分支前会写出它所在的项目。
 - 标签，底色是标签自己的颜色。把指针停在标签上，可以看到它的说明。一行放不下的标签不显示。
@@ -21,7 +21,7 @@ Spooky 会列出仓库远端上的 GitHub Pull Request 和 GitLab Merge Request�
 
 滚到底部会接着读取更多。
 
-列表一开始只列打开着的请求。想连已关闭和已合并的一起看，点列表顶部的筛选按钮，选 :ui[pullRequests.filter.all]。这时每一行会标出请求的状态：:ui[pullRequests.state.open]、:ui[pullRequests.state.draft]、:ui[pullRequests.state.merged] 或 :ui[pullRequests.state.closed]。已关闭和已合并的请求不能再合并或关闭。下次打开窗口时，列表回到 :ui[pullRequests.filter.open]。
+列表一开始只列打开着的请求。想连已关闭和已合并的一起看，点列表顶部的筛选按钮，选 :ui[pullRequests.filter.all]。已关闭和已合并的请求不能再合并或关闭。下次打开窗口时，列表回到 :ui[pullRequests.filter.open]。
 
 列表读取失败时会说明原因，已经读到的请求留在下面。账号的令牌被拒绝或缺少权限范围时，可以直接在那里点 :ui[accounts.reauthenticate]。
 
@@ -53,6 +53,13 @@ GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这
 
 列表里，请求那一行的图标是它的整体状态，把指针停在上面，可以看到状态的名称。没有检查或流水线的请求没有图标。
 
+有日志的检查或作业，那一行左边有一个展开三角。点它，日志显示在这一行下面。再点一次收起。
+
+- **GitHub**：GitHub Actions 的作业结束后有日志。被跳过的作业、提交状态和其它应用写的检查没有。
+- **GitLab**：流水线里的每个作业都能展开。作业还在运行时，日志跟着状态一起更新。
+
+日志里不显示时间戳和颜色码。文字可以选中复制。
+
 ## 新建请求 {#create}
 
 源分支必须已经在远端上，要先推送它。然后任选一种方式：
@@ -81,6 +88,16 @@ GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这
 
 - 修改描述：点描述旁边的 :ui[pullRequests.edit]，或者右键点按它，选 :ui[pullRequests.editDescription.menu]。
 - 修改标题、描述和目标分支：在列表里连按这个请求，或者右键点按它，选 :ui[pr.edit.menu]{1="#12"}。源和目标项目不能改。
+
+## 编辑标签 {#labels}
+
+请求的标签在 :ui[pullRequests.conversation] 里，标题下面。
+
+- 想移除一个标签，点它名称后面的 ×。
+- 想添加标签，点 :ui[pullRequests.labels.add]，在项目的标签里选一个。在顶部的输入框里打字可以筛选。
+- 想新建标签，点 :ui[pullRequests.labels.add]，再点 :ui[pullRequests.labels.new]。填名称、选颜色，点 :ui[pullRequests.createLabel.title]。Spooky 会在项目里建好这个标签，并加到请求上。
+
+改完后列表随即更新。账号没有权限改标签时，Spooky 会显示服务给出的原因，标签保持不变。
 
 ## 检出请求 {#checkout}
 

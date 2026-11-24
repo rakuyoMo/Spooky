@@ -5,6 +5,7 @@ import SwiftUI
 
 /// CI/CD 段：顶部 28 pt 的整体状态，下面是各项检查或作业；没有检查或流水线时是空状态。
 ///
+/// 有日志可读的项左侧是展开三角，展开时这一行下面接它的日志，与变更集的文件行同一种行。
 /// 这一段显示期间读取所选请求的状态，还有等待中或运行中的项时自动刷新。
 struct PullRequestChecksView: View {
     /// 重新读取的条件。
@@ -80,11 +81,61 @@ extension PullRequestChecksView {
                 Divider()
             }
 
-            List(checks.items) {
-                PullRequestCheckRow(check: $0)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(checks.items) { check in
+                        row(check)
+
+                        Divider()
+                    }
+                }
             }
-            .listStyle(.inset)
-            .alternatingRowBackgrounds(.disabled)
+        }
+    }
+
+    /// 一项：有日志可读时是带展开三角的行，否则只有这一行，内容从同一位置起。
+    @ViewBuilder
+    private func row(_ check: PullRequestCheck) -> some View {
+        if check.logPath != nil {
+            ChangesetFileRow(
+                isExpanded: Binding(
+                    get: { state.checks.expandedChecks.contains(check.id) },
+                    set: { state.setCheckExpanded($0, check) }
+                )
+            ) {
+                PullRequestCheckRow(check: check)
+            } diff: {
+                log(of: check)
+            }
+        } else {
+            PullRequestCheckRow(check: check)
+                .padding(.leading, 20)
+                .padding(.trailing, 12)
+                .frame(height: 30)
+        }
+    }
+
+    /// 展开的日志：读取失败时说明原因并可以重试，读到之前是进度，读到的日志为空时在进度文字的位置写明没有日志。
+    @ViewBuilder
+    private func log(of check: PullRequestCheck) -> some View {
+        if let failure = state.checks.logFailures[check.id] {
+            FailureDetailsView(failure: failure) { state.setCheckExpanded(true, check) }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else if let chunks = state.checks.logs[check.id] {
+            if chunks.isEmpty {
+                Text(AppLocalization.text("pullRequests.checks.log.empty"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color(nsColor: .disabledControlTextColor))
+                    .padding(.leading, 25)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 32)
+            } else {
+                PullRequestCheckLogView(chunks: chunks)
+                    .padding(.bottom, 8)
+            }
+        } else {
+            ChangesetDiffLoadingView(title: AppLocalization.text("pullRequests.checks.log.loading"))
         }
     }
 
@@ -98,7 +149,7 @@ extension PullRequestChecksView {
             Text(overall.title)
         }
         .font(.system(size: 13))
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 28)
         .accessibilityElement(children: .combine)
@@ -137,8 +188,36 @@ private struct PullRequestCheckRow: View {
                 .fixedSize()
         }
         .font(.system(size: 13))
-        .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - PullRequestCheckLogView
+
+/// 一个作业的日志：文本主题的字体与颜色，过长的行折行，可以选中复制；逐段排版，只排看得见的几段。
+private struct PullRequestCheckLogView: View {
+    /// 从头到尾的各段。
+    let chunks: [String]
+
+    /// 当前外观决定使用哪一套所选主题。
+    @Environment(\.colorScheme)
+    private var colorScheme
+
+    /// 四周留 8 pt，底色是主题的背景色。
+    var body: some View {
+        let theme = TextTheme.current(dark: colorScheme == .dark)
+
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(chunks.indices, id: \.self) {
+                Text(chunks[$0])
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .font(.custom(theme.fontName, size: theme.fontSize))
+        .foregroundStyle(theme.colors["text"]?.calibratedColor ?? .primary)
+        .textSelection(.enabled)
+        .padding(8)
+        .background(theme.colors["background"]?.calibratedColor ?? .clear)
     }
 }
 

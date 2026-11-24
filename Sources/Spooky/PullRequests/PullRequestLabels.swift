@@ -5,22 +5,39 @@ import SwiftUI
 
 /// 一个标签：胶囊里 11 pt 的名称，底色是标签的颜色，文字按底色的明暗取黑或白；提示是标签的说明。
 ///
-/// 托管服务没有给出颜色时，底色是中性的灰，文字是正文色。
+/// 托管服务没有给出颜色时，底色是中性的灰，文字是正文色。可以删除的标签在名称后面多一个叉号。
 struct PullRequestLabelChip: View {
     /// 显示的标签。
     let label: PullRequestLabel
 
+    /// 点叉号时删除这个标签；不能删除的标签为 nil，没有叉号。
+    var remove: (() -> Void)? = nil
+
     /// 名称左右各留 6、上下各留 1，放不下时截断；胶囊描一圈细边，底色与背景相近时也看得出形状。
     var body: some View {
-        Text(label.name)
-            .font(.system(size: 11))
-            .lineLimit(1)
-            .foregroundStyle(foreground)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 1)
-            .background(Capsule().fill(background))
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
-            .help(label.description)
+        HStack(spacing: 3) {
+            Text(label.name)
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .help(label.description)
+
+            if let remove {
+                let title = AppLocalization.text("pullRequests.removeLabel.title", label.name)
+
+                Button(action: remove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                .buttonStyle(.plain)
+                .help(title)
+                .accessibilityLabel(title)
+            }
+        }
+        .foregroundStyle(foreground)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 1)
+        .background(Capsule().fill(background))
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.15), lineWidth: 1))
     }
 
     /// 底色上的文字用深色：底色的相对亮度不低于 0.453。
@@ -61,12 +78,24 @@ extension PullRequestLabelChip {
 // MARK: - PullRequestLabelsRow
 
 /// 讨论里头部下面的一行标签：三级色的 “Labels” 标签，后 8 是换行排开的各个标签；距右 20，下留 8。
+///
+/// 可以增删标签时，每个标签带叉号，最后是打开标签选择的添加按钮；正在增删或重新读取详情时都不可用。
 struct PullRequestLabelsRow: View {
-    /// 请求的标签。
-    let labels: [PullRequestLabel]
+    /// 所在窗口的会话。
+    let session: RepositorySession
+
+    /// 显示的请求。
+    let request: PullRequest
+
+    /// 标签选择是否打开。
+    @State
+    private var picking = false
 
     /// 标签一行放不下时换行，行高随行数变化。
     var body: some View {
+        let state = session.pullRequests
+        let canEdit = session.canEditLabels
+
         HStack(alignment: .top, spacing: 8) {
             Text(AppLocalization.text("pullRequests.header.labels"))
                 .font(.system(size: 13))
@@ -74,14 +103,45 @@ struct PullRequestLabelsRow: View {
                 .fixedSize()
 
             PullRequestLabelFlow {
-                ForEach(labels, id: \.name) {
-                    PullRequestLabelChip(label: $0)
+                ForEach(request.labels, id: \.name) { label in
+                    PullRequestLabelChip(
+                        label: label,
+                        remove: canEdit ? { session.removeLabel(label.name, from: request) } : nil
+                    )
+                }
+
+                if canEdit {
+                    addButton
                 }
             }
+            .disabled(state.isEditingLabels || state.isLoadingDetail)
         }
         .padding(.trailing, 20)
         .padding(.bottom, 8)
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    /// 与标签同高的添加按钮：加号与 “Add”，点开标签选择。
+    private var addButton: some View {
+        Button {
+            picking = true
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "plus")
+                    .font(.system(size: 8, weight: .bold))
+
+                Text(AppLocalization.text("pullRequests.labels.add"))
+                    .font(.system(size: 11))
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.3), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $picking, arrowEdge: .bottom) {
+            PullRequestLabelPicker(session: session, request: request) { picking = false }
+        }
     }
 }
 

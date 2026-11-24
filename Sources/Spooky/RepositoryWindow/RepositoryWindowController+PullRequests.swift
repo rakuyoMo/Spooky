@@ -205,6 +205,9 @@ extension RepositoryWindowController {
                 close: close
             ))
 
+        case .createLabel(let request):
+            AnyView(PullRequestLabelDialog(session: session, request: request, close: close))
+
         case .checkout(let request):
             AnyView(PullRequestTextDialog(session: session, request: request, kind: .checkout, close: close))
 

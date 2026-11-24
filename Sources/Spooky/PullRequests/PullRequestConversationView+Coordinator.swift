@@ -33,6 +33,9 @@ extension PullRequestConversationView {
 
         /// 可以发表评论。
         let canComment: Bool
+
+        /// 可以增删标签。
+        let canEditLabels: Bool
     }
 }
 
@@ -84,7 +87,8 @@ extension PullRequestConversationView {
                 request: parent.request,
                 comments: parent.comments,
                 commits: parent.commits?.map(\.id),
-                canComment: parent.canComment
+                canComment: parent.canComment,
+                canEditLabels: parent.session.canEditLabels
             )
 
             guard snapshot != self.snapshot else { return }
@@ -97,7 +101,7 @@ extension PullRequestConversationView {
 
             heights = [:]
             roots = Self.nodes(
-                hasLabels: !parent.request.labels.isEmpty,
+                hasLabels: !parent.request.labels.isEmpty || snapshot.canEditLabels,
                 comments: parent.comments,
                 commits: parent.commits ?? []
             )
@@ -173,7 +177,7 @@ extension PullRequestConversationView {
                 return Self.fill(outlineView.hostingView(row, identifier: "conversation-header"))
 
             case .labels:
-                let row = PullRequestLabelsRow(labels: parent.request.labels)
+                let row = PullRequestLabelsRow(session: parent.session, request: parent.request)
                 return Self.fill(outlineView.hostingView(row, identifier: "conversation-labels"))
 
             case .description, .comment:
@@ -236,7 +240,7 @@ extension PullRequestConversationView {
 // MARK: - Private
 
 extension PullRequestConversationView.Coordinator {
-    /// 头部、有标签时的标签行、描述、时间线与发表评论；提交组的子行是组里的提交，最后是一个空白行。
+    /// 头部、有标签或可以增删标签时的标签行、描述、时间线与发表评论；提交组的子行是组里的提交，最后是一个空白行。
     private static func nodes(
         hasLabels: Bool,
         comments: [PullRequestComment],
@@ -314,7 +318,11 @@ extension PullRequestConversationView.Coordinator {
         // 同一种行共用一个 SwiftUI 宿主，换上这一行的内容按列宽量出高度
         let fitting =
             if case .labels = item {
-                Self.fittingHeight(of: PullRequestLabelsRow(labels: parent.request.labels), in: &labelSizing, width: width)
+                Self.fittingHeight(
+                    of: PullRequestLabelsRow(session: parent.session, request: parent.request),
+                    in: &labelSizing,
+                    width: width
+                )
             } else {
                 Self.fittingHeight(
                     of: PullRequestConversationTextRow(session: parent.session, request: parent.request, item: item),

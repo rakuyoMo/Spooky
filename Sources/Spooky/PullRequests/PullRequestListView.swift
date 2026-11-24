@@ -152,19 +152,15 @@ extension PullRequestListView {
     private var list: some View {
         List(selection: Binding(get: { state.selectedID }, set: { select($0) })) {
             ForEach(state.items) { request in
-                PullRequestRow(
-                    request: request,
-                    showsState: state.includesClosed,
-                    checkState: state.checks.states[request.id]
-                )
-                .tag(request.id)
-                .onTapGesture(count: 2) { edit(request) }
-                .contextMenu { menu(for: request) }
-                .onAppear {
-                    if request.id == state.items.last?.id {
-                        state.loadMore()
+                PullRequestRow(request: request, checkState: state.checks.states[request.id])
+                    .tag(request.id)
+                    .onTapGesture(count: 2) { edit(request) }
+                    .contextMenu { menu(for: request) }
+                    .onAppear {
+                        if request.id == state.items.last?.id {
+                            state.loadMore()
+                        }
                     }
-                }
             }
         }
         .listStyle(.inset)
@@ -280,13 +276,10 @@ extension PullRequestListView {
 
 // MARK: - PullRequestRow
 
-/// 列表的一行：标题、草稿标记或状态徽标与 CI/CD 状态的图标，编号与作者，源分支到目标分支，最后是标签。
+/// 列表的一行：状态图标、标题与 CI/CD 状态的图标，编号与作者，源分支到目标分支，最后是标签。
 private struct PullRequestRow: View {
     /// 显示的请求。
     let request: PullRequest
-
-    /// 列表连关闭与已合并的请求也列出，每一行标出状态。
-    let showsState: Bool
 
     /// CI/CD 的整体状态；没有检查或流水线、还没读到时为 nil。
     let checkState: PullRequestCheckState?
@@ -323,21 +316,15 @@ private struct PullRequestRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// 标题与它后面的标记：列出全部时是状态徽标，否则只标出草稿；读到 CI/CD 状态时图标靠右。
+    /// 状态图标与标题，图标对着标题的第一行；读到 CI/CD 状态时图标靠右。
     private var titleLine: some View {
         HStack(spacing: 6) {
-            Text(request.title)
-                .font(.system(size: 13, weight: .semibold))
-                .lineLimit(2)
+            HStack(alignment: .top, spacing: 6) {
+                PullRequestStateIcon(request: request)
 
-            if showsState {
-                PullRequestStateBadge(request: request)
-            } else if request.isDraft {
-                Text(AppLocalization.text("pullRequests.state.draft"))
-                    .font(.system(size: 10, weight: .medium))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(Capsule().fill(.quaternary))
+                Text(request.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(2)
             }
 
             if let checkState {

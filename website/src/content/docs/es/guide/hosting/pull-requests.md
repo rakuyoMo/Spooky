@@ -13,7 +13,7 @@ Haz clic en :ui[pr.title] en la barra lateral, o selecciona :ui[menu.view > pr.s
 
 Elige un remoto en el menú de la parte superior de la lista. Cada fila muestra:
 
-- El título, marcado con :ui[pullRequests.state.draft] en los borradores
+- Un icono de su estado y, después, el título. El icono es verde en una solicitud abierta, gris en un borrador, rojo en una cerrada y morado en una fusionada. Deja el puntero sobre él para ver el nombre del estado.
 - El número, el autor y cuándo se abrió
 - La rama de origen y la rama a la que va. En una solicitud desde un fork, la rama de origen va con su proyecto.
 - Sus etiquetas, cada una con su color. Deja el puntero sobre una etiqueta para ver su descripción. Las etiquetas que no caben en una línea no se muestran.
@@ -21,7 +21,7 @@ Elige un remoto en el menú de la parte superior de la lista. Cada fila muestra:
 
 Desplázate hasta el final para cargar más.
 
-Al principio la lista solo muestra las solicitudes abiertas. Para ver también las cerradas y las fusionadas, haz clic en el botón de filtro de la parte superior de la lista y elige :ui[pullRequests.filter.all]. Cada fila muestra entonces el estado de la solicitud: :ui[pullRequests.state.open], :ui[pullRequests.state.draft], :ui[pullRequests.state.merged] o :ui[pullRequests.state.closed]. Las solicitudes cerradas y las fusionadas no se pueden fusionar ni cerrar. La próxima vez que abras la ventana, la lista vuelve a :ui[pullRequests.filter.open].
+Al principio la lista solo muestra las solicitudes abiertas. Para ver también las cerradas y las fusionadas, haz clic en el botón de filtro de la parte superior de la lista y elige :ui[pullRequests.filter.all]. Las solicitudes cerradas y las fusionadas no se pueden fusionar ni cerrar. La próxima vez que abras la ventana, la lista vuelve a :ui[pullRequests.filter.open].
 
 Si la lista no se puede cargar, dice por qué. Las solicitudes que ya había cargado siguen debajo. Cuando el token de la cuenta se rechaza o le falta un ámbito, puedes hacer clic en :ui[accounts.reauthenticate] ahí mismo.
 
@@ -53,6 +53,13 @@ Arriba está el estado general, y debajo cada comprobación o job con el suyo. M
 
 En la lista, el icono de la fila de una solicitud es su estado general. Deja el puntero sobre él para ver el nombre del estado. Una solicitud sin comprobaciones ni pipeline no tiene icono.
 
+Una comprobación o un job que tiene registro lleva un triángulo desplegable a la izquierda de su fila. Haz clic en él para mostrar el registro debajo de la fila. Haz clic otra vez para ocultarlo.
+
+- **GitHub**: los jobs de GitHub Actions tienen registro cuando terminan. Los jobs omitidos, los estados de commit y las comprobaciones de otras apps no lo tienen.
+- **GitLab**: se puede desplegar cualquier job del pipeline. Mientras un job está en ejecución, su registro se actualiza junto con el estado.
+
+El registro no muestra las marcas de tiempo ni los códigos de color. Puedes seleccionar y copiar el texto.
+
 ## Crear una solicitud {#create}
 
 La rama de origen ya tiene que estar en un remoto. Haz antes push de ella, y después haz una de estas cosas:
@@ -81,6 +88,16 @@ En tu propia solicitud, también puedes:
 
 - Cambiar la descripción: haz clic en :ui[pullRequests.edit] junto a ella, o haz clic derecho en ella y selecciona :ui[pullRequests.editDescription.menu] en el menú.
 - Cambiar el título, la descripción y la rama de destino: haz doble clic en la solicitud en la lista, o haz clic derecho en ella y selecciona :ui[pr.edit.menu]{1="#12"} en el menú. El origen y el proyecto de destino se quedan como están.
+
+## Editar las etiquetas {#labels}
+
+Las etiquetas de una solicitud están en :ui[pullRequests.conversation], debajo del título.
+
+- Para quitar una etiqueta, haz clic en la × que hay tras su nombre.
+- Para añadir una etiqueta, haz clic en :ui[pullRequests.labels.add] y elige una de las etiquetas del proyecto. Escribe en el campo de arriba para filtrarlas.
+- Para crear una etiqueta, haz clic en :ui[pullRequests.labels.add] y luego en :ui[pullRequests.labels.new]. Escribe un nombre, elige un color y haz clic en :ui[pullRequests.createLabel.title]. Spooky crea la etiqueta en el proyecto y la añade a la solicitud.
+
+La lista muestra el cambio enseguida. Si tu cuenta no tiene permiso para cambiar las etiquetas, Spooky muestra la respuesta del servicio y las etiquetas se quedan como están.
 
 ## Hacer checkout de una solicitud {#checkout}
 

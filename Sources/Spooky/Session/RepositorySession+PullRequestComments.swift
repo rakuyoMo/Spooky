@@ -33,6 +33,11 @@ extension RepositorySession {
 // MARK: - Request Availability
 
 extension RepositorySession {
+    /// 能增删请求的标签：有可用的账号；账号在项目里的权限由托管服务核对。
+    var canEditLabels: Bool {
+        discussionAccount != nil
+    }
+
     /// 能修改请求的标题、描述与目标分支：请求的作者是当前账号，且源分支所在的项目还在。
     ///
     /// 请求列表的右键菜单与双击共用这条规则。
@@ -109,6 +114,59 @@ extension RepositorySession {
             try await client.updateDescription(body, of: request.id)
             return nil
         }
+    }
+}
+
+// MARK: - Label Actions
+
+extension RepositorySession {
+    /// 给请求加上项目里已有的一个标签。
+    @discardableResult
+    func addLabel(_ name: String, to request: PullRequest) -> Bool {
+        editLabels(title: AppLocalization.text("pullRequests.addLabel.title", name)) { client in
+            try await client.addLabel(name, to: request.id)
+        }
+    }
+
+    /// 从请求上去掉一个标签。
+    @discardableResult
+    func removeLabel(_ name: String, from request: PullRequest) -> Bool {
+        editLabels(title: AppLocalization.text("pullRequests.removeLabel.title", name)) { client in
+            try await client.removeLabel(name, from: request.id)
+        }
+    }
+
+    /// 在请求所在的项目里新建一个标签，再把它加到请求上；Activity 的标题与新建标签对话框的标题相同。
+    ///
+    /// - Parameters:
+    ///   - name: 标签的名称。
+    ///   - color: 底色，6 位十六进制，不带 “#”。
+    ///   - request: 要加上这个标签的请求。
+    func createLabel(_ name: String, color: String, for request: PullRequest) -> Bool {
+        editLabels(title: AppLocalization.text("pullRequests.createLabel.title")) { client in
+            try await client.createLabel(name, color: color, in: request.id.project)
+            try await client.addLabel(name, to: request.id)
+        }
+    }
+
+    /// 执行一次标签的增删：上一次还没写完时不开始；从开始到重新读取开始，请求视图记着正在增删。
+    private func editLabels(
+        title: String,
+        _ edit: @escaping @Sendable (HostingClient) async throws -> Void
+    ) -> Bool {
+        let state = pullRequests
+
+        guard !state.isEditingLabels else {
+            return false
+        }
+
+        let started = performHosting(title: title, completion: { state.isEditingLabels = false }) { client in
+            try await edit(client)
+            return nil
+        }
+
+        state.isEditingLabels = started
+        return started
     }
 }
 

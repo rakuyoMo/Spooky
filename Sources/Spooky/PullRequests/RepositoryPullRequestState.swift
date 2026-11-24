@@ -33,6 +33,9 @@ enum PullRequestRequest {
     /// 只修改请求的描述。
     case editDescription(PullRequest)
 
+    /// 新建一个标签并加到请求上。
+    case createLabel(PullRequest)
+
     /// 检出成本地分支。
     case checkout(PullRequest)
 
@@ -116,6 +119,9 @@ final class RepositoryPullRequestState {
 
     /// 详情读到的次数；CI/CD 一段按它重新读取所选请求的状态。
     private(set) var detailRevision = 0
+
+    /// 正在增删所选请求的标签：从写操作开始到重新读取开始。
+    var isEditingLabels = false
 
     /// 源分支的提交还不在仓库里，提交与改动要先获取。
     private(set) var needsFetch = false
@@ -301,6 +307,26 @@ final class RepositoryPullRequestState {
     func watchChecks(of request: PullRequest) async {
         guard let client else { return }
         await checks.watch(request, client: client, repository: location)
+    }
+
+    /// 选中远端的项目里能用的全部标签，添加标签时列出；远端对应不上账号时没有。
+    func loadLabels() async throws -> [PullRequestLabel] {
+        guard let client, let project else {
+            return []
+        }
+
+        return try await RepositoryActivities.shared.recordHosting(
+            title: AppLocalization.text("pullRequests.loadLabels.title"),
+            repository: location
+        ) {
+            try await client.labels(in: project)
+        }
+    }
+
+    /// 展开或收起所选请求 CI/CD 里一项的日志；没有接口客户端时不动。
+    func setCheckExpanded(_ expanded: Bool, _ check: PullRequestCheck) {
+        guard let client else { return }
+        checks.setExpanded(expanded, check, client: client, repository: location)
     }
 
     /// 提交信息 `#` 补全用的打开着的 Issue；远端对应不上账号时没有；一分钟内复用上次的结果。
@@ -588,6 +614,7 @@ extension RepositoryPullRequestState {
         detail = nil
         comments = []
         isLoadingDetail = false
+        isEditingLabels = false
         detailFailure = nil
         needsFetch = false
         comparison.close()

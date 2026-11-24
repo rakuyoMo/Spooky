@@ -60,6 +60,7 @@ Spooky 由两个 target 组成：
 | `Help/` | 关于窗口、Help 菜单、对话框帮助按钮指向的官网文章、What's New 与新功能卡片、诊断报告与崩溃报告 |
 | `Updates/` | Sparkle 更新器与更新通道 |
 | `HighlightJS/` | 随 App 打包的 highlight.js 与它的许可证 |
+| `Octicons/` | 随 App 打包的 Octicons 图标与它的许可证 |
 | `Resources/` | 各语言文案、系统权限说明、命名色与内置主题 |
 
 ## Git 命令执行
@@ -308,7 +309,15 @@ Spooky 由两个 target 组成：
   - GitLab 读请求最新的流水线（`head_pipeline`，响应里没有这个键时是 `pipeline`）：列表各行只读它的状态，所选请求再读其中的作业
   - 列表同时最多读 4 个请求；一分钟内读过、源分支提交没变、也不在等待或运行中的请求不重读
   - 所选请求的 CI/CD 段在还有等待中或运行中的项时每 15 秒重读一次，只有第一次读取记进 Activity
+  - 所选请求里有日志可读的项可以展开：GitHub 是 GitHub Actions 写的、已结束且没被跳过的检查运行，按同号的作业读；GitLab 是流水线里的作业
+  - 日志的接口以跳转给出短时有效的地址时，`HostingClient.text` 不跟随跳转，另取那个地址时不带令牌
+  - `PullRequestCheckLog` 去掉时间戳、终端控制码与分组标记，只留各行的文字；界面按 100 行一段逐段排版
+  - 展开时读取并记进 Activity，收起时丢掉；自动刷新时，展开的项里状态变了的与还在运行的重读日志，不记进 Activity
 - GitLab 的标签在列表里经 `with_labels_details` 带上颜色与说明；单个请求的接口只给名称，有标签时按编号再列一次这个请求
+- 请求的标签在讨论的标签行里增删：有可用的账号就能操作（`RepositorySession.canEditLabels`），账号在项目里的权限由托管服务核对
+  - GitHub 经同号 Issue 的接口，GitLab 经请求的 `add_labels` 与 `remove_labels`；新建标签先在项目里建，再加到请求上
+  - 一次增删从开始到重新读取开始记在 `RepositoryPullRequestState.isEditingLabels`，期间与重新读取详情期间标签行不可用
+- 请求列表各行的状态图标取自 `Octicons/` 里的 SVG，按模板图着色；四种状态的颜色是 `NamedColors.json` 里的 `repository_pullrequests_state_*`
 
 ## 仓库管理与系统集成
 
