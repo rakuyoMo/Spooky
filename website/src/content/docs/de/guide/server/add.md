@@ -15,7 +15,7 @@ Um das Dialogfenster zu öffnen, wählen Sie :ui[action.addRemote] aus dem Menü
 
 | Feld | Was Sie eingeben |
 |---|---|
-| :ui[remote.host] | Der `Host`-Name aus `~/.ssh/config`, etwa `driftwood-server`. Geben Sie nur den Alias ein, ohne Benutzernamen oder Port. |
+| :ui[remote.host] | Der `Host`-Name aus `~/.ssh/config`, etwa `driftwood-server`. Geben Sie nur den Alias ein, ohne Benutzernamen oder Port. Wie Sie einen anlegen, lesen Sie unter [Einen Host-Alias hinzufügen](/guide/server/prepare-ssh/#alias). |
 | :ui[remote.path] | Der vollständige Pfad des Repositorys auf dem Server, beginnend mit `/`, etwa `/srv/git/driftwood` |
 | :ui[remote.mount] | Optional. Macht den Ordner des Repositorys auf diesem Mac verfügbar, damit der Finder ihn zeigen kann. Siehe [Beim Hinzufügen einbinden](/guide/server/local-location/#when-adding). |
 

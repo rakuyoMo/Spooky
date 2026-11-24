@@ -30,6 +30,7 @@ extension SettingsPage {
         .themes,
         .userProfiles,
         .accounts,
+        .sshHosts,
         .integration,
         .environment,
         .updates,
@@ -73,6 +74,11 @@ extension SettingsPage {
     /// github.com、GitLab.com 与私有部署 GitLab 的账号。
     static let accounts = SettingsPage(key: "settings.accounts", symbol: "person.crop.circle") {
         AnyView(AccountsSettingsView())
+    }
+
+    /// `~/.ssh/config` 里的主机别名。
+    static let sshHosts = SettingsPage(key: "settings.sshHosts", symbol: "server.rack") {
+        AnyView(SSHHostsSettingsView())
     }
 
     /// github.com 链接、SSH agent 与崩溃报告等与外部服务和工具的集成。

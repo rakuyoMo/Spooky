@@ -42,36 +42,68 @@ ssh-keygen -t ed25519 -C "alex@example.com"
 
 ## 호스트 별칭 추가하기 {#alias}
 
-호스트 별칭은 서버의 짧은 이름입니다. 터미널과 Spooky에서 서버 주소와 사용자 이름 대신 입력합니다. 별칭은 `~/.ssh/config` 파일에 적습니다.
+호스트 별칭은 서버의 짧은 이름입니다. 터미널과 Spooky에서 서버 주소와 사용자 이름 대신 입력합니다. 별칭은 `~/.ssh/config` 파일에 저장됩니다. Spooky의 설정에서 추가합니다.
 
-1. 텍스트 편집기에서 파일을 엽니다. 다음 명령은 파일이 아직 없으면 만듭니다.
+1. :ui[app.name > settings.title] › :ui[settings.sshHosts]를 선택합니다.
+2. 목록 아래의 추가 버튼을 클릭합니다.
+3. 필드를 자신의 정보로 채웁니다.
+4. :ui[sshHosts.create.submit]를 클릭합니다.
+
+::screenshot[호스트 별칭 추가 대화상자. 별칭은 driftwood-server, 서버 주소는 203.0.113.10, 사용자 이름은 alex이고, 포트는 비어 있으며, 개인 키는 ~/.ssh/id_ed25519입니다. 버튼은 취소와 추가입니다.]{name="settings-ssh-hosts-add" frame="dialog"}
+
+| 필드 | 입력할 내용 |
+|---|---|
+| :ui[sshHosts.alias] | 별칭. 공백, `@`, `:`, `/`, `*`, `?`가 없는 한 단어로 쓰고, `-`나 `!`로 시작하지 않습니다. |
+| :ui[sshHosts.hostName] | 서버의 주소 또는 이름. 예: `203.0.113.10`, `server.example.com` |
+| :ui[sshHosts.user] | 서버에서의 사용자 이름 |
+| :ui[sshHosts.port] | 포트. 서버의 SSH가 22가 아닌 포트를 사용할 때만 입력합니다 |
+| :ui[sshHosts.identityFile] | 위에서 만들었거나 찾은 개인 키. 예: `~/.ssh/id_ed25519` |
+
+:ui[sshHosts.alias]만 필수입니다. Spooky는 별칭과 입력한 필드를 `~/.ssh/config`에 씁니다.
+
+```
+Host driftwood-server
+    HostName 203.0.113.10
+    User alex
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+`Host *`처럼 패턴을 쓰는 항목이나 `Match` 항목이 있으면, 새 줄은 그런 항목 중 첫 번째 것 위에 들어갑니다. 그 항목이 새 줄의 값을 덮어쓰지 못하게 하기 위해서입니다. 그런 항목이 없으면 파일 끝에 들어갑니다.
+
+### 별칭 변경 또는 삭제하기 {#manage-aliases}
+
+:ui[settings.sshHosts] 페이지에는 `~/.ssh/config`에 있는 별칭이 나열됩니다. 텍스트 편집기에서 추가한 것도 포함됩니다.
+
+::screenshot[설정 윈도우의 SSH 호스트 페이지. 목록에는 별칭, 서버 주소, 사용자 이름, 포트, 개인 키 열이 있습니다. staging, backup-nas, driftwood-server 세 개의 별칭이 있고 driftwood-server가 선택되어 있습니다. 목록 아래에 추가 버튼과 제거 버튼이 있고, 오른쪽에 편집… 버튼이 있습니다.]{name="settings-ssh-hosts" frame="window"}
+
+- 별칭을 바꾸려면 선택하고 :ui[sshHosts.edit]을 클릭합니다. Spooky는 편집한 필드의 줄만 바꿉니다. 그 서버의 다른 SSH 옵션, 다른 서버, 주석은 그대로 둡니다.
+- 별칭을 삭제하려면 선택하고 목록 아래의 제거 버튼을 클릭한 다음 확인합니다. Spooky는 그 별칭의 `Host` 줄과 그 아래의 옵션을 삭제합니다.
+
+이름이 여러 개인 항목이나 `Host *`처럼 패턴을 쓰는 항목은 목록에 나오지 않으며, Spooky가 변경하지도 않습니다. 이런 항목은 텍스트 편집기에서 편집합니다.
+
+Spooky로 돌아올 때마다 Spooky는 이 파일을 다시 읽습니다. 대화상자가 열려 있는 동안 다른 앱이 파일을 변경하면 Spooky는 변경 내용을 저장하지 않습니다. 목록이 파일의 현재 내용으로 바뀌므로, 다시 변경합니다.
+
+## Mac이 키의 잠금을 풀게 하기 {#keychain}
+
+Spooky는 로그인할 때 키의 암호문을 묻지 않으므로, Mac이 대신 키의 잠금을 풀어야 합니다. `~/.ssh/config`에 두 줄을 추가하면 모든 서버에 적용됩니다. 키에 암호문이 없으면 이 단계를 건너뜁니다.
+
+1. 텍스트 편집기에서 파일을 엽니다.
 
    ```sh
-   touch ~/.ssh/config && open -e ~/.ssh/config
+   open -e ~/.ssh/config
    ```
 
-2. 파일 끝에 다음 줄을 추가하고, 자신의 정보로 바꿉니다.
+2. 파일 끝에 다음 줄을 추가합니다.
 
    ```
-   Host driftwood-server
-       HostName 203.0.113.10
-       User alex
-       IdentityFile ~/.ssh/id_ed25519
+   Host *
        AddKeysToAgent yes
        UseKeychain yes
    ```
 
 3. 파일을 저장하고 텍스트 편집기를 닫습니다.
 
-| 줄 | 적을 내용 |
-|---|---|
-| `Host` | 별칭. 공백, `@`, `:`, `/`가 없는 한 단어로 쓰고, `-`로 시작하지 않습니다. |
-| `HostName` | 서버의 주소 또는 이름. 예: `203.0.113.10`, `server.example.com` |
-| `User` | 서버에서의 사용자 이름 |
-| `IdentityFile` | 위에서 만들었거나 찾은 개인 키 |
-| `AddKeysToAgent`, `UseKeychain` | 암호문을 처음 입력하면 Mac이 키체인에 저장합니다. 그 뒤로는 SSH가 묻지 않고 키의 잠금을 풉니다. Spooky는 로그인할 때 암호문을 묻지 않으므로 이 설정이 필요합니다. |
-
-서버의 SSH가 22가 아닌 포트를 사용하면 `Port 2222` 같은 줄을 추가합니다.
+암호문을 처음 입력하면 Mac이 키체인에 저장합니다. 그 뒤로는 SSH가 묻지 않고 키의 잠금을 풉니다.
 
 ## 한 번 연결하기 {#fingerprint}
 
@@ -128,9 +160,9 @@ ssh -o BatchMode=yes driftwood-server git --version
 
 | 표시되는 내용 | 할 일 |
 |---|---|
-| `Permission denied` | 서버가 아직 키를 받아들이지 않거나, Mac이 키의 잠금을 풀 수 없습니다. [공개 키를 서버에 올리기](#copy-key)와 [Mac을 재시동한 뒤](#after-restart)를 확인합니다. |
+| `Permission denied` | 서버가 아직 키를 받아들이지 않거나, Mac이 키의 잠금을 풀 수 없습니다. [Mac이 키의 잠금을 풀게 하기](#keychain), [공개 키를 서버에 올리기](#copy-key), [Mac을 재시동한 뒤](#after-restart)를 확인합니다. |
 | `Host key verification failed` | Mac이 아직 서버를 모릅니다. [한 번 연결하기](#fingerprint)를 참고하세요. |
-| `Could not resolve hostname`, `Connection refused`, 또는 `Operation timed out` | `~/.ssh/config`의 `HostName`과 `Port`를 확인하고, 서버가 켜져 있고 접근 가능한지 확인합니다. |
+| `Could not resolve hostname`, `Connection refused`, 또는 `Operation timed out` | :ui[app.name > settings.title] › :ui[settings.sshHosts]에서 별칭의 :ui[sshHosts.hostName]와 :ui[sshHosts.port]를 확인하고, 서버가 켜져 있고 접근 가능한지 확인합니다. |
 | `command not found`가 들어 있는 메시지 | 서버에 Git이 설치되어 있지 않거나, SSH 로그인에서 Git을 찾지 못합니다. 서버 소유자에게 문의합니다. |
 | 2.41.0보다 낮은 버전 | 서버 소유자에게 Git 업데이트를 요청합니다. |
 
@@ -154,7 +186,7 @@ SSH 에이전트는 잠금이 풀린 키를 SSH가 바로 쓸 수 있게 보관�
 2. **원격 로그인**을 켭니다.
 3. 저장소가 문서나 데스크탑 같은 보호된 폴더에 있으면 **원격 로그인** 옆의 정보 버튼을 클릭하고 **원격 사용자에 대해 전체 디스크 접근 허용**을 켭니다.
 
-그런 다음 자신의 Mac에서 이 페이지의 과정을 따라 하되, `HostName`에 그 Mac의 주소를 넣습니다.
+그런 다음 자신의 Mac에서 이 페이지의 과정을 따라 하되, :ui[sshHosts.hostName]에 그 Mac의 주소를 넣습니다.
 
 ## 함께 보기
 

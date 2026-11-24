@@ -193,6 +193,7 @@ On your Mac:
 | The previous lists that the Activity window compares against | `~/Library/Application Support/Spooky/Baselines/` |
 | Credentials saved to the Keychain | Keychain service `com.rakuyo.spooky.remote.<host alias>` |
 | Hosting account tokens | Keychain service `com.rakuyo.spooky.hosting.<instance address>` |
+| Host aliases managed on the SSH Hosts page of Settings | `~/.ssh/config`, the file the system's SSH reads |
 | Connections and callbacks | Private `/tmp/spooky-*` directories, removed when the session closes |
 | File copies for Quick Look and other apps | Private `spooky-files-*` temporary directories, removed when the repository closes |
 

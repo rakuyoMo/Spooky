@@ -19,6 +19,7 @@ description: "設定ウインドウの構成と、「一般」「アップデー
 | :ui[settings.themes] | 差分とファイルの色とフォント | [外観とテーマ](/guide/settings/appearance/#themes) |
 | :ui[settings.profiles] | コミット時に切り替えて使うユーザ情報 | [ユーザプロファイルと Git 設定](/guide/settings/identity/#profiles) |
 | :ui[settings.accounts] | GitHub と GitLab のアカウント | [ホスティングアカウント](/guide/hosting/accounts/) |
+| :ui[settings.sshHosts] | サーバのホストエイリアス。`~/.ssh/config` に保存されます | [SSH を準備する](/guide/server/prepare-ssh/#alias) |
 | :ui[settings.integration] | github.com からのリンク、SSH エージェント、クラッシュレポート | [連携](/guide/settings/integration/#integration-page) |
 | :ui[settings.environment] | この Mac 上の Git の環境変数、サーバの環境の確認 | [環境](#environment) |
 | :ui[settings.updates] | Spooky のアップデート方法 | [アップデート](#updates) |

@@ -15,7 +15,7 @@ To open the dialog, choose :ui[action.addRemote] from the :ui[menu.file] menu, o
 
 | Field | What to enter |
 |---|---|
-| :ui[remote.host] | The `Host` name from `~/.ssh/config`, such as `driftwood-server`. Enter only the alias, without a username or port. |
+| :ui[remote.host] | The `Host` name from `~/.ssh/config`, such as `driftwood-server`. Enter only the alias, without a username or port. To add one, see [Add a host alias](/guide/server/prepare-ssh/#alias). |
 | :ui[remote.path] | The full path of the repository on the server, starting with `/`, such as `/srv/git/driftwood` |
 | :ui[remote.mount] | Optional. Makes the repository’s folder available on this Mac, so Finder can show it. See [Mount while adding](/guide/server/local-location/#when-adding). |
 

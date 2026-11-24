@@ -93,7 +93,7 @@ struct DialogSizingTests {
         #expect(Self.contentSize(of: window).height == 320)
     }
 
-    /// 账号、身份档案与仓库设置的值：打开后错误区或表单行会出现，都经对话框窗口挂成 sheet。
+    /// 账号、身份档案、主机别名与仓库设置的值：打开后错误区或表单行会出现，都经对话框窗口挂成 sheet。
     @Test("打开后会变高的弹窗经对话框窗口呈现")
     func growingDialogsUseDialogWindow() async throws {
         let parent = Self.parentWindow()
@@ -119,6 +119,11 @@ struct DialogSizingTests {
             save: { _ in },
             closed: { }
         )
+
+        try await Self.expectDialogWindow(on: parent)
+
+        // 主机别名：没有给别名，是添加
+        SSHHostEditor.present(nil, at: nil, in: SSHConfigFile(), on: parent) { _ in }
 
         try await Self.expectDialogWindow(on: parent)
 

@@ -42,36 +42,68 @@ ssh-keygen -t ed25519 -C "alex@example.com"
 
 ## ホストエイリアスを追加する {#alias}
 
-ホストエイリアスは、サーバの短い名前です。ターミナルと Spooky で、サーバのアドレスとユーザ名の代わりに入力します。エイリアスは `~/.ssh/config` ファイルに書きます。
+ホストエイリアスは、サーバの短い名前です。ターミナルと Spooky で、サーバのアドレスとユーザ名の代わりに入力します。エイリアスは `~/.ssh/config` ファイルに保存されます。追加は Spooky の設定で行います。
 
-1. テキストエディットでファイルを開きます。次のコマンドは、ファイルがまだなければ作成します。
+1. :ui[app.name > settings.title] › :ui[settings.sshHosts] を選びます。
+2. 一覧の下の追加ボタンをクリックします。
+3. 各フィールドに自分の情報を入力します。
+4. :ui[sshHosts.create.submit] をクリックします。
+
+::screenshot[ホストエイリアスを追加するダイアログ。エイリアスは driftwood-server、サーバのアドレスは 203.0.113.10、ユーザ名は alex、ポートは空欄、秘密鍵は ~/.ssh/id_ed25519 です。ボタンは「キャンセル」と「追加」です。]{name="settings-ssh-hosts-add" frame="dialog"}
+
+| フィールド | 入力する内容 |
+|---|---|
+| :ui[sshHosts.alias] | エイリアス。スペース、`@`、`:`、`/`、`*`、`?` を含まない 1 語にし、先頭を `-` や `!` にしないでください。 |
+| :ui[sshHosts.hostName] | サーバのアドレスまたは名前。`203.0.113.10` や `server.example.com` など |
+| :ui[sshHosts.user] | サーバでのユーザ名 |
+| :ui[sshHosts.port] | ポート。サーバの SSH が 22 以外のポートを使っているときだけ入力します |
+| :ui[sshHosts.identityFile] | 上で作成した、または見つけた秘密鍵。`~/.ssh/id_ed25519` など |
+
+必須なのは :ui[sshHosts.alias] だけです。Spooky は、エイリアスと入力したフィールドを `~/.ssh/config` に書き込みます。
+
+```
+Host driftwood-server
+    HostName 203.0.113.10
+    User alex
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+`Host *` のようにパターンを使うエントリや `Match` のエントリがあるときは、新しい行はその最初のエントリの上に入ります。そのエントリに上書きされないようにするためです。そうしたエントリがなければ、ファイルの末尾に入ります。
+
+### エイリアスを変更または削除する {#manage-aliases}
+
+:ui[settings.sshHosts] ページには、`~/.ssh/config` にあるエイリアスが並びます。テキストエディタで追加したものも含まれます。
+
+::screenshot[設定ウインドウの SSH ホストページ。一覧には、エイリアス、サーバのアドレス、ユーザ名、ポート、秘密鍵の列があります。staging、backup-nas、driftwood-server の 3 つのエイリアスが並び、driftwood-server が選択されています。一覧の下に追加ボタンと削除ボタン、右側に「編集…」ボタンがあります。]{name="settings-ssh-hosts" frame="window"}
+
+- エイリアスを変更するには、選択して :ui[sshHosts.edit] をクリックします。Spooky は、編集したフィールドの行だけを書き換えます。そのサーバのほかの SSH オプション、ほかのサーバ、コメントはそのまま残ります。
+- エイリアスを削除するには、選択して一覧の下の削除ボタンをクリックし、確認します。Spooky は、その `Host` の行と、その下のオプションを削除します。
+
+複数の名前を持つエントリや、`Host *` のようにパターンを使うエントリは一覧に表示されず、Spooky が変更することもありません。これらはテキストエディタで編集してください。
+
+Spooky に戻るたびに、Spooky はこのファイルを読み込み直します。ダイアログを開いている間にほかのアプリケーションがファイルを変更した場合、Spooky は変更を保存しません。一覧がファイルの現在の内容に切り替わるので、もう一度変更してください。
+
+## Mac が鍵のロックを解除できるようにする {#keychain}
+
+Spooky はログイン時に鍵のパスフレーズを尋ねないため、Mac が代わりに鍵のロックを解除する必要があります。`~/.ssh/config` に 2 行追加すると、すべてのサーバで有効になります。鍵にパスフレーズがなければ、この手順は不要です。
+
+1. テキストエディットでファイルを開きます。
 
    ```sh
-   touch ~/.ssh/config && open -e ~/.ssh/config
+   open -e ~/.ssh/config
    ```
 
-2. 末尾に次の行を追加し、自分の情報に書き換えます。
+2. 末尾に次の行を追加します。
 
    ```
-   Host driftwood-server
-       HostName 203.0.113.10
-       User alex
-       IdentityFile ~/.ssh/id_ed25519
+   Host *
        AddKeysToAgent yes
        UseKeychain yes
    ```
 
 3. ファイルを保存して、テキストエディットを閉じます。
 
-| 行 | 書く内容 |
-|---|---|
-| `Host` | エイリアス。スペース、`@`、`:`、`/` を含まない 1 語にし、先頭を `-` にしないでください。 |
-| `HostName` | サーバのアドレスまたは名前。`203.0.113.10` や `server.example.com` など |
-| `User` | サーバでのユーザ名 |
-| `IdentityFile` | 上で作成した、または見つけた秘密鍵 |
-| `AddKeysToAgent`、`UseKeychain` | パスフレーズを初めて入力したとき、Mac がキーチェーンに保存します。以降、SSH は尋ねずに鍵のロックを解除します。Spooky はこれに頼っています。ログイン時にパスフレーズを尋ねることがないためです。 |
-
-サーバの SSH が 22 以外のポートを使っているときは、`Port 2222` のような行を追加します。
+パスフレーズを初めて入力したとき、Mac がキーチェーンに保存します。以降、SSH は尋ねずに鍵のロックを解除します。
 
 ## 一度接続する {#fingerprint}
 
@@ -128,9 +160,9 @@ Spooky と同じ方法で、何も尋ねずにログインします。`git versi
 
 | 表示される内容 | 対処 |
 |---|---|
-| `Permission denied` | サーバがまだ鍵を受け付けていないか、Mac が鍵のロックを解除できません。[公開鍵をサーバに置く](#copy-key) と [Mac を再起動したあと](#after-restart) を確認してください。 |
+| `Permission denied` | サーバがまだ鍵を受け付けていないか、Mac が鍵のロックを解除できません。[Mac が鍵のロックを解除できるようにする](#keychain)、[公開鍵をサーバに置く](#copy-key)、[Mac を再起動したあと](#after-restart) を確認してください。 |
 | `Host key verification failed` | Mac がまだサーバを知りません。[一度接続する](#fingerprint) を参照してください。 |
-| `Could not resolve hostname`、`Connection refused`、`Operation timed out` | `~/.ssh/config` の `HostName` と `Port` を確認し、サーバが起動していてアクセスできることを確かめてください。 |
+| `Could not resolve hostname`、`Connection refused`、`Operation timed out` | :ui[app.name > settings.title] › :ui[settings.sshHosts] でエイリアスの :ui[sshHosts.hostName] と :ui[sshHosts.port] を確認し、サーバが起動していてアクセスできることを確かめてください。 |
 | `command not found` を含むメッセージ | サーバに Git がインストールされていないか、SSH でログインしたときに見つかりません。サーバの管理者に尋ねてください。 |
 | 2.41.0 より古いバージョン | サーバの管理者に Git のアップデートを依頼してください。 |
 
@@ -154,7 +186,7 @@ SSH エージェントは、ロックを解除した鍵を SSH のために保�
 2. **リモートログイン** をオンにします。
 3. リポジトリが「書類」や「デスクトップ」などの保護されたフォルダにあるときは、**リモートログイン** の横の情報ボタンをクリックして、**リモートユーザのフルディスクアクセスを許可** をオンにします。
 
-そのあと、自分の Mac からこのページの手順を進めます。`HostName` にはその Mac のアドレスを書きます。
+そのあと、自分の Mac からこのページの手順を進めます。:ui[sshHosts.hostName] にはその Mac のアドレスを入力します。
 
 ## 関連ページ
 

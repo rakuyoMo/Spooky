@@ -15,7 +15,7 @@ description: "逐项填写 “添加服务器仓库” 对话框，看懂连接�
 
 | 这一项 | 填什么 |
 |---|---|
-| :ui[remote.host] | `~/.ssh/config` 里 `Host` 那一行的名称，比如 `driftwood-server`。只填别名，不带用户名和端口。 |
+| :ui[remote.host] | `~/.ssh/config` 里 `Host` 那一行的名称，比如 `driftwood-server`。只填别名，不带用户名和端口。还没有别名的话，见 [添加主机别名](/guide/server/prepare-ssh/#alias)。 |
 | :ui[remote.path] | 仓库在服务器上的完整路径，以 `/` 开头，比如 `/srv/git/driftwood` |
 | :ui[remote.mount] | 可以不选。选了之后，仓库文件夹在这台 Mac 上也能看到，访达就能显示它，见 [添加时挂载](/guide/server/local-location/#when-adding)。 |
 

@@ -42,36 +42,68 @@ Mettez votre propre adresse e-mail entre les guillemets. Ce n’est qu’une ét
 
 ## Ajouter un alias d’hôte {#alias}
 
-Un alias d’hôte est un nom court pour un serveur. Vous le tapez dans Terminal et dans Spooky, à la place de l’adresse du serveur et de votre nom d’utilisateur. Les alias se placent dans le fichier `~/.ssh/config`.
+Un alias d’hôte est un nom court pour un serveur. Vous le tapez dans Terminal et dans Spooky, à la place de l’adresse du serveur et de votre nom d’utilisateur. Les alias sont enregistrés dans le fichier `~/.ssh/config`. Vous les ajoutez dans les réglages de Spooky.
 
-1. Ouvrez le fichier dans TextEdit. Cette commande crée le fichier s’il n’existe pas encore :
+1. Choisissez :ui[app.name > settings.title] › :ui[settings.sshHosts].
+2. Cliquez sur le bouton d’ajout sous la liste.
+3. Remplissez les champs avec vos propres informations.
+4. Cliquez sur :ui[sshHosts.create.submit].
+
+::screenshot[La zone de dialogue d’ajout d’un alias d’hôte. L’alias est driftwood-server, l’adresse du serveur 203.0.113.10, le nom d’utilisateur alex, le port est vide et la clé privée est ~/.ssh/id_ed25519. Les boutons sont Annuler et Ajouter.]{name="settings-ssh-hosts-add" frame="dialog"}
+
+| Champ | Ce qu’il faut y mettre |
+|---|---|
+| :ui[sshHosts.alias] | L’alias. Utilisez un seul mot, sans espace, `@`, `:`, `/`, `*` ni `?`, et ne le commencez pas par `-` ni par `!`. |
+| :ui[sshHosts.hostName] | L’adresse ou le nom du serveur, comme `203.0.113.10` ou `server.example.com` |
+| :ui[sshHosts.user] | Votre nom d’utilisateur sur le serveur |
+| :ui[sshHosts.port] | Le port, si SSH en utilise un autre que 22 sur le serveur |
+| :ui[sshHosts.identityFile] | La clé privée que vous avez créée ou trouvée plus haut, comme `~/.ssh/id_ed25519` |
+
+Seul :ui[sshHosts.alias] est obligatoire. Spooky écrit l’alias et les champs remplis dans `~/.ssh/config` :
+
+```
+Host driftwood-server
+    HostName 203.0.113.10
+    User alex
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+Si le fichier contient une entrée avec un motif, comme `Host *`, ou une entrée `Match`, les nouvelles lignes se placent au-dessus de la première d’entre elles. Cette entrée ne peut donc pas les remplacer. Sinon, elles se placent à la fin du fichier.
+
+### Modifier ou supprimer un alias {#manage-aliases}
+
+La page :ui[settings.sshHosts] liste les alias de `~/.ssh/config`, y compris ceux que vous avez ajoutés dans un éditeur de texte.
+
+::screenshot[La page Hôtes SSH de la fenêtre Réglages. La liste a les colonnes Alias, Adresse du serveur, Nom d’utilisateur, Port et Clé privée. Elle contient trois alias : staging, backup-nas et driftwood-server, qui est sélectionné. Sous la liste figurent les boutons d’ajout et de suppression, et à droite un bouton Modifier.]{name="settings-ssh-hosts" frame="window"}
+
+- Pour modifier un alias, sélectionnez-le et cliquez sur :ui[sshHosts.edit]. Spooky ne change que les lignes des champs que vous modifiez. Les autres options SSH du serveur, les autres serveurs et les commentaires restent tels quels.
+- Pour supprimer un alias, sélectionnez-le, cliquez sur le bouton de suppression sous la liste, puis confirmez. Spooky supprime sa ligne `Host` et les options qui la suivent.
+
+Une entrée comportant plusieurs noms ou un motif, comme `Host *`, ne figure pas dans la liste, et Spooky ne la modifie pas. Modifiez ces entrées dans un éditeur de texte.
+
+Spooky relit le fichier chaque fois que vous revenez à l’app. Si une autre app modifie le fichier pendant qu’une zone de dialogue est ouverte, Spooky n’enregistre pas votre modification. La liste affiche le contenu actuel du fichier, et vous refaites la modification.
+
+## Laisser votre Mac déverrouiller la clé {#keychain}
+
+Spooky ne demande jamais la phrase secrète de votre clé lors de la connexion. Votre Mac doit donc déverrouiller la clé à sa place. Deux lignes dans `~/.ssh/config` suffisent pour tous les serveurs. Ignorez cette étape si votre clé n’a pas de phrase secrète.
+
+1. Ouvrez le fichier dans TextEdit :
 
    ```sh
-   touch ~/.ssh/config && open -e ~/.ssh/config
+   open -e ~/.ssh/config
    ```
 
-2. Ajoutez ces lignes à la fin, avec vos propres informations :
+2. Ajoutez ces lignes à la fin :
 
    ```
-   Host driftwood-server
-       HostName 203.0.113.10
-       User alex
-       IdentityFile ~/.ssh/id_ed25519
+   Host *
        AddKeysToAgent yes
        UseKeychain yes
    ```
 
 3. Enregistrez le fichier et fermez TextEdit.
 
-| Ligne | Ce qu’il faut y mettre |
-|---|---|
-| `Host` | L’alias. Utilisez un seul mot, sans espace, `@`, `:` ni `/`, et ne le commencez pas par `-`. |
-| `HostName` | L’adresse ou le nom du serveur, comme `203.0.113.10` ou `server.example.com` |
-| `User` | Votre nom d’utilisateur sur le serveur |
-| `IdentityFile` | La clé privée que vous avez créée ou trouvée plus haut |
-| `AddKeysToAgent`, `UseKeychain` | La première fois que vous tapez la phrase secrète, votre Mac l’enregistre dans le trousseau. Ensuite, SSH déverrouille la clé sans rien demander. Spooky en dépend, car il ne demande jamais la phrase secrète lors de la connexion. |
-
-Si SSH utilise sur le serveur un port autre que 22, ajoutez une ligne comme `Port 2222`.
+La première fois que vous tapez la phrase secrète, votre Mac l’enregistre dans le trousseau. Ensuite, SSH déverrouille la clé sans rien demander.
 
 ## Se connecter une première fois {#fingerprint}
 
@@ -128,9 +160,9 @@ Si elle affiche autre chose :
 
 | Ce que vous voyez | Ce qu’il faut faire |
 |---|---|
-| `Permission denied` | Le serveur n’accepte pas encore votre clé, ou votre Mac ne peut pas la déverrouiller. Vérifiez [Placer la clé publique sur le serveur](#copy-key) et [Après le redémarrage de votre Mac](#after-restart). |
+| `Permission denied` | Le serveur n’accepte pas encore votre clé, ou votre Mac ne peut pas la déverrouiller. Vérifiez [Laisser votre Mac déverrouiller la clé](#keychain), [Placer la clé publique sur le serveur](#copy-key) et [Après le redémarrage de votre Mac](#after-restart). |
 | `Host key verification failed` | Votre Mac ne connaît pas encore le serveur. Consultez [Se connecter une première fois](#fingerprint). |
-| `Could not resolve hostname`, `Connection refused` ou `Operation timed out` | Vérifiez `HostName` et `Port` dans `~/.ssh/config`, et assurez-vous que le serveur est allumé et joignable. |
+| `Could not resolve hostname`, `Connection refused` ou `Operation timed out` | Vérifiez :ui[sshHosts.hostName] et :ui[sshHosts.port] de l’alias dans :ui[app.name > settings.title] › :ui[settings.sshHosts], et assurez-vous que le serveur est allumé et joignable. |
 | Un message contenant `command not found` | Git n’est pas installé sur le serveur, ou les sessions SSH ne le trouvent pas. Demandez au propriétaire du serveur. |
 | Une version antérieure à 2.41.0 | Demandez au propriétaire du serveur de mettre Git à jour. |
 
@@ -154,7 +186,7 @@ Un autre Mac peut servir de serveur. Sur ce Mac :
 2. Activez **Session à distance**.
 3. Si le dépôt se trouve dans un dossier protégé, comme Documents ou Bureau, cliquez sur le bouton d’informations à côté de **Session à distance** et activez **Autoriser l’accès complet au disque pour les utilisateurs distants**.
 
-Suivez ensuite cette page depuis votre propre Mac, avec l’adresse de ce Mac dans `HostName`.
+Suivez ensuite cette page depuis votre propre Mac, avec l’adresse de ce Mac dans :ui[sshHosts.hostName].
 
 ## Voir aussi
 

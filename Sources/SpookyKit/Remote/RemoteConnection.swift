@@ -479,15 +479,11 @@ extension RemoteConnection {
         }
     }
 
-    /// 检查输入结构；单引号属于合法数据，但选项、用户和端口不在别名中拆解。
+    /// 检查输入结构：别名按 `SSHHostAlias.isConnectable(_:)` 核对，工作区路径要是绝对路径。
     private func validateLocation() throws {
-        guard
-            !host.isEmpty,
-            !host.hasPrefix("-"),
-            !host.contains(where: { $0.isWhitespace || $0.isNewline }),
-            !host.contains("@"), !host.contains(":"), !host.contains("/"),
-            !host.utf8.contains(0)
-        else { throw RemoteConnectionError(.invalidHost) }
+        guard SSHHostAlias.isConnectable(host) else {
+            throw RemoteConnectionError(.invalidHost)
+        }
 
         // 主机连接没有工作区路径
         guard !isHostScoped else { return }

@@ -42,36 +42,68 @@ When it’s done, `~/.ssh` has `id_ed25519` and `id_ed25519.pub`.
 
 ## Add a host alias {#alias}
 
-A host alias is a short name for a server. You type it in Terminal and in Spooky, in place of the server’s address and your username. Aliases go in the file `~/.ssh/config`.
+A host alias is a short name for a server. You type it in Terminal and in Spooky, in place of the server’s address and your username. Aliases are saved in the file `~/.ssh/config`. You add them in Spooky’s settings.
 
-1. Open the file in TextEdit. This command creates the file if it doesn’t exist yet:
+1. Choose :ui[app.name > settings.title] › :ui[settings.sshHosts].
+2. Click the add button below the list.
+3. Fill in the fields with your own details.
+4. Click :ui[sshHosts.create.submit].
+
+::screenshot[The Add Host Alias dialog. Alias is driftwood-server, Server address is 203.0.113.10, User name is alex, Port is empty, and Private key is ~/.ssh/id_ed25519. The buttons are Cancel and Add.]{name="settings-ssh-hosts-add" frame="dialog"}
+
+| Field | What to put there |
+|---|---|
+| :ui[sshHosts.alias] | The alias. Use one word without spaces, `@`, `:`, `/`, `*`, or `?`, and don’t start it with `-` or `!`. |
+| :ui[sshHosts.hostName] | The server’s address or name, such as `203.0.113.10` or `server.example.com` |
+| :ui[sshHosts.user] | Your username on the server |
+| :ui[sshHosts.port] | The port, if SSH on the server uses one other than 22 |
+| :ui[sshHosts.identityFile] | The private key you created or found above, such as `~/.ssh/id_ed25519` |
+
+Only :ui[sshHosts.alias] is required. Spooky writes the alias and the fields you filled in to `~/.ssh/config`:
+
+```
+Host driftwood-server
+    HostName 203.0.113.10
+    User alex
+    IdentityFile ~/.ssh/id_ed25519
+```
+
+If the file has an entry with a pattern, such as `Host *`, or a `Match` entry, the new lines go above the first of them, so it can’t override them. Otherwise, they go at the end of the file.
+
+### Change or delete an alias {#manage-aliases}
+
+The :ui[settings.sshHosts] page lists the aliases in `~/.ssh/config`, including ones you added in a text editor.
+
+::screenshot[The SSH Hosts page of the Settings window. The list has the columns Alias, Server Address, User Name, Port, and Private Key. It shows three aliases: staging, backup-nas, and driftwood-server, which is selected. Below the list are the add and remove buttons, and an Edit button on the right.]{name="settings-ssh-hosts" frame="window"}
+
+- To change an alias, select it and click :ui[sshHosts.edit]. Spooky changes only the lines of the fields you edit. The server’s other SSH options, other servers, and comments stay as they are.
+- To delete an alias, select it, click the remove button below the list, and confirm. Spooky deletes its `Host` line and the options under it.
+
+An entry with several names or with a pattern, such as `Host *`, isn’t in the list, and Spooky doesn’t change it. Edit those in a text editor.
+
+Spooky reads the file again each time you come back to the app. If another app changes the file while a dialog is open, Spooky doesn’t save your change. The list shows the file’s current content, and you make the change again.
+
+## Let your Mac unlock the key {#keychain}
+
+Spooky never asks for the passphrase of your key when it logs in, so your Mac has to unlock the key for it. Two lines in `~/.ssh/config` set that up for every server. Skip this step if your key has no passphrase.
+
+1. Open the file in TextEdit:
 
    ```sh
-   touch ~/.ssh/config && open -e ~/.ssh/config
+   open -e ~/.ssh/config
    ```
 
-2. Add these lines at the end, with your own details:
+2. Add these lines at the end:
 
    ```
-   Host driftwood-server
-       HostName 203.0.113.10
-       User alex
-       IdentityFile ~/.ssh/id_ed25519
+   Host *
        AddKeysToAgent yes
        UseKeychain yes
    ```
 
 3. Save the file and close TextEdit.
 
-| Line | What to put there |
-|---|---|
-| `Host` | The alias. Use one word without spaces, `@`, `:`, or `/`, and don’t start it with `-`. |
-| `HostName` | The server’s address or name, such as `203.0.113.10` or `server.example.com` |
-| `User` | Your username on the server |
-| `IdentityFile` | The private key you created or found above |
-| `AddKeysToAgent`, `UseKeychain` | The first time you type the passphrase, your Mac saves it in Keychain. After that, SSH unlocks the key without asking. Spooky depends on this, because it never asks for the passphrase when it logs in. |
-
-If SSH on the server uses a port other than 22, add a line such as `Port 2222`.
+The first time you type the passphrase, your Mac saves it in Keychain. After that, SSH unlocks the key without asking.
 
 ## Connect once {#fingerprint}
 
@@ -128,9 +160,9 @@ If it prints something else:
 
 | What you see | What to do |
 |---|---|
-| `Permission denied` | The server doesn’t accept your key yet, or your Mac can’t unlock it. Check [Put the public key on the server](#copy-key) and [After restarting your Mac](#after-restart). |
+| `Permission denied` | The server doesn’t accept your key yet, or your Mac can’t unlock it. Check [Let your Mac unlock the key](#keychain), [Put the public key on the server](#copy-key), and [After restarting your Mac](#after-restart). |
 | `Host key verification failed` | Your Mac doesn’t know the server yet. See [Connect once](#fingerprint). |
-| `Could not resolve hostname`, `Connection refused`, or `Operation timed out` | Check `HostName` and `Port` in `~/.ssh/config`, and make sure the server is on and reachable. |
+| `Could not resolve hostname`, `Connection refused`, or `Operation timed out` | Check the alias’s :ui[sshHosts.hostName] and :ui[sshHosts.port] in :ui[app.name > settings.title] › :ui[settings.sshHosts], and make sure the server is on and reachable. |
 | A message with `command not found` | Git isn’t installed on the server, or SSH logins can’t find it. Ask the server’s owner. |
 | A version older than 2.41.0 | Ask the server’s owner to update Git. |
 
@@ -154,7 +186,7 @@ Another Mac can be the server. On that Mac:
 2. Turn on **Remote Login**.
 3. If the repository is in a protected folder, such as Documents or Desktop, click the info button next to **Remote Login** and turn on **Allow full disk access for remote users**.
 
-Then go through this page from your own Mac, with that Mac’s address in `HostName`.
+Then go through this page from your own Mac, with that Mac’s address in :ui[sshHosts.hostName].
 
 ## See also
 
