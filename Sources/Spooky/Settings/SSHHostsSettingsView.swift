@@ -196,13 +196,15 @@ extension SSHHostsSettingsView {
         let listed = model.file
 
         SSHHostEditor.present(row?.alias, at: row?.id, in: listed, on: NSApp.keyWindow) { alias in
-            save(alias, at: row?.id, from: listed)
+            save(alias, replacing: row, from: listed)
         }
     }
 
     /// 写入对话框里填的别名：编辑的原位更新，添加的写进文件后选中它。
-    private func save(_ alias: SSHHostAlias, at index: Int?, from listed: SSHConfigFile) {
-        guard let index else {
+    ///
+    /// 编辑时改了别名的，按原来的别名记下的书签、偏好与凭据一起换到新别名。
+    private func save(_ alias: SSHHostAlias, replacing row: Row?, from listed: SSHConfigFile) {
+        guard let row else {
             var added: Int? = nil
 
             if model.save(from: listed, { added = $0.add(alias) }) {
@@ -212,7 +214,13 @@ extension SSHHostsSettingsView {
             return
         }
 
-        model.save(from: listed) { $0.replace(at: index, with: alias) }
+        guard
+            model.save(from: listed, { $0.replace(at: row.id, with: alias) }),
+            alias.alias != row.alias.alias,
+            let bookmarks = (NSApp.delegate as? SpookyApplicationController)?.bookmarks
+        else { return }
+
+        HostAliasRecords.rename(row.alias.alias, to: alias.alias, bookmarks: bookmarks)
     }
 
     /// 确认后删除别名，其它主机与注释留在文件里。
