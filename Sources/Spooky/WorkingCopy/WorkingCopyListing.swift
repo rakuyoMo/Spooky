@@ -18,7 +18,7 @@ enum WorkingCopyListMode: Int {
     private static let storageKey = "workingCopyViewMode"
 
     /// 按仓库记的显示模式的偏好键；值以仓库的显示路径为键，记模式的原始值。
-    private static let repositoryStorageKey = "workingCopyViewModes"
+    static let repositoryStorageKey = "workingCopyViewModes"
 
     /// 是否按目录组织。
     var isTree: Bool { self != .list }

@@ -77,19 +77,16 @@ extension AppFailure {
         }
     }
 
-    /// 钥匙串拒绝保存令牌：原文是钥匙串对状态码的说明。
+    /// 钥匙串没有存下令牌：原文是 `security` 的退出码。
     static func classification(
-        of account: HostingAccountError
+        of keychain: KeychainError
     ) -> (key: String, kind: FailureKind, recoveryKey: String, output: GitCommandResult?, diagnostic: String?) {
-        switch account {
-        case .keychain(let status):
-            (
-                "hosting.error.keychain",
-                .environment,
-                "hosting.error.keychain.help",
-                nil,
-                (SecCopyErrorMessageString(status, nil) as String?) ?? "OSStatus \(status)"
-            )
+        switch keychain {
+        case .unsupportedItem:
+            ("hosting.error.keychain", .environment, "hosting.error.keychain.help", nil, nil)
+
+        case .exit(let status):
+            ("hosting.error.keychain", .environment, "hosting.error.keychain.help", nil, "security: exit status \(status)")
         }
     }
 

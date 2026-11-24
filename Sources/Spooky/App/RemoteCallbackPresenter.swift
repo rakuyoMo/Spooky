@@ -1,6 +1,5 @@
 import AppKit
 import CryptoKit
-import Security
 import SpookyKit
 
 // MARK: - RemoteCallbackPresenter
@@ -112,39 +111,38 @@ final class RemoteCallbackPresenter {
         presentNext()
     }
 
-    /// 钥匙串条目按服务器和提示隔离，账户键使用摘要而非原始提示。
-    private func keychainQuery(_ request: RemoteCallbackRequest) -> [String: Any] {
-        let identity = Data((request.kind.rawValue + "\n" + request.prompt).utf8)
-        let account = SHA256.hash(data: identity).map { String(format: "%02x", $0) }.joined()
-        return [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.rakuyo.spooky.remote." + request.host,
-            kSecAttrAccount as String: account,
-        ]
-    }
-
     /// 只从当前用户的 A 侧钥匙串读取，不接触 B 的图形钥匙串。
     private func credential(for request: RemoteCallbackRequest) -> String? {
-        var query = keychainQuery(request)
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var value: CFTypeRef? = nil
-        guard
-            SecItemCopyMatching(query as CFDictionary, &value) == errSecSuccess,
-            let data = value as? Data
-        else { return nil }
-        return String(data: data, encoding: .utf8)
+        SecurityKeychain.shared.password(
+            service: Self.keychainService(for: request.host),
+            account: Self.keychainAccount(of: request)
+        )
     }
 
     /// 仅在用户明确勾选保存时写钥匙串，不写 UserDefaults 或仓库记录。
     private func store(_ value: String, for request: RemoteCallbackRequest) {
-        let query = keychainQuery(request)
-        let attributes = [kSecValueData as String: Data(value.utf8)]
-        let result = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        try? SecurityKeychain.shared.setPassword(
+            value,
+            service: Self.keychainService(for: request.host),
+            account: Self.keychainAccount(of: request)
+        )
+    }
+}
 
-        if result == errSecItemNotFound {
-            SecItemAdd(query.merging(attributes) { _, new in new } as CFDictionary, nil)
-        }
+// MARK: - Keychain Items
+
+extension RemoteCallbackPresenter {
+    /// 一台服务器的凭据在钥匙串里的服务名。
+    ///
+    /// - Parameter host: 请求的来源：服务器仓库是主机别名，本机仓库是仓库路径。
+    static func keychainService(for host: String) -> String {
+        "com.rakuyo.spooky.remote." + host
+    }
+
+    /// 钥匙串条目按服务器和提示隔离，账户名使用摘要而非原始提示。
+    private static func keychainAccount(of request: RemoteCallbackRequest) -> String {
+        let identity = Data((request.kind.rawValue + "\n" + request.prompt).utf8)
+        return SHA256.hash(data: identity).map { String(format: "%02x", $0) }.joined()
     }
 }
 
