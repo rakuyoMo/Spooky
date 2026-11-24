@@ -13,6 +13,7 @@ import Testing
 struct RepositoryLFSTests {
     /// 找不到 git-lfs 时状态里没有版本；写操作报出能力缺失并带上 `git lfs version` 的原文，不改动仓库。
     /// 版本低于 2.9.0 同样算能力缺失，状态里仍写出它报告的版本；只认 `git-lfs/` 开头、至少三段数字的版本，按数值逐段比较。
+    /// 仓库登记了 LFS 过滤器时，Git 执行过滤器找不到 git-lfs 的失败归为 Git LFS 不可用。
     @Test("找不到 Git LFS 或版本不足")
     func capabilityMissing() async throws {
         let temporary = try TemporaryRepository()
@@ -38,6 +39,7 @@ struct RepositoryLFSTests {
         #expect(!FileManager.default.fileExists(atPath: root + "/.gitattributes"))
 
         try await Self.outdated(in: temporary)
+        try await Self.filterUnavailable(in: temporary)
 
         // 版本的比较
         #expect(RepositoryLFS.isSupported("git-lfs/3.8.1 (GitHub; darwin arm64; go 1.27.3)"))
@@ -221,6 +223,37 @@ extension RepositoryLFSTests {
         }
 
         #expect(!(try await lfs.status().isEnabled))
+    }
+
+    /// 仓库登记了 LFS 过滤器、PATH 里没有 git-lfs 时，暂存交给 LFS 的文件失败，归为 Git LFS 不可用；
+    /// 服务器的 /bin/sh 是 dash 时报错的写法不同，同样归为这一类。
+    private static func filterUnavailable(in temporary: TemporaryRepository) async throws {
+        let root = temporary.directory.path
+        let runner = lfsRunner(at: root, searchPath: "/usr/bin:/bin")
+
+        // 全局配置已被隔离，过滤器登记在仓库本地，取值与 git lfs install 登记的相同
+        _ = try await runner.run(["config", "--local", "filter.lfs.process", "git-lfs filter-process"])
+        _ = try await runner.run(["config", "--local", "filter.lfs.required", "true"])
+
+        try Data("*.psd filter=lfs\n".utf8).write(to: URL(fileURLWithPath: root + "/.gitattributes"))
+        try Data("layer\n".utf8).write(to: URL(fileURLWithPath: root + "/layer.psd"))
+
+        let error = await #expect(throws: GitError.self) {
+            try await runner.run(["add", "--", "layer.psd"])
+        }
+
+        #expect(error?.category == .lfsUnavailable)
+
+        // 服务器的 /bin/sh 是 dash 时的报错
+        let dash = GitCommandResult(
+            arguments: ["switch", "--", "main"],
+            standardOutput: Data(),
+            standardError: Data("git-lfs filter-process: 1: git-lfs: not found\n".utf8),
+            terminationStatus: .exited(128),
+            isCancelled: false
+        )
+
+        #expect(GitRunner.category(for: dash) == .lfsUnavailable)
     }
 
     /// 全局配置只登记 LFS 过滤器时选了 LFS 的克隆，检出的是文件内容。
