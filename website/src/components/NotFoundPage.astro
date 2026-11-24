@@ -1,0 +1,27 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+/*
+ * 各语言的 404 页共用的内容，文字按页面的语言取。
+ *
+ * 主视觉与首页同一套样子，按钮通往首页与手册。
+ */
+
+const { t } = Astro.locals;
+---
+
+<StarlightPage
+    frontmatter={{
+        title: '404',
+        template: 'splash',
+        editUrl: false,
+        pagefind: false,
+        hero: {
+            tagline: t('404.text'),
+            actions: [
+                { text: t('notFound.home'), link: '/', variant: 'primary' },
+                { text: t('footer.guide'), link: '/guide/', variant: 'secondary' },
+            ],
+        },
+    }}
+/>

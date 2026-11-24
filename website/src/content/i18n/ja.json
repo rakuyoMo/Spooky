@@ -15,6 +15,7 @@
     "footer.releaseNotes": "リリースノート",
     "footer.issues": "問題を報告",
     "footer.license": "ライセンス",
+    "404.text": "ページが見つかりません。Web アドレスを確認するか、ホームに戻ってください。",
     "notFound.home": "ホームに戻る",
     "themeToggle.label": "ライトとダークの外観を切り替える",
     "demo.skip": "デモをスキップ",

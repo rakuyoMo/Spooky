@@ -18,7 +18,9 @@ const pageTitleId = '_top';
 
 const route = Astro.locals.starlightRoute;
 const { title = route.entry.data.title, tagline, actions = [] } = route.entry.data.hero ?? {};
-const notFound = route.entry.id === '404';
+
+// 404 页的 id 在英文下是 `404`，其余语言前面带语言目录，如 `zh-cn/404`
+const notFound = route.entry.id === '404' || route.entry.id.endsWith('/404');
 ---
 
 <section class:list={['hero', 'not-content', { 'not-found': notFound }]}>

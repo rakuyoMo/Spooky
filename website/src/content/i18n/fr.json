@@ -15,6 +15,7 @@
     "footer.releaseNotes": "Notes de version",
     "footer.issues": "Signaler un problème",
     "footer.license": "Licence",
+    "404.text": "Page introuvable. Vérifiez l’adresse web ou revenez à l’accueil.",
     "notFound.home": "Aller à l’accueil",
     "themeToggle.label": "Basculer entre l’apparence claire et l’apparence sombre",
     "demo.skip": "Passer la démo",
