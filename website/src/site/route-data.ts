@@ -1,15 +1,14 @@
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 
 /*
- * Starlight 的路由数据中间件：首页的标签页标题先写站名、再写标语。
+ * Starlight 的路由数据中间件：首页与手册页面的标签页标题先写站名、再写页面标题。
  */
 
-/** 首页的标签页标题写成 “站名 | 标语”；404 页与手册页面仍是 “标题 | 站名”。 */
+/** 首页与手册页面的标签页标题写成 “站名 | 标题”；404 页保持 Starlight 默认的 “标题 | 站名”。 */
 export const onRequest = defineRouteMiddleware(({ locals }) => {
     const { entry, head, siteTitle } = locals.starlightRoute;
 
-    // 带主视觉的页面只有首页与 404 页
-    if (!entry.data.hero || entry.id === '404') {
+    if (entry.id === '404') {
         return;
     }
 
