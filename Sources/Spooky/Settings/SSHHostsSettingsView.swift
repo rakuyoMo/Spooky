@@ -98,7 +98,7 @@ extension SSHHostsSettingsView {
         if case .read = model.failure { true } else { false }
     }
 
-    /// 别名、服务器地址、用户名、端口与私钥路径五列。
+    /// 别名、服务器地址、用户名、端口与私钥路径五列；双击一行，或选中后按回车，编辑它。
     private var table: some View {
         Table(rows, selection: $model.selection) {
             TableColumn(AppLocalization.text("sshHosts.column.alias")) { row in
@@ -125,6 +125,15 @@ extension SSHHostsSettingsView {
             }
         }
         .alternatingRowBackgrounds(.disabled)
+        .contextMenu(forSelectionType: Row.ID.self) { _ in
+        } primaryAction: { ids in
+            // 与 Edit… 的可用性一致：文件读不出时不编辑
+            guard !isUnreadable, let row = rows.first(where: { ids.contains($0.id) }) else {
+                return
+            }
+
+            edit(row)
+        }
         .accessibilityIdentifier("ssh-hosts")
         .overlay {
             if rows.isEmpty, !isUnreadable {
