@@ -194,6 +194,7 @@ Mit der Maus halten Sie <kbd>⇧</kbd> gedrückt und klicken auf eine Zeilennumm
 | Die Konversation eines Pull Requests | <kbd>⌘S</kbd> | Klickt auf :ui[pullRequests.addComment] |
 | :ui[settings.themes] in den Einstellungen | <kbd>↩</kbd> | Benennt das ausgewählte Thema um |
 | :ui[settings.appIcon.label] in den Einstellungen | Pfeiltasten, <kbd>Leertaste</kbd> | Bewegen zwischen den Symbolen und verwenden das aktuelle |
+| :ui[settings.sshHosts] in den Einstellungen | <kbd>↩</kbd> | Öffnet den ausgewählten Alias zum Bearbeiten |
 
 In Listen, in denen Sie mehrere Objekte auswählen können, wählt ein Klick mit <kbd>⇧</kbd> einen Bereich aus. Ein Klick mit <kbd>⌘</kbd> fügt ein einzelnes Objekt hinzu oder entfernt es. Klicken Sie in der Seitenleiste mit <kbd>⌘</kbd> auf Branches und Tags, um ihren Verlauf gemeinsam zu sehen. Siehe [Den Verlauf öffnen](/guide/history/browse/#open).
 

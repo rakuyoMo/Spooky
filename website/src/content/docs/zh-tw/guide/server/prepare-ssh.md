@@ -76,7 +76,7 @@ Host driftwood-server
 
 ::screenshot[設定視窗的 SSH 主機頁。列表有別名、伺服器位址、使用者名稱、連接埠與私密金鑰路徑五欄，裡面是 staging、backup-nas 與 driftwood-server 三個別名，選取的是 driftwood-server。列表下方有加入與移除按鈕，右邊是「編輯…」按鈕。]{name="settings-ssh-hosts" frame="window"}
 
-- 想修改別名，選取它，按一下 :ui[sshHosts.edit]。Spooky 只改你動過的那幾項對應的行。這台伺服器別的 SSH 選項、別的伺服器和註解都保持原樣。
+- 想修改別名，按兩下它，或者選取它，再按一下 :ui[sshHosts.edit] 或按 <kbd>Return</kbd>。Spooky 只改你動過的那幾項對應的行。這台伺服器別的 SSH 選項、別的伺服器和註解都保持原樣。
 - 想刪除別名，選取它，按一下列表下方的移除按鈕，再確認。Spooky 刪掉它的 `Host` 行和下面的選項。
 
 帶幾個名稱或萬用字元的項目（例如 `Host *`）不在列表裡，Spooky 也不會更動它們。這些項目用文字編輯器改。

@@ -194,6 +194,7 @@ With the mouse, hold <kbd>⇧</kbd> and click a line number to select every line
 | The conversation of a pull request | <kbd>⌘S</kbd> | Clicks :ui[pullRequests.addComment] |
 | :ui[settings.themes] in Settings | <kbd>↩</kbd> | Renames the selected theme |
 | :ui[settings.appIcon.label] in Settings | Arrow keys, <kbd>Space</kbd> | Move between the icons, and use the one you’re on |
+| :ui[settings.sshHosts] in Settings | <kbd>↩</kbd> | Opens the selected alias for editing |
 
 In lists where you can select several items, <kbd>⇧</kbd>-click selects a range. <kbd>⌘</kbd>-click adds or removes a single item. In the sidebar, <kbd>⌘</kbd>-click branches and tags to see their history together. See [Open the history](/guide/history/browse/#open).
 

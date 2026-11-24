@@ -194,6 +194,7 @@ Con el ratón, mantén pulsada <kbd>⇧</kbd> y haz clic en un número de línea
 | La conversación de una pull request | <kbd>⌘S</kbd> | Hace clic en :ui[pullRequests.addComment] |
 | :ui[settings.themes] en Ajustes | <kbd>↩</kbd> | Renombra el tema seleccionado |
 | :ui[settings.appIcon.label] en Ajustes | Teclas de flecha, <kbd>Espacio</kbd> | Pasan de un icono a otro, y usan aquel en el que estás |
+| :ui[settings.sshHosts] en Ajustes | <kbd>↩</kbd> | Abre el alias seleccionado para editarlo |
 
 En las listas en las que puedes seleccionar varios ítems, hacer clic con <kbd>⇧</kbd> pulsada selecciona un intervalo. Hacer clic con <kbd>⌘</kbd> pulsada añade o quita un solo ítem. En la barra lateral, haz clic con <kbd>⌘</kbd> pulsada en ramas y etiquetas para ver su historial junto. Consulta [Abrir el historial](/guide/history/browse/#open).
 

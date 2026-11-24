@@ -194,6 +194,7 @@ description: "Spooky のすべてのキーボードショートカットを調�
 | プルリクエストの会話 | <kbd>⌘S</kbd> | :ui[pullRequests.addComment] をクリックします |
 | 設定の :ui[settings.themes] | <kbd>↩</kbd> | 選択したテーマの名前を変更します |
 | 設定の :ui[settings.appIcon.label] | 矢印キー、<kbd>スペース</kbd> | アイコンの間を移動し、いまのアイコンを使います |
+| 設定の :ui[settings.sshHosts] | <kbd>↩</kbd> | 選択したエイリアスを編集します |
 
 複数の項目を選択できる一覧では、<kbd>⇧</kbd> を押しながらクリックすると範囲を選択します。<kbd>⌘</kbd> を押しながらクリックすると、項目を 1 つずつ追加または解除します。サイドバーでは、<kbd>⌘</kbd> を押しながらブランチやタグをクリックすると、それらの履歴をまとめて表示できます。[履歴を開く](/guide/history/browse/#open) を参照してください。
 

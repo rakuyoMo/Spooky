@@ -76,7 +76,7 @@ Host driftwood-server
 
 ::screenshot[설정 윈도우의 SSH 호스트 페이지. 목록에는 별칭, 서버 주소, 사용자 이름, 포트, 개인 키 열이 있습니다. staging, backup-nas, driftwood-server 세 개의 별칭이 있고 driftwood-server가 선택되어 있습니다. 목록 아래에 추가 버튼과 제거 버튼이 있고, 오른쪽에 편집… 버튼이 있습니다.]{name="settings-ssh-hosts" frame="window"}
 
-- 별칭을 바꾸려면 선택하고 :ui[sshHosts.edit]을 클릭합니다. Spooky는 편집한 필드의 줄만 바꿉니다. 그 서버의 다른 SSH 옵션, 다른 서버, 주석은 그대로 둡니다.
+- 별칭을 바꾸려면 이중 클릭하거나, 선택한 다음 :ui[sshHosts.edit]을 클릭하거나 <kbd>Return</kbd>을 누릅니다. Spooky는 편집한 필드의 줄만 바꿉니다. 그 서버의 다른 SSH 옵션, 다른 서버, 주석은 그대로 둡니다.
 - 별칭을 삭제하려면 선택하고 목록 아래의 제거 버튼을 클릭한 다음 확인합니다. Spooky는 그 별칭의 `Host` 줄과 그 아래의 옵션을 삭제합니다.
 
 이름이 여러 개인 항목이나 `Host *`처럼 패턴을 쓰는 항목은 목록에 나오지 않으며, Spooky가 변경하지도 않습니다. 이런 항목은 텍스트 편집기에서 편집합니다.
