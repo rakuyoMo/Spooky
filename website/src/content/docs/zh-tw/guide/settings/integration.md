@@ -94,7 +94,7 @@ Spooky 第一次開啟 Terminal 或 iTerm 時，macOS 會問是否允許 Spooky 
 
 ## Finder {#finder}
 
-- **顯示資料夾**：:ui[action.revealFinder] 在 Finder 裡顯示儲存庫資料夾或檔案。伺服器儲存庫需要有本機位置，見 [顯示於 Finder](/guide/server/local-location/#show-in-finder)。
+- **顯示資料夾**：:ui[action.revealFinder] 在 Finder 裡顯示儲存庫資料夾或檔案。伺服器儲存庫需要有在這台 Mac 上的位置，見 [顯示於 Finder](/guide/server/local-location/#show-in-finder)。
 - **加入儲存庫**：把儲存庫資料夾從 Finder 拖進儲存庫管理視窗。見 [加入儲存庫](/guide/repositories/manager/#add)。
 - **Dock**：把資料夾拖到 Spooky 的圖示上，開啟它所在的儲存庫。在圖示上按右鍵，可以選一個最近的儲存庫，伺服器儲存庫也在裡面。見 [最近的儲存庫與 Dock](/guide/repositories/navigation/#recent)。
 - **主題**：在 Finder 裡開啟 `.spookytheme` 檔案，就能加入主題。見 [分享主題](/guide/settings/appearance/#share-themes)。
@@ -103,5 +103,5 @@ Spooky 第一次開啟 Terminal 或 iTerm 時，macOS 會問是否允許 Spooky 
 
 - [一般、更新與環境](/guide/settings/general/)
 - [身分設定檔與 Git 設定](/guide/settings/identity/)
-- [本機位置](/guide/server/local-location/)
+- [在這台 Mac 上的位置](/guide/server/local-location/)
 - [準備 SSH](/guide/server/prepare-ssh/)

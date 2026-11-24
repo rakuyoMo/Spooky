@@ -154,7 +154,7 @@ const transferArrow = (kind: 'fetch' | 'pull' | 'push' | 'forcePush'): string =>
 /** 全部图标，按名字取。 */
 export const icons = {
     folder: line('<path d="M2.5 5v8.5A1.5 1.5 0 0 0 4 15h10a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 14 5H8.6L7.1 3H4A1.5 1.5 0 0 0 2.5 4.5Z"/><path d="M2.5 7.2h13"/>'),
-    folderOpen: line('<path d="M2.5 13.2V4.5A1.5 1.5 0 0 1 4 3h3.1l1.5 2H13a1.5 1.5 0 0 1 1.5 1.5v1.1"/><path d="M2.5 13.6 4.3 8.5a1.4 1.4 0 0 1 1.3-.9h9.6a.8.8 0 0 1 .75 1.08l-1.9 5.4a1.4 1.4 0 0 1-1.32.92H3.9a1.4 1.4 0 0 1-1.4-1.4Z"/>'),
+    finder: line('<rect x="2.25" y="2.25" width="13.5" height="13.5" rx="3.2"/><path d="M9.1 2.4Q7.9 6 7.6 9.4h1.6Q9 12.6 9.4 15.6M5.9 5.9v1.5M12.3 5.9v1.5M5.2 11.5q3.8 2.6 7.6 0"/>'),
     terminal: line('<rect x="2.25" y="3.25" width="13.5" height="11.5" rx="2.2"/><path d="m5.6 7 2.3 2-2.3 2M9.8 11.4h2.8"/>'),
     clock: line('<circle cx="9" cy="9" r="6.8"/><path d="M9 5v4.2l2.6 1.6"/>'),
     tray: line('<path d="M2.5 10.5 4.6 4h8.8l2.1 6.5V14a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1Z"/><path d="M2.5 10.5h3.8l.9 1.7h3.6l.9-1.7h3.8M6 6.6h6M5.4 8.6h7.2"/>'),

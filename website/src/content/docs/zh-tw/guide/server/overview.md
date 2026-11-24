@@ -34,7 +34,7 @@ Spooky 用 macOS 內建的 SSH 連線伺服器。它用的是 `~/.ssh/config` �
 
 Spooky 不需要管理者權限，也不安裝常駐服務。它在伺服器上只留下兩樣東西：
 
-- **`~/.spooky/bin/` 裡的一個輔助指令碼**，在你伺服器上的個人資料夾裡。它負責把 Git 的詢問轉回 Mac。Spooky 連線時把它放進去，留給以後的連線用。這個資料夾裡以 `-askpass`、`-gpg` 等結尾的其他名字，都是指向同一個檔案的連結。
+- **`~/.spooky/bin/` 裡的一個輔助指令碼**，在你伺服器上的個人資料夾裡。它負責把 Git 的詢問轉回 Mac。Spooky 連線時把它放進去，留給以後的連線用。每次安裝時，Spooky 會刪掉 30 天內沒用過的舊版本。這個資料夾裡以 `-askpass`、`-gpg` 等結尾的其他名字，都是指向同一個檔案的連結。
 - **`/tmp/spooky-*` 裡的暫存檔**，儲存庫開啟期間才有。關閉儲存庫時，Spooky 會刪掉它們。
 
 輔助指令碼用 `/usr/bin/perl` 執行，大多數 macOS 與 Linux 伺服器都內建。完整的需求見 [系統需求](/reference/requirements/#servers)。
@@ -57,7 +57,7 @@ Spooky 不需要管理者權限，也不安裝常駐服務。它在伺服器上�
 |---|---|
 | 伺服器上的變更 | 儲存庫視窗在最前面時，Spooky 每 2 秒查一次伺服器上的變化，其餘時候每 10 秒查一次。伺服器回得慢時，會查得少一些。 |
 | 連線中斷 | 仍然可以檢視 Spooky 上次讀到的內容，但重新連上之前不能做任何變更。 |
-| :ui[action.revealFinder] | Finder 要在 Mac 上有一個能看到伺服器檔案的資料夾，見 [本機位置](/guide/server/local-location/)。 |
+| :ui[action.revealFinder] | Finder 要在 Mac 上有一個能看到伺服器檔案的資料夾，見 [在這台 Mac 上的位置](/guide/server/local-location/)。 |
 | :ui[action.openTerminal] | 終端機用 `ssh` 登入伺服器，進入儲存庫所在的資料夾。 |
 | :ui[action.copyPath] | 拷貝的路徑以主機別名開頭，例如 `driftwood-server:/srv/git/driftwood`。 |
 | 用別的 App 開啟檔案 | 大多數 App 拿到的是檔案副本。儲存後，Spooky 把變更寫回伺服器，見 [終端機與其他 App](/guide/server/local-location/#terminal)。 |

@@ -129,7 +129,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 
 | 在哪裡 | 變成什麼 |
 |---|---|
-| 工具列裡擷取、拉取、推送、同步、合併與重定基底的按鈕 | 變成快速版本。見 [擷取、拉取與推送](/guide/branches/sync/#quick)。 |
+| 工具列裡擷取、拉取、推送的按鈕，以及加進工具列的同步、合併與重定基底按鈕 | 變成快速版本。見 [擷取、拉取與推送](/guide/branches/sync/#quick)。 |
 | 提交區，前提是沒有在編輯任何訊息欄 | 切換到修補上一次提交。見 [修補上一次提交](/guide/work/commit/#amend)。 |
 | 檔案列表上方的 :ui[working.stageAll]，前提是只暫存了一部分變更 | 變成 :ui[working.unstageAll]。見 [暫存整個檔案](/guide/work/diff/#stage-file)。 |
 | 工作區裡檔案的選單 | 儲藏的幾項變成快速版本。見 [儲藏部分檔案](/guide/work/stash/#partial)。 |

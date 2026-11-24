@@ -25,7 +25,7 @@ description: "新增、簽出、追蹤、重新命名、刪除、釘選與封存
 
 ## 新增分支 {#create}
 
-1. 選 :ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）。也可以按一下側邊欄底部的新增按鈕，或者在 :ui[branch.group] 上按右鍵，在選單裡選它。
+1. 按一下工具列上的 :ui[toolbar.createBranch]，或者選 :ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）。也可以按一下側邊欄底部的新增按鈕，或者在 :ui[branch.group] 上按右鍵，在選單裡選它。
 2. 在 :ui[reference.name] 裡輸入名稱。
 3. 在 :ui[branch.start] 裡選分支從哪裡開始。一開始是目前所在的分支，或者你按右鍵的那一項。
 4. 設定選項：

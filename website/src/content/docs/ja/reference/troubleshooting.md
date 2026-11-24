@@ -74,7 +74,7 @@ Spooky には、Mac とサーバの両方で Git 2.41.0 以降が必要です。
 
 4. もう一度 :ui[settings.environment.server.check] をクリックするか、[サーバに接続できない](#connect) のテストを実行します。そのあと、再接続します。
 
-Git LFS と、フックが実行するプログラムも、同じ `PATH` で探されます。ターミナルでは動くのに Spooky からは動かない場合は、同じ方法でそれらのフォルダを追加します。
+Git LFS と、フックが実行するプログラムも、同じ `PATH` で探されます。ターミナルでは動くのに Spooky からは動かない場合（コマンドが :ui[hostError.lfsUnavailable] で失敗する場合など）は、同じ方法でそれらのフォルダを追加します。
 
 ## アクセス権の問題 {#permissions}
 

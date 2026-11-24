@@ -105,7 +105,7 @@ export function quickItems(context: RenderContext): QuickItem[] {
 
 // MARK: - Private
 
-/** 推送对话框：应用图标、标题与说明、目标分支、选项与两个按钮。 */
+/** 推送对话框：应用图标、标题与说明、目标分支、选项，底下是帮助按钮与两个按钮。 */
 function pushSheet(context: RenderContext): string {
     const { state, data, text } = context;
     const branch = headBranch(state, data);
@@ -129,6 +129,7 @@ function pushSheet(context: RenderContext): string {
         `<button type="button" class="sd-disclosure" data-action="unavailable" aria-expanded="false">` +
         `${icon('chevronRight', 'sd-icon sd-chevron')}${esc(text.t('dialog.options'))}</button>` +
         `<div class="sd-sheet-buttons">` +
+        button({ action: 'unavailable', className: 'sd-help', content: '?', label: text.t('help.help') }) +
         button({ action: 'close', className: 'sd-button', content: esc(text.t('action.cancel')) }) +
         button({
             action: 'confirm-push',

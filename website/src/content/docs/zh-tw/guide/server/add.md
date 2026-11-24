@@ -11,7 +11,7 @@ description: "逐項填寫「加入伺服器儲存庫」對話框，看懂連線
 
 ## 填寫對話框 {#dialog}
 
-::screenshot[加入伺服器儲存庫對話框。主機別名是 spooky-test。儲存庫路徑是 /srv/git/driftwood，旁邊有「瀏覽」按鈕。掛載到本機選的是「不掛載」。按鈕是「取消」與「開啟」。]{name="add-server" frame="dialog"}
+::screenshot[加入伺服器儲存庫對話框。主機別名是 spooky-test。儲存庫路徑是 /srv/git/driftwood，旁邊有「瀏覽」按鈕。掛載到這台 Mac 選的是「不掛載」。按鈕是「取消」與「開啟」。]{name="add-server" frame="dialog"}
 
 | 這一項 | 填什麼 |
 |---|---|
@@ -81,4 +81,4 @@ description: "逐項填寫「加入伺服器儲存庫」對話框，看懂連線
 
 - [準備 SSH](/guide/server/prepare-ssh/)
 - [連線狀態與重新連線](/guide/server/connection/)
-- [本機位置](/guide/server/local-location/)
+- [在這台 Mac 上的位置](/guide/server/local-location/)

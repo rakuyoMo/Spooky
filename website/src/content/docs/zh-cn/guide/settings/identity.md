@@ -105,7 +105,7 @@ Git 在每个提交里记下姓名与邮箱，还可以用密钥为它签名。S
 | 项 | 显示什么 |
 |---|---|
 | :ui[repositorySettings.name] 与 :ui[repositorySettings.path] | 仓库在哪里 |
-| :ui[repositorySettings.localLocation] | 服务器仓库的文件夹在这台 Mac 上的位置。见 [设置本机位置](/guide/server/local-location/#set)。 |
+| :ui[repositorySettings.localLocation] | 服务器仓库的文件夹在这台 Mac 上的位置。见 [设置位置](/guide/server/local-location/#set)。 |
 | :ui[bookmarks.detail.description] | 仓库的描述，[仓库管理窗口](/guide/repositories/manager/) 里也会显示。点 :ui[bookmarks.detail.edit] 修改。 |
 | :ui[bookmarks.detail.identity] | 这个仓库提交时用的姓名与邮箱。点头像选用 [档案](#use-profile)，或者点 :ui[bookmarks.detail.edit]，输入只给这个仓库用的姓名与邮箱。 |
 

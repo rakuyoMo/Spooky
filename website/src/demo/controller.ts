@@ -4,6 +4,8 @@ import type { ChangeData, DemoState, RepoData, Step } from './model.ts';
 import {
     commit,
     createState,
+    multilineParts,
+    newline,
     push,
     selectCommit,
     selectFile,
@@ -97,6 +99,7 @@ class Demo {
         this.frame.addEventListener('click', (event) => this.click(event));
         this.frame.addEventListener('keydown', (event) => this.keydown(event));
         this.frame.addEventListener('input', (event) => this.input(event));
+        this.frame.addEventListener('paste', (event) => this.paste(event));
         root.addEventListener('click', (event) => this.guideClick(event));
         root.addEventListener('pointerover', (event) => this.highlight(event.target));
         root.addEventListener('pointerout', () => this.highlight(null));
@@ -496,6 +499,17 @@ class Demo {
             return;
         }
 
+        // 标题框里的回车转到正文；输入法选字时的回车留给输入法
+        if (event.key === 'Enter' && target.dataset.input === 'subject') {
+            // Safari 里确认选字的那次回车 isComposing 已是 false，只能靠 keyCode 229 认出
+            if (!event.isComposing && event.keyCode !== 229) {
+                event.preventDefault();
+                this.frame.querySelector<HTMLElement>('[data-input="body"]')?.focus();
+            }
+
+            return;
+        }
+
         if (command && event.shiftKey && event.key.toLowerCase() === 'a') {
             event.preventDefault();
             this.openOverlay('quick', target);
@@ -679,6 +693,30 @@ class Demo {
                 this.update(this.state, { query: field.value, quickIndex: 0 });
                 break;
         }
+    }
+
+    /** 标题框里粘贴多行文字：第一行插到光标处，其余接到正文后面。 */
+    private paste(event: ClipboardEvent): void {
+        const field = event.target as HTMLInputElement;
+        const pasted = event.clipboardData?.getData('text/plain') ?? '';
+
+        // 只接管标题框里带换行的粘贴，单行文字照常粘贴
+        if (field.dataset.input !== 'subject' || !newline.test(pasted)) {
+            return;
+        }
+
+        event.preventDefault();
+
+        // 第一行替换选中的文字、插到光标处，光标停在它后面；其余接到正文后面
+        const parts = multilineParts(pasted, this.state.body);
+
+        field.setRangeText(
+            parts.subject,
+            field.selectionStart ?? 0,
+            field.selectionEnd ?? 0,
+            'end',
+        );
+        this.update({ ...this.state, subject: field.value, body: parts.body });
     }
 
     // MARK: - 步骤条

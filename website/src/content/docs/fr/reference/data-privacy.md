@@ -30,7 +30,7 @@ Les alias d’hôte que vous ajoutez dans :ui[app.name > settings.title] › :ui
 
 En plus du dépôt lui-même, Spooky écrit à deux endroits sur un serveur :
 
-- `~/.spooky/bin/` dans votre dossier de départ : un petit script que Spooky exécute via SSH, ainsi que des liens vers lui pour les demandes et la signature. Il y reste pour la prochaine connexion. Supprimez le dossier pour l’enlever.
+- `~/.spooky/bin/` dans votre dossier de départ : un petit script que Spooky exécute via SSH, ainsi que des liens vers lui pour les demandes et la signature. Il y reste pour la prochaine connexion. À chaque installation, Spooky supprime les anciennes versions qui n’ont pas servi depuis 30 jours. Supprimez le dossier pour l’enlever.
 - `/tmp/spooky-*` : les fichiers de la connexion en cours. Ils sont supprimés à la fermeture de la connexion.
 
 Quand Spooky cherche l’[emplacement sur ce Mac](/guide/server/local-location/#automatic) d’un dépôt, il place brièvement un fichier vide dans le dossier Git du dépôt. Il supprime le fichier juste après la vérification.

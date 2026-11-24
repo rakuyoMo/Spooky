@@ -7,7 +7,7 @@ description: "저장소를 책갈피에 추가하고, 그룹으로 묶고, 열�
 
 저장소에서 목록으로 가려면 도구 막대의 :ui[toolbar.bookmarks]를 클릭하거나 :ui[menu.view > menu.showRepositories](<kbd>⌃⌘R</kbd>)를 선택합니다.
 
-::screenshot[저장소 윈도우. 사이드바에 Driftwood Labs와 Notes 두 그룹이 있고 그 안에 저장소가 들어 있습니다. 그중 하나는 이름이 호스트 별칭으로 시작하는 서버 저장소입니다. 오른쪽에는 선택한 저장소 driftwood의 세부사항이 있습니다. 위치, 마지막으로 연 시점, 마지막 커밋, 설명, 커미터 정보, 현재 브랜치, 변경된 파일 수, 원격이 표시됩니다.]{name="repositories" frame="window"}
+::screenshot[저장소 윈도우. 사이드바에 Driftwood Labs와 Notes 두 그룹이 있고 그 안에 저장소가 들어 있습니다. 그중 하나는 이름이 호스트 별칭으로 시작하는 서버 저장소입니다. 오른쪽에는 선택한 저장소 driftwood의 세부사항이 있습니다. 위치, 마지막으로 연 시점, 마지막 커밋, 설명, 커미터 신원, 현재 브랜치, 변경된 파일 수, 원격이 표시됩니다.]{name="repositories" frame="window"}
 
 ## 저장소 추가하기 {#add}
 
@@ -88,7 +88,7 @@ Mac에서는 폴더가 홈 폴더에서 시작하거나, :ui[app.name > settings
 - :ui[bookmarks.open]{1="driftwood"}와 :ui[bookmarks.openNewWindow]{1="driftwood"}
 - :ui[action.revealFinder], :ui[action.copyPath], :ui[action.openTerminal]
 
-오른쪽의 세부사항에도 :ui[action.open] 버튼과 :ui[bookmarks.multiple.delete] 버튼이 있습니다. 거기에서 :ui[bookmarks.detail.edit]을 클릭하면 :ui[bookmarks.detail.description]과 :ui[bookmarks.detail.identity]를 바꿀 수 있습니다. :ui[bookmarks.detail.unset]는 이 저장소에만 설정한 커미터 정보를 지웁니다. 각 원격 옆의 :ui[bookmarks.detail.viewInBrowser]는 그 원격의 웹 페이지를 엽니다. 설명과 커미터 정보는 [저장소 설정](/guide/settings/identity/#repository)에 나오는 것과 같습니다.
+오른쪽의 세부사항에도 :ui[action.open] 버튼과 :ui[bookmarks.multiple.delete] 버튼이 있습니다. 거기에서 :ui[bookmarks.detail.edit]을 클릭하면 :ui[bookmarks.detail.description]과 :ui[bookmarks.detail.identity]를 바꿀 수 있습니다. :ui[bookmarks.detail.unset]는 이 저장소에만 설정한 커미터 신원을 지웁니다. 각 원격 옆의 :ui[bookmarks.detail.viewInBrowser]는 그 원격의 웹 페이지를 엽니다. 설명과 커미터 신원은 [저장소 설정](/guide/settings/identity/#repository)에 나오는 것과 같습니다.
 
 :::note[서버 저장소]
 :ui[action.copyPath]는 `alias:/path/to/repository`처럼 앞에 호스트 별칭이 붙은 경로를 복사합니다. Spooky는 서버 저장소를 선택했을 때만 그 세부사항을 읽습니다. 서버 저장소를 선택하면 서버에 연결할 수 있습니다.

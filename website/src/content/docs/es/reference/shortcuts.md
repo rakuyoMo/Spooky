@@ -129,7 +129,7 @@ Mantener pulsada <kbd>⌥</kbd> cambia algunos botones y menús. Suéltala, y vu
 
 | Dónde | Qué cambia |
 |---|---|
-| Los botones de fetch, pull, push, sincronización, fusión y rebase de la barra de herramientas | Se convierten en versiones rápidas. Consulta [Fetch, pull y push](/guide/branches/sync/#quick). |
+| Los botones de fetch, pull y push de la barra de herramientas, y los de sincronización, fusión y rebase si los has añadido | Se convierten en versiones rápidas. Consulta [Fetch, pull y push](/guide/branches/sync/#quick). |
 | El área de commit, mientras no se edita ninguno de los dos campos del mensaje | Pasa a enmendar el último commit. Consulta [Enmendar el último commit](/guide/work/commit/#amend). |
 | :ui[working.stageAll] encima de la lista de archivos, mientras solo algunos cambios están en el stage | Se convierte en :ui[working.unstageAll]. Consulta [Añadir archivos enteros al stage](/guide/work/diff/#stage-file). |
 | El menú de los archivos de la copia de trabajo | Los ítems de stash se convierten en versiones rápidas. Consulta [Guardar algunos archivos en un stash](/guide/work/stash/#partial). |

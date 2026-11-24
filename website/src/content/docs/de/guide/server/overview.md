@@ -34,7 +34,7 @@ Bei einem Remote, das per SSH erreicht wird, muss der Server dessen Host-Schlüs
 
 Spooky braucht keinen Administratorzugriff und installiert keinen Dienst. Es hinterlässt zwei Dinge auf dem Server:
 
-- **Ein Hilfsskript in `~/.spooky/bin/`** in Ihrem Benutzerordner auf dem Server. Es gibt Gits Fragen an Ihren Mac weiter. Spooky legt es beim Verbinden dort ab und behält es für spätere Verbindungen. Die anderen Namen in diesem Ordner, die auf `-askpass`, `-gpg` und so weiter enden, sind Links auf dieselbe Datei.
+- **Ein Hilfsskript in `~/.spooky/bin/`** in Ihrem Benutzerordner auf dem Server. Es gibt Gits Fragen an Ihren Mac weiter. Spooky legt es beim Verbinden dort ab und behält es für spätere Verbindungen. Bei jeder Installation löscht Spooky ältere Versionen, die 30 Tage lang nicht verwendet wurden. Die anderen Namen in diesem Ordner, die auf `-askpass`, `-gpg` und so weiter enden, sind Links auf dieselbe Datei.
 - **Temporäre Dateien in `/tmp/spooky-*`**, solange ein Repository geöffnet ist. Spooky entfernt sie, wenn Sie das Repository schließen.
 
 Das Hilfsskript läuft mit `/usr/bin/perl`, das die meisten macOS- und Linux-Server bereits haben. Die vollständige Liste finden Sie unter [Systemanforderungen](/reference/requirements/#servers).

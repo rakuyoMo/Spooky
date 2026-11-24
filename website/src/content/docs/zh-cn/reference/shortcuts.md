@@ -129,7 +129,7 @@ description: "查阅 Spooky 的全部键盘快捷键。"
 
 | 在哪里 | 变成什么 |
 |---|---|
-| 工具栏里获取、拉取、推送、同步、合并与变基的按钮 | 变成快速版本。见 [获取、拉取与推送](/guide/branches/sync/#quick)。 |
+| 工具栏里获取、拉取、推送的按钮，以及加进工具栏的同步、合并与变基按钮 | 变成快速版本。见 [获取、拉取与推送](/guide/branches/sync/#quick)。 |
 | 提交区，前提是没有在编辑任何信息框 | 切换到修补上一次提交。见 [修补上一次提交](/guide/work/commit/#amend)。 |
 | 文件列表上方的 :ui[working.stageAll]，前提是只暂存了一部分改动 | 变成 :ui[working.unstageAll]。见 [暂存整个文件](/guide/work/diff/#stage-file)。 |
 | 工作区里文件的菜单 | 储藏的几项变成快速版本。见 [储藏部分文件](/guide/work/stash/#partial)。 |

@@ -74,7 +74,7 @@ Spooky 需要 Git 2.41.0 或以上版本，Mac 上和伺服器上都一樣。
 
 4. 再按一次 :ui[settings.environment.server.check]，或者執行 [連不上伺服器](#connect) 裡的測試指令。然後重新連線。
 
-伺服器上的 Git LFS，以及掛鉤呼叫的程式，也是按同一個 `PATH` 找的。它們在終端機裡能用、經 Spooky 卻不行的話，用同樣的辦法把它們的資料夾加進去。
+伺服器上的 Git LFS，以及掛鉤呼叫的程式，也是按同一個 `PATH` 找的。它們在終端機裡能用、經 Spooky 卻不行的話（例如命令失敗並提示 :ui[hostError.lfsUnavailable]），用同樣的辦法把它們的資料夾加進去。
 
 ## 權限問題 {#permissions}
 

@@ -34,7 +34,7 @@ For a remote reached over SSH, the server has to know the remote’s host key al
 
 Spooky doesn’t need administrator access, and it doesn’t install a service. It leaves two things on the server:
 
-- **A helper script in `~/.spooky/bin/`** in your home folder on the server. It passes Git’s questions back to your Mac. Spooky puts it there when it connects and keeps it for later connections. The other names in that folder, ending in `-askpass`, `-gpg`, and so on, are links to the same file.
+- **A helper script in `~/.spooky/bin/`** in your home folder on the server. It passes Git’s questions back to your Mac. Spooky puts it there when it connects and keeps it for later connections. Each time Spooky installs the helper, it deletes older versions that haven’t been used for 30 days. The other names in that folder, ending in `-askpass`, `-gpg`, and so on, are links to the same file.
 - **Temporary files in `/tmp/spooky-*`** while a repository is open. Spooky removes them when you close the repository.
 
 The helper runs with `/usr/bin/perl`, which most macOS and Linux servers already have. For the full list, see [System Requirements](/reference/requirements/#servers).

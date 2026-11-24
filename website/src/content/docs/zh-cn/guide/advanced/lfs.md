@@ -20,6 +20,8 @@ Git LFS 2.9.0 或更新的版本，要在仓库所在机器上 Git 用的 `PATH`
 
 缺少 Git LFS 时，这一段里需要它的按钮都不可用。
 
+在用了 Git LFS 的仓库里，切换分支、暂存等操作也会因此失败，Spooky 会提示 :ui[hostError.lfsUnavailable]，并给出同样的解决办法。
+
 ## 启用 Git LFS {#enable}
 
 在仓库设置的 :ui[repositorySettings.lfs] 一段里点 :ui[lfs.enable]。这只为这个仓库设置 Git LFS，不改动你的全局 Git 配置，见 [Git LFS、忽略与排除](/guide/settings/identity/#repository-files)。

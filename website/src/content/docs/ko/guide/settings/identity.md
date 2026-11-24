@@ -5,8 +5,8 @@ description: "사용자 프로필과 Git 구성을 관리하고, 저장소 하�
 
 Git은 모든 커밋에 이름과 이메일을 기록하고, 키로 서명할 수도 있습니다. Spooky에서는 세 곳에서 이를 설정합니다.
 
-- :ui[app.name > settings.title]의 :ui[settings.profiles]에는 바꿔 가며 쓰는 커미터 정보를 보관합니다.
-- :ui[app.name > settings.title]의 :ui[settings.gitConfig]에서는 Git 프로그램과 전역 커미터 정보, 서명을 설정합니다.
+- :ui[app.name > settings.title]의 :ui[settings.profiles]에는 바꿔 가며 쓰는 커미터 신원을 보관합니다.
+- :ui[app.name > settings.title]의 :ui[settings.gitConfig]에서는 Git 프로그램과 전역 커미터 신원, 서명을 설정합니다.
 - 저장소 하나의 설정은 그 저장소에서 전역 설정보다 우선합니다.
 
 ## 사용자 프로필 {#profiles}
@@ -24,11 +24,11 @@ Git은 모든 커밋에 이름과 이메일을 기록하고, 키로 서명할 �
 
 프로필을 바꾸려면 선택하고 :ui[profiles.edit]을 클릭합니다. 삭제하려면 선택하고 제거 버튼을 클릭합니다. 프로필을 삭제해도 Git 설정은 바뀌지 않습니다.
 
-지금 쓰는 커미터 정보가 아직 프로필이 아니면 그 메뉴에서 :ui[profiles.addCurrent]{1="alex@example.com"}를 선택합니다. 제목을 입력하고 :ui[profiles.add.submit]를 클릭합니다.
+지금 쓰는 커미터 신원이 아직 프로필이 아니면 그 메뉴에서 :ui[profiles.addCurrent]{1="alex@example.com"}를 선택합니다. 제목을 입력하고 :ui[profiles.add.submit]를 클릭합니다.
 
 ### 프로필 사용하기 {#use-profile}
 
-커미터 정보 옆의 사진을 클릭하면 프로필이 나오고, 사용 중인 프로필 옆에 체크 표시가 있습니다. 프로필을 선택했을 때 무엇이 바뀌는지는 선택한 곳에 따라 다릅니다.
+커미터 신원 옆의 사진을 클릭하면 프로필이 나오고, 사용 중인 프로필 옆에 체크 표시가 있습니다. 프로필을 선택했을 때 무엇이 바뀌는지는 선택한 곳에 따라 다릅니다.
 
 | 위치 | 바뀌는 것 | 먼저 묻는지 |
 |---|---|---|
@@ -40,17 +40,17 @@ Git은 모든 커밋에 이름과 이메일을 기록하고, 키로 서명할 �
 [빠른 동작](/guide/repositories/navigation/#quick-actions)에도 프로필이 나옵니다. :ui[quickActions.setCommitter]은 커밋 영역과 같은 방식으로 동작합니다. :ui[quickActions.setGlobalUser]은 먼저 물은 다음, 저장소가 있는 컴퓨터의 전역 Git 설정에 이름과 이메일을 설정합니다.
 
 :::note[서버 저장소]
-서버 저장소에서 프로필을 선택하면 서버에 있는 저장소의 설정이 바뀝니다. 거기에서 커밋하는 다른 도구도 같은 커미터 정보를 사용합니다. 서버 저장소에서 :ui[quickActions.setGlobalUser]은 서버의 전역 설정에 씁니다.
+서버 저장소에서 프로필을 선택하면 서버에 있는 저장소의 설정이 바뀝니다. 거기에서 커밋하는 다른 도구도 같은 커미터 신원을 사용합니다. 서버 저장소에서 :ui[quickActions.setGlobalUser]은 서버의 전역 설정에 씁니다.
 :::
 
 ## Git 구성 {#git-config}
 
-:ui[settings.gitConfig] 페이지는 네 부분으로 되어 있습니다. Git 프로그램, 커미터 정보, 서명, 외부 도구입니다. 도구는 [통합](/guide/settings/integration/#diff-merge-tools)에서 설명합니다.
+:ui[settings.gitConfig] 페이지는 네 부분으로 되어 있습니다. Git 프로그램, 커미터 신원, 서명, 외부 도구입니다. 도구는 [통합](/guide/settings/integration/#diff-merge-tools)에서 설명합니다.
 
 ::screenshot[설정 윈도우의 Git 구성 페이지. Git 프로그램, 전역 이름과 이메일, 서명 설정, 비교 및 병합 도구가 있습니다.]{name="settings-git-config" frame="window" markers="20,16.7 20,29.4 20,44.6 20,82.5"}
 
 1. Git 프로그램
-2. 커미터 정보
+2. 커미터 신원
 3. 서명
 4. 외부 도구
 
@@ -64,7 +64,7 @@ Git은 모든 커밋에 이름과 이메일을 기록하고, 키로 서명할 �
 이 설정은 로컬 저장소에만 적용됩니다. 서버 저장소는 서버의 Git을 사용합니다. [시스템 요구 사항](/reference/requirements/#servers)을 참고하세요.
 :::
 
-### 전역 커미터 정보 {#global-identity}
+### 전역 커미터 신원 {#global-identity}
 
 :ui[gitConfig.userName]과 :ui[gitConfig.email]은 Git의 전역 `user.name`과 `user.email`입니다. 이 Mac의 모든 저장소가 이 값을 사용합니다. 자체 값이 있는 저장소는 예외입니다.
 
@@ -95,7 +95,7 @@ Git은 모든 커밋에 이름과 이메일을 기록하고, 키로 서명할 �
 
 변경 내용은 저장소 자체의 Git 설정에 기록되고, 저장소의 다른 작업과 함께 차례를 기다립니다. 저장소가 설정하지 않은 것은 전역 설정에서 가져옵니다.
 
-::screenshot[주 윈도우의 저장소 설정. 일반 탭에 저장소의 이름, 경로, 설명, 커미터 정보, 서명 설정이 있습니다.]{name="settings-repository" frame="window" markers="79.2,9.8 60,38.8"}
+::screenshot[주 윈도우의 저장소 설정. 일반 탭에 저장소의 이름, 경로, 설명, 커미터 신원, 서명 설정이 있습니다.]{name="settings-repository" frame="window" markers="79.2,9.8 60,38.8"}
 
 1. 섹션을 전환하는 버튼
 2. :ui[bookmarks.detail.identity]

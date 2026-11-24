@@ -487,6 +487,31 @@ export function remainingCharacters(subject: string, body: string): number | nul
     return subjectLimit - subject.trim().length;
 }
 
+/** 各种换行：CRLF、LF、CR、垂直制表、换页、NEL 与 Unicode 的行分隔符、段分隔符。 */
+export const newline = /\r\n|[\n\v\f\r\u0085\u2028\u2029]/;
+
+/**
+ * 粘贴进标题的多行文字分到标题与正文：开头的空行之后第一行留给标题，其余去掉首尾空行后接到已有正文后面，
+ * 已有正文时另起一行；接上去的内容里换行一律写成 `\n`。
+ */
+export function multilineParts(text: string, body: string): { subject: string; body: string } {
+    const lines = text.split(newline);
+
+    // 跳过开头的空行，第一个不空的行是标题；全是空行时标题为空
+    const start = lines.findIndex((line) => line !== '');
+    const [subject = '', ...rest] = start === -1 ? [] : lines.slice(start);
+
+    // 其余的行统一用 `\n` 接起来，再去掉首尾的空行
+    const added = rest.join('\n').replace(/^\n+|\n+$/g, '');
+
+    // 没有可接的内容时正文不变；已有正文时另起一行接在后面
+    if (added === '') {
+        return { subject, body };
+    }
+
+    return { subject, body: body === '' ? added : `${body}\n${added}` };
+}
+
 /** Commit 按钮能不能按：有标题，且有已暂存的改动。 */
 export function canCommit(state: DemoState): boolean {
     return state.subject.trim() !== '' && hasStagedChanges(state);

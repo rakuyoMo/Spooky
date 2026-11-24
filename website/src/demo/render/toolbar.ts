@@ -52,7 +52,7 @@ export function renderActions(context: RenderContext): string {
     });
 
     return (
-        `<div class="sd-glass sd-cluster">${tool('unavailable', 'folderOpen', 'toolbar.finder')}` +
+        `<div class="sd-glass sd-cluster">${tool('unavailable', 'finder', 'toolbar.finder')}` +
         `${tool('unavailable', 'terminal', 'toolbar.terminal')}</div>` +
         `<span class="sd-host" data-tier="3" translate="no">${esc(data.host)}:</span>` +
         `<div class="sd-glass sd-capsule">${fetch}${tool('unavailable', 'pull', 'sync.pull')}` +
@@ -82,6 +82,6 @@ function subtitle(context: RenderContext): string {
             return text.t('history.subtitle', scope, historyCommits(state, data).length);
         }
         default:
-            return text.t('stash.subtitle', 1);
+            return text.count('stash.subtitle', 1);
     }
 }

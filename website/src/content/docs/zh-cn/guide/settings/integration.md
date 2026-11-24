@@ -94,7 +94,7 @@ Spooky 第一次打开 Terminal 或 iTerm 时，macOS 会问是否允许 Spooky 
 
 ## 访达 {#finder}
 
-- **显示文件夹**：:ui[action.revealFinder] 在访达里显示仓库文件夹或文件。服务器仓库需要有本机位置，见 [在访达中显示](/guide/server/local-location/#show-in-finder)。
+- **显示文件夹**：:ui[action.revealFinder] 在访达里显示仓库文件夹或文件。服务器仓库需要有在这台 Mac 上的位置，见 [在访达中显示](/guide/server/local-location/#show-in-finder)。
 - **添加仓库**：把仓库文件夹从访达拖进仓库管理窗口。见 [添加仓库](/guide/repositories/manager/#add)。
 - **程序坞**：把文件夹拖到 Spooky 的图标上，打开它所在的仓库。右键点按图标，可以选一个最近的仓库，服务器仓库也在里面。见 [最近的仓库与程序坞](/guide/repositories/navigation/#recent)。
 - **主题**：在访达里打开 `.spookytheme` 文件，就能添加主题。见 [分享主题](/guide/settings/appearance/#share-themes)。
@@ -103,5 +103,5 @@ Spooky 第一次打开 Terminal 或 iTerm 时，macOS 会问是否允许 Spooky 
 
 - [通用、更新与环境](/guide/settings/general/)
 - [身份档案与 Git 配置](/guide/settings/identity/)
-- [本机位置](/guide/server/local-location/)
+- [在这台 Mac 上的位置](/guide/server/local-location/)
 - [准备 SSH](/guide/server/prepare-ssh/)

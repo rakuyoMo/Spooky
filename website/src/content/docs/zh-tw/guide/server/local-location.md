@@ -1,9 +1,9 @@
 ---
-title: "本機位置"
-description: "透過自動尋找、SMB 掛載、sshfs 掛載或指定資料夾，給伺服器儲存庫一個本機位置，讓「顯示於 Finder」、終端機與外部編輯器能開啟它。"
+title: "在這台 Mac 上的位置"
+description: "透過自動尋找、SMB 掛載、sshfs 掛載或指定資料夾，給伺服器儲存庫一個在這台 Mac 上的位置，讓「顯示於 Finder」、終端機與外部編輯器能開啟它。"
 ---
 
-Finder 只能顯示 Mac 上的資料夾，伺服器儲存庫的檔案卻在伺服器上。要在 Finder 裡看到它們，Spooky 需要 Mac 上有一個能看到伺服器檔案的資料夾，通常是掛載的網路卷宗。這個資料夾就是儲存庫的本機位置。
+Finder 只能顯示 Mac 上的資料夾，伺服器儲存庫的檔案卻在伺服器上。要在 Finder 裡看到它們，Spooky 需要 Mac 上有一個能看到伺服器檔案的資料夾，通常是掛載的網路卷宗。這個資料夾就是儲存庫在這台 Mac 上的位置。
 
 這一頁講 Spooky 怎樣找到或掛載這個資料夾，以及終端機和別的 App 怎樣開啟伺服器儲存庫。
 
@@ -18,15 +18,15 @@ Finder 只能顯示 Mac 上的資料夾，伺服器儲存庫的檔案卻在伺�
 - 在儲存庫管理視窗裡對伺服器儲存庫按右鍵
 - 在工作區裡對檔案按右鍵，Finder 會選取這些檔案。
 
-已經知道本機位置、資料夾也在時，Finder 直接開啟。不然的話，Spooky 會跳出一個面板，按這幾步走：
+已經知道位置、資料夾也在時，Finder 直接開啟。不然的話，Spooky 會跳出一個面板，按這幾步走：
 
 1. 儲存庫沒連上的話，先連線。
 2. 尋找資料夾；方式是 SMB 或 sshfs 時，先掛載。
-3. 還是找不到資料夾，面板就換成設定本機位置的表單，頂部寫著原因，見 [設定本機位置](#set)。
+3. 還是找不到資料夾，面板就換成設定位置的表單，頂部寫著原因，見 [設定位置](#set)。
 
 按一下 :ui[action.cancel] 關掉面板，設定不會變。
 
-## 設定本機位置 {#set}
+## 設定位置 {#set}
 
 1. 在側邊欄的 :ui[workspace.group] 下，按一下 :ui[repositorySettings.title]。
 2. 在 :ui[repositorySettings.general] 頁找到 :ui[repositorySettings.localLocation]。這一列寫著方式與資料夾，或者沒有資料夾的原因，例如 :ui[localLocation.notMounted]。
@@ -36,7 +36,7 @@ Finder 只能顯示 Mac 上的資料夾，伺服器儲存庫的檔案卻在伺�
 
 Spooky 掛載或核對資料夾期間，表單不能改。按一下 :ui[action.cancel] 可以停下，原來的設定保持不變。
 
-本機位置按伺服器儲存庫分別存在這台 Mac 上，不會寫進儲存庫，也不會寫到伺服器上。
+位置按伺服器儲存庫分別存在這台 Mac 上，不會寫進儲存庫，也不會寫到伺服器上。
 
 SMB 或 sshfs 掛載的卷宗被退出後，這一列會出現 :ui[localLocation.mountAgain]，按一下它重新掛載。
 
@@ -81,7 +81,7 @@ Spooky 從不退出它掛載的卷宗。之後再開啟這個儲存庫時，Spoo
 
 ## 加入時掛載 {#when-adding}
 
-[加入伺服器儲存庫](/guide/server/add/) 時，:ui[remote.mount] 可以順手設好本機位置。它一開始是 :ui[remote.mount.none]。填好主機別名後，能用的話，選單會列出 :ui[remote.mount.smb] 與 :ui[remote.mount.sshfs]。兩個都不能用時，顯示 :ui[remote.mount.unavailable]。
+[加入伺服器儲存庫](/guide/server/add/) 時，:ui[remote.mount] 可以順手設好位置。它一開始是 :ui[remote.mount.none]。填好主機別名後，能用的話，選單會列出 :ui[remote.mount.smb] 與 :ui[remote.mount.sshfs]。兩個都不能用時，顯示 :ui[remote.mount.unavailable]。
 
 - **SMB**：儲存庫開啟後，macOS 顯示伺服器上的共享資料夾或登入視窗。取消的話，儲存庫照常開啟，儲存庫設定裡的 :ui[repositorySettings.localLocation] 會寫出沒掛上的原因。
 - **sshfs**：多出一列 :ui[localLocation.mountAt]，選一個空資料夾。儲存庫開啟後，Spooky 把它掛到那裡。
@@ -90,7 +90,7 @@ Spooky 從不退出它掛載的卷宗。之後再開啟這個儲存庫時，Spoo
 
 ## 終端機與其他 App {#terminal}
 
-下面這些在伺服器儲存庫裡不需要本機位置也能用：
+下面這些在伺服器儲存庫裡不需要在這台 Mac 上的位置也能用：
 
 - **:ui[action.openTerminal]** 開啟 :ui[app.name > settings.title] › :ui[settings.general] 裡選的終端機 App，用 `ssh -t` 和主機別名登入，進入儲存庫資料夾。伺服器不允許終端機的話，Spooky 會不帶終端機再連一次。指令照樣能執行，只是沒有行編輯，也用不了全螢幕程式。它在 :ui[menu.file] 選單裡，也是工具列上的 :ui[toolbar.terminal]；在工作區或儲存庫管理視窗裡的儲存庫上按右鍵也能找到。終端機 App 的選擇見 [終端機](/guide/settings/integration/#terminal)。
 - **:ui[action.copyPath]** 拷貝的路徑前面帶著主機別名，例如 `driftwood-server:/srv/git/driftwood`。

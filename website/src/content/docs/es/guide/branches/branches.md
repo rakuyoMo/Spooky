@@ -25,7 +25,7 @@ En :ui[remote.group], un icono de casa marca la rama predeterminada de cada remo
 
 ## Crear una rama {#create}
 
-1. Selecciona :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). También puedes hacer clic en el botón de añadir de la parte inferior de la barra lateral, o hacer clic derecho en :ui[branch.group], y seleccionarlo en el menú.
+1. Haz clic en :ui[toolbar.createBranch] en la barra de herramientas, o selecciona :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). También puedes hacer clic en el botón de añadir de la parte inferior de la barra lateral, o hacer clic derecho en :ui[branch.group], y seleccionarlo en el menú.
 2. Escribe el nombre en :ui[reference.name].
 3. Elige dónde empieza la rama en :ui[branch.start]. Al principio es la rama en la que estás, o aquello en lo que hiciste clic derecho para llegar aquí.
 4. Ajusta las opciones:

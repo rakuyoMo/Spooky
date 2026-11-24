@@ -15,7 +15,7 @@ description: "了解这份手册怎样组织、从哪里开始读。"
 |---|---|
 | [开始使用](/guide/start/install/) | 安装与更新 Spooky，认识窗口的各个部分，完成第一次提交与推送 |
 | [管理仓库](/guide/repositories/manager/) | 管理你的仓库，窗口与标签页，后退与前进，快捷操作 |
-| [服务器仓库](/guide/server/overview/) | Spooky 怎样处理服务器上的仓库，准备 SSH，添加服务器仓库，连接，本机位置 |
+| [服务器仓库](/guide/server/overview/) | Spooky 怎样处理服务器上的仓库，准备 SSH，添加服务器仓库，连接，在这台 Mac 上的位置 |
 | [日常工作](/guide/work/working-copy/) | 工作区，查看与暂存改动，提交，储藏，冲突，撤销 |
 | [历史](/guide/history/browse/) | 浏览历史，提交详情，文件历史与 Blame，改写历史 |
 | [分支与同步](/guide/branches/branches/) | 分支，标签与远端，获取、拉取与推送，合并与变基，整理分支 |

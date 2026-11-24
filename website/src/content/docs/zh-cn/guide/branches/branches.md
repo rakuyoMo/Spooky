@@ -25,7 +25,7 @@ description: "新建、检出、跟踪、改名、删除、置顶与归档分支
 
 ## 新建分支 {#create}
 
-1. 选 :ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）。也可以点侧边栏底部的添加按钮，或者右键点按 :ui[branch.group]，在菜单里选它。
+1. 点工具栏上的 :ui[toolbar.createBranch]，或者选 :ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）。也可以点侧边栏底部的添加按钮，或者右键点按 :ui[branch.group]，在菜单里选它。
 2. 在 :ui[reference.name] 里输入名字。
 3. 在 :ui[branch.start] 里选分支从哪里开始。一开始是当前所在的分支，或者你右键点按的那一项。
 4. 设置选项：

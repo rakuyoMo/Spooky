@@ -20,6 +20,8 @@ Git LFS が見つからない場合や古すぎる場合は、そこに表示さ
 
 Git LFS がない間は、そのセクションのボタンのうち Git LFS が必要なものは使えません。
 
+Git LFS を使うリポジトリでは、ブランチの切り替えやステージなどの操作も同じ理由で失敗することがあります。その場合は :ui[hostError.lfsUnavailable] と表示され、同じ対処方法が示されます。
+
 ## Git LFS を有効にする {#enable}
 
 リポジトリの設定の :ui[repositorySettings.lfs] セクションで、:ui[lfs.enable] をクリックします。Git LFS がこのリポジトリだけに設定されます。グローバルの Git 設定は変更されません。[Git LFS、無視、除外](/guide/settings/identity/#repository-files) を参照してください。

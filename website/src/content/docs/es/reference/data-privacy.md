@@ -30,7 +30,7 @@ Los alias de host que añades en :ui[app.name > settings.title] › :ui[settings
 
 Aparte del propio repositorio, Spooky escribe en dos sitios de un servidor:
 
-- `~/.spooky/bin/`, en tu carpeta de inicio: un pequeño script que Spooky ejecuta por SSH, más unos enlaces a él para las solicitudes y la firma. Se queda ahí para la siguiente conexión. Elimina la carpeta para quitarlo.
+- `~/.spooky/bin/`, en tu carpeta de inicio: un pequeño script que Spooky ejecuta por SSH, más unos enlaces a él para las solicitudes y la firma. Se queda ahí para la siguiente conexión. Cada vez que lo instala, Spooky elimina las versiones antiguas que llevan 30 días sin usarse. Elimina la carpeta para quitarlo.
 - `/tmp/spooky-*`: archivos de la conexión actual. Se eliminan cuando se cierra la conexión.
 
 Cuando Spooky busca la [ubicación en este Mac](/guide/server/local-location/#automatic) de un repositorio, pone un momento un archivo vacío en la carpeta de Git del repositorio. Lo elimina justo después de la comprobación.

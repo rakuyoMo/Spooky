@@ -72,7 +72,7 @@ description: "在额外的工作树里检出分支，以及打开、移动、修
 :::note[服务器仓库]
 工作树建在服务器上，路径也是服务器上的路径。:ui[submodule.path.select] 浏览的是服务器上的文件夹。
 
-Spooky 能在你的 Mac 上找到工作树的文件夹时，才能用 :ui[worktree.reveal]。工作树在仓库文件夹里面时，Spooky 经仓库的本机位置找到它。否则在你的 Mac 挂载的卷里找。见 [本机位置](/guide/server/local-location/)。
+Spooky 能在你的 Mac 上找到工作树的文件夹时，才能用 :ui[worktree.reveal]。工作树在仓库文件夹里面时，Spooky 经仓库的位置找到它。否则在你的 Mac 挂载的卷里找。见 [在这台 Mac 上的位置](/guide/server/local-location/)。
 :::
 
 ## 相关页面

@@ -25,7 +25,7 @@ Unter :ui[remote.group] kennzeichnet ein Haussymbol den Standard-Branch jedes Re
 
 ## Einen Branch erstellen {#create}
 
-1. Wählen Sie :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). Sie können auch unten in der Seitenleiste auf die Hinzufügen-Taste klicken oder mit der rechten Maustaste auf :ui[branch.group] klicken und den Befehl im Menü wählen.
+1. Klicken Sie in der Symbolleiste auf :ui[toolbar.createBranch] oder wählen Sie :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). Sie können auch unten in der Seitenleiste auf die Hinzufügen-Taste klicken oder mit der rechten Maustaste auf :ui[branch.group] klicken und den Befehl im Menü wählen.
 2. Geben Sie den Namen in :ui[reference.name] ein.
 3. Wählen Sie in :ui[branch.start], wo der Branch beginnt. Anfangs ist das der Branch, auf dem Sie sich befinden, oder das, worauf Sie mit der rechten Maustaste geklickt haben.
 4. Legen Sie die Optionen fest:

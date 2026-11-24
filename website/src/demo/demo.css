@@ -1725,6 +1725,22 @@
     min-width: 70px;
 }
 
+/* 对话框左下角的帮助按钮 */
+.sd-help {
+    width: 24px;
+    height: 24px;
+    margin-inline-end: auto;
+    border-radius: 50%;
+    background: var(--sd-control);
+    box-shadow: 0 0.5px 1px rgb(0 0 0 / 0.12);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.sd-help:hover {
+    background: var(--sd-control-hover);
+}
+
 .sd-quick {
     position: absolute;
     top: 140px;
@@ -2114,6 +2130,11 @@
     .sd-small {
         height: 34px;
         font-size: 14px;
+    }
+
+    .sd-help {
+        width: 34px;
+        height: 34px;
     }
 
     .sd-check-option {

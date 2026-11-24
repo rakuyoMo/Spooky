@@ -25,7 +25,7 @@ description: "ブランチの作成、チェックアウト、追跡、名前の
 
 ## ブランチを作成する {#create}
 
-1. :ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）を選びます。サイドバー下部の追加ボタンをクリックするか、:ui[branch.group] を右クリックして、メニューから選ぶこともできます。
+1. ツールバーの :ui[toolbar.createBranch] をクリックするか、:ui[menu.repository > branch.createMenu]（<kbd>⌘B</kbd>）を選びます。サイドバー下部の追加ボタンをクリックするか、:ui[branch.group] を右クリックして、メニューから選ぶこともできます。
 2. :ui[reference.name] に名前を入力します。
 3. :ui[branch.start] でブランチの開始位置を選びます。最初は現在のブランチか、ここへ来るときに右クリックした項目になっています。
 4. オプションを設定します。

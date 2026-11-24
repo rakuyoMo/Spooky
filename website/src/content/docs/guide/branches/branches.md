@@ -25,7 +25,7 @@ Under :ui[remote.group], a house icon marks the default branch of each remote.
 
 ## Create a branch {#create}
 
-1. Choose :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). You can also click the add button at the bottom of the sidebar, or right-click :ui[branch.group], and choose it from the menu.
+1. Click :ui[toolbar.createBranch] in the toolbar, or choose :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). You can also click the add button at the bottom of the sidebar, or right-click :ui[branch.group], and choose it from the menu.
 2. Type the name in :ui[reference.name].
 3. Pick where the branch starts in :ui[branch.start]. At first it’s the branch you’re on, or what you right-clicked to get here.
 4. Set the options:

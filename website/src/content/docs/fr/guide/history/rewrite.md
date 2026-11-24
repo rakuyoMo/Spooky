@@ -11,7 +11,7 @@ Les commits réécrits reçoivent de nouveaux hashs. Si vous les avez déjà pou
 
 À part le cherry-pick et la réinitialisation, ces commandes n’apparaissent dans le menu d’un commit que tant que la liste affiche uniquement la branche sur laquelle vous êtes. Pour y arriver, choisissez :ui[menu.view > history.showHead] (<kbd>⌘0</kbd>), ou cliquez sur la branche dans la barre latérale.
 
-::screenshot[Le menu contextuel du commit 2daa6982 quand la liste affiche la branche sur laquelle vous êtes. On y trouve notamment Réinitialiser HEAD, Revert et Rebaser ailleurs, suivis de Compléter, Modifier, Modifier le message de commit et Supprimer pour ce commit.]{name="history-commit-menu" frame="closeup"}
+::screenshot[Le menu contextuel du commit 2daa6982 quand la liste affiche la branche sur laquelle vous êtes. On y trouve notamment Réinitialiser HEAD, Revert et Rebaser ailleurs, suivis de Corriger, Modifier, Modifier le message de commit et Supprimer pour ce commit.]{name="history-commit-menu" frame="closeup"}
 
 ## Annuler un commit par revert {#revert}
 

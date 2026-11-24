@@ -74,7 +74,7 @@ Para solucionarlo:
 
 4. Vuelve a hacer clic en :ui[settings.environment.server.check], o ejecuta la prueba de [No se puede conectar a un servidor](#connect). Después vuelve a conectarte.
 
-Git LFS y los programas que ejecutan tus hooks se encuentran mediante el mismo `PATH`. Si funcionan en Terminal pero no desde Spooky, añade sus carpetas de la misma manera.
+Git LFS y los programas que ejecutan tus hooks se encuentran mediante el mismo `PATH`. Si funcionan en Terminal pero no desde Spooky, por ejemplo cuando un comando falla con :ui[hostError.lfsUnavailable], añade sus carpetas de la misma manera.
 
 ## Problemas de permisos {#permissions}
 

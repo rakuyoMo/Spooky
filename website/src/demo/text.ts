@@ -125,6 +125,7 @@ export const demoKeys = [
     'stash.deleteButton',
     'stash.noSelection',
     'stash.subtitle',
+    'stash.subtitle.one',
     'stash.basedOn',
 
     // 推送
@@ -133,6 +134,7 @@ export const demoKeys = [
     'sync.destination',
     'dialog.options',
     'action.cancel',
+    'help.help',
 
     // 快捷操作
     'quickActions.placeholder',

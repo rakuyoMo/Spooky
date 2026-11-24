@@ -34,7 +34,7 @@ Spooky 用 macOS 自带的 SSH 连接服务器。它用的是 `~/.ssh/config` �
 
 Spooky 不需要管理员权限，也不安装常驻服务。它在服务器上只留下两样东西：
 
-- **`~/.spooky/bin/` 里的一个辅助脚本**，在你服务器上的个人文件夹里。它负责把 Git 的询问转回 Mac。Spooky 连接时把它放进去，留给以后的连接用。这个文件夹里以 `-askpass`、`-gpg` 等结尾的其它名字，都是指向同一个文件的链接。
+- **`~/.spooky/bin/` 里的一个辅助脚本**，在你服务器上的个人文件夹里。它负责把 Git 的询问转回 Mac。Spooky 连接时把它放进去，留给以后的连接用。每次安装时，Spooky 会删掉 30 天里没用过的旧版本。这个文件夹里以 `-askpass`、`-gpg` 等结尾的其它名字，都是指向同一个文件的链接。
 - **`/tmp/spooky-*` 里的临时文件**，仓库打开期间才有。关闭仓库时，Spooky 会删掉它们。
 
 辅助脚本用 `/usr/bin/perl` 运行，大多数 macOS 与 Linux 服务器都自带。完整的要求见 [系统要求](/reference/requirements/#servers)。
@@ -57,7 +57,7 @@ Spooky 不需要管理员权限，也不安装常驻服务。它在服务器上�
 |---|---|
 | 服务器上的改动 | 仓库窗口在最前面时，Spooky 每 2 秒查一次服务器上的变化，其余时候每 10 秒查一次。服务器回得慢时，会查得少一些。 |
 | 连接断开 | 仍然可以查看 Spooky 上次读到的内容，但重新连上之前不能做任何改动。 |
-| :ui[action.revealFinder] | 访达要在 Mac 上有一个能看到服务器文件的文件夹，见 [本机位置](/guide/server/local-location/)。 |
+| :ui[action.revealFinder] | 访达要在 Mac 上有一个能看到服务器文件的文件夹，见 [在这台 Mac 上的位置](/guide/server/local-location/)。 |
 | :ui[action.openTerminal] | 终端用 `ssh` 登录服务器，进入仓库所在的文件夹。 |
 | :ui[action.copyPath] | 复制的路径以主机别名开头，比如 `driftwood-server:/srv/git/driftwood`。 |
 | 用别的 App 打开文件 | 大多数 App 拿到的是文件副本。保存后，Spooky 把改动写回服务器，见 [终端与其它 App](/guide/server/local-location/#terminal)。 |
