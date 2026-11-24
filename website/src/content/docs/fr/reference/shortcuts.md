@@ -194,6 +194,7 @@ Avec la souris, maintenez <kbd>⇧</kbd> et cliquez sur un numéro de ligne pour
 | La conversation d’une pull request | <kbd>⌘S</kbd> | Clique sur :ui[pullRequests.addComment] |
 | :ui[settings.themes] dans Réglages | <kbd>↩</kbd> | Renomme le thème sélectionné |
 | :ui[settings.appIcon.label] dans Réglages | Touches fléchées, <kbd>Espace</kbd> | Passent d’une icône à l’autre, et utilisent celle où vous êtes |
+| :ui[settings.sshHosts] dans Réglages | <kbd>↩</kbd> | Ouvre l’alias sélectionné pour le modifier |
 
 Dans les listes où vous pouvez sélectionner plusieurs éléments, un clic avec <kbd>⇧</kbd> sélectionne une plage. Un clic avec <kbd>⌘</kbd> ajoute ou retire un seul élément. Dans la barre latérale, cliquez avec <kbd>⌘</kbd> sur des branches et des tags pour voir leur historique ensemble. Consultez [Ouvrir l’historique](/guide/history/browse/#open).
 

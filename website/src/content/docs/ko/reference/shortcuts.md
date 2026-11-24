@@ -194,6 +194,7 @@ description: "Spooky의 모든 키보드 단축키를 찾아봅니다."
 | 풀 리퀘스트의 대화 | <kbd>⌘S</kbd> | :ui[pullRequests.addComment]를 클릭합니다 |
 | 설정의 :ui[settings.themes] | <kbd>↩</kbd> | 선택한 테마의 이름을 변경합니다 |
 | 설정의 :ui[settings.appIcon.label] | 화살표 키, <kbd>스페이스 바</kbd> | 아이콘 사이를 이동하고, 현재 위치의 아이콘을 사용합니다 |
+| 설정의 :ui[settings.sshHosts] | <kbd>↩</kbd> | 선택한 별칭을 편집합니다 |
 
 여러 항목을 선택할 수 있는 목록에서는 <kbd>⇧</kbd>-클릭으로 범위를 선택합니다. <kbd>⌘</kbd>-클릭은 항목 하나를 추가하거나 뺍니다. 사이드바에서 브랜치와 태그를 <kbd>⌘</kbd>-클릭하면 그 기록을 함께 볼 수 있습니다. [기록 열기](/guide/history/browse/#open)를 참고하세요.
 

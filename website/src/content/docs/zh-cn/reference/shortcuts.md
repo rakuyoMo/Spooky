@@ -194,6 +194,7 @@ description: "查阅 Spooky 的全部键盘快捷键。"
 | Pull Request 的讨论 | <kbd>⌘S</kbd> | 点 :ui[pullRequests.addComment] |
 | 设置里的 :ui[settings.themes] | <kbd>↩</kbd> | 给所选的主题改名 |
 | 设置里的 :ui[settings.appIcon.label] | 方向键、<kbd>空格</kbd> | 在图标之间移动，换成所在的那一枚 |
+| 设置里的 :ui[settings.sshHosts] | <kbd>↩</kbd> | 编辑所选的别名 |
 
 在能多选的列表里，按住 <kbd>⇧</kbd> 再点会选中一段，按住 <kbd>⌘</kbd> 再点会加选或取消选中一项。在侧边栏里，按住 <kbd>⌘</kbd> 再点分支与标签，可以一起看它们的历史。见 [打开历史](/guide/history/browse/#open)。
 

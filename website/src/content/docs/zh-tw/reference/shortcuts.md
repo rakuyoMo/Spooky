@@ -194,6 +194,7 @@ description: "查閱 Spooky 的全部鍵盤快速鍵。"
 | Pull Request 的討論 | <kbd>⌘S</kbd> | 按下 :ui[pullRequests.addComment] |
 | 設定裡的 :ui[settings.themes] | <kbd>↩</kbd> | 重新命名所選的主題 |
 | 設定裡的 :ui[settings.appIcon.label] | 方向鍵、<kbd>空白鍵</kbd> | 在圖示之間移動，換成所在的那一個 |
+| 設定裡的 :ui[settings.sshHosts] | <kbd>↩</kbd> | 編輯所選的別名 |
 
 在能多選的列表裡，按住 <kbd>⇧</kbd> 再按一下會選取一段，按住 <kbd>⌘</kbd> 再按一下會加選或取消選取一項。在側邊欄裡，按住 <kbd>⌘</kbd> 再按一下分支與標籤，可以一起看它們的歷史。見 [開啟歷史](/guide/history/browse/#open)。
 

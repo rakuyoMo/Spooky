@@ -76,7 +76,7 @@ La página :ui[settings.sshHosts] muestra los alias de `~/.ssh/config`, incluido
 
 ::screenshot[La página Hosts SSH de la ventana de ajustes. La lista tiene las columnas Alias, Dirección del servidor, Nombre de usuario, Puerto y Clave privada. Muestra tres alias: staging, backup-nas y driftwood-server, que está seleccionado. Debajo de la lista están los botones de añadir y de eliminar, y a la derecha hay un botón para editar.]{name="settings-ssh-hosts" frame="window"}
 
-- Para cambiar un alias, selecciónalo y haz clic en :ui[sshHosts.edit]. Spooky solo cambia las líneas de los campos que editas. Las demás opciones SSH del servidor, los otros servidores y los comentarios se quedan como están.
+- Para cambiar un alias, haz doble clic en él, o selecciónalo y haz clic en :ui[sshHosts.edit] o pulsa <kbd>Retorno</kbd>. Spooky solo cambia las líneas de los campos que editas. Las demás opciones SSH del servidor, los otros servidores y los comentarios se quedan como están.
 - Para eliminar un alias, selecciónalo, haz clic en el botón de eliminar que hay debajo de la lista y confirma. Spooky elimina su línea `Host` y las opciones que hay debajo.
 
 Una entrada con varios nombres o con un patrón, como `Host *`, no aparece en la lista, y Spooky no la modifica. Edita esas entradas en un editor de texto.
