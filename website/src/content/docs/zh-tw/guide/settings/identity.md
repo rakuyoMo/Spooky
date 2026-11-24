@@ -105,7 +105,7 @@ Git 在每個提交裡記下姓名與電子郵件，還可以用金鑰為它簽�
 | 項目 | 顯示什麼 |
 |---|---|
 | :ui[repositorySettings.name] 與 :ui[repositorySettings.path] | 儲存庫在哪裡 |
-| :ui[repositorySettings.localLocation] | 伺服器儲存庫的資料夾在這台 Mac 上的位置。見 [設定本機位置](/guide/server/local-location/#set)。 |
+| :ui[repositorySettings.localLocation] | 伺服器儲存庫的資料夾在這台 Mac 上的位置。見 [設定位置](/guide/server/local-location/#set)。 |
 | :ui[bookmarks.detail.description] | 儲存庫的描述，[儲存庫管理視窗](/guide/repositories/manager/) 裡也會顯示。按一下 :ui[bookmarks.detail.edit] 修改。 |
 | :ui[bookmarks.detail.identity] | 這個儲存庫提交時用的姓名與電子郵件。按一下大頭貼選用 [設定檔](#use-profile)，或者按一下 :ui[bookmarks.detail.edit]，輸入只給這個儲存庫用的姓名與電子郵件。 |
 

@@ -72,7 +72,7 @@ description: "在額外的工作樹裡簽出分支，以及開啟、移動、修
 :::note[伺服器儲存庫]
 工作樹建在伺服器上，路徑也是伺服器上的路徑。:ui[submodule.path.select] 瀏覽的是伺服器上的資料夾。
 
-Spooky 能在你的 Mac 上找到工作樹的資料夾時，才能用 :ui[worktree.reveal]。工作樹在儲存庫資料夾裡面時，Spooky 經儲存庫的本機位置找到它。否則在你的 Mac 掛載的卷宗裡找。見 [本機位置](/guide/server/local-location/)。
+Spooky 能在你的 Mac 上找到工作樹的資料夾時，才能用 :ui[worktree.reveal]。工作樹在儲存庫資料夾裡面時，Spooky 經儲存庫的位置找到它。否則在你的 Mac 掛載的卷宗裡找。見 [在這台 Mac 上的位置](/guide/server/local-location/)。
 :::
 
 ## 相關頁面

@@ -25,7 +25,7 @@ Sous :ui[remote.group], une icône de maison marque la branche par défaut de ch
 
 ## Créer une branche {#create}
 
-1. Choisissez :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). Vous pouvez aussi cliquer sur le bouton d’ajout en bas de la barre latérale, ou cliquer avec le bouton droit sur :ui[branch.group], puis le choisir dans le menu.
+1. Cliquez sur :ui[toolbar.createBranch] dans la barre d’outils, ou choisissez :ui[menu.repository > branch.createMenu] (<kbd>⌘B</kbd>). Vous pouvez aussi cliquer sur le bouton d’ajout en bas de la barre latérale, ou cliquer avec le bouton droit sur :ui[branch.group], puis le choisir dans le menu.
 2. Saisissez le nom dans :ui[reference.name].
 3. Choisissez le point de départ de la branche dans :ui[branch.start]. Au début, c’est la branche actuelle, ou l’élément sur lequel vous avez cliqué avec le bouton droit pour arriver ici.
 4. Réglez les options :

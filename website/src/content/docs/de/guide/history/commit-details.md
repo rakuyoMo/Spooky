@@ -23,7 +23,7 @@ Klicken Sie oben rechts auf den Pfeil, um den Kopf auf Autor, Datum und Refs zu 
 Bewegen Sie den Zeiger über die Details, und auf der Linie zwischen Kopf und Nachricht wird eine Reihe von Tasten eingeblendet:
 
 - :ui[history.rollback] öffnet das Dialogfenster zum Zurücksetzen des aktuellen Branches auf diesen Commit. Siehe [Auf einen älteren Commit zurücksetzen](/guide/history/rewrite/#reset).
-- :ui[rewrite.revert.button] öffnet das Dialogfenster zum Hinzufügen eines Commits, der diesen aufhebt. Siehe [Einen Commit rückgängig machen](/guide/history/rewrite/#revert).
+- :ui[rewrite.revert.button] öffnet das Dialogfenster zum Hinzufügen eines Commits, der diesen aufhebt. Siehe [Einen Commit per Revert rückgängig machen](/guide/history/rewrite/#revert).
 - :ui[history.diffTool] öffnet alle Änderungen des Commits in Ihrem Vergleichswerkzeug. Siehe [In einer anderen App vergleichen](/guide/work/diff/#external).
 
 :ui[history.rollback] und :ui[rewrite.revert.button] erscheinen nur, solange die Liste den Branch zeigt, auf dem Sie sich befinden.

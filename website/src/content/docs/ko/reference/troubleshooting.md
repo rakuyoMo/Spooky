@@ -74,7 +74,7 @@ Spooky에는 Mac과 서버 모두에 Git 2.41.0 이상이 필요합니다.
 
 4. :ui[settings.environment.server.check]을 다시 클릭하거나 [서버에 연결할 수 없음](#connect)의 테스트를 실행합니다. 그런 다음 다시 연결합니다.
 
-Git LFS와 훅이 실행하는 프로그램도 같은 `PATH`로 찾습니다. 터미널에서는 되는데 Spooky에서 안 되면 같은 방법으로 그 폴더를 추가합니다.
+Git LFS와 훅이 실행하는 프로그램도 같은 `PATH`로 찾습니다. 터미널에서는 되는데 Spooky에서 안 되면(예를 들어 명령이 :ui[hostError.lfsUnavailable] 오류로 실패하면) 같은 방법으로 그 폴더를 추가합니다.
 
 ## 권한 문제 {#permissions}
 

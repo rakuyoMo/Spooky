@@ -1,7 +1,7 @@
 {
     "sidebar.start": "はじめに",
     "sidebar.repositories": "リポジトリの管理",
-    "sidebar.server": "サーバーリポジトリ",
+    "sidebar.server": "サーバリポジトリ",
     "sidebar.work": "日々の作業",
     "sidebar.history": "履歴",
     "sidebar.branches": "ブランチと同期",

@@ -23,7 +23,7 @@
     "demo.step.stage": "暫存一個檔案或幾行",
     "demo.step.commit": "寫好訊息並提交",
     "demo.step.push": "推送到 origin",
-    "demo.reset": "重置示範",
+    "demo.reset": "重設示範",
     "demo.note": "這是網頁裡的模擬視窗，資料都是範例。",
     "demo.unavailable": "這個示範裡沒有這一項。",
     "demo.upToDate": "origin 上沒有新的提交。",

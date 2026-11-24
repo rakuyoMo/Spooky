@@ -30,7 +30,7 @@ Host-Aliasse, die Sie unter :ui[app.name > settings.title] › :ui[settings.sshH
 
 Außer in das Repository selbst schreibt Spooky auf einem Server an zwei Orte:
 
-- `~/.spooky/bin/` in Ihrem Benutzerordner: ein kleines Skript, das Spooky über SSH ausführt, sowie Links darauf für Abfragen und das Signieren. Es bleibt für die nächste Verbindung dort. Löschen Sie den Ordner, um es zu entfernen.
+- `~/.spooky/bin/` in Ihrem Benutzerordner: ein kleines Skript, das Spooky über SSH ausführt, sowie Links darauf für Abfragen und das Signieren. Es bleibt für die nächste Verbindung dort. Bei jeder Installation löscht Spooky ältere Versionen, die 30 Tage lang nicht verwendet wurden. Löschen Sie den Ordner, um es zu entfernen.
 - `/tmp/spooky-*`: Dateien für die aktuelle Verbindung. Sie werden beim Schließen der Verbindung entfernt.
 
 Wenn Spooky nach dem [Ort eines Repositorys auf diesem Mac](/guide/server/local-location/#automatic) sucht, legt es kurz eine leere Datei in den Git-Ordner des Repositorys. Gleich nach der Prüfung löscht es die Datei.

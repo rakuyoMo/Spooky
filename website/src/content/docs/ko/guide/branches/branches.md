@@ -25,7 +25,7 @@ description: "브랜치를 만들고, 체크아웃하고, 추적하고, 이름�
 
 ## 브랜치 만들기 {#create}
 
-1. :ui[menu.repository > branch.createMenu](<kbd>⌘B</kbd>)를 선택합니다. 사이드바 맨 아래의 추가 버튼을 클릭하거나 :ui[branch.group]를 오른쪽 클릭하고 메뉴에서 선택해도 됩니다.
+1. 도구 막대에서 :ui[toolbar.createBranch]를 클릭하거나 :ui[menu.repository > branch.createMenu](<kbd>⌘B</kbd>)를 선택합니다. 사이드바 맨 아래의 추가 버튼을 클릭하거나 :ui[branch.group]를 오른쪽 클릭하고 메뉴에서 선택해도 됩니다.
 2. :ui[reference.name]에 이름을 입력합니다.
 3. :ui[branch.start]에서 브랜치가 시작할 곳을 고릅니다. 처음에는 현재 브랜치이거나, 여기로 오려고 오른쪽 클릭한 항목입니다.
 4. 옵션을 설정합니다.

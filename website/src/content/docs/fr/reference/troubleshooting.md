@@ -74,7 +74,7 @@ Pour corriger cela :
 
 4. Cliquez de nouveau sur :ui[settings.environment.server.check], ou lancez le test de la section [Impossible de se connecter à un serveur](#connect). Puis reconnectez-vous.
 
-Git LFS et les programmes que vos crochets exécutent sont trouvés par le même `PATH`. S’ils fonctionnent dans Terminal mais pas depuis Spooky, ajoutez leurs dossiers de la même façon.
+Git LFS et les programmes que vos crochets exécutent sont trouvés par le même `PATH`. S’ils fonctionnent dans Terminal mais pas depuis Spooky, par exemple quand une commande échoue avec :ui[hostError.lfsUnavailable], ajoutez leurs dossiers de la même façon.
 
 ## Problèmes d’autorisation {#permissions}
 

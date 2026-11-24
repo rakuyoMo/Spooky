@@ -34,7 +34,7 @@ Para un remoto al que se accede por SSH, el servidor tiene que conocer ya la cla
 
 Spooky no necesita acceso de administrador ni instala ningún servicio. Deja dos cosas en el servidor:
 
-- **Un script de ayuda en `~/.spooky/bin/`**, en tu carpeta de inicio del servidor. Devuelve a tu Mac las preguntas de Git. Spooky lo pone ahí al conectarse y lo conserva para las conexiones siguientes. Los demás nombres de esa carpeta, terminados en `-askpass`, `-gpg`, etc., son enlaces al mismo archivo.
+- **Un script de ayuda en `~/.spooky/bin/`**, en tu carpeta de inicio del servidor. Devuelve a tu Mac las preguntas de Git. Spooky lo pone ahí al conectarse y lo conserva para las conexiones siguientes. Cada vez que lo instala, Spooky elimina las versiones antiguas que llevan 30 días sin usarse. Los demás nombres de esa carpeta, terminados en `-askpass`, `-gpg`, etc., son enlaces al mismo archivo.
 - **Archivos temporales en `/tmp/spooky-*`** mientras hay un repositorio abierto. Spooky los elimina cuando cierras el repositorio.
 
 El script se ejecuta con `/usr/bin/perl`, que la mayoría de los servidores macOS y Linux ya tienen. Consulta la lista completa en [Requisitos del sistema](/reference/requirements/#servers).

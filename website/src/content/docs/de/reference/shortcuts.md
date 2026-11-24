@@ -129,7 +129,7 @@ Wenn Sie <kbd>⌥</kbd> gedrückt halten, ändern sich einige Tasten und Menüs.
 
 | Wo | Was sich ändert |
 |---|---|
-| Die Tasten zum Abrufen, Pullen, Pushen, Synchronisieren, Zusammenführen und für den Rebase in der Symbolleiste | Sie werden zu Schnellversionen. Siehe [Abrufen, Pullen und Pushen](/guide/branches/sync/#quick). |
+| Die Tasten zum Abrufen, Pullen und Pushen in der Symbolleiste, sowie die zum Synchronisieren, Zusammenführen und für den Rebase, wenn Sie sie hinzugefügt haben | Sie werden zu Schnellversionen. Siehe [Abrufen, Pullen und Pushen](/guide/branches/sync/#quick). |
 | Der Commit-Bereich, solange keines der Nachrichtenfelder bearbeitet wird | Er wechselt zum Ändern des letzten Commits. Siehe [Den letzten Commit ändern](/guide/work/commit/#amend). |
 | :ui[working.stageAll] über der Dateiliste, solange nur ein Teil der Änderungen gestagt ist | Die Taste wird zu :ui[working.unstageAll]. Siehe [Ganze Dateien stagen](/guide/work/diff/#stage-file). |
 | Das Menü von Dateien in der Arbeitskopie | Die Stash-Einträge werden zu Schnellversionen. Siehe [Einzelne Dateien stashen](/guide/work/stash/#partial). |

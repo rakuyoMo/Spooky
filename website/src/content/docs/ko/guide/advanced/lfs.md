@@ -20,6 +20,8 @@ Git LFS를 찾을 수 없거나 너무 오래된 버전이면 거기에 해결 �
 
 Git LFS가 없는 동안에는 그 섹션에서 Git LFS가 필요한 버튼을 쓸 수 없습니다.
 
+Git LFS를 쓰는 저장소에서는 브랜치 전환이나 스테이지 같은 작업도 같은 이유로 실패할 수 있습니다. 이때 :ui[hostError.lfsUnavailable] 오류와 함께 같은 해결 방법이 표시됩니다.
+
 ## Git LFS 켜기 {#enable}
 
 저장소 설정의 :ui[repositorySettings.lfs] 섹션에서 :ui[lfs.enable]을 클릭합니다. 이 저장소에만 Git LFS가 설정됩니다. 전역 Git 구성은 바뀌지 않습니다. [Git LFS, 무시, 제외](/guide/settings/identity/#repository-files)를 참고하세요.

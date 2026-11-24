@@ -30,7 +30,7 @@ Host aliases you add in :ui[app.name > settings.title] › :ui[settings.sshHosts
 
 Besides the repository itself, Spooky writes to two places on a server:
 
-- `~/.spooky/bin/` in your home folder: a small script that Spooky runs over SSH, plus links to it for prompts and signing. It stays there for the next connection. Delete the folder to remove it.
+- `~/.spooky/bin/` in your home folder: a small script that Spooky runs over SSH, plus links to it for prompts and signing. It stays there for the next connection. Each time Spooky installs the script, it deletes older versions that haven’t been used for 30 days. Delete the folder to remove it.
 - `/tmp/spooky-*`: files for the current connection. They’re removed when the connection closes.
 
 When Spooky looks for a repository’s [location on this Mac](/guide/server/local-location/#automatic), it briefly puts an empty file in the repository’s Git folder. It deletes the file right after the check.

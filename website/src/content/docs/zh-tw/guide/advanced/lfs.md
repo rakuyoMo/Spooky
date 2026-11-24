@@ -20,6 +20,8 @@ Git LFS 2.9.0 或更新的版本，要在儲存庫所在機器上 Git 用的 `PA
 
 缺少 Git LFS 時，這一段裡需要它的按鈕都無法使用。
 
+在使用 Git LFS 的儲存庫裡，切換分支、暫存等操作也會因此失敗，Spooky 會提示 :ui[hostError.lfsUnavailable]，並給出同樣的解決方法。
+
 ## 啟用 Git LFS {#enable}
 
 在儲存庫設定的 :ui[repositorySettings.lfs] 一段裡按一下 :ui[lfs.enable]。這只為這個儲存庫設定 Git LFS，不變更你的全域 Git 設定，見 [Git LFS、忽略與排除](/guide/settings/identity/#repository-files)。

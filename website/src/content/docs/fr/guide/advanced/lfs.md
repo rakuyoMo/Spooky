@@ -20,6 +20,8 @@ Si Git LFS est introuvable ou trop ancien, une note y indique comment y remédie
 
 Tant que Git LFS est absent, les boutons de cette section qui en ont besoin ne sont pas disponibles.
 
+Dans un dépôt qui utilise Git LFS, d’autres opérations, comme changer de branche ou indexer, peuvent échouer pour la même raison. Spooky affiche alors :ui[hostError.lfsUnavailable] avec les mêmes conseils.
+
 ## Activer Git LFS {#enable}
 
 Dans la section :ui[repositorySettings.lfs] des réglages du dépôt, cliquez sur :ui[lfs.enable]. Cela configure Git LFS pour ce dépôt uniquement. Votre configuration Git globale ne change pas. Consultez [Git LFS, fichiers ignorés et exclusions](/guide/settings/identity/#repository-files).

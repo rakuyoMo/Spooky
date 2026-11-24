@@ -54,7 +54,7 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 - :ui[toolbar.bookmarks]：回到仓库管理
 - :ui[toolbar.previous] 与 :ui[toolbar.next]：在去过的视图之间后退、前进
-- :ui[toolbar.finder] 与 :ui[toolbar.terminal]：在 Finder 里显示仓库文件夹，或在终端里打开它
+- :ui[toolbar.finder] 与 :ui[toolbar.terminal]：在访达里显示仓库文件夹，或在终端里打开它
 - :ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push]：与远端交换提交
 - :ui[toolbar.forcePush]：改写过提交之后，用你的分支替换远端分支
 - :ui[toolbar.applyStash] 与 :ui[toolbar.saveStash]：取回收起来的改动，或把当前的改动收起来

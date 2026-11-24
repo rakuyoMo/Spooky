@@ -129,7 +129,7 @@ Holding <kbd>⌥</kbd> changes some buttons and menus. Let go, and they change b
 
 | Where | What changes |
 |---|---|
-| The fetch, pull, push, sync, merge, and rebase buttons in the toolbar | They turn into quick versions. See [Fetch, Pull, and Push](/guide/branches/sync/#quick). |
+| The fetch, pull, and push buttons in the toolbar, and sync, merge, and rebase once you’ve added them | They turn into quick versions. See [Fetch, Pull, and Push](/guide/branches/sync/#quick). |
 | The commit area, while neither message field is being edited | It switches to amending the last commit. See [Amend the last commit](/guide/work/commit/#amend). |
 | :ui[working.stageAll] above the file list, while only some changes are staged | It turns into :ui[working.unstageAll]. See [Stage whole files](/guide/work/diff/#stage-file). |
 | The menu of files in the Working Copy | The stash items turn into quick versions. See [Stash some files](/guide/work/stash/#partial). |

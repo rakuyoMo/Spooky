@@ -1,6 +1,6 @@
 ---
 title: "Verlauf umschreiben"
-description: "Commits per Revert rückgängig machen, per Cherry-Pick übernehmen und zurücksetzen, interaktiv rebasen und ältere Commits ergänzen."
+description: "Commits per Revert rückgängig machen, per Cherry-Pick übernehmen und zurücksetzen, interaktiv rebasen und ältere Commits ändern."
 ---
 
 Die meisten Befehle hier gehen von der Liste im [Verlauf](/guide/history/browse/) aus: Klicken Sie mit der rechten Maustaste auf einen Commit oder wählen Sie zuerst mehrere aus. Revert und Cherry-Pick fügen neue Commits hinzu. Die übrigen schreiben Commits um, die es bereits gibt.
@@ -11,9 +11,9 @@ Umgeschriebene Commits erhalten neue Hashes. Haben Sie sie bereits gepusht, lauf
 
 Abgesehen von Cherry-Pick und Zurücksetzen erscheinen diese Befehle im Menü eines Commits nur, solange die Liste allein den Branch zeigt, auf dem Sie sich befinden. Dorthin gelangen Sie mit :ui[menu.view > history.showHead] (<kbd>⌘0</kbd>) oder per Klick auf den Branch in der Seitenleiste.
 
-::screenshot[Das Kontextmenü für den Commit 2daa6982, während die Liste den Branch zeigt, auf dem Sie sich befinden. Es enthält unter anderem Einträge für Zurücksetzen, Revert und Rebase auf eine andere Basis, gefolgt von Ergänzen, Bearbeiten, Commit-Nachricht bearbeiten und Löschen für diesen Commit.]{name="history-commit-menu" frame="closeup"}
+::screenshot[Das Kontextmenü für den Commit 2daa6982, während die Liste den Branch zeigt, auf dem Sie sich befinden. Es enthält unter anderem Einträge für Zurücksetzen, Revert und Rebase auf eine andere Basis, gefolgt von Ändern, Bearbeiten, Commit-Nachricht bearbeiten und Löschen für diesen Commit.]{name="history-commit-menu" frame="closeup"}
 
-## Einen Commit rückgängig machen {#revert}
+## Einen Commit per Revert rückgängig machen {#revert}
 
 Ein Revert fügt einen Commit hinzu, der die Änderungen eines früheren aufhebt. Der frühere Commit bleibt im Verlauf, deshalb ist das der sichere Weg, etwas bereits Gepushtes zurückzunehmen.
 
@@ -107,9 +107,9 @@ Das Bearbeiten hält an einem Commit an und legt seine Änderungen zurück in di
 
 Um aufzugeben, klicken Sie im Banner auf :ui[working.abort]. Der erste Commit eines Repositorys lässt sich nicht bearbeiten.
 
-## Einen älteren Commit ergänzen {#amend}
+## Einen älteren Commit ändern {#amend}
 
-Das Ergänzen eines älteren Commits fügt ihm Änderungen hinzu, so wie das [Ändern des letzten Commits](/guide/work/commit/#amend).
+Das Ändern eines älteren Commits fügt ihm Änderungen hinzu, so wie das [Ändern des letzten Commits](/guide/work/commit/#amend).
 
 1. Klicken Sie mit der rechten Maustaste auf den Commit und wählen Sie :ui[rewrite.menu.amend]{1="e2dda2bc"}. Spooky beginnt sofort, ohne Bestätigung.
 2. Der Rebase hält an diesem Commit an. Nehmen Sie Ihre Änderungen vor und stagen Sie sie.
@@ -145,7 +145,7 @@ Spooky prüft die Commits, bevor es etwas umschreibt. Stimmt etwas nicht, erklä
 
 ## Lokale Änderungen und Konflikte {#local-changes}
 
-Revert, Cherry-Pick und Rebase brauchen eine Arbeitskopie, die nicht im Weg ist. Blockieren Ihre lokalen Änderungen einen dieser Vorgänge, bietet Spooky an, [sie zuerst zu stashen](/guide/work/stash/#auto-stash). Beim Ergänzen eines älteren Commits fragt es vor dem Start.
+Revert, Cherry-Pick und Rebase brauchen eine Arbeitskopie, die nicht im Weg ist. Blockieren Ihre lokalen Änderungen einen dieser Vorgänge, bietet Spooky an, [sie zuerst zu stashen](/guide/work/stash/#auto-stash). Beim Ändern eines älteren Commits fragt es vor dem Start.
 
 Hat ein Commit unterwegs einen Konflikt, hält Spooky an und zeigt das [Banner des Vorgangs](/guide/work/conflicts/#banner). Lösen Sie die Konflikte und fahren Sie dann dort fort oder brechen Sie ab.
 

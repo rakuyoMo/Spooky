@@ -129,7 +129,7 @@ Maintenir <kbd>⌥</kbd> change certains boutons et menus. Relâchez la touche, 
 
 | Où | Ce qui change |
 |---|---|
-| Les boutons de récupération, de tirage, de poussée, de synchronisation, de fusion et de rebasage de la barre d’outils | Ils deviennent des versions rapides. Consultez [Récupérer, tirer et pousser](/guide/branches/sync/#quick). |
+| Les boutons de récupération, de tirage et de poussée de la barre d’outils, et ceux de synchronisation, de fusion et de rebasage une fois ajoutés | Ils deviennent des versions rapides. Consultez [Récupérer, tirer et pousser](/guide/branches/sync/#quick). |
 | La zone de commit, quand aucun des champs du message n’est en cours de modification | Elle passe à la correction du dernier commit. Consultez [Corriger le dernier commit](/guide/work/commit/#amend). |
 | :ui[working.stageAll] au-dessus de la liste de fichiers, quand seule une partie des modifications est indexée | Il devient :ui[working.unstageAll]. Consultez [Indexer des fichiers entiers](/guide/work/diff/#stage-file). |
 | Le menu des fichiers dans la copie de travail | Les éléments de remisage deviennent des versions rapides. Consultez [Remiser certains fichiers](/guide/work/stash/#partial). |

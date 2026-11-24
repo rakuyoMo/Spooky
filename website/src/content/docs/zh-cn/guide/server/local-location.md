@@ -1,9 +1,9 @@
 ---
-title: "本机位置"
-description: "通过自动查找、SMB 挂载、sshfs 挂载或指定文件夹，给服务器仓库一个本机位置，让 “在访达中显示”、终端与外部编辑器能打开它。"
+title: "在这台 Mac 上的位置"
+description: "通过自动查找、SMB 挂载、sshfs 挂载或指定文件夹，给服务器仓库一个在这台 Mac 上的位置，让 “在访达中显示”、终端与外部编辑器能打开它。"
 ---
 
-访达只能显示 Mac 上的文件夹，服务器仓库的文件却在服务器上。要在访达里看到它们，Spooky 需要 Mac 上有一个能看到服务器文件的文件夹，通常是挂载的网络卷。这个文件夹就是仓库的本机位置。
+访达只能显示 Mac 上的文件夹，服务器仓库的文件却在服务器上。要在访达里看到它们，Spooky 需要 Mac 上有一个能看到服务器文件的文件夹，通常是挂载的网络卷。这个文件夹就是仓库在这台 Mac 上的位置。
 
 这一页讲 Spooky 怎样找到或挂载这个文件夹，以及终端和别的 App 怎样打开服务器仓库。
 
@@ -18,15 +18,15 @@ description: "通过自动查找、SMB 挂载、sshfs 挂载或指定文件夹�
 - 在仓库管理窗口里右键点按服务器仓库
 - 在工作区里右键点按文件，访达会选中这些文件。
 
-已经知道本机位置、文件夹也在时，访达直接打开。不然的话，Spooky 会弹出一个面板，按这几步走：
+已经知道位置、文件夹也在时，访达直接打开。不然的话，Spooky 会弹出一个面板，按这几步走：
 
 1. 仓库没连上的话，先连接。
 2. 查找文件夹；方式是 SMB 或 sshfs 时，先挂载。
-3. 还是找不到文件夹，面板就换成设置本机位置的表单，顶部写着原因，见 [设置本机位置](#set)。
+3. 还是找不到文件夹，面板就换成设置位置的表单，顶部写着原因，见 [设置位置](#set)。
 
 点 :ui[action.cancel] 关掉面板，设置不会变。
 
-## 设置本机位置 {#set}
+## 设置位置 {#set}
 
 1. 在侧边栏的 :ui[workspace.group] 下，点 :ui[repositorySettings.title]。
 2. 在 :ui[repositorySettings.general] 页找到 :ui[repositorySettings.localLocation]。这一行写着方式与文件夹，或者没有文件夹的原因，比如 :ui[localLocation.notMounted]。
@@ -36,7 +36,7 @@ description: "通过自动查找、SMB 挂载、sshfs 挂载或指定文件夹�
 
 Spooky 挂载或核对文件夹期间，表单不能改。点 :ui[action.cancel] 可以停下，原来的设置保持不变。
 
-本机位置按服务器仓库分别存在这台 Mac 上，不会写进仓库，也不会写到服务器上。
+位置按服务器仓库分别存在这台 Mac 上，不会写进仓库，也不会写到服务器上。
 
 SMB 或 sshfs 挂载的卷被推出后，这一行会出现 :ui[localLocation.mountAgain]，点它重新挂载。
 
@@ -81,7 +81,7 @@ Spooky 从不推出它挂载的卷。之后再打开这个仓库时，Spooky 会
 
 ## 添加时挂载 {#when-adding}
 
-[添加服务器仓库](/guide/server/add/) 时，:ui[remote.mount] 可以顺手设好本机位置。它一开始是 :ui[remote.mount.none]。填好主机别名后，能用的话，菜单会列出 :ui[remote.mount.smb] 与 :ui[remote.mount.sshfs]。两个都不能用时，显示 :ui[remote.mount.unavailable]。
+[添加服务器仓库](/guide/server/add/) 时，:ui[remote.mount] 可以顺手设好位置。它一开始是 :ui[remote.mount.none]。填好主机别名后，能用的话，菜单会列出 :ui[remote.mount.smb] 与 :ui[remote.mount.sshfs]。两个都不能用时，显示 :ui[remote.mount.unavailable]。
 
 - **SMB**：仓库打开后，macOS 显示服务器上的共享文件夹或登录窗口。取消的话，仓库照常打开，仓库设置里的 :ui[repositorySettings.localLocation] 会写出没挂上的原因。
 - **sshfs**：多出一行 :ui[localLocation.mountAt]，选一个空文件夹。仓库打开后，Spooky 把它挂到那里。
@@ -90,7 +90,7 @@ Spooky 从不推出它挂载的卷。之后再打开这个仓库时，Spooky 会
 
 ## 终端与其它 App {#terminal}
 
-下面这些在服务器仓库里不需要本机位置也能用：
+下面这些在服务器仓库里不需要在这台 Mac 上的位置也能用：
 
 - **:ui[action.openTerminal]** 打开 :ui[app.name > settings.title] › :ui[settings.general] 里选的终端 App，用 `ssh -t` 和主机别名登录，进入仓库文件夹。服务器不允许终端的话，Spooky 会不带终端再连一次。命令照样能执行，只是没有行编辑，也用不了全屏程序。它在 :ui[menu.file] 菜单里，也是工具栏上的 :ui[toolbar.terminal]；右键点按工作区或仓库管理窗口里的仓库也能找到。终端 App 的选择见 [终端](/guide/settings/integration/#terminal)。
 - **:ui[action.copyPath]** 复制的路径前面带着主机别名，比如 `driftwood-server:/srv/git/driftwood`。

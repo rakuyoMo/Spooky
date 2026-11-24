@@ -30,10 +30,10 @@ Spooky 沒有自己的帳號，也不收集使用資料。這一頁列出它存�
 
 除了儲存庫本身，Spooky 只在伺服器上寫兩個地方：
 
-- 個人資料夾下的 `~/.spooky/bin/`：Spooky 經 SSH 執行的一個小指令碼，以及詢問與簽署時用的指向它的連結。它會留著，下次連線還用。想刪掉的話，刪除這個資料夾。
+- 個人資料夾下的 `~/.spooky/bin/`：Spooky 經 SSH 執行的一個小指令碼，以及詢問與簽署時用的指向它的連結。它會留著，下次連線還用。每次安裝時，Spooky 會刪掉 30 天內沒用過的舊版本。想刪掉的話，刪除這個資料夾。
 - `/tmp/spooky-*`：本次連線的檔案，連線關閉時刪除。
 
-Spooky 尋找儲存庫的 [本機位置](/guide/server/local-location/#automatic) 時，會在儲存庫的 Git 資料夾裡暫時放一個空檔案，核對完馬上刪掉。
+Spooky 尋找儲存庫 [在這台 Mac 上的位置](/guide/server/local-location/#automatic) 時，會在儲存庫的 Git 資料夾裡暫時放一個空檔案，核對完馬上刪掉。
 
 伺服器上的 Git 要密碼時，Spooky 從 Mac 經 SSH 連線把回答交給提問的那條 Git 指令，不給別的指令。伺服器上的 Git 不會存下它，因為 Spooky 給自己的指令關掉了 Git 的憑證輔助程式。
 

@@ -34,7 +34,7 @@ Pour un dépôt distant joint via SSH, le serveur doit déjà connaître la clé
 
 Spooky n’a pas besoin d’un accès administrateur et n’installe aucun service. Il laisse deux choses sur le serveur :
 
-- **Un script auxiliaire dans `~/.spooky/bin/`**, dans votre dossier de départ sur le serveur. Il transmet les questions de Git à votre Mac. Spooky l’y place lors de la connexion et le garde pour les connexions suivantes. Les autres noms de ce dossier, qui se terminent par `-askpass`, `-gpg`, etc., sont des liens vers le même fichier.
+- **Un script auxiliaire dans `~/.spooky/bin/`**, dans votre dossier de départ sur le serveur. Il transmet les questions de Git à votre Mac. Spooky l’y place lors de la connexion et le garde pour les connexions suivantes. À chaque installation, Spooky supprime les anciennes versions qui n’ont pas servi depuis 30 jours. Les autres noms de ce dossier, qui se terminent par `-askpass`, `-gpg`, etc., sont des liens vers le même fichier.
 - **Des fichiers temporaires dans `/tmp/spooky-*`** tant qu’un dépôt est ouvert. Spooky les supprime quand vous fermez le dépôt.
 
 Le script s’exécute avec `/usr/bin/perl`, déjà présent sur la plupart des serveurs macOS et Linux. Pour la liste complète, consultez [Configuration requise](/reference/requirements/#servers).

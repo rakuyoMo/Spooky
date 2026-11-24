@@ -30,10 +30,10 @@ Spooky 没有自己的账号，也不收集使用数据。这一页列出它存�
 
 除了仓库本身，Spooky 只在服务器上写两个地方：
 
-- 个人文件夹下的 `~/.spooky/bin/`：Spooky 经 SSH 执行的一个小脚本，以及询问与签名时用的指向它的链接。它会留着，下次连接还用。想删掉的话，删除这个文件夹。
+- 个人文件夹下的 `~/.spooky/bin/`：Spooky 经 SSH 执行的一个小脚本，以及询问与签名时用的指向它的链接。它会留着，下次连接还用。每次安装时，Spooky 会删掉 30 天里没用过的旧版本。想删掉的话，删除这个文件夹。
 - `/tmp/spooky-*`：本次连接的文件，连接关闭时删除。
 
-Spooky 查找仓库的 [本机位置](/guide/server/local-location/#automatic) 时，会在仓库的 Git 文件夹里临时放一个空文件，核对完马上删掉。
+Spooky 查找仓库 [在这台 Mac 上的位置](/guide/server/local-location/#automatic) 时，会在仓库的 Git 文件夹里临时放一个空文件，核对完马上删掉。
 
 服务器上的 Git 要密码时，Spooky 从 Mac 经 SSH 连接把回答交给提问的那条 Git 命令，不给别的命令。服务器上的 Git 不会存下它，因为 Spooky 给自己的命令关掉了 Git 的凭据助手。
 

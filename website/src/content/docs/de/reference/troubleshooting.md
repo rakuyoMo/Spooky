@@ -74,7 +74,7 @@ So beheben Sie das:
 
 4. Klicken Sie erneut auf :ui[settings.environment.server.check] oder führen Sie den Test aus [Keine Verbindung zu einem Server](#connect) aus. Verbinden Sie sich dann erneut.
 
-Git LFS und die Programme, die Ihre Hooks ausführen, werden über denselben `PATH` gefunden. Wenn sie im Terminal funktionieren, aber nicht aus Spooky, fügen Sie ihre Ordner auf dieselbe Weise hinzu.
+Git LFS und die Programme, die Ihre Hooks ausführen, werden über denselben `PATH` gefunden. Wenn sie im Terminal funktionieren, aber nicht aus Spooky, etwa wenn ein Befehl mit :ui[hostError.lfsUnavailable] fehlschlägt, fügen Sie ihre Ordner auf dieselbe Weise hinzu.
 
 ## Probleme mit Zugriffsrechten {#permissions}
 

@@ -11,7 +11,7 @@ description: "逐项填写 “添加服务器仓库” 对话框，看懂连接�
 
 ## 填写对话框 {#dialog}
 
-::screenshot[添加服务器仓库对话框。主机别名是 spooky-test。仓库路径是 /srv/git/driftwood，旁边有 “浏览” 按钮。挂载到本机选的是 “不挂载”。按钮是 “取消” 与 “打开”。]{name="add-server" frame="dialog"}
+::screenshot[添加服务器仓库对话框。主机别名是 spooky-test。仓库路径是 /srv/git/driftwood，旁边有 “浏览” 按钮。挂载到这台 Mac 选的是 “不挂载”。按钮是 “取消” 与 “打开”。]{name="add-server" frame="dialog"}
 
 | 这一项 | 填什么 |
 |---|---|
@@ -81,4 +81,4 @@ description: "逐项填写 “添加服务器仓库” 对话框，看懂连接�
 
 - [准备 SSH](/guide/server/prepare-ssh/)
 - [连接状态与重连](/guide/server/connection/)
-- [本机位置](/guide/server/local-location/)
+- [在这台 Mac 上的位置](/guide/server/local-location/)
