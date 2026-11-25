@@ -24,5 +24,9 @@ website/node_modules/
 website/dist/
 website/.astro/
 
+# 宣传片：渲染的依赖与渲染出的视频
+artifacts/promo/*/node_modules/
+artifacts/promo/*/out/*.mp4
+
 # Claude Code 目录
 .claude/

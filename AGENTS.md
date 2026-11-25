@@ -88,6 +88,7 @@ Tests/InvisibleWindows/  App 测试进程里的窗口透明、sheet 不播动画
 scripts/                 App Bundle、应用图标、发布检查、发版与更新清单的脚本
 docs/                    架构、测试与发布的文档
 website/                 官网：首页与写给使用者的手册
+artifacts/promo/         宣传片：分镜、画面与渲染脚本，fonts/ 是共用的字体
 .github/workflows/       CI、发布检查、发布与官网
 ```
 
