@@ -94,13 +94,29 @@ Les détails, à droite, ont aussi les boutons :ui[action.open] et :ui[bookmarks
 :ui[action.copyPath] copie le chemin précédé de l’alias d’hôte, sous la forme `alias:/path/to/repository`. Spooky ne lit les détails d’un dépôt sur un serveur que lorsque vous le sélectionnez. En sélectionner un peut établir une connexion au serveur.
 :::
 
+## Modifier l’emplacement d’un dépôt {#location}
+
+Si un dépôt a été déplacé, inutile de retirer son entrée et de l’ajouter à nouveau.
+
+1. Sélectionnez le dépôt. Dans les détails, placez le pointeur sur la ligne :ui[bookmarks.detail.location] et cliquez sur :ui[bookmarks.detail.edit].
+2. Cliquez sur :ui[localLocation.choose] et choisissez le dossier où se trouve maintenant le dépôt.
+3. Cliquez sur :ui[action.ok].
+
+Spooky vérifie d’abord que le nouvel emplacement est un dépôt Git. Si ce n’est pas le cas, la zone de dialogue reste ouverte et indique pourquoi. Sinon, l’entrée pointe vers le nouvel emplacement. Elle reste dans son groupe et garde le nom que vous lui avez donné. Un nom que vous n’avez jamais modifié suit le nouveau dossier. Vous ne pouvez pas choisir un emplacement qui figure déjà dans la liste.
+
+::screenshot[La zone de dialogue « Modifier l’emplacement du dépôt » pour un dépôt sur un serveur. L’alias d’hôte est spooky-test. Le chemin du dépôt est /srv/git/driftwood, avec un bouton Parcourir à côté. Les boutons sont Annuler et OK.]{name="repositories-edit-location" frame="dialog"}
+
+:::note[Dépôts sur un serveur]
+La zone de dialogue contient à la place :ui[remote.host] et :ui[remote.path]. Vous pouvez n’en modifier qu’un, par exemple seulement l’alias d’hôte. Cliquez sur :ui[clone.browse] pour choisir le chemin sur le serveur. Spooky se connecte au serveur pour vérifier le nouvel emplacement.
+:::
+
 ## Dépôts introuvables {#missing}
 
 Si le dossier d’un dépôt est déplacé, renommé ou supprimé, son nom devient gris dans la liste, avec un signe d’avertissement. Ses détails indiquent :ui[bookmarks.detail.missing] Spooky vérifie les dépôts de votre Mac chaque fois que la liste apparaît.
 
 Si vous ouvrez un dépôt introuvable, la fenêtre affiche :ui[missing.title]. Cliquez sur :ui[action.refresh] pour vérifier à nouveau, par exemple après avoir reconnecté un disque. Cliquez sur :ui[action.close] pour revenir à la liste.
 
-Pour réparer l’entrée, retirez-la et ajoutez à nouveau le dépôt depuis son emplacement actuel.
+Pour réparer l’entrée, faites-la pointer vers l’emplacement actuel du dépôt. Voir [Modifier l’emplacement d’un dépôt](#location).
 
 :::note[Dépôts sur un serveur]
 Spooky ne vérifie un dépôt sur un serveur que lorsque vous le sélectionnez ou l’ouvrez. Si Spooky ne peut pas joindre le serveur, la fenêtre affiche :ui[missing.unreachable.title]{1="alias"} et montre ce que SSH a signalé. Consultez [État de la connexion et reconnexion](/guide/server/connection/).

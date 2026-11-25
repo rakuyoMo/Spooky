@@ -94,13 +94,29 @@ Mac에서는 폴더가 홈 폴더에서 시작하거나, :ui[app.name > settings
 :ui[action.copyPath]는 `alias:/path/to/repository`처럼 앞에 호스트 별칭이 붙은 경로를 복사합니다. Spooky는 서버 저장소를 선택했을 때만 그 세부사항을 읽습니다. 서버 저장소를 선택하면 서버에 연결할 수 있습니다.
 :::
 
+## 저장소 위치 바꾸기 {#location}
+
+저장소를 옮겼을 때 항목을 제거하고 다시 추가할 필요가 없습니다.
+
+1. 저장소를 선택합니다. 세부사항의 :ui[bookmarks.detail.location] 행에 포인터를 올리고 :ui[bookmarks.detail.edit] 버튼을 클릭합니다.
+2. :ui[localLocation.choose] 버튼을 클릭하고 저장소가 지금 있는 폴더를 고릅니다.
+3. :ui[action.ok] 버튼을 클릭합니다.
+
+Spooky는 먼저 새 위치가 Git 저장소인지 확인합니다. 아니면 대화상자가 닫히지 않고 이유가 표시됩니다. 확인되면 항목이 새 위치를 가리킵니다. 들어 있는 그룹과 직접 바꾼 이름은 그대로입니다. 바꾼 적이 없는 이름은 새 폴더의 이름을 따릅니다. 이미 목록에 있는 위치로는 바꿀 수 없습니다.
+
+::screenshot[서버 저장소의 “저장소 위치 편집” 대화상자. 호스트 별칭은 spooky-test입니다. 저장소 경로는 /srv/git/driftwood이고 옆에 탐색 버튼이 있습니다. 버튼은 취소와 확인입니다.]{name="repositories-edit-location" frame="dialog"}
+
+:::note[서버 저장소]
+대화상자에는 :ui[remote.host] 필드와 :ui[remote.path] 필드가 있습니다. 호스트 별칭만 바꾸는 것처럼 둘 중 하나만 바꿀 수 있습니다. :ui[clone.browse] 버튼을 클릭하면 서버에서 경로를 고를 수 있습니다. Spooky는 서버에 연결해 새 위치를 확인합니다.
+:::
+
 ## 사라진 저장소 {#missing}
 
 저장소의 폴더를 옮기거나, 이름을 바꾸거나, 삭제하면 목록에서 그 이름이 회색으로 바뀌고 경고 표시가 붙습니다. 세부사항에는 다음과 같이 표시됩니다. :ui[bookmarks.detail.missing] Spooky는 목록이 나타날 때마다 Mac에 있는 저장소를 확인합니다.
 
 사라진 저장소를 열면 윈도우에 :ui[missing.title]이 표시됩니다. 디스크를 다시 연결한 뒤처럼 다시 확인하고 싶을 때는 :ui[action.refresh]을 클릭합니다. 목록으로 돌아가려면 :ui[action.close]를 클릭합니다.
 
-항목을 바로잡으려면 항목을 제거하고, 저장소가 지금 있는 위치에서 다시 추가합니다.
+항목을 바로잡으려면 저장소가 지금 있는 위치를 가리키도록 바꿉니다. [저장소 위치 바꾸기](#location)를 참조하세요.
 
 :::note[서버 저장소]
 Spooky는 서버 저장소를 선택하거나 열 때만 확인합니다. 서버에 접근할 수 없으면 윈도우에 :ui[missing.unreachable.title]{1="alias"}이 표시되고 SSH가 보고한 내용이 함께 나옵니다. [연결 상태와 다시 연결](/guide/server/connection/)을 참고하세요.

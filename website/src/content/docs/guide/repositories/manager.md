@@ -94,13 +94,29 @@ The details on the right also have :ui[action.open] and :ui[bookmarks.multiple.d
 :ui[action.copyPath] copies the path with the host alias in front, as in `alias:/path/to/repository`. Spooky reads a server repository’s details only when you select it. Selecting one may connect to the server.
 :::
 
+## Change a repository’s location {#location}
+
+If a repository has moved, you don’t have to remove its entry and add it again.
+
+1. Select the repository. In the details, move the pointer over the :ui[bookmarks.detail.location] row and click :ui[bookmarks.detail.edit].
+2. Click :ui[localLocation.choose] and pick the folder the repository is in now.
+3. Click :ui[action.ok].
+
+Spooky first checks that the new location is a Git repository. If it isn’t, the dialog stays open and shows why. If it is, the entry points to the new location. It stays in its group and keeps a name you gave it. A name you never changed follows the new folder. You can’t change to a location that is already in the list.
+
+::screenshot[The Edit Repository Location dialog for a server repository. Host alias is spooky-test. Repository path is /srv/git/driftwood, with a Browse button next to it. The buttons are Cancel and OK.]{name="repositories-edit-location" frame="dialog"}
+
+:::note[Server repositories]
+The dialog has :ui[remote.host] and :ui[remote.path] instead. You can change just one of them, for example only the host alias. Click :ui[clone.browse] to pick the path on the server. Spooky connects to the server to check the new location.
+:::
+
 ## Missing repositories {#missing}
 
 If a repository’s folder is moved, renamed, or deleted, its name in the list turns grey with a warning sign. Its details say :ui[bookmarks.detail.missing] Spooky checks the repositories on your Mac each time the list appears.
 
 If you open a missing repository, the window shows :ui[missing.title]. Click :ui[action.refresh] to check again, for example after you reconnect a disk. Click :ui[action.close] to go back to the list.
 
-To fix the entry, remove it and add the repository again from where it is now.
+To fix the entry, point it to where the repository is now. See [Change a repository’s location](#location).
 
 :::note[Server repositories]
 Spooky checks a server repository only when you select or open it. If Spooky can’t reach the server, the window says :ui[missing.unreachable.title]{1="alias"} and shows what SSH reported. See [Connection Status and Reconnecting](/guide/server/connection/).
