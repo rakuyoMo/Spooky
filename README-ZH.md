@@ -249,11 +249,11 @@ SwiftLint 以严格模式运行，警告同样算不通过。其余编码约定�
 维护者在 `main` 上发布新版本：
 
 ```sh
-# 为 X.Y.Z 开 release PR，通道默认为 stable
-mise run release X.Y.Z [stable|beta|development]
+# 开 release PR：稳定版为 X.Y.Z，公测版为 X.Y.Z-beta.N，内测版为 X.Y.Z-alpha.N
+mise run release <版本号>
 ```
 
-脚本先检查版本号、`docs/release-notes/X.Y.Z/` 下的更新说明与仓库状态，再开 release PR。合并后由 GitHub Actions 打包、为更新签名、在合并提交上打标签，并创建 GitHub Release。
+脚本先检查版本号、`docs/release-notes/<版本号>/` 下的更新说明与仓库状态，再开 release PR。合并后由 GitHub Actions 打包、为更新签名、在合并提交上打标签，并创建 GitHub Release；公测版与内测版发布为 pre-release。
 
 详见 [发布](docs/releasing.md)。
 

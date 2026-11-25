@@ -19,7 +19,7 @@ El servidor también necesita Git 2.41 o posterior. Spooky accede a él por SSH 
 ## Descargar {#download}
 
 1. Abre la [página de versiones de Spooky](https://github.com/rakuyoMo/Spooky/releases) en GitHub.
-2. Busca la versión estable más reciente. Su nombre es `v` seguido del número de versión. Los nombres que terminan en “(beta)” o “(development)” son versiones de prueba.
+2. Busca la versión estable más reciente. Su nombre es `v` seguido del número de versión. Las versiones marcadas como **Pre-release** son versiones beta y alfa, y su número de versión termina en `-beta.` o `-alpha.` seguido de un número.
 3. Descarga el archivo zip llamado `Spooky-` seguido del número de versión.
 4. Haz doble clic en el archivo zip descargado para descomprimirlo.
 5. Arrastra Spooky a tu carpeta **Aplicaciones**.
@@ -58,7 +58,7 @@ La última fila, :ui[updates.lastCheck], muestra cuándo buscó Spooky por últi
 |---|---|
 | :ui[updates.channel.stable] | Las versiones estables. Es el valor predeterminado. |
 | :ui[updates.channel.beta] | Las versiones estables y las beta |
-| :ui[updates.channel.development] | Todas las versiones, incluidas las de desarrollo |
+| :ui[updates.channel.development] | Todas las versiones, incluidas las alfa |
 
 ### Qué ha cambiado {#whats-new}
 

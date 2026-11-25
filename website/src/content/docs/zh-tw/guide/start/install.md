@@ -19,7 +19,7 @@ Spooky 預設用 `/usr/bin/git`。想換成別的 Git，開啟 :ui[app.name > se
 ## 下載 {#download}
 
 1. 開啟 GitHub 上的 [Spooky 發行頁面](https://github.com/rakuyoMo/Spooky/releases)。
-2. 找到最新的穩定版，它的名稱是 `v` 加版本號碼。名稱以「(beta)」或「(development)」結尾的是測試用的版本。
+2. 找到最新的穩定版，它的名稱是 `v` 加版本號碼。標著 **Pre-release** 的是公測版與內測版，版本號碼以 `-beta.` 或 `-alpha.` 加數字結尾。
 3. 下載名為 `Spooky-` 加版本號碼的 zip 檔。
 4. 按兩下下載的 zip 檔，把它解壓縮。
 5. 把 Spooky 拖進 **應用程式** 資料夾。
@@ -57,8 +57,8 @@ Spooky 預設會自己檢查更新。想馬上檢查，選 :ui[app.name > update
 | 頻道 | 收到的版本 |
 |---|---|
 | :ui[updates.channel.stable] | 穩定版。這是預設的頻道 |
-| :ui[updates.channel.beta] | 穩定版與測試版 |
-| :ui[updates.channel.development] | 全部版本，包括開發版 |
+| :ui[updates.channel.beta] | 穩定版與公測版 |
+| :ui[updates.channel.development] | 全部版本，包括內測版 |
 
 ### 新版本有什麼變化 {#whats-new}
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 把打包好的 build/Spooky.app 压缩成更新包，生成签名的更新清单，都输出到 build/updates/
-# 清单里嵌入这一版每种语言的更新说明，并从上一份清单带上比这一版更稳定的各通道里最新的条目
-# 用法：scripts/appcast.sh <stable|beta|development> [<上一份更新清单>]
+# 通道取自 App 的版本号；清单里嵌入这一版每种语言的更新说明，并从上一份清单带上比这一版更稳定的各通道里最新的条目
+# 用法：scripts/appcast.sh [<上一份更新清单>]
 #
 # 私钥在 CI 里经环境变量 SPARKLE_PRIVATE_KEY 传入，再经标准输入交给 Sparkle 的工具，不写进参数或文件；
 # 本机没有这个变量时，从钥匙串里 com.rakuyo.spooky 账户的项目读取
@@ -18,26 +18,27 @@ readonly updates_directory="build/updates"
 readonly sparkle_tools=".build/artifacts/sparkle/Sparkle/bin"
 readonly releases_url="https://github.com/rakuyoMo/Spooky/releases"
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-    echo "错误：用法：scripts/appcast.sh <stable|beta|development> [<上一份更新清单>]" >&2
+if [[ $# -gt 1 ]]; then
+    echo "错误：用法：scripts/appcast.sh [<上一份更新清单>]" >&2
     exit 1
 fi
 
-readonly channel="$1"
-readonly previous_feed="${2:-}"
+readonly previous_feed="${1:-}"
 
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_directory/Contents/Info.plist")"
 readonly version
 
-# 稳定版的条目不带通道，所有用户都能收到；测试与开发版本的条目标上自己的通道
-case "$channel" in
-    stable) channel_option="" ;;
-    beta | development) channel_option="--channel=$channel" ;;
+# 稳定版的条目不带通道，所有用户都能收到；公测版（X.Y.Z-beta.N）与内测版（X.Y.Z-alpha.N）的条目标上各自的通道
+case "$version" in
+    *-beta.*) channel_option="--channel=beta" ;;
+    *-alpha.*) channel_option="--channel=development" ;;
 
-    *)
-        echo "错误：通道须为 stable、beta 或 development，实际为 “${channel}”" >&2
+    *-*)
+        echo "错误：版本号的标记须为 beta 或 alpha，实际为 “${version}”" >&2
         exit 1
         ;;
+
+    *) channel_option="" ;;
 esac
 
 # 每份清单只包含这一次的安装包，先移除上次生成的产物

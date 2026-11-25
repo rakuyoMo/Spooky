@@ -1934,7 +1934,7 @@
 "updates.channel" = "リリースチャンネル：";
 "updates.channel.stable" = "安定版";
 "updates.channel.beta" = "ベータ版";
-"updates.channel.development" = "開発版";
+"updates.channel.development" = "アルファ版";
 "updates.automaticChecks" = "アップデートを自動的に確認";
 "updates.automaticDownloads" = "アップデートを自動的にダウンロード";
 "updates.interval" = "確認の間隔：";

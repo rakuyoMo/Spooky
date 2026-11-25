@@ -3,17 +3,18 @@ import Sparkle
 
 // MARK: - UpdateChannel
 
-/// 更新通道：稳定、测试与开发，对应更新清单里条目的 `sparkle:channel`。
+/// 更新通道：稳定、公测与内测，对应更新清单里条目的 `sparkle:channel`。
 ///
-/// 稳定版的条目不带通道，所有用户都能收到；测试通道另外接收 `beta` 条目，开发通道再接收 `development` 条目。
+/// 稳定版的条目不带通道，所有用户都能收到；公测通道另外接收 `beta` 条目，内测通道再接收 `development` 条目。
+/// 通道值存在偏好里，已安装的 App 也按它挑选清单里的条目，不随界面上的名称改动。
 enum UpdateChannel: String, CaseIterable, Identifiable {
     /// 只接收稳定版。
     case stable
 
-    /// 接收稳定版与测试版。
+    /// 接收稳定版与公测版，公测版的版本号带 `-beta.N`。
     case beta
 
-    /// 接收稳定版、测试版与开发版。
+    /// 接收稳定版、公测版与内测版，内测版的版本号带 `-alpha.N`。
     case development
 
     /// 偏好键，保存 `rawValue`。

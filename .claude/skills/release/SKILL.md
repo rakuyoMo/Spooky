@@ -1,8 +1,8 @@
 ---
 name: release
 description: 发布 Spooky 的新版本：准备这一版的更新说明，用 `mise run release` 开 release PR，等检查通过后合并，再等 GitHub Actions 创建 GitHub Release。
-when_to_use: 用户要发布新版本时，例如 “发布 1.2.0” “发个 1.2.0 测试版” “release 1.2.0”。
-argument-hint: "[X.Y.Z] [stable|beta|development]"
+when_to_use: 用户要发布新版本时，例如 “发布 1.2.0” “发布 1.2.0-beta.1” “发个 1.2.0 公测版” “release 1.2.0”。
+argument-hint: "[版本号]"
 allowed-tools:
   - Bash(./scripts/check-release.sh *)
   - Bash(git fetch origin)
@@ -30,18 +30,18 @@ allowed-tools:
   - 等待类命令放到后台运行
   - 不因为命令超时就判定失败
 
-## 1. 确定版本号与通道
+## 1. 确定版本号
 
-- 从用户的话或上面的参数里取版本号，格式为 `X.Y.Z`
-- 没有给出版本号时，问用户要；不自行推断 “下一个版本”
-- 通道是 `stable`、`beta` 或 `development`：用户说 “测试版” 取 `beta`，“开发版” 取 `development`，没有提到时取 `stable`
+- 从用户的话或上面的参数里取版本号：稳定版为 `X.Y.Z`，公测版为 `X.Y.Z-beta.N`，内测版为 `X.Y.Z-alpha.N`
+- 用户说 “公测版” “测试版” 指 `X.Y.Z-beta.N`，“内测版” “开发版” 指 `X.Y.Z-alpha.N`，都没提到时是稳定版
+- 没有给出完整的版本号时（包括说了公测或内测、没说序号 `N`），问用户要；不自行推断 “下一个版本”
 
 ## 2. 准备更新说明
 
 这一版的更新说明是 `docs/release-notes/<版本号>/` 下每种语言一份的 Markdown，写法见 `docs/releasing.md` 的 “更新说明” 一节。先运行发布检查：
 
 ```bash
-./scripts/check-release.sh <版本号> <通道>
+./scripts/check-release.sh <版本号>
 ```
 
 - 通过：直接用，进入下一步
@@ -56,9 +56,16 @@ allowed-tools:
 git fetch origin
 ```
 
-找到 `origin/main` 上最近的 `v*` 标签：
+按这一版的类型找到 `origin/main` 上起算的标签：稳定版找最近的稳定版，公测版找最近的公测版或稳定版，内测版找最近的任一版本：
 
 ```bash
+# 稳定版
+git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' origin/main
+
+# 公测版
+git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-alpha.*' origin/main
+
+# 内测版
 git describe --tags --abbrev=0 --match 'v*' origin/main
 ```
 
@@ -84,7 +91,7 @@ gh pr view <PR 编号> --json title,body
 ## 3. 开 release PR
 
 ```bash
-mise run release <版本号> <通道>
+mise run release <版本号>
 ```
 
 - 失败：把脚本的报错原样告诉用户，停止

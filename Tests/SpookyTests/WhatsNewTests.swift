@@ -9,11 +9,15 @@ import Testing
 @MainActor
 struct WhatsNewTests {
     /// 版本号按数值比较，`0.12.0` 排在 `0.10.0` 与 `0.9.0` 前面，不按字符串排；
+    /// 同一个 X.Y.Z 的稳定版排在它的公测版与内测版前面，公测版排在内测版前面，序号同样按数值比较；
     /// 每个版本各自挑语言：有用户的语言就用它，没有时用英文；一份支持语言的说明都没有的版本不列。
     @Test("条目按版本号从新到旧，按用户的语言挑选说明")
     func entryOrderAndLanguage() throws {
         let directory = try Self.notesDirectory([
             "0.12.0": ["en": "twelve", "ja": "十二"],
+            "0.12.0-beta.2": ["en": "beta two"],
+            "0.12.0-beta.10": ["en": "beta ten"],
+            "0.12.0-alpha.1": ["en": "alpha one"],
             "0.10.0": ["en": "ten"],
             "0.9.0": ["en": "nine", "zh-Hans": "九"],
             "0.8.0": ["notes": "没有语言"],
@@ -26,6 +30,9 @@ struct WhatsNewTests {
         #expect(
             entries == [
                 WhatsNewEntry(version: "0.12.0", notes: "十二"),
+                WhatsNewEntry(version: "0.12.0-beta.10", notes: "beta ten"),
+                WhatsNewEntry(version: "0.12.0-beta.2", notes: "beta two"),
+                WhatsNewEntry(version: "0.12.0-alpha.1", notes: "alpha one"),
                 WhatsNewEntry(version: "0.10.0", notes: "ten"),
                 WhatsNewEntry(version: "0.9.0", notes: "nine"),
             ]

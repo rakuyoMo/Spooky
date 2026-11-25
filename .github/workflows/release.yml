@@ -1,4 +1,4 @@
-# 标题为 `release: X.Y.Z`（测试与开发版本带上 ` (beta)` 或 ` (development)`）的 PR 合并进 main 后，打包并发布 GitHub Release
+# 标题为 `release: <版本号>` 的 PR 合并进 main 后，打包并发布 GitHub Release；公测版与内测版发布为 pre-release
 
 name: 发布
 
@@ -63,34 +63,36 @@ jobs:
       - name: 打包
         run: mise run bundle
 
-      # 测试与开发版本的清单要带上更稳定的通道里最新的条目，从最新的 Release 取上一份清单；还没有 Release 时不取
+      # App 读标为 latest 的 Release 上的更新清单，pre-release 不能标为 latest，所以这一份总在最新的稳定版上；
+      # 公测版与内测版的清单要带上更稳定的通道里最新的条目，从这一份合成，发布后再换掉它
       - name: 取上一份更新清单
         if: env.CHANNEL != 'stable'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          count="$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 1 --json tagName --jq length)"
+          # 不给标签时取最新的稳定版；还没有稳定版时这一步失败，清单无处可放，不发布
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
 
-          if [[ "$count" -gt 0 ]]; then
-            gh release download --repo "$GITHUB_REPOSITORY" --pattern appcast.xml --dir build/previous
-            echo "PREVIOUS_FEED=build/previous/appcast.xml" >> "$GITHUB_ENV"
-          fi
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern appcast.xml --dir build/previous
+
+          echo "FEED_TAG=$tag" >> "$GITHUB_ENV"
+          echo "PREVIOUS_FEED=build/previous/appcast.xml" >> "$GITHUB_ENV"
 
       - name: 压缩并签名更新清单
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: mise run appcast "$CHANNEL" ${PREVIOUS_FEED:+"$PREVIOUS_FEED"}
+        run: mise run appcast ${PREVIOUS_FEED:+"$PREVIOUS_FEED"}
 
-      # 一步完成打标签、创建 Release、上传 zip 与更新清单；标签打在合并提交上，正文是这一版的英文更新说明
-      # App 从标为 latest 的 Release 读取更新清单，测试与开发版本同样标为 latest
+      # 一步完成打标签、创建 Release、上传 zip 与更新清单；标签打在合并提交上，名称与标签相同，正文是这一版的英文更新说明
+      # 稳定版标为 latest，公测版与内测版标为 pre-release
       - name: 创建 Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          title="v$VERSION"
+          release_type="--latest"
 
           if [[ "$CHANNEL" != "stable" ]]; then
-            title+=" ($CHANNEL)"
+            release_type="--prerelease"
           fi
 
           gh release create "v$VERSION" \
@@ -98,6 +100,14 @@ jobs:
             "build/updates/appcast.xml" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$MERGE_COMMIT_SHA" \
-            --title "$title" \
+            --title "v$VERSION" \
             --notes-file "docs/release-notes/$VERSION/en.md" \
-            --latest
+            "$release_type"
+
+      # 公测版与内测版的清单换掉最新稳定版上的那一份，选了这些通道的用户从中收到这一版；
+      # 这一步失败时，从刚建好的 Release 取下 appcast.xml，照这条命令手动换上
+      - name: 换掉稳定版上的更新清单
+        if: env.CHANNEL != 'stable'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$FEED_TAG" build/updates/appcast.xml --repo "$GITHUB_REPOSITORY" --clobber

@@ -8,6 +8,7 @@
 ### Verbessert
 
 - Die Liste der Pull Requests und Merge Requests zeigt den Status jetzt als Symbol vor dem Titel statt als Text dahinter: grün bei einem offenen Request, grau bei einem Entwurf, rot bei einem geschlossenen und violett bei einem zusammengeführten
+- Auf der Seite **Updates** in den Einstellungen heißen die Release-Kanäle jetzt **Stabil**, **Beta** und **Alpha**. Beta- und Alphaversionen tragen die Kennzeichnung in der Versionsnummer, etwa 1.2.0-beta.1, und sind so unter **Über Spooky** und im Update-Fenster gleich zu erkennen
 
 ### Behoben
 

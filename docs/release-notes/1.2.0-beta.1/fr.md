@@ -8,6 +8,7 @@
 ### Améliorations
 
 - La liste des pull requests et des merge requests indique désormais l’état de chaque requête par une icône avant le titre, à la place du texte qui le suivait : verte pour une requête ouverte, grise pour un brouillon, rouge pour une requête fermée et violette pour une requête fusionnée
+- Dans la page **Mises à jour** des réglages, les canaux de publication s’appellent désormais **Stable**, **Bêta** et **Alpha**. Les versions bêta et alpha portent leur marque dans le numéro de version, par exemple 1.2.0-beta.1, et se reconnaissent ainsi dans **À propos de Spooky** et dans la fenêtre de mise à jour
 
 ### Corrections
 

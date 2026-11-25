@@ -1934,7 +1934,7 @@
 "updates.channel" = "릴리스 채널:";
 "updates.channel.stable" = "안정 버전";
 "updates.channel.beta" = "베타 버전";
-"updates.channel.development" = "개발 버전";
+"updates.channel.development" = "알파 버전";
 "updates.automaticChecks" = "자동으로 업데이트 확인";
 "updates.automaticDownloads" = "자동으로 업데이트 다운로드";
 "updates.interval" = "업데이트 확인 주기:";

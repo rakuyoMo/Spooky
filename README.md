@@ -249,11 +249,11 @@ SwiftLint runs in strict mode, so warnings fail the check too. The other coding 
 Maintainers release new versions from `main`:
 
 ```sh
-# Open a release PR for version X.Y.Z; the channel defaults to stable
-mise run release X.Y.Z [stable|beta|development]
+# Open a release PR: X.Y.Z for a stable release, X.Y.Z-beta.N for a beta, X.Y.Z-alpha.N for an alpha
+mise run release <version>
 ```
 
-The script checks the version, the release notes in `docs/release-notes/X.Y.Z/`, and the state of the repository, then opens a release PR. Once it's merged, GitHub Actions bundles the app, signs the update, tags the merge commit, and creates the GitHub Release.
+The script checks the version, the release notes in `docs/release-notes/<version>/`, and the state of the repository, then opens a release PR. Once it's merged, GitHub Actions bundles the app, signs the update, tags the merge commit, and creates the GitHub Release. Betas and alphas are published as pre-releases.
 
 [Releasing](docs/releasing.md) (in Chinese) has the details.
 
