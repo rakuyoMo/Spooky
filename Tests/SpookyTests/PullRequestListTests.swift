@@ -399,6 +399,9 @@ final class RequestServer: URLProtocol, @unchecked Sendable {
         /// 项目里的请求，从新到旧。
         var entries: [Entry]
 
+        /// 列表每页的个数；nil 时一页给完。
+        var pageSize: Int? = nil
+
         /// 项目里的标签名。
         var projectLabels = ["bug", "docs"]
 
@@ -471,8 +474,13 @@ final class RequestServer: URLProtocol, @unchecked Sendable {
         guard
             let url = request.url,
             let host = url.host,
-            let (status, body) = Self.respond(to: request, url: url, on: host),
-            let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
+            let (status, body, link) = Self.respond(to: request, url: url, on: host),
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: status,
+                httpVersion: nil,
+                headerFields: link.map { ["Link": $0] }
+            )
         else {
             client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
             return
@@ -490,21 +498,44 @@ final class RequestServer: URLProtocol, @unchecked Sendable {
 // MARK: - Responses
 
 extension RequestServer {
-    /// 记下请求：写请求改动主机上的内容，读请求按路径给出列表、标签、作业、日志或详情；列表按 `state` 参数只给打开着的或全部。
-    private static func respond(to request: URLRequest, url: URL, on host: String) -> (Int, String)? {
-        contents.withLock { contents -> (Int, String)? in
+    /// 记下请求：写请求改动主机上的内容，读请求按路径给出列表、标签、作业、日志或详情；列表还有下一页时带上 `Link` 头。
+    private static func respond(to request: URLRequest, url: URL, on host: String) -> (Int, String, String?)? {
+        contents.withLock { contents -> (Int, String, String?)? in
             guard var content = contents[host] else { return nil }
 
             content.log.append(url.absoluteString)
 
-            let response =
+            let (status, body) =
                 request.httpMethod == "GET"
                     ? read(url, in: content)
                     : write(request, path: url.path, in: &content)
 
+            let link = listPage(for: url, in: content).next.map {
+                "<https://" + host + url.path + "?page=\($0)" + #">; rel="next""#
+            }
+
             contents[host] = content
-            return response
+            return (status, body, link)
         }
+    }
+
+    /// 列表的一页与下一页的页码：按 `state` 参数只给打开着的或全部，主机设了每页的个数时按 `page` 参数分页；不是列表的请求没有内容。
+    private static func listPage(for url: URL, in content: Content) -> (entries: [Entry], next: Int?) {
+        guard url.path.hasSuffix("/merge_requests") else {
+            return ([], nil)
+        }
+
+        let opened = url.query?.contains("state=opened") ?? false
+        let listed = content.entries.filter { !opened || $0.state == "opened" }
+
+        guard let size = content.pageSize else {
+            return (listed, nil)
+        }
+
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        let page = items?.first { $0.name == "page" }?.value.flatMap(Int.init) ?? 1
+
+        return (Array(listed.dropFirst((page - 1) * size).prefix(size)), page * size < listed.count ? page + 1 : nil)
     }
 
     /// 新建标签，或按 `add_labels` 与 `remove_labels` 改动请求的标签。
@@ -539,10 +570,7 @@ extension RequestServer {
         let path = url.path
 
         if path.hasSuffix("/merge_requests") {
-            let opened = url.query?.contains("state=opened") ?? false
-            let listed = content.entries.filter { !opened || $0.state == "opened" }
-
-            return (200, "[" + listed.map(\.json).joined(separator: ",") + "]")
+            return (200, "[" + listPage(for: url, in: content).entries.map(\.json).joined(separator: ",") + "]")
         }
 
         if path.hasSuffix("/labels") {

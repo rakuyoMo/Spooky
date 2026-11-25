@@ -19,7 +19,7 @@ Wählen Sie im Menü oben in der Liste ein Remote. Jede Zeile zeigt:
 - Die Labels, jedes in seiner Farbe. Bewegen Sie den Zeiger über ein Label, um seine Beschreibung zu sehen. Labels, die nicht in eine Zeile passen, werden weggelassen.
 - Rechts ein Symbol für den [CI/CD-Status](#checks), wenn es einen gibt
 
-Scrollen Sie nach unten, um mehr zu laden.
+Scrollen Sie nach unten, um mehr zu laden. Um die Liste neu einzulesen, klicken Sie auf :ui[action.refresh] oder drücken Sie <kbd>⌘R</kbd>.
 
 Die Liste zeigt zunächst nur offene Requests. Um auch geschlossene und zusammengeführte zu sehen, klicken Sie oben in der Liste auf die Filtertaste und wählen Sie :ui[pullRequests.filter.all]. Geschlossene und zusammengeführte Requests lassen sich nicht zusammenführen oder schließen. Wenn Sie das Fenster das nächste Mal öffnen, steht die Liste wieder auf :ui[pullRequests.filter.open].
 

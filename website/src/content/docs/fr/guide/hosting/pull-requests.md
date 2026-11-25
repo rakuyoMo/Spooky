@@ -19,7 +19,7 @@ Choisissez un dépôt distant dans le menu en haut de la liste. Chaque ligne aff
 - Ses étiquettes, chacune dans sa couleur. Placez le pointeur sur une étiquette pour voir sa description. Les étiquettes qui ne tiennent pas sur une ligne ne sont pas affichées.
 - À droite, une icône pour son [statut CI/CD](#checks), quand elle en a un
 
-Faites défiler jusqu’en bas pour en charger d’autres.
+Faites défiler jusqu’en bas pour en charger d’autres. Pour relire la liste, cliquez sur :ui[action.refresh] ou appuyez sur <kbd>⌘R</kbd>.
 
 La liste n’affiche d’abord que les requêtes ouvertes. Pour voir aussi les requêtes fermées et fusionnées, cliquez sur le bouton de filtre en haut de la liste et choisissez :ui[pullRequests.filter.all]. Les requêtes fermées et fusionnées ne peuvent être ni fusionnées ni fermées. À la prochaine ouverture de la fenêtre, la liste revient à :ui[pullRequests.filter.open].
 

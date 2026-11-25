@@ -23,6 +23,8 @@ extension RepositorySession {
     }
 
     /// 切回仓库时恢复视图状态；数据随后重新读取，失效的选区由刷新结果过滤。
+    ///
+    /// 请求不随仓库的刷新读取：恢复到请求视图时在这里读。
     func restore(_ state: RepositoryViewState) {
         activeView = state.activeView
         commitSubject = state.commitSubject
@@ -35,5 +37,9 @@ extension RepositorySession {
         selectedID = state.selectedID
         diffSide = state.diffSide
         history.restore(references: state.historyReferences, commits: state.historyCommits)
+
+        if activeView == .pullRequests {
+            reloadPullRequests()
+        }
     }
 }

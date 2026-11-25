@@ -451,6 +451,36 @@ extension RepositoryPullRequestState {
         AppLocalization.text((service == .gitlab ? "mr." : "pr.") + key)
     }
 
+    /// 从第一页读起：所选的请求还没读到时接着读下一页，直到读到它、读回原有的个数或没有下一页。
+    ///
+    /// - Parameters:
+    ///   - selected: 所选的请求；没有时只读第一页。
+    ///   - count: 读取前列表里的个数。
+    ///   - load: 按页码读一页。
+    /// - Returns: 读到的请求与下一页的页码。
+    private static func pages(
+        reaching selected: PullRequestID?,
+        within count: Int,
+        load: (Int) async throws -> (items: [PullRequest], nextPage: Int?)
+    ) async throws -> (items: [PullRequest], nextPage: Int?) {
+        var items: [PullRequest] = []
+        var page: Int? = 1
+
+        while let current = page {
+            let result = try await load(current)
+
+            // 两次读取之间有了新的请求时，这一页的开头会重复上一页末尾的几个
+            items += result.items.filter { item in !items.contains { $0.id == item.id } }
+            page = result.nextPage
+
+            guard let selected, items.count < count, !items.contains(where: { $0.id == selected }) else {
+                break
+            }
+        }
+
+        return (items, page)
+    }
+
     /// 只读出远端、选出远端并找出它对应的账号与项目，不读列表；请求视图还没读过时，新建请求的可用性与对话框用它。
     ///
     /// 读完时请求视图已开始读取或换了仓库，就不写入。
@@ -500,7 +530,7 @@ extension RepositoryPullRequestState {
         remote = remote.flatMap { names.contains($0) ? $0 : nil } ?? (names.contains("origin") ? "origin" : names.first)
     }
 
-    /// 选中远端对应账号与项目后读第一页。
+    /// 选中远端对应账号与项目后读第一页；所选的请求排在后面时，接着读到它所在的那一页。
     private func loadList(request: Int) async {
         resolveTarget()
 
@@ -513,12 +543,19 @@ extension RepositoryPullRequestState {
             return
         }
 
+        let selected = selectedID
+        let count = items.count
+        let includesClosed = includesClosed
+
         do {
+            // 读到的几页合成 Activity 里的一条记录
             let result = try await RepositoryActivities.shared.recordHosting(
                 title: Self.loadingTitle("load.title", service: client.instance.service),
                 repository: location
             ) {
-                try await client.pullRequests(in: project, includesClosed: includesClosed)
+                try await Self.pages(reaching: selected, within: count) {
+                    try await client.pullRequests(in: project, page: $0, includesClosed: includesClosed)
+                }
             }
 
             guard generation == request else { return }

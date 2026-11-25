@@ -19,7 +19,7 @@ Spooky 会列出仓库远端上的 GitHub Pull Request 和 GitLab Merge Request�
 - 标签，底色是标签自己的颜色。把指针停在标签上，可以看到它的说明。一行放不下的标签不显示。
 - 有 [CI/CD 状态](#checks) 时，右边有一个表示状态的图标
 
-滚到底部会接着读取更多。
+滚到底部会接着读取更多。想把列表重新读一遍，点 :ui[action.refresh] 或按 <kbd>⌘R</kbd>。
 
 列表一开始只列打开着的请求。想连已关闭和已合并的一起看，点列表顶部的筛选按钮，选 :ui[pullRequests.filter.all]。已关闭和已合并的请求不能再合并或关闭。下次打开窗口时，列表回到 :ui[pullRequests.filter.open]。
 
