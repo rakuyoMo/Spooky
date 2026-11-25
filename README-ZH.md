@@ -277,3 +277,4 @@ Spooky 以 [GNU General Public License v3.0](LICENSE) 许可证发布。
 - [highlight.js](https://highlightjs.org) 11.12.0，用于语法着色。Copyright (c) 2006, Ivan Sagalaev，以 BSD 3-Clause 许可证发布；许可证全文见 [`Sources/Spooky/HighlightJS/LICENSE`](Sources/Spooky/HighlightJS/LICENSE)，并随 App 一同分发
 - [Octicons](https://primer.style/octicons) 19.43.0，用于 Pull Request 与 Merge Request 的状态图标。Copyright (c) 2026 GitHub Inc.，以 MIT 许可证发布；许可证全文见 [`Sources/Spooky/Octicons/LICENSE`](Sources/Spooky/Octicons/LICENSE)，并随 App 一同分发
 - [swift-subprocess](https://github.com/swiftlang/swift-subprocess) 1.0.1，用于启动 Git 等子进程，以 Apache License 2.0 发布；许可证随 App 附在 `Contents/Resources/Subprocess-LICENSE.txt`
+- [Inter](https://rsms.me/inter/) 4.001 与 [Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC) 2.004，用于宣传片的文字，以 SIL Open Font License 1.1 发布；许可证全文见 [`artifacts/promo/fonts/`](artifacts/promo/fonts/)

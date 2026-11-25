@@ -1,0 +1,181 @@
+/*
+ * 成片的版式：舞台、各层、文字与卡片。
+ *
+ * 文字与卡片的位置和大小都是整数像素，不加变换；页面里没有 CSS 动画与过渡，每一帧由脚本按时间设好。
+ */
+
+@font-face {
+    font-family: "Noto Sans SC";
+    font-weight: 100 900;
+    src: url("../../fonts/NotoSansSC.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Inter";
+    font-weight: 100 900;
+    src: url("../../fonts/Inter.ttf") format("truetype");
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: #151516;
+}
+
+/* 舞台就是图标的炭黑底板：自上而下的三个色标与图标相同 */
+#stage {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #262628 0%, #1c1c1e 50%, #151516 100%);
+    color: #fffbf2;
+    font-family: "Inter", "Noto Sans SC", sans-serif;
+    font-synthesis: none;
+}
+
+/*
+ * 画：铺满舞台的 SVG。
+ *
+ * 每一层始终单独合成：否则截图卡片出现与消失时浏览器会改变各层的合成方式，没动的画也跟着重画一遍，轮廓的边缘差出几个色阶。
+ */
+.layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1080px;
+    height: 1920px;
+    will-change: transform;
+}
+
+/* 截图卡片与应用图标：画布按像素一比一显示 */
+.card,
+.app-icon {
+    position: absolute;
+    display: block;
+}
+
+/* 文字：整行居中，不自动折行 */
+.text {
+    position: absolute;
+    left: 0;
+    width: 1080px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 行末的全角标点：半宽的字形 */
+.tail {
+    font-feature-settings: "halt";
+}
+
+/* 头上标着小字的几个字 */
+.annotated {
+    position: relative;
+    display: inline-block;
+}
+
+/* 标在字上面的小字，点出这几个字说的是什么：居中悬在字的正上方，不占行里的位置 */
+.gloss {
+    position: absolute;
+    left: -240px;
+    color: rgb(255 251 242 / 0.78);
+    font-weight: 700;
+    text-align: center;
+}
+
+/* 开场的对句：一幕一句 */
+.couplet {
+    font-size: 128px;
+    font-weight: 900;
+    line-height: 168px;
+    letter-spacing: 6px;
+}
+
+/* 两个小字的字距略放开，开头缩进同样的量，抵掉末尾多出的字距；右边多让出底下那个字的字距，小字才对着字的正中 */
+.couplet .gloss {
+    right: -234px;
+    bottom: 150px;
+    font-size: 38px;
+    line-height: 46px;
+    letter-spacing: 10px;
+    text-indent: 10px;
+}
+
+/* 每一幕的大字 */
+.headline {
+    font-size: 92px;
+    font-weight: 900;
+    line-height: 122px;
+    letter-spacing: 2px;
+}
+
+.headline .gloss {
+    right: -238px;
+    bottom: 108px;
+    font-size: 38px;
+    line-height: 46px;
+    letter-spacing: 0;
+}
+
+.accent {
+    color: #a58dff;
+}
+
+/* 名字 */
+.wordmark {
+    font-size: 188px;
+    font-weight: 800;
+    line-height: 220px;
+    letter-spacing: -6px;
+}
+
+.wordmark.small {
+    font-size: 128px;
+    line-height: 150px;
+    letter-spacing: -4px;
+}
+
+/* 名字下面的一句话 */
+.tagline {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 76px;
+    letter-spacing: 1px;
+}
+
+/* 大字下面的说明 */
+.sub {
+    color: rgb(255 251 242 / 0.72);
+    font-size: 46px;
+    font-weight: 500;
+    line-height: 68px;
+}
+
+.sub.small {
+    font-size: 40px;
+    line-height: 60px;
+}
+
+/* 片尾的网址：一枚贴纸边颜色的胶囊，落在满月前面也看得清 */
+.link .line {
+    display: inline-block;
+    height: 92px;
+    padding: 0 48px;
+    border-radius: 46px;
+    background: #fffbf2;
+    color: #1c1c1e;
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 92px;
+    letter-spacing: 0.5px;
+}
+
+/* 片尾最下面的一行小字 */
+.note {
+    color: rgb(255 251 242 / 0.8);
+    font-size: 34px;
+    font-weight: 500;
+    line-height: 48px;
+}
