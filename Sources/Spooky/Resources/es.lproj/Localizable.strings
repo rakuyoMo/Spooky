@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "Cargando registro…";
 "pullRequests.loadChecks.title" = "Cargar estado de CI/CD";
 "pullRequests.loadIssues.title" = "Cargar incidencias";
+"pullRequests.loadMembers.title" = "Cargar miembros";
 "pullRequests.loadMergeOptions.title" = "Cargar opciones de fusión";
 "pullRequests.merge" = "Fusionar";
 "pullRequests.mergeStrategy" = "Estrategia de fusión:";

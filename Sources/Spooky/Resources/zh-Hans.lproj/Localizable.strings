@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "正在加载日志…";
 "pullRequests.loadChecks.title" = "加载 CI/CD 状态";
 "pullRequests.loadIssues.title" = "加载 Issue";
+"pullRequests.loadMembers.title" = "加载成员";
 "pullRequests.loadMergeOptions.title" = "加载合并选项";
 "pullRequests.merge" = "合并";
 "pullRequests.mergeStrategy" = "合并方式：";

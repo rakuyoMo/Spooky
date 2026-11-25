@@ -80,6 +80,8 @@ La source et la cible ne peuvent pas être la même branche.
 
 Pour ajouter un commentaire, cliquez sur :ui[pullRequests.addComment] à la fin de la conversation, ou appuyez sur <kbd>⌘S</kbd>.
 
+Pour mentionner quelqu’un dans un commentaire, saisissez `@`. Spooky liste les participants de la requête et les membres du projet, et réduit la liste à mesure que vous saisissez un nom d’utilisateur ou un nom. Appuyez sur <kbd>↑</kbd> ou <kbd>↓</kbd> pour choisir une personne, sur <kbd>Retour</kbd> pour insérer son nom d’utilisateur et sur <kbd>Esc</kbd> pour fermer la liste.
+
 Pour vos propres commentaires, utilisez :ui[pullRequests.comment.edit] et :ui[pullRequests.comment.delete] sur le commentaire, ou cliquez dessus avec le bouton droit. Un double-clic sur votre commentaire l’ouvre aussi pour modification. La suppression d’un commentaire ne peut pas être annulée.
 
 Sur GitLab, vous pouvez aussi répondre à n’importe quel commentaire avec :ui[pullRequests.comment.reply]. La réponse rejoint la même discussion sur GitLab.

@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "로그 읽는 중…";
 "pullRequests.loadChecks.title" = "CI/CD 상태 불러오기";
 "pullRequests.loadIssues.title" = "이슈 불러오기";
+"pullRequests.loadMembers.title" = "멤버 불러오기";
 "pullRequests.loadMergeOptions.title" = "병합 옵션 불러오기";
 "pullRequests.merge" = "병합";
 "pullRequests.mergeStrategy" = "병합 전략:";

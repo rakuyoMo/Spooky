@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "Protokoll wird geladen …";
 "pullRequests.loadChecks.title" = "CI/CD-Status laden";
 "pullRequests.loadIssues.title" = "Issues laden";
+"pullRequests.loadMembers.title" = "Mitglieder laden";
 "pullRequests.loadMergeOptions.title" = "Merge-Optionen laden";
 "pullRequests.merge" = "Zusammenführen";
 "pullRequests.mergeStrategy" = "Merge-Strategie:";

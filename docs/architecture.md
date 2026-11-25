@@ -324,6 +324,9 @@ Spooky 由两个 target 组成：
 - 请求的标签在讨论的标签行里增删：有可用的账号就能操作（`RepositorySession.canEditLabels`），账号在项目里的权限由托管服务核对
   - GitHub 经同号 Issue 的接口，GitLab 经请求的 `add_labels` 与 `remove_labels`；新建标签先在项目里建，再加到请求上
   - 一次增删从开始到重新读取开始记在 `RepositoryPullRequestState.isEditingLabels`，期间与重新读取详情期间标签行不可用
+- 评论、回复与修改评论的输入框（`PullRequestCommentEditor`）在输入 `@` 时补全能提及的用户，候选弹窗与提交信息的补全共用 `CommitCompletionPanel`
+  - `@` 在词首或前面不是字母、数字与下划线时才算提及（`MentionCompletion.detect`）；候选先列请求的作者、评论的作者与指派人，再列项目成员，按用户名或显示名筛选
+  - 成员经 `HostingClient.members(of:)` 逐页读完：GitHub 取能被指派的用户，GitLab 取能访问项目的用户；一分钟内复用上次的读取，读取失败时只列参与者，失败的结果不缓存
 - 请求列表各行的状态图标取自 `Octicons/` 里的 SVG，按模板图着色；四种状态的颜色是 `NamedColors.json` 里的 `repository_pullrequests_state_*`
 
 ## 仓库管理与系统集成

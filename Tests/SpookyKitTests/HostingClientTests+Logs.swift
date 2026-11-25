@@ -207,6 +207,50 @@ extension HostingClientTests {
             ]
         )
     }
+
+    /// 成员逐页读完：GitHub 取能被指派的用户，没有显示名；GitLab 取能访问项目的用户，去掉不是 `active` 的。
+    @Test("项目成员的列出")
+    func members() async throws {
+        // GitHub
+        let link = #"<https://api.github.com/repos/o/r/assignees?per_page=100&page=2>; rel="next""#
+
+        var requests = HostingStub.respond { request in
+            request.url?.query()?.hasSuffix("page=1") ?? false
+                ? (200, ["Link": link], Data(#"[{"login":"alex","avatar_url":"https://example.invalid/a.png"}]"#.utf8))
+                : (200, [:], Data(#"[{"login":"sam","avatar_url":null}]"#.utf8))
+        }
+
+        let github = HostingClient(instance: .github, token: "t", session: HostingStub.session())
+
+        #expect(
+            try await github.members(of: "o/r") == [
+                HostingUser(username: "alex", name: nil, avatarURL: URL(string: "https://example.invalid/a.png")),
+                HostingUser(username: "sam", name: nil),
+            ]
+        )
+
+        #expect(
+            Self.calls(requests) == [
+                "GET https://api.github.com/repos/o/r/assignees?per_page=100&page=1 ",
+                "GET https://api.github.com/repos/o/r/assignees?per_page=100&page=2 ",
+            ]
+        )
+
+        // GitLab
+        requests = HostingStub.respond { _ in
+            let users = #"[{"id":1,"username":"alex","name":"Alex 李","state":"active","avatar_url":null},"#
+                + #"{"id":2,"username":"gone","name":"Gone","state":"blocked","avatar_url":null}]"#
+
+            return (200, [:], Data(users.utf8))
+        }
+
+        let gitlab = HostingClient(instance: .gitlabCom, token: "t", session: HostingStub.session())
+
+        #expect(try await gitlab.members(of: "group/project") == [HostingUser(username: "alex", name: "Alex 李")])
+        #expect(
+            Self.calls(requests) == ["GET https://gitlab.com/api/v4/projects/group%2Fproject/users?per_page=100&page=1 "]
+        )
+    }
 }
 
 // MARK: - Helpers

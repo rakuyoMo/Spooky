@@ -287,8 +287,8 @@ struct GitHubLabel: Decodable, Sendable {
 
 // MARK: - GitHubUserReference
 
-/// GitHub 里引用的用户；请求、指派人与评论里的用户对象没有显示名。
-private struct GitHubUserReference: Decodable, Sendable {
+/// GitHub 里引用的用户；请求、指派人、评论与成员列表里的用户对象没有显示名。
+struct GitHubUserReference: Decodable, Sendable {
     /// 字段名：解码器先把蛇形字段转成驼峰，`avatar_url` 转成 `avatarUrl`。
     private enum CodingKeys: String, CodingKey {
         case login
