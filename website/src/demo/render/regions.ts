@@ -3,7 +3,7 @@ import { renderWorkingDiff } from './diff.ts';
 import { esc, slot } from './format.ts';
 import { renderCommitDetail, renderHistoryBar, renderHistoryColumn, renderHistoryList } from './history.ts';
 import { renderOverlay, renderQuickResults } from './overlays.ts';
-import { renderSidebar } from './sidebar.ts';
+import { renderCompactNav, renderSidebar } from './sidebar.ts';
 import { renderStashColumn, renderStashDetail } from './stashes.ts';
 import { renderActions, renderTitle } from './toolbar.ts';
 import { renderBodyBar, renderCommitActions, renderCounter, renderFiles, renderWorkingColumn } from './working.ts';
@@ -24,6 +24,7 @@ export function renderRegions(context: RenderContext): Regions {
 
     regions.set('window', windowFrame(context));
     regions.set('sidebar', renderSidebar(context));
+    regions.set('nav', renderCompactNav(context));
     regions.set('title', renderTitle(context));
     regions.set('actions', renderActions(context));
     regions.set('overlay', renderOverlay(context));
@@ -75,7 +76,11 @@ export function parents(regions: Regions): Map<string, string> {
     return result;
 }
 
-/** 窗口的骨架：红绿灯、侧边栏、工具栏的两段、中间一栏、右边一栏与浮层。 */
+/**
+ * 窗口的骨架：红绿灯、侧边栏、工具栏、中间一栏、右边一栏与浮层。
+ *
+ * 极窄版式里多出视图导航，侧边栏盖在主视图上时垫一层遮罩，点遮罩收起侧边栏。
+ */
 function windowFrame({ text }: RenderContext): string {
     const light = (kind: string) =>
         `<button type="button" class="sd-light sd-light-${kind}" data-action="unavailable" ` +
@@ -83,9 +88,14 @@ function windowFrame({ text }: RenderContext): string {
 
     return (
         `<span class="sd-lights">${light('close')}${light('minimize')}${light('zoom')}</span>` +
+        `<button type="button" class="sd-drawer-scrim" data-action="toggle-sidebar" ` +
+        `tabindex="-1" aria-hidden="true"></button>` +
         slot('sidebar', 'aside', `class="sd-sidebar" aria-label="${esc(text.t('workspace.group'))}"`) +
+        `<div class="sd-toolbar">` +
         slot('title', 'div', 'class="sd-titlebar"') +
         slot('actions', 'div', 'class="sd-actions-bar"') +
+        `</div>` +
+        slot('nav', 'nav', `class="sd-compact-nav" aria-label="${esc(text.t('workspace.group'))}"`) +
         slot('middle', 'div', 'class="sd-middle"') +
         slot('detail', 'div', 'class="sd-detail"') +
         slot('overlay', 'div', 'class="sd-overlay"')

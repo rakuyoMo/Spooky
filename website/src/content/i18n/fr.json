@@ -25,6 +25,8 @@
     "demo.step.commit": "Écrire un message et valider",
     "demo.step.push": "Pousser vers origin",
     "demo.reset": "Réinitialiser la démo",
+    "demo.narrow": "Réduisez la largeur de la fenêtre du navigateur pour voir la disposition des fenêtres étroites.",
+    "demo.overflow": "Autres éléments de la barre d’outils",
     "demo.note": "Ceci est une fenêtre simulée dans votre navigateur. Toutes les données sont des exemples.",
     "demo.unavailable": "Cet élément n’est pas dans la démo.",
     "demo.upToDate": "Aucun nouveau commit sur origin.",

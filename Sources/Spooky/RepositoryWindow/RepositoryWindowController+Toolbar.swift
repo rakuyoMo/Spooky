@@ -276,10 +276,23 @@ extension RepositoryWindowController {
 
         insertDetailSeparatorIfNeeded(in: toolbar)
 
+        // 极窄版式里没有侧边栏，工具栏排不下时先留 Fetch | Pull | Push，新建分支与安全强推不再优先
+        let isNarrow = narrowContent != nil
+
         for item in toolbar.items {
             switch item.itemIdentifier {
             case RepositoryToolbar.repositories:
                 (item as? NSToolbarItemGroup)?.setSelected(showsManager, at: 0)
+
+            case RepositoryToolbar.sidebarSeparator:
+                item.isHidden = isNarrow
+
+            case RepositoryToolbar.sync:
+                item.visibilityPriority = isNarrow ? .user : .standard
+
+            case RepositoryToolbar.createBranch,
+                 RepositoryToolbar.forcePush:
+                item.visibilityPriority = isNarrow ? .standard : .high
 
             case RepositoryToolbar.host:
                 updateHostItem(item)
@@ -534,10 +547,11 @@ extension RepositoryWindowController {
 // MARK: - Detail Separator
 
 extension RepositoryWindowController {
-    /// 跟随分隔符要跟的分栏与分隔线，以及是否显示：只显示图标且当前视图有内层分栏时，显示并跟内层分栏的第一条分隔线；
-    /// 其余时候隐藏，停在外层分栏末尾之后并不存在的那条分隔线上，不与侧边栏分隔符跟同一条。窗口换成整页、没有分栏时为 nil。
+    /// 跟随分隔符要跟的分栏与分隔线，以及是否显示：常规版式里只显示图标且当前视图有内层分栏时，显示并跟内层分栏的第一条分隔线；
+    /// 其余时候隐藏，停在外层分栏末尾之后并不存在的那条分隔线上，不与侧边栏分隔符跟同一条。
+    /// 窗口换成整页或极窄版式、没有外层分栏时为 nil。
     private var detailSeparatorTarget: (splitView: NSSplitView, divider: Int, isShown: Bool)? {
-        if window?.toolbar?.displayMode == .iconOnly, let inner = innerSplit {
+        if window?.toolbar?.displayMode == .iconOnly, layout == .regular, let inner = innerSplit {
             return (inner.splitView, 0, true)
         }
 

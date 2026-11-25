@@ -72,6 +72,22 @@ La columna izquierda es la barra lateral. La columna central muestra la lista de
 
 La columna derecha muestra los detalles de lo que seleccionas en la central. En :ui[workspace.title], son los cambios del archivo seleccionado. Cuando un archivo tiene cambios en el stage y fuera de él, usa :ui[working.staged] y :ui[working.unstaged], arriba, para pasar de unos a otros. Sin nada seleccionado, la columna muestra :ui[detail.empty.title].
 
+### Ventanas estrechas {#narrow-window}
+
+Cuando la ventana es demasiado estrecha para tres columnas, cambia a un diseño para ventanas estrechas. Ensancha la ventana y vuelven las tres columnas, con la anchura que tenían.
+
+::screenshot[Una ventana de repositorio estrecha. Una fila bajo la barra de herramientas cambia de vista. El área de commit y la lista de archivos modificados están encima de los cambios del archivo seleccionado.]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. La fila de vistas, en lugar de la barra lateral
+2. La lista de la vista actual
+3. Los detalles de lo que está seleccionado en la lista
+
+- La fila de vistas tiene :ui[workspace.title], :ui[history.title] y :ui[stash.title]. Para las ramas, las etiquetas, los remotos y las demás vistas, haz clic en :ui[sidebar.menu] al principio de la fila. La barra lateral se abre encima de la vista. Haz clic otra vez en :ui[sidebar.menu], o fuera de la barra lateral, para cerrarla.
+- La lista está encima de los detalles. Arrastra la línea que los separa para dar más espacio a uno de los dos.
+- Los botones que no caben en la barra de herramientas pasan al menú » del final. :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] se quedan en la barra de herramientas.
+
+La vista en la que estás, tu selección y el mensaje de commit que estás escribiendo se mantienen cuando cambia el diseño.
+
 ### Acciones rápidas {#quick-actions}
 
 Selecciona :ui[menu.file > quickActions.menu] o pulsa <kbd>⇧⌘A</kbd> para abrir un panel. Escribe para encontrar una vista, una rama, un archivo o un commit, y ejecuta una acción sobre él sin soltar el teclado. [Ventanas y navegación](/guide/repositories/navigation/) explica qué encuentra y qué teclas usa.

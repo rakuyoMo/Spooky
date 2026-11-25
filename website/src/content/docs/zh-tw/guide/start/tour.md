@@ -72,6 +72,22 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 
 右邊一欄顯示中間所選內容的詳細資訊。在 :ui[workspace.title] 裡，就是所選檔案的變更。一個檔案既有已暫存、又有未暫存的變更時，用頂部的 :ui[working.staged] 與 :ui[working.unstaged] 切換。什麼都沒選時，這一欄顯示 :ui[detail.empty.title]。
 
+### 窄視窗 {#narrow-window}
+
+視窗窄到放不下三欄時，會換成窄視窗的版面。把視窗拉寬，三欄就回來了，寬度和原來一樣。
+
+::screenshot[一個很窄的儲存庫視窗。工具列下面的一列用來切換視圖；提交區與變更的檔案列表在上，所選檔案的變更在下。]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. 切換視圖的一列，取代側邊欄
+2. 目前視圖的列表
+3. 列表裡所選內容的詳細資訊
+
+- 切換視圖的一列裡有 :ui[workspace.title]、:ui[history.title] 與 :ui[stash.title]。要看分支、標籤、遠端和其他視圖，按一下這一列開頭的 :ui[sidebar.menu]，側邊欄會蓋在視圖上面。再按一下 :ui[sidebar.menu]，或按一下側邊欄外面，就能收起它。
+- 列表在上，詳細資訊在下。拖移兩者之間的分隔線，可以調整各自的高度。
+- 工具列上放不下的按鈕收進末尾的 » 選單。:ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 一直留在工具列上。
+
+版面切換時，所在的視圖、選取的內容和正在寫的提交訊息都不變。
+
 ### 快速操作 {#quick-actions}
 
 選 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，會開啟一個面板。輸入文字找到某個視圖、分支、檔案或提交，再對它執行操作，手不用離開鍵盤。它能找到什麼、用哪些按鍵，見 [視窗與導覽](/guide/repositories/navigation/)。

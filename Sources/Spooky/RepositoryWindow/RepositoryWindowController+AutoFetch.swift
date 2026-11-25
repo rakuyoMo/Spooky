@@ -20,10 +20,11 @@ extension RepositoryWindowController {
         )
     }
 
-    /// sheet 挂上之前暂停自动获取。
+    /// sheet 挂上之前暂停自动获取，并收起极窄版式里盖在主视图上的侧边栏。
     @objc
     private func sheetWillBegin(_: Notification) {
         autoFetch.pause()
+        setCompactSidebarShown(false)
     }
 
     /// sheet 关闭后，窗口仍显示仓库时自动获取重新计时。

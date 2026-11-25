@@ -5,9 +5,10 @@ import { quickResults } from '../quick.ts';
 import type { DemoKey } from '../text.ts';
 import type { RenderContext } from './context.ts';
 import { button, esc, icon, slot } from './format.ts';
+import { renderOverflowMenu } from './toolbar.ts';
 
 /**
- * 浮在窗口上的两种面板：推送对话框与快捷操作。
+ * 浮在窗口上的面板：推送对话框、快捷操作与工具栏 » 的菜单。
  */
 
 /** 每种结果的类型名、图标与回车时的动作名。 */
@@ -54,6 +55,8 @@ export function renderOverlay(context: RenderContext): string {
             return pushSheet(context);
         case 'quick':
             return quickPanel(context);
+        case 'more':
+            return renderOverflowMenu(context, context.ui.overflow);
         default:
             return '';
     }

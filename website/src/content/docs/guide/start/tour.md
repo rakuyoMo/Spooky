@@ -72,6 +72,22 @@ The left column is the sidebar. The middle column shows the list for the view yo
 
 The right column shows the details of what you select in the middle. In :ui[workspace.title], that’s the changes in the selected file. When a file has both staged and unstaged changes, use :ui[working.staged] and :ui[working.unstaged] at the top to switch between them. With nothing selected, the column shows :ui[detail.empty.title].
 
+### Narrow windows {#narrow-window}
+
+When the window gets too narrow for three columns, it switches to a narrow layout. Widen the window and the three columns come back, as wide as you left them.
+
+::screenshot[A narrow repository window. A row below the toolbar switches between the views. The commit area and the list of changed files sit above the changes in the selected file.]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. The view row, in place of the sidebar
+2. The list for the current view
+3. Details of what is selected in the list
+
+- The view row has :ui[workspace.title], :ui[history.title], and :ui[stash.title]. For branches, tags, remotes, and the other views, click :ui[sidebar.menu] at the start of the row. The sidebar opens on top of the view. Click :ui[sidebar.menu] again, or click outside the sidebar, to close it.
+- The list sits above the details. Drag the line between them to give one of them more room.
+- Buttons that don’t fit on the toolbar move into the » menu at its end. :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] stay on the toolbar.
+
+The view you’re in, your selection, and the commit message you’re writing stay as they are when the layout changes.
+
 ### Quick Actions {#quick-actions}
 
 Choose :ui[menu.file > quickActions.menu] or press <kbd>⇧⌘A</kbd> to open a panel. Type to find a view, a branch, a file, or a commit, then run an action on it without leaving the keyboard. [Windows and Navigation](/guide/repositories/navigation/) explains what it finds and which keys it uses.

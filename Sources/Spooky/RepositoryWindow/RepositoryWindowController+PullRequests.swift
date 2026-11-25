@@ -57,19 +57,16 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 请求列表与详情分栏，宽度按请求视图单独保存。
+    /// 请求列表与详情分栏，尺寸按请求视图单独保存。
     func makePullRequestsSplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName("Spooky.PullRequests", of: split)
+        let split = makeInnerSplit(name: "Spooky.PullRequests")
 
         let list = NSHostingController(rootView: PullRequestListView(session: session))
 
-        // 列表最窄 50 pt，由分栏项决定；宿主不把内容的最小尺寸交给分栏，否则按 50 pt 宽量出的高度会撑高窗口
+        // 常规版式里列表最窄 50 pt，由分栏项决定；宿主不把内容的最小尺寸交给分栏，否则按 50 pt 宽量出的高度会撑高窗口
         list.sizingOptions = []
         let listItem = NSSplitViewItem(contentListWithViewController: list)
-        listItem.minimumThickness = 50
+        listItem.minimumThickness = listMinimumThickness(50)
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 

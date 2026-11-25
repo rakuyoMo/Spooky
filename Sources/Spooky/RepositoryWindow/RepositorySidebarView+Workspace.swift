@@ -81,7 +81,7 @@ extension RepositorySidebarView {
 
             Spacer(minLength: 4)
 
-            workingCopyAccessory
+            SidebarWorkingCopyAccessory(session: session)
         }
         .help(SidebarTooltip.workingCopy(session.status, host: session.repository?.host))
         .contextMenu {
@@ -92,34 +92,6 @@ extension RepositorySidebarView {
                 revealFinder: revealFinder,
                 openTerminal: openTerminal
             )
-        }
-    }
-
-    /// Working Copy 行尾：刷新中或占用工作区的写操作执行中显示进度；否则有进行中的操作时显示 18 × 18 pt 的操作图标，
-    /// 没有时显示不为零的改动文件数。
-    @ViewBuilder
-    private var workingCopyAccessory: some View {
-        if session.isRefreshing || session.workspaceProgress != nil {
-            ProgressView()
-                .controlSize(.small)
-                .accessibilityLabel(session.workspaceProgress?.title ?? AppLocalization.text("loading.status"))
-        } else {
-            switch WorkingCopyMarker.current(progress: session.context?.progress, status: session.status) {
-            case .operation(let symbol):
-                // 自绘的图形按前景样式填色，随行的选中状态变色；可访问性名称与操作横幅的标题相同
-                AppSymbolShape(name: symbol)
-                    .frame(width: 18, height: 18)
-                    .accessibilityElement()
-                    .accessibilityAddTraits(.isImage)
-                    .accessibilityLabel(session.operationBannerTitle ?? "")
-
-            case .changes(let count):
-                SidebarCountBadge(count: count)
-                    .accessibilityLabel(AppLocalization.text("workspace.changed", count))
-
-            case nil:
-                EmptyView()
-            }
         }
     }
 

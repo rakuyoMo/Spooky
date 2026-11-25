@@ -30,6 +30,8 @@ const siteTexts = z.object({
     'demo.step.commit': z.string(),
     'demo.step.push': z.string(),
     'demo.reset': z.string(),
+    'demo.narrow': z.string(),
+    'demo.overflow': z.string(),
     'demo.note': z.string(),
     'demo.unavailable': z.string(),
     'demo.upToDate': z.string(),
