@@ -277,7 +277,7 @@ extension RepositoryWindowController {
         insertDetailSeparatorIfNeeded(in: toolbar)
 
         // 极窄版式里没有侧边栏，工具栏排不下时先留 Fetch | Pull | Push，新建分支与安全强推不再优先
-        let isNarrow = narrowContent != nil
+        let isNarrow = showsNarrowLayout
 
         for item in toolbar.items {
             switch item.itemIdentifier {

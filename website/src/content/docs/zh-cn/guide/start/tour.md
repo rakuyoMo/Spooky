@@ -88,6 +88,10 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 版式切换时，所在的视图、选中的内容和正在写的提交信息都不变。
 
+仓库管理窗口变窄时也会换版式：仓库列表在上，所选仓库的详情在下。
+
+想固定用一种版式，在 :ui[menu.view > menu.layout] 里选 :ui[menu.layout.narrow] 或 :ui[menu.layout.wide]，窗口不论宽窄都用这种版式。选 :ui[menu.layout.automatic]，版式重新跟着窗口的宽度变。这个选择对所有窗口生效。
+
 ### 快捷操作 {#quick-actions}
 
 选 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，会打开一个面板。输入文字找到某个视图、分支、文件或提交，再对它执行操作，手不用离开键盘。它能找到什么、用哪些按键，见 [窗口与导航](/guide/repositories/navigation/)。

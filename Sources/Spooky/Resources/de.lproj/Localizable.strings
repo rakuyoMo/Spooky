@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "Fenstertitel einblenden";
 "menu.showToolbar" = "Symbolleiste einblenden";
 "menu.customizeToolbar" = "Symbolleiste anpassen …";
+"menu.layout" = "Fensterlayout";
+"menu.layout.automatic" = "Automatisch";
+"menu.layout.narrow" = "Schmal";
+"menu.layout.wide" = "Breit";
 "toolbar.host" = "Server";
 "toolbar.createBranch" = "Branch erstellen";
 "toolbar.forcePush" = "Force-Push";

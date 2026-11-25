@@ -88,6 +88,10 @@ When the window gets too narrow for three columns, it switches to a narrow layou
 
 The view you’re in, your selection, and the commit message you’re writing stay as they are when the layout changes.
 
+The Repositories window changes too when it gets narrow. The list of repositories sits above the details of the selected repository.
+
+To keep one layout, choose :ui[menu.layout.narrow] or :ui[menu.layout.wide] from :ui[menu.view > menu.layout]. The window then uses that layout at any width. Choose :ui[menu.layout.automatic] to let the layout follow the width of the window again. The choice applies to all windows.
+
 ### Quick Actions {#quick-actions}
 
 Choose :ui[menu.file > quickActions.menu] or press <kbd>⇧⌘A</kbd> to open a panel. Type to find a view, a branch, a file, or a commit, then run an action on it without leaving the keyboard. [Windows and Navigation](/guide/repositories/navigation/) explains what it finds and which keys it uses.

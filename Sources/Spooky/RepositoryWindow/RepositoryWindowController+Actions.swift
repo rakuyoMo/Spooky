@@ -222,6 +222,7 @@ extension RepositoryWindowController {
             ?? historyDetailsAvailability(of: item, repositoryView: repositoryView)
             ?? branchesReviewAvailability(of: item)
             ?? navigationAvailability(of: item)
+            ?? layoutAvailability(of: item)
             ?? pullRequestAvailability(of: item, repositoryView: repositoryView)
 
         let contents: Bool? = stashAvailability(of: item.action, repositoryView: repositoryView)

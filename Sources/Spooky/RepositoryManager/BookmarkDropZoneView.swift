@@ -60,9 +60,13 @@ struct BookmarkDropZoneView: View {
         }
     }
 
-    /// 虚线圆角框，高度随内容：上缘到图标 73 pt，图标下是一段两行的 18 pt 提示，提示底到下缘 72 pt。
+    /// 虚线圆角框，高度随内容：上缘到图标 73 pt，图标下 8 pt 是一段两行的 18 pt 提示，提示底到下缘 72 pt；
+    /// 详情区不够高时上下两段留白收短到 20 pt，两行提示都留着。
     private var dropZone: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
+            Spacer(minLength: 20)
+                .frame(maxHeight: 73)
+
             Image(systemName: "folder.badge.plus")
                 .font(.system(size: 64, weight: .ultraLight))
                 .frame(width: 128, height: 100)
@@ -74,13 +78,16 @@ struct BookmarkDropZoneView: View {
                     + "\n"
                     + AppLocalization.text("bookmarks.dropZone.subtitle")
             )
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 8)
+
+            Spacer(minLength: 20)
+                .frame(maxHeight: 72)
         }
         .font(.system(size: 18))
         .foregroundStyle(Color.primary.opacity(0.25))
         .multilineTextAlignment(.center)
         .padding(.horizontal, 18)
-        .padding(.top, 73)
-        .padding(.bottom, 72)
         .frame(maxWidth: .infinity)
         .overlay {
             // 虚线 2 pt 粗、6 pt 实 8 pt 空，平时是 `bookmarks_drop_zone_border_color` 的灰色，拖动经过时换成强调色

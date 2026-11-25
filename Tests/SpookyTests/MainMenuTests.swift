@@ -8,7 +8,7 @@ import Testing
 // MARK: - MainMenuTests
 
 /// 主菜单的结构：应用菜单的 Services，Edit 菜单的系统项、分组与子菜单，Repository、Working Copy、View 与 Window 菜单的
-/// 标题、分组与快捷键，Diff 上下文行数的入口，以及 Open Recent 的标题与 Clear Menu、变更集菜单的全局阈值。
+/// 标题、分组与快捷键，Diff 上下文行数与窗口版式的入口，以及 Open Recent 的标题与 Clear Menu、变更集菜单的全局阈值。
 ///
 /// 系统会往 Edit 与 Window 菜单里自己插入分隔线和项，这里只核对 Spooky 加的项与分隔线，不断言菜单的总项数。
 @MainActor
@@ -317,7 +317,7 @@ extension MainMenuTests {
     }
 
     /// View 菜单：工作区状态的两种显示带 ⌃⌘T、⌃⌘L，Show Assume-Unchanged Items 不带快捷键；
-    /// 变更集的阈值上方有一行不可选的标题。
+    /// 变更集的阈值上方有一行不可选的标题；窗口版式的三项连到窗口的动作上，标签是取版式的方式，否则版式固定不了。
     private static func expectViewMenu() throws {
         let view = try topMenu("menu.view")
         let status = try #require(item("files.statusMenu", in: view).submenu)
@@ -337,6 +337,13 @@ extension MainMenuTests {
         #expect(changes.items[index - 1].isSeparatorItem)
         #expect(!title.isEnabled)
         #expect(changes.items[(index + 1)...].map(\.tag) == [0, 5, 10, 15, 20, 25, 50, Int.max])
+
+        let layout = try #require(item("menu.layout", in: view).submenu)
+        let modes: [RepositoryWindowLayoutMode] = [.automatic, .narrow, .regular]
+
+        #expect(rows(of: layout) == [row("menu.layout.automatic"), row("menu.layout.narrow"), row("menu.layout.wide")])
+        #expect(layout.items.map(\.tag) == modes.map(\.rawValue))
+        #expect(layout.items.allSatisfy { $0.action == #selector(RepositoryWindowController.setLayoutMode(_:)) })
     }
 
     /// Window 菜单：最小化与缩放一组，Activity 一组，前置全部窗口一组。

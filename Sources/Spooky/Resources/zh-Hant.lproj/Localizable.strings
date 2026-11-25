@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "顯示視窗標題";
 "menu.showToolbar" = "顯示工具列";
 "menu.customizeToolbar" = "自訂工具列…";
+"menu.layout" = "視窗版面";
+"menu.layout.automatic" = "自動";
+"menu.layout.narrow" = "窄版";
+"menu.layout.wide" = "寬版";
 "toolbar.host" = "伺服器";
 "toolbar.createBranch" = "新增分支";
 "toolbar.forcePush" = "安全強制推送";

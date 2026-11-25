@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "ウインドウタイトルを表示";
 "menu.showToolbar" = "ツールバーを表示";
 "menu.customizeToolbar" = "ツールバーをカスタマイズ…";
+"menu.layout" = "ウインドウのレイアウト";
+"menu.layout.automatic" = "自動";
+"menu.layout.narrow" = "狭いレイアウト";
+"menu.layout.wide" = "広いレイアウト";
 "toolbar.host" = "サーバ";
 "toolbar.createBranch" = "ブランチを作成";
 "toolbar.forcePush" = "強制プッシュ";

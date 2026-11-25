@@ -88,6 +88,10 @@ Wird das Fenster zu schmal für drei Spalten, wechselt es in ein Layout für sch
 
 Die aktuelle Ansicht, Ihre Auswahl und die Commit-Nachricht, an der Sie schreiben, bleiben beim Wechsel des Layouts erhalten.
 
+Auch das Fenster „Repositorys“ wechselt das Layout, wenn es schmal wird. Die Liste der Repositorys steht dann über den Details des ausgewählten Repositorys.
+
+Um bei einem Layout zu bleiben, wählen Sie unter :ui[menu.view > menu.layout] die Option :ui[menu.layout.narrow] oder :ui[menu.layout.wide]. Das Fenster verwendet dieses Layout dann bei jeder Breite. Mit :ui[menu.layout.automatic] richtet sich das Layout wieder nach der Breite des Fensters. Die Auswahl gilt für alle Fenster.
+
 ### Schnellaktionen {#quick-actions}
 
 Wählen Sie :ui[menu.file > quickActions.menu] oder drücken Sie <kbd>⇧⌘A</kbd>, um ein Panel zu öffnen. Tippen Sie, um eine Ansicht, einen Branch, eine Datei oder einen Commit zu finden, und führen Sie dann eine Aktion darauf aus, ohne die Tastatur zu verlassen. [Fenster und Navigation](/guide/repositories/navigation/) erklärt, was es findet und welche Tasten es verwendet.

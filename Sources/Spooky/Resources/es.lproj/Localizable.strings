@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "Mostrar título de la ventana";
 "menu.showToolbar" = "Mostrar barra de herramientas";
 "menu.customizeToolbar" = "Personalizar barra de herramientas…";
+"menu.layout" = "Diseño de la ventana";
+"menu.layout.automatic" = "Automático";
+"menu.layout.narrow" = "Estrecho";
+"menu.layout.wide" = "Ancho";
 "toolbar.host" = "Servidor";
 "toolbar.createBranch" = "Crear rama";
 "toolbar.forcePush" = "Push forzado";

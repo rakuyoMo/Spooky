@@ -88,6 +88,10 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 
 版面切換時，所在的視圖、選取的內容和正在寫的提交訊息都不變。
 
+儲存庫管理視窗變窄時也會換版面：儲存庫列表在上，所選儲存庫的詳細資訊在下。
+
+想固定用一種版面，在 :ui[menu.view > menu.layout] 裡選 :ui[menu.layout.narrow] 或 :ui[menu.layout.wide]，視窗不論寬窄都用這種版面。選 :ui[menu.layout.automatic]，版面重新跟著視窗的寬度變。這個選擇對所有視窗生效。
+
 ### 快速操作 {#quick-actions}
 
 選 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，會開啟一個面板。輸入文字找到某個視圖、分支、檔案或提交，再對它執行操作，手不用離開鍵盤。它能找到什麼、用哪些按鍵，見 [視窗與導覽](/guide/repositories/navigation/)。

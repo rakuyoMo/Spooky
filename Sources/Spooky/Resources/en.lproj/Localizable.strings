@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "Show Window Title";
 "menu.showToolbar" = "Show Toolbar";
 "menu.customizeToolbar" = "Customize Toolbar…";
+"menu.layout" = "Window Layout";
+"menu.layout.automatic" = "Automatic";
+"menu.layout.narrow" = "Narrow";
+"menu.layout.wide" = "Wide";
 "toolbar.host" = "Server";
 "toolbar.createBranch" = "Create Branch";
 "toolbar.forcePush" = "Force Push";
