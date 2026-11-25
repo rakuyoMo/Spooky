@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "저장소";
 "bookmarks.detail.status" = "상태";
 "bookmarks.detail.noChanges" = "변경 사항 없음";
+"bookmarks.location.edit" = "저장소 위치 편집";
+"bookmarks.location.message" = "이 저장소가 있는 폴더를 선택합니다.";
+"bookmarks.location.exists" = "이 저장소는 이미 목록에 있습니다.";
 "bookmarks.description.edit" = "저장소 설명 편집";
 "bookmarks.description.message" = "이 저장소의 설명을 입력합니다.";
 "bookmarks.description.label" = "설명:";

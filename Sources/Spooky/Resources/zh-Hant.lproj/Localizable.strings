@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "儲存庫";
 "bookmarks.detail.status" = "狀態";
 "bookmarks.detail.noChanges" = "沒有變更";
+"bookmarks.location.edit" = "編輯儲存庫位置";
+"bookmarks.location.message" = "選擇這個儲存庫所在的資料夾。";
+"bookmarks.location.exists" = "這個儲存庫已經在列表裡。";
 "bookmarks.description.edit" = "編輯儲存庫描述";
 "bookmarks.description.message" = "輸入這個儲存庫的描述。";
 "bookmarks.description.label" = "描述：";

@@ -14,6 +14,57 @@ extension RepositoryManagerController {
         return RepositoryWriteQueue.shared.isIdle(detailLocation)
     }
 
+    /// 编辑位置的对话框，预填书签现在的位置。
+    func editLocation(of bookmark: Bookmark) {
+        guard let location = bookmark.location else {
+            return
+        }
+
+        window?.presentDialog { [weak self] close in
+            EditLocationDialog(location: location, close: close) { edited in
+                await self?.relocate(bookmark.id, to: edited)
+            }
+        }
+    }
+
+    /// 验证新位置并让书签改指过去，名称、所在的文件夹与打开时间都保留；详情区随之读取新位置。
+    ///
+    /// - Parameters:
+    ///   - id: 要改的书签。
+    ///   - location: 新位置。
+    /// - Returns: 没能改时给对话框错误区的说明；改好时为 nil。
+    func relocate(_ id: Bookmark.ID, to location: RepositoryLocation) async -> String? {
+        let repository: RepositoryLocation
+
+        // 与打开仓库相同的验证；没通过或被取消时交还为它建立的连接
+        do {
+            repository = try await SpookyApplicationController.verifiedLocation(of: location)
+            try Task.checkCancellation()
+        } catch {
+            coordinator?.releaseConnection(location)
+            return AddRemoteRepositoryView.notice(for: AppFailure(error: error, opening: true, location: location))
+        }
+
+        // 新位置已是另一个书签时不改，避免两个书签指向同一个仓库
+        if let existing = bookmarks.bookmark(for: repository), existing.id != id {
+            coordinator?.releaseConnection(repository)
+            return AppLocalization.text("bookmarks.location.exists")
+        }
+
+        // 验证期间书签在别的窗口被删掉时没有可改的
+        guard let original = bookmarks.bookmark(id)?.location else {
+            coordinator?.releaseConnection(repository)
+            return nil
+        }
+
+        bookmarks.relocate(original, to: repository)
+
+        // 选中的书签没变，选中的位置与详情区要自己跟到新位置；验证建立的连接由详情区接着用
+        session.selectedRecentLocation = selectedRepository?.location
+        updateDetail()
+        return nil
+    }
+
     /// 编辑描述的对话框，预填当前描述。
     func editDescription() {
         guard canEditDetail, let location = detailLocation, case .loaded(let summary, _) = detailState else {

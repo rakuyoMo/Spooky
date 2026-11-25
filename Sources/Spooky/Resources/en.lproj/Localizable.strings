@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "Repository";
 "bookmarks.detail.status" = "Status";
 "bookmarks.detail.noChanges" = "No changes";
+"bookmarks.location.edit" = "Edit Repository Location";
+"bookmarks.location.message" = "Choose the folder this repository is in.";
+"bookmarks.location.exists" = "This repository is already in the list.";
 "bookmarks.description.edit" = "Edit Repository Description";
 "bookmarks.description.message" = "Enter a description for this repository.";
 "bookmarks.description.label" = "Description:";

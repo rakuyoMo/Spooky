@@ -395,6 +395,23 @@ final class SpookyApplicationController: NSObject, NSApplicationDelegate, NSMenu
 // MARK: - Repository Opening
 
 extension SpookyApplicationController {
+    /// 经核心库验证所选位置，返回规范化后的仓库位置。
+    static func verifiedLocation(of location: RepositoryLocation) async throws -> RepositoryLocation {
+        let runner = GitRunner(location: location)
+
+        // 服务器仓库在连接建立前接入界面回调，再完成 SSH、Git、路径与工作区检查。
+        if let remote = runner.remote {
+            await remote.setCallbackHandler { request in
+                await RemoteCallbackPresenter.shared.respond(to: request)
+            }
+
+            return try await remote.open().location
+        }
+
+        // 本机仓库先校验 Git 版本，再把子目录和符号链接统一到工作区根目录。
+        return try await runner.openLocalRepository().location
+    }
+
     /// 验证后按规范根路径去重；显式新窗口打开跳过去重。
     ///
     /// - Parameters:
@@ -696,23 +713,6 @@ extension SpookyApplicationController {
 // MARK: - Private
 
 extension SpookyApplicationController {
-    /// 经核心库验证所选位置，返回规范化后的仓库位置。
-    private static func verifiedLocation(of location: RepositoryLocation) async throws -> RepositoryLocation {
-        let runner = GitRunner(location: location)
-
-        // 服务器仓库在连接建立前接入界面回调，再完成 SSH、Git、路径与工作区检查。
-        if let remote = runner.remote {
-            await remote.setCallbackHandler { request in
-                await RemoteCallbackPresenter.shared.respond(to: request)
-            }
-
-            return try await remote.open().location
-        }
-
-        // 本机仓库先校验 Git 版本，再把子目录和符号链接统一到工作区根目录。
-        return try await runner.openLocalRepository().location
-    }
-
     /// 打开成功的仓库还没有书签时是否自动加入：General 页关着列出工作树时，主工作树之外的工作树不加入。
     ///
     /// 已有书签或列出工作树时不用读取；工作树读不出时照常加入。

@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "リポジトリ";
 "bookmarks.detail.status" = "状態";
 "bookmarks.detail.noChanges" = "変更なし";
+"bookmarks.location.edit" = "リポジトリの場所を編集";
+"bookmarks.location.message" = "このリポジトリがあるフォルダを選択します。";
+"bookmarks.location.exists" = "このリポジトリはすでにリストにあります。";
 "bookmarks.description.edit" = "リポジトリの説明を編集";
 "bookmarks.description.message" = "このリポジトリの説明を入力します。";
 "bookmarks.description.label" = "説明：";

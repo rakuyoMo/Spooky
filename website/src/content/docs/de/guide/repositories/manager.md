@@ -94,13 +94,29 @@ Die Details rechts enthalten außerdem die Tasten :ui[action.open] und :ui[bookm
 :ui[action.copyPath] kopiert den Pfad mit vorangestelltem Host-Alias, wie in `alias:/path/to/repository`. Spooky liest die Details eines Server-Repositorys erst, wenn Sie es auswählen. Beim Auswählen wird möglicherweise eine Verbindung zum Server hergestellt.
 :::
 
+## Den Ort eines Repositorys ändern {#location}
+
+Wenn ein Repository verschoben wurde, müssen Sie seinen Eintrag nicht entfernen und neu hinzufügen.
+
+1. Wählen Sie das Repository aus. Bewegen Sie in den Details den Zeiger auf die Zeile :ui[bookmarks.detail.location] und klicken Sie auf :ui[bookmarks.detail.edit].
+2. Klicken Sie auf :ui[localLocation.choose] und wählen Sie den Ordner, in dem das Repository jetzt liegt.
+3. Klicken Sie auf :ui[action.ok].
+
+Spooky prüft zuerst, ob der neue Ort ein Git-Repository ist. Wenn nicht, bleibt der Dialog offen und nennt den Grund. Wenn ja, zeigt der Eintrag auf den neuen Ort. Er bleibt in seiner Gruppe und behält einen Namen, den Sie ihm gegeben haben. Ein Name, den Sie nie geändert haben, folgt dem neuen Ordner. Zu einem Ort, der schon in der Liste steht, können Sie nicht wechseln.
+
+::screenshot[Der Dialog „Repository-Ort bearbeiten“ für ein Server-Repository. Der Host-Alias ist spooky-test. Der Repository-Pfad ist /srv/git/driftwood, daneben eine Taste zum Durchsuchen. Die Tasten sind Abbrechen und OK.]{name="repositories-edit-location" frame="dialog"}
+
+:::note[Server-Repositorys]
+Der Dialog enthält stattdessen :ui[remote.host] und :ui[remote.path]. Sie können nur eines davon ändern, zum Beispiel nur den Host-Alias. Klicken Sie auf :ui[clone.browse], um den Pfad auf dem Server auszuwählen. Spooky verbindet sich mit dem Server, um den neuen Ort zu prüfen.
+:::
+
 ## Fehlende Repositorys {#missing}
 
 Wenn der Ordner eines Repositorys verschoben, umbenannt oder gelöscht wird, erscheint sein Name in der Liste grau mit einem Warnzeichen. In seinen Details steht :ui[bookmarks.detail.missing] Spooky prüft die Repositorys auf Ihrem Mac jedes Mal, wenn die Liste erscheint.
 
 Wenn Sie ein fehlendes Repository öffnen, zeigt das Fenster :ui[missing.title]. Klicken Sie auf :ui[action.refresh], um erneut zu prüfen, etwa nachdem Sie ein Laufwerk wieder angeschlossen haben. Klicken Sie auf :ui[action.close], um zur Liste zurückzukehren.
 
-Um den Eintrag zu reparieren, entfernen Sie ihn und fügen Sie das Repository von seinem jetzigen Ort neu hinzu.
+Um den Eintrag zu reparieren, lassen Sie ihn auf den jetzigen Ort des Repositorys zeigen. Siehe [Den Ort eines Repositorys ändern](#location).
 
 :::note[Server-Repositorys]
 Spooky prüft ein Server-Repository nur, wenn Sie es auswählen oder öffnen. Wenn Spooky den Server nicht erreichen kann, zeigt das Fenster :ui[missing.unreachable.title]{1="alias"} und was SSH gemeldet hat. Siehe [Verbindungsstatus und erneutes Verbinden](/guide/server/connection/).

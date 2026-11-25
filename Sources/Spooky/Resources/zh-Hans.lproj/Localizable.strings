@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "仓库";
 "bookmarks.detail.status" = "状态";
 "bookmarks.detail.noChanges" = "没有改动";
+"bookmarks.location.edit" = "编辑仓库位置";
+"bookmarks.location.message" = "选择这个仓库所在的文件夹。";
+"bookmarks.location.exists" = "这个仓库已经在列表里。";
 "bookmarks.description.edit" = "编辑仓库描述";
 "bookmarks.description.message" = "输入这个仓库的描述。";
 "bookmarks.description.label" = "描述：";

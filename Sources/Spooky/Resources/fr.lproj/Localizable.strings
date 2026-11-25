@@ -2030,6 +2030,9 @@
 "bookmarks.detail.repository" = "Dépôt";
 "bookmarks.detail.status" = "État";
 "bookmarks.detail.noChanges" = "Aucune modification";
+"bookmarks.location.edit" = "Modifier l’emplacement du dépôt";
+"bookmarks.location.message" = "Choisissez le dossier où se trouve ce dépôt.";
+"bookmarks.location.exists" = "Ce dépôt figure déjà dans la liste.";
 "bookmarks.description.edit" = "Modifier la description du dépôt";
 "bookmarks.description.message" = "Saisissez une description pour ce dépôt.";
 "bookmarks.description.label" = "Description :";

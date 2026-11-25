@@ -333,6 +333,8 @@ Spooky 由两个 target 组成：
 
 - 仓库书签由 `RepositoryBookmarks` 存在偏好里，全部窗口共用；打开成功的仓库自动加入书签，失效只做标记，从不自动删除
   - General 页关着列出工作树时，打开主工作树之外的工作树不自动加入；它已有书签时照常记下打开时间
+- 详情的 Location 一行可以编辑书签的位置（`EditLocationDialog`）：本机仓库选文件夹，服务器仓库填主机别名与路径
+  - 新位置经与打开仓库相同的验证（`SpookyApplicationController.verifiedLocation`），通过后 `RepositoryManagerController.relocate` 让书签改指向验证出的工作区根目录，名称、所在的文件夹与打开时间保留；验证没通过或新位置已有别的书签时对话框不关，写出原因
 - 删除书签时可以勾选连同仓库文件夹移进废纸篓，经 `RepositoryFolderTrash` 在书签删除后于后台逐个移动，不永久删除
   - 本机仓库进这台 Mac 的废纸篓（`FileManager.trashItem`）；服务器仓库经它的连接在服务器上移进那台服务器的废纸篓，程序与 Discard 的相同
   - 家目录、它的上级目录与卷或挂载点的顶层不移走：本机按解析后的路径与卷信息判断，服务器在服务器上按它的 `$HOME` 与 `df` 判断

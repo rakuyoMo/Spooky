@@ -94,13 +94,29 @@ Spooky 先检查能不能连上远端。连不上时，对话框不关，会写�
 :ui[action.copyPath] 复制的路径前面带着主机别名，形如 `alias:/path/to/repository`。服务器仓库的详情在选中时才读取。选中它时，Spooky 可能会去连接服务器。
 :::
 
+## 更改仓库的位置 {#location}
+
+仓库搬了地方时，不用把这一项删掉再重新添加。
+
+1. 选中这个仓库。在详情里把指针移到 :ui[bookmarks.detail.location] 一行，点 :ui[bookmarks.detail.edit]。
+2. 点 :ui[localLocation.choose]，选仓库现在所在的文件夹。
+3. 点 :ui[action.ok]。
+
+Spooky 先检查新位置是不是 Git 仓库。不是时对话框不关，会写出原因。检查通过后，这一项指向新位置，所在的分组不变，你改过的名称也不变。没改过的名称会跟着新文件夹的名称变。新位置已经在列表里时，不能改过去。
+
+::screenshot[服务器仓库的 “编辑仓库位置” 对话框。主机别名是 spooky-test。仓库路径是 /srv/git/driftwood，旁边有 “浏览” 按钮。按钮是 “取消” 与 “好”。]{name="repositories-edit-location" frame="dialog"}
+
+:::note[服务器仓库]
+对话框里是 :ui[remote.host] 与 :ui[remote.path] 两栏。可以只改其中一栏，例如只换主机别名。点 :ui[clone.browse] 可以在服务器上挑选路径。Spooky 会连接服务器检查新位置。
+:::
+
 ## 丢失的仓库 {#missing}
 
 仓库的文件夹被移动、改名或删除后，它在列表里的名称会变灰，带一个警告标记。详情里写着 :ui[bookmarks.detail.missing]每次显示列表时，Spooky 都会检查这台 Mac 上的仓库。
 
 打开一个丢失的仓库时，窗口显示 :ui[missing.title]。点 :ui[action.refresh] 重新检查，例如重新接上磁盘之后。点 :ui[action.close] 回到列表。
 
-要修好这一项，把它删掉，再从仓库现在的位置重新添加。
+要修好这一项，把它改指向仓库现在的位置，见 [更改仓库的位置](#location)。
 
 :::note[服务器仓库]
 服务器仓库只在选中或打开时检查。连不上服务器时，窗口显示 :ui[missing.unreachable.title]{1="alias"}，下面是 SSH 报告的内容，见 [连接状态与重连](/guide/server/connection/)。

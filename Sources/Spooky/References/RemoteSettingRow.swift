@@ -196,13 +196,20 @@ extension RemoteSettingRow {
     ///   - label: 左侧标签。
     ///   - location: 要写的目录；为 nil 时值为空。
     ///   - canReveal: 本机目录能否在 Finder 打开，目录已不存在时为 false。
-    init(label: String, location: RepositoryLocation?, canReveal: Bool = true) {
+    ///   - actions: 行尾的操作按钮。
+    init(
+        label: String,
+        location: RepositoryLocation?,
+        canReveal: Bool = true,
+        actions: [RemoteSettingAction] = []
+    ) {
         let isLocal = location?.host == nil
 
         self.init(
             label: label,
             value: isLocal ? HomePath.abbreviated(location?.path ?? "") : location?.displayPath ?? "",
-            folder: isLocal && canReveal ? location.map { URL(fileURLWithPath: $0.path) } : nil
+            folder: isLocal && canReveal ? location.map { URL(fileURLWithPath: $0.path) } : nil,
+            actions: actions
         )
     }
 }

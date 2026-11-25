@@ -87,7 +87,7 @@ struct LocalLocationDialog: View {
 // MARK: - Folder Row
 
 extension LocalLocationDialog {
-    /// 文件夹一行：选定的文件夹（主目录缩写成 `~`，没有时是灰掉的 “None Selected”）与 Choose…；添加服务器仓库的 Mount at 一行共用。
+    /// 文件夹一行：选定的文件夹（主目录缩写成 `~`，没有时是灰掉的 “None Selected”）与 Choose…；添加服务器仓库的 Mount at 一行与编辑书签位置的 Location 一行共用。
     static func folderRow(_ label: String, folder: URL?, choose: @escaping () -> Void) -> some View {
         DialogFormRow(label: AppLocalization.text(label)) {
             HStack(spacing: 8) {
@@ -102,7 +102,7 @@ extension LocalLocationDialog {
         }
     }
 
-    /// 以 sheet 在对话框上打开目录选择面板；添加服务器仓库选 sshfs 挂载到的文件夹时共用。
+    /// 以 sheet 在对话框上打开目录选择面板；添加服务器仓库选 sshfs 挂载到的文件夹、编辑书签位置选仓库所在的文件夹时共用。
     static func chooseDirectory(from folder: URL?, canCreate: Bool, choose: @escaping (URL) -> Void) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true

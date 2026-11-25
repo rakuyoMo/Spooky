@@ -94,13 +94,29 @@ Spooky 先檢查能不能連上遠端。連不上時，對話框不關，會寫�
 :ui[action.copyPath] 拷貝的路徑前面帶著主機別名，形如 `alias:/path/to/repository`。伺服器儲存庫的詳細資訊在選取時才讀取。選取它時，Spooky 可能會去連線伺服器。
 :::
 
+## 更改儲存庫的位置 {#location}
+
+儲存庫搬了地方時，不用把這一項刪掉再重新加入。
+
+1. 選取這個儲存庫。在詳細資訊裡把指標移到 :ui[bookmarks.detail.location] 一列，按一下 :ui[bookmarks.detail.edit]。
+2. 按一下 :ui[localLocation.choose]，選儲存庫現在所在的資料夾。
+3. 按一下 :ui[action.ok]。
+
+Spooky 先檢查新位置是不是 Git 儲存庫。不是時對話框不關，會寫出原因。檢查通過後，這一項指向新位置，所在的群組不變，你改過的名稱也不變。沒改過的名稱會跟著新資料夾的名稱變。新位置已經在列表裡時，不能改過去。
+
+::screenshot[伺服器儲存庫的「編輯儲存庫位置」對話框。主機別名是 spooky-test。儲存庫路徑是 /srv/git/driftwood，旁邊有「瀏覽」按鈕。按鈕是「取消」與「好」。]{name="repositories-edit-location" frame="dialog"}
+
+:::note[伺服器儲存庫]
+對話框裡是 :ui[remote.host] 與 :ui[remote.path] 兩欄。可以只改其中一欄，例如只換主機別名。按一下 :ui[clone.browse] 可以在伺服器上挑選路徑。Spooky 會連接伺服器檢查新位置。
+:::
+
 ## 遺失的儲存庫 {#missing}
 
 儲存庫的資料夾被移動、重新命名或刪除後，它在列表裡的名稱會變灰，帶一個警告標記。詳細資訊裡寫著 :ui[bookmarks.detail.missing]每次顯示列表時，Spooky 都會檢查這台 Mac 上的儲存庫。
 
 開啟一個遺失的儲存庫時，視窗顯示 :ui[missing.title]。按一下 :ui[action.refresh] 重新檢查，例如重新接上磁碟之後。按一下 :ui[action.close] 回到列表。
 
-要修好這一項，把它刪掉，再從儲存庫現在的位置重新加入。
+要修好這一項，把它改指向儲存庫現在的位置，見 [更改儲存庫的位置](#location)。
 
 :::note[伺服器儲存庫]
 伺服器儲存庫只在選取或開啟時檢查。連不上伺服器時，視窗顯示 :ui[missing.unreachable.title]{1="alias"}，下面是 SSH 回報的內容，見 [連線狀態與重新連線](/guide/server/connection/)。
