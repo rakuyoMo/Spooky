@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "显示窗口标题";
 "menu.showToolbar" = "显示工具栏";
 "menu.customizeToolbar" = "自定工具栏…";
+"menu.layout" = "窗口版式";
+"menu.layout.automatic" = "自动";
+"menu.layout.narrow" = "窄版";
+"menu.layout.wide" = "宽版";
 "toolbar.host" = "服务器";
 "toolbar.createBranch" = "新建分支";
 "toolbar.forcePush" = "安全强推";

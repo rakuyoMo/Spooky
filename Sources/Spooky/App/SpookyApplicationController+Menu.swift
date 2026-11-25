@@ -94,7 +94,7 @@ extension SpookyApplicationController {
         addItem("action.openTerminal", action: #selector(RepositoryWindowController.openInTerminal), to: file)
     }
 
-    /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，后退与前进，工作区文件列表、历史与 Diff 的显示选项，刷新，窗口标题与工具栏，以及全屏。
+    /// View 菜单：仓库管理、工作区、历史、储藏与 Reflog 视图，后退与前进，工作区文件列表、历史与 Diff 的显示选项，刷新，窗口版式、标题与工具栏，以及全屏。
     private func configureViewMenu(in menu: NSMenu) {
         let view = addMenu("menu.view", to: menu)
         addItem(
@@ -146,8 +146,9 @@ extension SpookyApplicationController {
         view.addItem(.separator())
         addItem("action.refresh", action: #selector(RepositoryWindowController.refreshRepository), key: "r", to: view)
 
-        // 窗口标题与工具栏：标题的显示偏好所有仓库窗口共用，工具栏的显示与排布由工具栏自动保存
+        // 窗口版式、标题与工具栏：版式与标题的偏好所有仓库窗口共用，工具栏的显示与排布由工具栏自动保存
         view.addItem(.separator())
+        configureWindowLayoutMenu(in: view)
         addItem("menu.hideWindowTitle", action: #selector(RepositoryWindowController.toggleWindowTitle), to: view)
         addItem("menu.showToolbar", action: #selector(NSWindow.toggleToolbarShown(_:)), to: view)
         addItem("menu.customizeToolbar", action: #selector(NSWindow.runToolbarCustomizationPalette(_:)), to: view)
@@ -266,6 +267,23 @@ extension SpookyApplicationController {
             )
             item.tag = lines
             context.addItem(item)
+        }
+    }
+
+    /// 窗口版式子菜单：按窗口宽度自动取，或固定用极窄版式、常规版式；当前的选择打勾。
+    private func configureWindowLayoutMenu(in view: NSMenu) {
+        let layout = addMenu("menu.layout", to: view)
+
+        let modes: [(mode: RepositoryWindowLayoutMode, key: String)] = [
+            (.automatic, "menu.layout.automatic"),
+            (.narrow, "menu.layout.narrow"),
+            (.regular, "menu.layout.wide"),
+        ]
+
+        // 三项共用一个动作，标签是取版式方式的原始值
+        for entry in modes {
+            addItem(entry.key, action: #selector(RepositoryWindowController.setLayoutMode(_:)), to: layout)
+            layout.items.last?.tag = entry.mode.rawValue
         }
     }
 

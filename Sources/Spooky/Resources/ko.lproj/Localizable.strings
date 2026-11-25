@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "윈도우 제목 보기";
 "menu.showToolbar" = "도구 막대 보기";
 "menu.customizeToolbar" = "도구 막대 사용자화…";
+"menu.layout" = "윈도우 레이아웃";
+"menu.layout.automatic" = "자동";
+"menu.layout.narrow" = "좁게";
+"menu.layout.wide" = "넓게";
 "toolbar.host" = "서버";
 "toolbar.createBranch" = "브랜치 만들기";
 "toolbar.forcePush" = "강제 푸시";

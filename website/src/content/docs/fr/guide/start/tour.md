@@ -88,6 +88,10 @@ Quand la fenêtre devient trop étroite pour trois colonnes, elle passe à une d
 
 La vue actuelle, votre sélection et le message de commit en cours de rédaction restent tels quels quand la disposition change.
 
+La fenêtre Dépôts change elle aussi de disposition quand elle devient étroite. La liste des dépôts se trouve alors au-dessus du détail du dépôt sélectionné.
+
+Pour garder une seule disposition, choisissez :ui[menu.layout.narrow] ou :ui[menu.layout.wide] dans :ui[menu.view > menu.layout]. La fenêtre utilise alors cette disposition quelle que soit sa largeur. Choisissez :ui[menu.layout.automatic] pour que la disposition suive de nouveau la largeur de la fenêtre. Ce choix s’applique à toutes les fenêtres.
+
 ### Actions rapides {#quick-actions}
 
 Choisissez :ui[menu.file > quickActions.menu] ou appuyez sur <kbd>⇧⌘A</kbd> pour ouvrir un panneau. Tapez pour trouver une vue, une branche, un fichier ou un commit, puis lancez une action dessus sans quitter le clavier. [Fenêtres et navigation](/guide/repositories/navigation/) explique ce qu’il trouve et quelles touches il utilise.

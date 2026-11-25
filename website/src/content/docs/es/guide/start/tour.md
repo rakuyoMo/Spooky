@@ -88,6 +88,10 @@ Cuando la ventana es demasiado estrecha para tres columnas, cambia a un diseño 
 
 La vista en la que estás, tu selección y el mensaje de commit que estás escribiendo se mantienen cuando cambia el diseño.
 
+La ventana Repositorios también cambia de diseño cuando se estrecha. La lista de repositorios queda encima de los detalles del repositorio seleccionado.
+
+Para usar siempre el mismo diseño, selecciona :ui[menu.layout.narrow] o :ui[menu.layout.wide] en :ui[menu.view > menu.layout]. La ventana usa entonces ese diseño con cualquier anchura. Selecciona :ui[menu.layout.automatic] para que el diseño vuelva a seguir la anchura de la ventana. La selección se aplica a todas las ventanas.
+
 ### Acciones rápidas {#quick-actions}
 
 Selecciona :ui[menu.file > quickActions.menu] o pulsa <kbd>⇧⌘A</kbd> para abrir un panel. Escribe para encontrar una vista, una rama, un archivo o un commit, y ejecuta una acción sobre él sin soltar el teclado. [Ventanas y navegación](/guide/repositories/navigation/) explica qué encuentra y qué teclas usa.

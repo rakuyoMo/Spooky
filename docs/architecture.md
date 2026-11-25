@@ -352,14 +352,20 @@ Spooky 由两个 target 组成：
 
 ## 仓库窗口的版式
 
-- 仓库窗口有两种版式（`RepositoryWindowLayout`），按内容区的宽度取：不窄于 820 pt 是常规版式，窄于 820 pt 是极窄版式；窗口尺寸变化后宽度跨过界线时，重建仓库视图。仓库管理只有常规版式
-- 常规版式是两层分栏：外层是侧边栏与主视图，内层是主视图里左右排列的列表与详情
-- 极窄版式没有外层分栏，窗口内容是 `NarrowRepositoryViewController`：
+- 仓库窗口有两种版式（`RepositoryWindowLayout`），仓库视图与仓库管理都按它排
+- 取版式的方式（`RepositoryWindowLayoutMode`）由 View › Window Layout 选择，记在偏好 `windowLayoutMode` 里，所有仓库窗口共用：
+  - Automatic 按内容区的宽度取：不窄于 820 pt 是常规版式，窄于 820 pt 是极窄版式
+  - Narrow 与 Wide 不看宽度，固定用极窄版式或常规版式
+  - 窗口尺寸变化或选择变了之后，该用的版式与现在排成的不同时，各窗口重排仓库视图或仓库管理
+- 常规版式是两层分栏：外层是侧边栏与主视图，内层是主视图里左右排列的列表与详情；仓库管理只有外层，左边是书签列表
+- 极窄版式的仓库管理仍是一层分栏，改成书签列表在上、详情在下，内容区最窄 480 pt；换版式时沿用同一份书签列表与详情，选中、展开与读到的仓库概况都留着
+- 极窄版式的仓库视图没有外层分栏，窗口内容是 `NarrowRepositoryViewController`：
   - 顶上一行视图导航（`CompactNavigationBar`）有 Working Copy、History 与 Stashes，开头的按钮显示或收起侧边栏
   - 侧边栏仍是 `RepositorySidebarView`，盖在导航下面的主视图上，下面垫一层遮罩；点遮罩或对话框出现时收起
-  - 内层分栏改成上下排列，分隔线的位置记在带 `.Narrow` 后缀的 autosave 名下，不与常规版式的宽度混用
+  - 内层分栏改成上下排列
   - 内容区最窄 480 pt；工具栏排不下时先留 Fetch | Pull | Push
-- 换版式只换容器：视图、选中与提交草稿都在 `RepositorySession` 里，重建后原样显示
+- 上下排列的分栏把分隔线的位置记在带 `.Narrow` 后缀的 autosave 名下，不与常规版式的宽度混用
+- 仓库视图换版式只换容器：视图、选中与提交草稿都在 `RepositorySession` 里，重建后原样显示
 - 窗口收窄时先把各分栏挤窄、之后才跨过界线，所以回到常规版式时要恢复的是使用者定下的宽度：
   - 使用者拖动分隔线定下的宽度记在 `settledSplitWidths`，窗口变宽变窄引起的挤压不记
   - 换成极窄版式时把它们存进 `regularSplitWidths`；回到常规版式后随窗口变宽逐个放回，使用者再拖动分隔线的那一栏不再放回

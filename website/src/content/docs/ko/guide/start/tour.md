@@ -88,6 +88,10 @@ Spooky를 처음 열면 저장소 보기가 나타납니다. 사이드바의 :ui
 
 레이아웃이 바뀌어도 현재 보기, 선택한 항목, 쓰고 있던 커밋 메시지는 그대로입니다.
 
+저장소 윈도우도 좁아지면 레이아웃이 바뀝니다. 저장소 목록이 위에, 선택한 저장소의 세부사항이 아래에 놓입니다.
+
+한 가지 레이아웃만 쓰려면 :ui[menu.view > menu.layout]에서 :ui[menu.layout.narrow] 또는 :ui[menu.layout.wide]를 선택합니다. 윈도우 너비와 상관없이 그 레이아웃을 사용합니다. :ui[menu.layout.automatic]을 선택하면 레이아웃이 다시 윈도우 너비를 따릅니다. 이 선택은 모든 윈도우에 적용됩니다.
+
 ### 빠른 동작 {#quick-actions}
 
 :ui[menu.file > quickActions.menu]을 선택하거나 <kbd>⇧⌘A</kbd>를 누르면 패널이 열립니다. 입력해서 보기, 브랜치, 파일, 커밋을 찾은 다음, 키보드에서 손을 떼지 않고 그 항목에 동작을 실행합니다. 무엇을 찾아 주고 어떤 키를 쓰는지는 [윈도우와 탐색](/guide/repositories/navigation/)에서 설명합니다.

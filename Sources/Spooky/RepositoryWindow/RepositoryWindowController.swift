@@ -18,9 +18,6 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 还没有记下宽度时，仓库视图外层侧边栏的宽度，不随窗口宽度变化。
     private static let repositorySidebarWidth: CGFloat = 428
 
-    /// 还没有记下宽度时，仓库管理外层侧边栏的宽度。
-    private static let managerSidebarWidth: CGFloat = 260
-
     /// 每个窗口独立拥有读取任务与选区。
     let session: RepositorySession
 
@@ -45,10 +42,10 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 跨窗口的打开与记录管理。
     private(set) weak var coordinator: SpookyApplicationController?
 
-    /// 仓库视图当前排成的版式，随内容区的宽度切换。
+    /// 仓库管理或仓库视图当前排成的版式，随 View › Window Layout 的选择与内容区的宽度切换。
     var layout = RepositoryWindowLayout.regular
 
-    /// 侧边栏与详情的外层分栏；极窄版式的仓库视图没有。
+    /// 侧边栏与详情的外层分栏，仓库管理在极窄版式里是上下排列的书签列表与详情；极窄版式的仓库视图没有。
     var outerSplit: NSSplitViewController?
 
     /// 极窄版式仓库视图的窗口内容；其余时候为 nil。
@@ -290,12 +287,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         let detail = NSHostingController(rootView: RepositoryManagerDetailView(manager: manager))
         detail.sizingOptions = [.minSize]
 
-        installOuterSplit(
-            sidebar: BookmarkSidebarController(manager: manager),
-            detail: detail,
-            name: "Spooky.Repositories",
-            sidebarWidth: Self.managerSidebarWidth
-        )
+        installManager(sidebar: BookmarkSidebarController(manager: manager), detail: detail)
         coordinator.bookmarks.validate()
         didChangeView()
     }
@@ -914,7 +906,7 @@ extension RepositoryWindowController {
     ///   - detail: 详情区。
     ///   - name: 记下分栏宽度的 autosave 名称。
     ///   - sidebarWidth: 还没有记下宽度或记录不可用时侧边栏的宽度。
-    private func installOuterSplit(
+    func installOuterSplit(
         sidebar: NSViewController,
         detail: NSViewController,
         name: String,

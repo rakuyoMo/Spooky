@@ -1953,6 +1953,10 @@
 "menu.showWindowTitle" = "Afficher le titre de la fenêtre";
 "menu.showToolbar" = "Afficher la barre d’outils";
 "menu.customizeToolbar" = "Personnaliser la barre d’outils…";
+"menu.layout" = "Disposition de la fenêtre";
+"menu.layout.automatic" = "Automatique";
+"menu.layout.narrow" = "Étroite";
+"menu.layout.wide" = "Large";
 "toolbar.host" = "Serveur";
 "toolbar.createBranch" = "Créer une branche";
 "toolbar.forcePush" = "Pousser de force";
