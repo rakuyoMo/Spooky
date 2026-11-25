@@ -47,6 +47,7 @@ const windowHtml = compose(
         text: createText(strings, locale.lang),
         changes: null,
         appIcon: sheetIcon.src,
+        overflowLabel: t('demo.overflow'),
     }),
     'window',
 );
@@ -75,6 +76,7 @@ const endId = 'spooky-demo-end';
         data-app-icon={sheetIcon.src}
         data-unavailable={t('demo.unavailable')}
         data-up-to-date={t('demo.upToDate')}
+        data-overflow-label={t('demo.overflow')}
     >
         <Fragment set:html={`<style>${demoColorsCss()}</style>`} />
 
@@ -123,6 +125,8 @@ const endId = 'spooky-demo-end';
             <button type="button" class="sd-reset" data-reset>
                 {t('demo.reset')}
             </button>
+
+            <p class="sd-note sd-narrow-hint">{t('demo.narrow')}</p>
 
             <p class="sd-note">{t('demo.note')}</p>
         </div>

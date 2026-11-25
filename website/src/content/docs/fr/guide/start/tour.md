@@ -72,6 +72,22 @@ La colonne de gauche est la barre latérale. La colonne du milieu affiche la lis
 
 La colonne de droite affiche les détails de ce que vous sélectionnez au milieu. Dans :ui[workspace.title], ce sont les modifications du fichier sélectionné. Quand un fichier a à la fois des modifications indexées et non indexées, utilisez :ui[working.staged] et :ui[working.unstaged], en haut, pour passer des unes aux autres. Si rien n’est sélectionné, la colonne affiche :ui[detail.empty.title].
 
+### Fenêtres étroites {#narrow-window}
+
+Quand la fenêtre devient trop étroite pour trois colonnes, elle passe à une disposition pour fenêtres étroites. Élargissez la fenêtre et les trois colonnes reviennent, à la largeur que vous leur aviez donnée.
+
+::screenshot[Une fenêtre de dépôt étroite. Une rangée sous la barre d’outils permet de changer de vue. La zone de commit et la liste des fichiers modifiés se trouvent au-dessus des modifications du fichier sélectionné.]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. La rangée des vues, à la place de la barre latérale
+2. La liste de la vue actuelle
+3. Le détail de ce qui est sélectionné dans la liste
+
+- La rangée des vues contient :ui[workspace.title], :ui[history.title] et :ui[stash.title]. Pour les branches, les tags, les dépôts distants et les autres vues, cliquez sur :ui[sidebar.menu] au début de la rangée. La barre latérale s’ouvre par-dessus la vue. Cliquez de nouveau sur :ui[sidebar.menu], ou en dehors de la barre latérale, pour la fermer.
+- La liste se trouve au-dessus du détail. Faites glisser la ligne qui les sépare pour donner plus de place à l’un des deux.
+- Les boutons qui ne tiennent plus dans la barre d’outils passent dans le menu » à son extrémité. :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] restent dans la barre d’outils.
+
+La vue actuelle, votre sélection et le message de commit en cours de rédaction restent tels quels quand la disposition change.
+
 ### Actions rapides {#quick-actions}
 
 Choisissez :ui[menu.file > quickActions.menu] ou appuyez sur <kbd>⇧⌘A</kbd> pour ouvrir un panneau. Tapez pour trouver une vue, une branche, un fichier ou un commit, puis lancez une action dessus sans quitter le clavier. [Fenêtres et navigation](/guide/repositories/navigation/) explique ce qu’il trouve et quelles touches il utilise.

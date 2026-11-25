@@ -1,25 +1,48 @@
 import type { IconName } from '../icons.ts';
+import { icons } from '../icons.ts';
 import { headBranch, historyCommits } from '../model.ts';
 import type { DemoKey } from '../text.ts';
 import type { RenderContext } from './context.ts';
 import { button, esc, icon, shortRef } from './format.ts';
 
 /**
- * 工具栏：中间一栏上方是后退、前进与窗口标题，右边一栏上方是 Finder、终端、获取、拉取、推送等按钮。
+ * 工具栏：后退、前进与窗口标题排在中间一栏上方，后面接 Finder、终端、获取、拉取、推送等按钮。
+ *
+ * 按钮排不下时按 App 的顺序收进末尾的 »：`data-regular` 是一项在常规版式里留在工具栏上的最小窗口宽度，
+ * `data-narrow` 是它在极窄版式里的最小窗口宽度，`none` 表示极窄版式里一直收着。这些宽度量自 App。
  */
+
+/** 能收进 » 的项：`data-item` 的名字、图标、标签与点按时的动作，顺序与 App 的溢出菜单相同。 */
+const overflowable: { item: string; icon: IconName | null; label: DemoKey | null; action: string }[] = [
+    { item: 'back', icon: 'back', label: 'toolbar.previous', action: 'back' },
+    { item: 'forward', icon: 'forward', label: 'toolbar.next', action: 'forward' },
+    { item: 'bookmarks', icon: 'drive', label: 'toolbar.bookmarks', action: 'unavailable' },
+    { item: 'finder', icon: 'finder', label: 'toolbar.finder', action: 'unavailable' },
+    { item: 'terminal', icon: 'terminal', label: 'toolbar.terminal', action: 'unavailable' },
+    { item: 'host', icon: null, label: null, action: 'unavailable' },
+    { item: 'fetch', icon: 'fetch', label: 'sync.fetch', action: 'fetch' },
+    { item: 'pull', icon: 'pull', label: 'sync.pull', action: 'unavailable' },
+    { item: 'push', icon: 'push', label: 'sync.push', action: 'push' },
+    { item: 'forcePush', icon: 'forcePush', label: 'toolbar.forcePush', action: 'unavailable' },
+    { item: 'applyStash', icon: 'trayDown', label: 'toolbar.applyStash', action: 'unavailable' },
+    { item: 'saveStash', icon: 'trayUp', label: 'toolbar.saveStash', action: 'unavailable' },
+    { item: 'createBranch', icon: 'createBranch', label: 'toolbar.createBranch', action: 'unavailable' },
+    { item: 'refresh', icon: 'refresh', label: 'action.refresh', action: 'unavailable' },
+];
 
 /** 后退、前进与标题、副标题。 */
 export function renderTitle(context: RenderContext): string {
     const { data, text, ui } = context;
 
     return (
-        `<div class="sd-glass sd-capsule sd-nav">` +
+        `<div class="sd-glass sd-capsule sd-nav" data-narrow="590">` +
         button({
             action: 'back',
             className: 'sd-tool',
             content: icon('back'),
             label: text.t('navigation.back'),
             disabled: ui.back.length === 0,
+            item: 'back',
         }) +
         button({
             action: 'forward',
@@ -27,6 +50,7 @@ export function renderTitle(context: RenderContext): string {
             content: icon('forward'),
             label: text.t('navigation.forward'),
             disabled: ui.forward.length === 0,
+            item: 'forward',
         }) +
         `</div>` +
         `<div class="sd-heading">` +
@@ -36,12 +60,17 @@ export function renderTitle(context: RenderContext): string {
     );
 }
 
-/** 右边一栏上方的按钮；窄一些时靠后的几组先藏起来。 */
+/**
+ * 标题后面的按钮，极窄版式里开头多一个书签按钮。
+ *
+ * `sd-spread` 标出 App 的工具栏里前面有一段伸缩空白的项：按钮都排得下时，各组之间平分余下的宽度。
+ * 常规版式里中间的几组收起后，安全强推与新建分支挨在一起，`sd-join-end` 与 `sd-join-start` 让两块底连成一块。
+ */
 export function renderActions(context: RenderContext): string {
     const { data, text, ui } = context;
 
-    const tool = (action: string, image: IconName, key: DemoKey, guide?: string) =>
-        button({ action, className: 'sd-tool', content: icon(image), label: text.t(key), guide });
+    const tool = (item: string, action: string, image: IconName, key: DemoKey, guide?: string) =>
+        button({ action, className: 'sd-tool', content: icon(image), label: text.t(key), guide, item });
 
     const fetch = button({
         action: 'fetch',
@@ -49,21 +78,71 @@ export function renderActions(context: RenderContext): string {
         content: ui.fetching ? `<span class="sd-spinner" aria-hidden="true"></span>` : icon('fetch'),
         label: text.t('sync.fetch'),
         disabled: ui.fetching,
+        item: 'fetch',
+    });
+
+    const more = button({
+        action: 'more',
+        className: 'sd-tool',
+        content: icon('more'),
+        label: context.overflowLabel,
+        guide: 'push-overflow',
+        expanded: ui.overlay === 'more',
     });
 
     return (
-        `<div class="sd-glass sd-cluster">${tool('unavailable', 'finder', 'toolbar.finder')}` +
-        `${tool('unavailable', 'terminal', 'toolbar.terminal')}</div>` +
-        `<span class="sd-host" data-tier="3" translate="no">${esc(data.host)}:</span>` +
-        `<div class="sd-glass sd-capsule">${fetch}${tool('unavailable', 'pull', 'sync.pull')}` +
-        `${tool('push', 'push', 'sync.push', 'push')}</div>` +
-        `<div class="sd-glass sd-round" data-tier="3">${tool('unavailable', 'forcePush', 'toolbar.forcePush')}</div>` +
-        `<div class="sd-glass sd-capsule" data-tier="2">${tool('unavailable', 'trayDown', 'toolbar.applyStash')}` +
-        `${tool('unavailable', 'trayUp', 'toolbar.saveStash')}</div>` +
-        `<div class="sd-glass sd-cluster" data-tier="1">` +
-        `${tool('unavailable', 'createBranch', 'toolbar.createBranch')}` +
-        `${tool('unavailable', 'refresh', 'action.refresh')}</div>` +
-        `<div class="sd-glass sd-round" data-tier="1">${tool('unavailable', 'search', 'action.search')}</div>`
+        `<div class="sd-glass sd-round sd-only-narrow" data-narrow="510">` +
+        `${tool('bookmarks', 'unavailable', 'drive', 'toolbar.bookmarks')}</div>` +
+        `<div class="sd-glass sd-cluster sd-spread" data-narrow="650">` +
+        `${tool('finder', 'unavailable', 'finder', 'toolbar.finder')}` +
+        `<span class="sd-tool-slot" data-narrow="690">` +
+        `${tool('terminal', 'unavailable', 'terminal', 'toolbar.terminal')}</span></div>` +
+        `<span class="sd-host sd-spread" data-item="host" data-narrow="770" translate="no">${esc(data.host)}:</span>` +
+        `<div class="sd-glass sd-capsule" data-regular="980">${fetch}` +
+        `${tool('pull', 'unavailable', 'pull', 'sync.pull')}${tool('push', 'push', 'push', 'sync.push', 'push')}</div>` +
+        `<div class="sd-glass sd-round sd-join-end" data-narrow="810">` +
+        `${tool('forcePush', 'unavailable', 'forcePush', 'toolbar.forcePush')}</div>` +
+        `<div class="sd-glass sd-capsule sd-spread" data-regular="1070" data-narrow="none">` +
+        `${tool('applyStash', 'unavailable', 'trayDown', 'toolbar.applyStash')}` +
+        `${tool('saveStash', 'unavailable', 'trayUp', 'toolbar.saveStash')}</div>` +
+        `<div class="sd-glass sd-cluster sd-spread sd-join-start" data-narrow="none">` +
+        `${tool('createBranch', 'unavailable', 'createBranch', 'toolbar.createBranch')}` +
+        `<span class="sd-tool-slot" data-regular="1080">` +
+        `${tool('refresh', 'unavailable', 'refresh', 'action.refresh')}</span></div>` +
+        `<div class="sd-glass sd-round sd-more">${more}</div>` +
+        `<div class="sd-glass sd-round sd-spread">${tool('search', 'unavailable', 'search', 'action.search')}</div>`
+    );
+}
+
+/**
+ * » 的菜单：列出收起来的项，每行是图标与标签；主机前缀只有文字。
+ *
+ * `hidden` 是打开菜单时工具栏上看不到的项的名字。
+ */
+export function renderOverflowMenu({ data, text, ui }: RenderContext, hidden: readonly string[]): string {
+    const rows = overflowable
+        .filter(({ item }) => hidden.includes(item))
+        .map(({ item, icon: image, label, action }) => {
+            const disabled =
+                (item === 'back' && ui.back.length === 0) ||
+                (item === 'forward' && ui.forward.length === 0) ||
+                (item === 'fetch' && ui.fetching);
+
+            // 带掩膜的图标在工具栏上还有一份，菜单里的这份换一个掩膜的名字：藏起来的那份里的掩膜引用不到
+            const drawing = image === null ? '' : icons[image].replaceAll('sd-mask-', 'sd-menu-mask-');
+
+            return (
+                `<li role="none">` +
+                `<button type="button" class="sd-menu-item" role="menuitem" data-action="${action}"` +
+                `${disabled ? ' disabled' : ''}>` +
+                `<span class="sd-icon">${drawing}</span>` +
+                `<span>${esc(label === null ? `${data.host}:` : text.t(label))}</span></button></li>`
+            );
+        });
+
+    return (
+        `<button type="button" class="sd-scrim sd-menu-scrim" data-action="close" tabindex="-1" aria-hidden="true">` +
+        `</button><ul class="sd-menu" role="menu">${rows.join('')}</ul>`
     );
 }
 

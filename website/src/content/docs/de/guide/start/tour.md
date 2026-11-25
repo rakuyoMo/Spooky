@@ -72,6 +72,22 @@ Die linke Spalte ist die Seitenleiste. Die mittlere Spalte zeigt die Liste der g
 
 Die rechte Spalte zeigt die Details zu dem, was Sie in der Mitte auswählen. Unter :ui[workspace.title] sind das die Änderungen in der ausgewählten Datei. Wenn eine Datei sowohl gestagte als auch nicht gestagte Änderungen hat, wechseln Sie oben mit :ui[working.staged] und :ui[working.unstaged] zwischen ihnen. Ist nichts ausgewählt, zeigt die Spalte :ui[detail.empty.title].
 
+### Schmale Fenster {#narrow-window}
+
+Wird das Fenster zu schmal für drei Spalten, wechselt es in ein Layout für schmale Fenster. Machen Sie das Fenster breiter, kommen die drei Spalten zurück, so breit wie zuvor.
+
+::screenshot[Ein schmales Repository-Fenster. Eine Zeile unter der Symbolleiste wechselt zwischen den Ansichten. Der Commit-Bereich und die Liste der geänderten Dateien stehen über den Änderungen in der ausgewählten Datei.]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. Die Ansichtszeile anstelle der Seitenleiste
+2. Die Liste der aktuellen Ansicht
+3. Details zu dem, was in der Liste ausgewählt ist
+
+- Die Ansichtszeile enthält :ui[workspace.title], :ui[history.title] und :ui[stash.title]. Für Branches, Tags, Remotes und die übrigen Ansichten klicken Sie am Anfang der Zeile auf :ui[sidebar.menu]. Die Seitenleiste öffnet sich über der Ansicht. Klicken Sie erneut auf :ui[sidebar.menu] oder neben die Seitenleiste, um sie zu schließen.
+- Die Liste steht über den Details. Ziehen Sie die Linie dazwischen, um einem der beiden mehr Platz zu geben.
+- Tasten, die nicht mehr in die Symbolleiste passen, wandern in das Menü » an ihrem Ende. :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] bleiben in der Symbolleiste.
+
+Die aktuelle Ansicht, Ihre Auswahl und die Commit-Nachricht, an der Sie schreiben, bleiben beim Wechsel des Layouts erhalten.
+
 ### Schnellaktionen {#quick-actions}
 
 Wählen Sie :ui[menu.file > quickActions.menu] oder drücken Sie <kbd>⇧⌘A</kbd>, um ein Panel zu öffnen. Tippen Sie, um eine Ansicht, einen Branch, eine Datei oder einen Commit zu finden, und führen Sie dann eine Aktion darauf aus, ohne die Tastatur zu verlassen. [Fenster und Navigation](/guide/repositories/navigation/) erklärt, was es findet und welche Tasten es verwendet.

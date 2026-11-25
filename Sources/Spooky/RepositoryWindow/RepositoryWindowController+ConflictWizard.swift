@@ -12,7 +12,8 @@ extension RepositoryWindowController {
         session.activeView == .workingCopy && session.selectedEntry?.kind == .conflicted
     }
 
-    /// 冲突向导出现时右栏放宽到最小宽度，窗口不够宽时先压窄侧边栏与文件列表；离开后两者回到原来的宽度。
+    /// 常规版式里冲突向导出现时右栏放宽到最小宽度，窗口不够宽时先压窄侧边栏与文件列表；离开后两者回到原来的宽度。
+    /// 极窄版式里详情与窗口同宽，本来就放得下向导。
     ///
     /// 变化通知早于新值写入：这时的布局还是变化前的，先记下宽度，下一轮主线程再按新值调整并重新订阅。
     func observeConflictWizard() {
@@ -29,15 +30,17 @@ extension RepositoryWindowController {
 // MARK: - Private
 
 extension RepositoryWindowController {
-    /// 向导是否显示即将变化：向导还没有显示时记下侧边栏与文件列表的宽度，下一轮主线程再按新值调整。
+    /// 向导是否显示即将变化：常规版式里向导还没有显示时记下侧边栏与文件列表的宽度，下一轮主线程再按新值调整。
     private func conflictWizardWillChange() {
         let wasShown = showsConflictWizard
 
         if !wasShown {
-            widthsBeforeConflictWizard = (
-                outerSplit?.splitViewItems.first?.viewController.view.frame.width ?? 0,
-                workingCopySplit?.splitViewItems.first?.viewController.view.frame.width
-            )
+            widthsBeforeConflictWizard = layout == .regular
+                ? (
+                    outerSplit?.splitViewItems.first?.viewController.view.frame.width ?? 0,
+                    workingCopySplit?.splitViewItems.first?.viewController.view.frame.width
+                )
+                : nil
         }
 
         Task { @MainActor [weak self] in
@@ -46,11 +49,11 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 按向导现在是否显示设置右栏的最小宽度；向导刚离开时放回出现前的宽度。
+    /// 常规版式里按向导现在是否显示设置右栏的最小宽度；向导刚离开时放回出现前的宽度。
     ///
     /// - Parameter wasShown: 变化前向导是否显示。
     private func updateConflictWizardWidth(wasShown: Bool) {
-        guard let detailItem = workingCopySplit?.splitViewItems.last else {
+        guard layout == .regular, let detailItem = workingCopySplit?.splitViewItems.last else {
             return
         }
 

@@ -12,6 +12,9 @@ struct LocalizationTests {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
 
+    /// 名字以资源键的前缀开头的系统符号：它们是符号名，不是资源键。
+    private static let symbolNames: Set = ["sidebar.left"]
+
     /// 由枚举或固定列表拼出的资源键；界面新增动态拼接时在这里登记。
     private static var dynamicKeys: [String] {
         var keys: [String] = []
@@ -236,7 +239,7 @@ struct LocalizationTests {
                 let range = try #require(Range(match.range(at: 1), in: content))
                 let key = String(content[range])
 
-                if key.hasSuffix(".") { continue }
+                if key.hasSuffix(".") || Self.symbolNames.contains(key) { continue }
 
                 #expect(english[key] != nil, "缺少界面资源键：\(key)")
             }

@@ -350,6 +350,20 @@ Spooky 由两个 target 组成：
 - 诊断报告与崩溃报告离开本机前经 `DiagnosticRedactor` 脱敏；崩溃报告只打开预填的 GitHub 新问题页，由用户自己提交
 - `UpdateController` 按 Settings → Updates 的通道接收更新清单里的条目，只接受 EdDSA 签名的清单与更新包；`swift run` 时更新器不启动
 
+## 仓库窗口的版式
+
+- 仓库窗口有两种版式（`RepositoryWindowLayout`），按内容区的宽度取：不窄于 820 pt 是常规版式，窄于 820 pt 是极窄版式；窗口尺寸变化后宽度跨过界线时，重建仓库视图。仓库管理只有常规版式
+- 常规版式是两层分栏：外层是侧边栏与主视图，内层是主视图里左右排列的列表与详情
+- 极窄版式没有外层分栏，窗口内容是 `NarrowRepositoryViewController`：
+  - 顶上一行视图导航（`CompactNavigationBar`）有 Working Copy、History 与 Stashes，开头的按钮显示或收起侧边栏
+  - 侧边栏仍是 `RepositorySidebarView`，盖在导航下面的主视图上，下面垫一层遮罩；点遮罩或对话框出现时收起
+  - 内层分栏改成上下排列，分隔线的位置记在带 `.Narrow` 后缀的 autosave 名下，不与常规版式的宽度混用
+  - 内容区最窄 480 pt；工具栏排不下时先留 Fetch | Pull | Push
+- 换版式只换容器：视图、选中与提交草稿都在 `RepositorySession` 里，重建后原样显示
+- 窗口收窄时先把各分栏挤窄、之后才跨过界线，所以回到常规版式时要恢复的是使用者定下的宽度：
+  - 使用者拖动分隔线定下的宽度记在 `settledSplitWidths`，窗口变宽变窄引起的挤压不记
+  - 换成极窄版式时把它们存进 `regularSplitWidths`；回到常规版式后随窗口变宽逐个放回，使用者再拖动分隔线的那一栏不再放回
+
 ## 仓库窗口的键盘焦点
 
 - 键盘焦点只在点击、Tab 与程序化定位时移动：点选侧边栏、历史列表的行或右侧变更文件的行后，焦点移到被点的列表，↑ ↓ 移动的是它的选中，其它列表的选中不变

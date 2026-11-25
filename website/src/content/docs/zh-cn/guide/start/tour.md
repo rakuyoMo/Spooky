@@ -72,6 +72,22 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 右边一栏显示中间所选内容的详情。在 :ui[workspace.title] 里，就是所选文件的改动。一个文件既有已暂存、又有未暂存的改动时，用顶部的 :ui[working.staged] 与 :ui[working.unstaged] 切换。什么都没选时，这一栏显示 :ui[detail.empty.title]。
 
+### 窄窗口 {#narrow-window}
+
+窗口窄到放不下三栏时，会换成窄窗口的版式。把窗口拉宽，三栏就回来了，宽度和原来一样。
+
+::screenshot[一个很窄的仓库窗口。工具栏下面的一行用来切换视图；提交区与改动的文件列表在上，所选文件的改动在下。]{name="tour-narrow-window" frame="window" markers="75,9 75,40 75,84"}
+
+1. 切换视图的一行，取代侧边栏
+2. 当前视图的列表
+3. 列表里所选内容的详情
+
+- 切换视图的一行里有 :ui[workspace.title]、:ui[history.title] 与 :ui[stash.title]。要看分支、标签、远端和其它视图，点这一行开头的 :ui[sidebar.menu]，侧边栏会盖在视图上面。再点一次 :ui[sidebar.menu]，或点侧边栏外面，就能收起它。
+- 列表在上，详情在下。拖动两者之间的分隔线，可以调整各自的高度。
+- 工具栏上放不下的按钮收进末尾的 » 菜单。:ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 一直留在工具栏上。
+
+版式切换时，所在的视图、选中的内容和正在写的提交信息都不变。
+
 ### 快捷操作 {#quick-actions}
 
 选 :ui[menu.file > quickActions.menu] 或按 <kbd>⇧⌘A</kbd>，会打开一个面板。输入文字找到某个视图、分支、文件或提交，再对它执行操作，手不用离开键盘。它能找到什么、用哪些按键，见 [窗口与导航](/guide/repositories/navigation/)。

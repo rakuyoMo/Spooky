@@ -5,6 +5,7 @@ import { button, esc, icon } from './format.ts';
 
 /**
  * 侧边栏：工作空间的几个视图、分支、标签与远端；点视图切换主区域，点分支、标签与远端分支看它的历史。
+ * 极窄版式里换成一行视图导航，侧边栏由导航开头的按钮显示或收起。
  */
 
 /** 侧边栏里的一行。 */
@@ -30,6 +31,7 @@ export function renderSidebar(context: RenderContext): string {
             className: 'sd-glass sd-round sd-bookmarks',
             content: icon('drive'),
             label: text.t('toolbar.bookmarks'),
+            item: 'bookmarks',
         }) +
         `</div>` +
         `<nav class="sd-side-list" data-scroll="sidebar" aria-label="${esc(text.t('workspace.group'))}">` +
@@ -56,6 +58,37 @@ export function renderSidebar(context: RenderContext): string {
             label: text.t('sidebar.viewSettings'),
         }) +
         `</div>`
+    );
+}
+
+/**
+ * 极窄版式顶部的视图导航：开头的按钮显示或收起侧边栏，后面是工作区、历史与储藏。
+ *
+ * 看某个引用的历史时，历史一项同样算所在的视图。
+ */
+export function renderCompactNav({ state, text, ui }: RenderContext): string {
+    const entry = (view: string, image: IconName, label: string, badge = '') =>
+        button({
+            action: 'view',
+            arg: view,
+            className: `sd-compact-entry${state.view === view ? ' is-selected' : ''}`,
+            content: `${icon(image)}<span class="sd-row-label">${esc(label)}</span>${badge}`,
+            pressed: state.view === view,
+        });
+
+    const count = state.files.length > 0 ? `<span class="sd-badge">${state.files.length}</span>` : '';
+
+    return (
+        button({
+            action: 'toggle-sidebar',
+            className: 'sd-compact-toggle',
+            content: icon('sidebar'),
+            label: text.t('sidebar.menu'),
+            pressed: ui.sidebarOpen,
+        }) +
+        entry('working', 'folder', text.t('workspace.title'), count) +
+        entry('history', 'clock', text.t('history.title')) +
+        entry('stashes', 'tray', text.t('stash.title'))
     );
 }
 

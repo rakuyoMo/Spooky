@@ -20,12 +20,9 @@ extension RepositoryWindowController {
         }
     }
 
-    /// Reflog 的记录列表与提交详情分栏，宽度按 Reflog 视图单独保存；详情复用历史的提交详情。
+    /// Reflog 的记录列表与提交详情分栏，尺寸按 Reflog 视图单独保存；详情复用历史的提交详情。
     func makeReflogSplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName("Spooky.Reflog", of: split)
+        let split = makeInnerSplit(name: "Spooky.Reflog")
 
         let list = NSHostingController(
             rootView: ReflogListView(session: session) { [weak self] in
@@ -36,7 +33,7 @@ extension RepositoryWindowController {
         // 列表没有最小宽：宿主不把内容的最小尺寸交给分栏，内容列表的分栏项默认的最窄 200 改为 0
         list.sizingOptions = []
         let listItem = NSSplitViewItem(contentListWithViewController: list)
-        listItem.minimumThickness = 0
+        listItem.minimumThickness = listMinimumThickness(0)
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 

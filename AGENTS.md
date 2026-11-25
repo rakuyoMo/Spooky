@@ -168,6 +168,7 @@ website/                 官网：首页与写给使用者的手册
   - 窗口里的文字同样按资源键取自 `Localizable.strings`，用到的键列在 `text.ts`；颜色取自 App 的 `BuiltinThemes.json` 与 `NamedColors.json`
   - 暂存、提交、推送等规则是不碰页面的纯函数，由 `demo.test.ts` 核对；改了之后在 `website/` 下运行 `npm test`
   - App 里它演示到的界面变了，演示窗口跟着改
+  - 演示窗口与 App 一样有常规与极窄两种版式，界线同为 820；工具栏各项收进 » 的宽度（`data-regular`、`data-narrow`）量自 App，App 的工具栏排布或可见优先级变了要重新量
 - 首页与 404 页上的应用图标、幽灵等几幅画是构建时画出的 SVG：执行 `scripts/make-icon/` 里应用图标的绘制脚本，取出 SVG 片段写进页面，代码在 `website/src/art/`
   - 绘制脚本改了，这几幅画跟着变；脚本里的函数或常量改名、拼画面的方式变了，官网的构建会失败，这时改 `website/src/art/kit.ts`
   - 拆层、收短数字等处理由 `art.test.ts` 核对，同样用 `npm test` 运行

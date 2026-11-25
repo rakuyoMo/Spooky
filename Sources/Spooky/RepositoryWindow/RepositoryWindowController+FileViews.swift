@@ -28,12 +28,9 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 文件历史的时间线与详情分栏；时间线最小 100 pt，宽度按文件历史单独保存。
+    /// 文件历史的时间线与详情分栏；常规版式里时间线最小 100 pt，尺寸按文件历史单独保存。
     func makeFileHistorySplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName("Spooky.FileHistory", of: split)
+        let split = makeInnerSplit(name: "Spooky.FileHistory")
 
         // 窗口与分栏决定内容尺寸，HostingController 只提供最小内容约束
         let timeline = NSHostingController(
@@ -42,7 +39,7 @@ extension RepositoryWindowController {
         timeline.sizingOptions = [.minSize]
 
         let timelineItem = NSSplitViewItem(contentListWithViewController: timeline)
-        timelineItem.minimumThickness = 100
+        timelineItem.minimumThickness = listMinimumThickness(100)
         timelineItem.holdingPriority = .init(475)
         timelineItem.canCollapse = false
 

@@ -8,6 +8,8 @@ export const demoKeys = [
     'toolbar.bookmarks',
     'navigation.back',
     'navigation.forward',
+    'toolbar.previous',
+    'toolbar.next',
     'toolbar.finder',
     'toolbar.terminal',
     'sync.fetch',
@@ -39,6 +41,7 @@ export const demoKeys = [
     'activity.title',
     'reference.addMenu',
     'sidebar.viewSettings',
+    'sidebar.menu',
 
     // 工作区
     'connection.connected',

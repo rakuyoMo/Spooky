@@ -20,17 +20,14 @@ extension RepositoryWindowController {
         session.requestApplyStash(selected)
     }
 
-    /// 储藏列表与详情分栏，宽度按储藏视图单独保存。
+    /// 储藏列表与详情分栏，尺寸按储藏视图单独保存。
     func makeStashSplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName("Spooky.Stashes", of: split)
+        let split = makeInnerSplit(name: "Spooky.Stashes")
 
         let list = NSHostingController(rootView: StashListView(session: session))
         list.sizingOptions = [.minSize]
         let listItem = NSSplitViewItem(contentListWithViewController: list)
-        listItem.minimumThickness = 200
+        listItem.minimumThickness = listMinimumThickness(200)
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 

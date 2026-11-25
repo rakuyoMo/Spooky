@@ -10,9 +10,16 @@ import type { DemoStrings } from './text.ts';
 /** 启动一个演示窗口；文案、语言、应用图标与网站自己的提示都由构建时写在 `root` 上。 */
 export function mount(root: HTMLElement): void {
     const strings = root.querySelector('script[data-demo-strings]')?.textContent;
-    const { lang, appIcon, unavailable, upToDate } = root.dataset;
+    const { lang, appIcon, unavailable, upToDate, overflowLabel } = root.dataset;
 
-    if (!strings || !lang || !appIcon || unavailable === undefined || upToDate === undefined) {
+    if (
+        !strings ||
+        !lang ||
+        !appIcon ||
+        unavailable === undefined ||
+        upToDate === undefined ||
+        overflowLabel === undefined
+    ) {
         return;
     }
 
@@ -23,6 +30,7 @@ export function mount(root: HTMLElement): void {
         lang,
         appIcon,
         notices: { unavailable, upToDate },
+        overflowLabel,
         loadChanges: () => import('./data/changes.json').then((module) => module.default),
     });
 }

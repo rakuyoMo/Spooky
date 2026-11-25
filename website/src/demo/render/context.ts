@@ -5,10 +5,13 @@ import type { DemoText } from '../text.ts';
  * 渲染用到的全部输入：数据、文案、界面上的临时状态，以及按需取来的变更集。
  */
 
-/** 只属于界面的临时状态：浮层、快捷操作的输入、获取中的转圈与提示。 */
+/** 只属于界面的临时状态：浮层、快捷操作的输入、获取中的转圈与提示，以及极窄版式里的侧边栏。 */
 export interface UiState {
-    /** 打开着的浮层：推送对话框或快捷操作。 */
-    overlay: 'push' | 'quick' | null;
+    /** 打开着的浮层：推送对话框、快捷操作或工具栏 » 的菜单。 */
+    overlay: 'push' | 'quick' | 'more' | null;
+
+    /** 打开 » 的菜单时，工具栏上收起来的项。 */
+    overflow: string[];
 
     /** 快捷操作框里的文字与选中的结果。 */
     query: string;
@@ -31,6 +34,9 @@ export interface UiState {
 
     /** 侧边栏里收起来的文件夹与远端。 */
     closedGroups: string[];
+
+    /** 极窄版式里侧边栏盖在主视图上。 */
+    sidebarOpen: boolean;
 
     /** 后退与前进能回到的位置。 */
     back: Place[];
@@ -55,12 +61,16 @@ export interface RenderContext {
 
     /** 推送对话框里的应用图标地址。 */
     appIcon: string;
+
+    /** 工具栏 » 的名字：它是系统画的控件，App 的文案里没有，由网站给出。 */
+    overflowLabel: string;
 }
 
 /** 初始的界面状态。 */
 export function createUi(): UiState {
     return {
         overlay: null,
+        overflow: [],
         query: '',
         quickIndex: 0,
         fetching: false,
@@ -69,6 +79,7 @@ export function createUi(): UiState {
         metadataCollapsed: false,
         pinned: false,
         closedGroups: [],
+        sidebarOpen: false,
         back: [],
         forward: [],
     };

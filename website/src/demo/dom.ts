@@ -54,7 +54,11 @@ export function patch(frame: HTMLElement, previous: Regions, next: Regions, scro
 
 // MARK: - Private
 
-/** 焦点所在的控件：按动作与参数，或按输入框的名字认出替换后的同一个控件。 */
+/**
+ * 焦点所在的控件：按动作与参数，或按输入框的名字认出替换后的同一个控件。
+ *
+ * 侧边栏与极窄版式的视图导航里有动作相同的按钮，所以连同所在的区域一起认。
+ */
 function focusKey(frame: HTMLElement): string | null {
     const active = document.activeElement;
 
@@ -69,8 +73,10 @@ function focusKey(frame: HTMLElement): string | null {
     if (active.dataset.action) {
         const arg = active.dataset.arg;
         const argSelector = arg === undefined ? '' : `[data-arg="${CSS.escape(arg)}"]`;
+        const region = active.closest<HTMLElement>('[data-region]')?.dataset.region;
+        const scope = region === undefined ? '' : `[data-region="${region}"] `;
 
-        return `[data-action="${active.dataset.action}"]${argSelector}`;
+        return `${scope}[data-action="${active.dataset.action}"]${argSelector}`;
     }
 
     return null;

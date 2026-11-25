@@ -2,7 +2,7 @@
  * 首页的演示窗口。
  *
  * 窗口按 1280 × 800 排版：容器窄于 1280 时先收窄右边一栏，窄于 960 时整窗按比例缩小，
- * 窄于 820 时改成上下排列的紧凑版式。取自 App 资源的颜色由构建时内联的变量给出（`--sd-<命名颜色>`、
+ * 窄于 820 时换成 App 的极窄版式。取自 App 资源的颜色由构建时内联的变量给出（`--sd-<命名颜色>`、
  * `--sd-t-<主题颜色>`），这里只写系统控件的颜色。默认是深色，网站切到浅色时换成浅色的一组。
  */
 
@@ -117,7 +117,7 @@
     grid-template-columns: 260px var(--sd-mid, 400px) minmax(0, 1fr);
     grid-template-rows: 52px minmax(0, 1fr);
     grid-template-areas:
-        'side title actions'
+        'side bar bar'
         'side middle detail';
     width: max(960px, min(100cqw, 1280px));
     height: 800px;
@@ -372,15 +372,47 @@
 
 /* MARK: 工具栏 */
 
-.sd-titlebar {
-    grid-area: title;
+/* 标题与按钮排成一行，横跨中间一栏与右边一栏 */
+.sd-toolbar {
+    grid-area: bar;
     display: flex;
-    align-items: center;
-    gap: 18px;
     min-width: 0;
-    padding-inline: 8px 12px;
     background: var(--sd-toolbar);
     box-shadow: inset 0 -1px var(--sd-separator);
+}
+
+/* 标题占中间一栏的宽度；按钮排不下时让出宽度，文字截短 */
+.sd-titlebar {
+    position: relative;
+    display: flex;
+    flex: 0 1 var(--sd-mid, 400px);
+    align-items: center;
+    gap: 18px;
+    min-width: 250px;
+    padding-inline: 8px 12px;
+    overflow: clip;
+}
+
+/*
+ * 标题与按钮之间的分隔线：标题占满中间一栏时，与下面两栏之间的分隔线连成一条；
+ * 标题让出了宽度，这条线落在标题外面被裁掉，只剩标题末尾的一小段。
+ */
+.sd-titlebar::before,
+.sd-titlebar::after {
+    position: absolute;
+    width: 1px;
+    background: var(--sd-separator);
+    content: '';
+}
+
+.sd-titlebar::before {
+    inset-block: 0;
+    left: calc(var(--sd-mid, 400px) - 1px);
+}
+
+.sd-titlebar::after {
+    inset-block: 16px;
+    right: 0;
 }
 
 .sd-capsule,
@@ -438,17 +470,23 @@
     font-size: 12px;
 }
 
+/* 按钮从标题后面排起；排不下时收起来的项进 »，» 与搜索靠右 */
 .sd-actions-bar {
-    container: sd-actions / inline-size;
-    grid-area: actions;
     display: flex;
+    flex: 1 0 auto;
     align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
     padding-inline: 12px 8px;
-    background: var(--sd-toolbar);
-    box-shadow: inset 0 -1px var(--sd-separator);
+}
+
+.sd-more {
+    margin-inline-start: auto;
+}
+
+/* 工具栏一组里的一项：单独包一层，能单独收进 » */
+.sd-tool-slot {
+    display: contents;
 }
 
 .sd-host {
@@ -463,22 +501,57 @@
     color: var(--sd-text-2);
 }
 
-/* 右边一栏窄的时候，靠后的几组按钮按档次先藏起来 */
-@container sd-actions (width < 560px) {
-    .sd-actions-bar > [data-tier='1'] {
+/* 只在极窄版式里出现的按钮 */
+.sd-only-narrow {
+    display: none;
+}
+
+/* 常规版式的工具栏：窗口不窄于 1080 时按钮都排得下，各组之间平分余下的宽度 */
+@container sd (width >= 1080px) {
+    .sd-spread {
+        margin-inline-start: auto;
+    }
+
+    .sd-more {
         display: none;
     }
 }
 
-@container sd-actions (width < 470px) {
-    .sd-actions-bar > [data-tier='2'] {
+/* 窗口窄于 `data-regular` 的那一项收进 » */
+@container sd (820px <= width < 1080px) {
+    .sd-window [data-regular='1080'] {
         display: none;
     }
 }
 
-@container sd-actions (width < 330px) {
-    .sd-actions-bar > [data-tier='3'] {
+@container sd (820px <= width < 1070px) {
+    .sd-window [data-regular='1070'] {
         display: none;
+    }
+}
+
+@container sd (820px <= width < 980px) {
+    .sd-window [data-regular='980'] {
+        display: none;
+    }
+
+    /* 安全强推与新建分支挨在一起：两块底各裁掉相邻的一侧，连成一块 */
+    .sd-join-end {
+        border-radius: 18px 0 0 18px;
+        clip-path: inset(-6px 0 -6px -6px);
+    }
+
+    .sd-join-start {
+        margin-inline-start: -10px;
+        border-radius: 0 18px 18px 0;
+        clip-path: inset(-6px -6px -6px 0);
+    }
+
+    /* 推送收进了 »，悬停或聚焦推送那一步时改描 » */
+    .sd-window[data-highlight='push'] [data-guide='push-overflow'] {
+        outline: 2px solid var(--sl-color-accent);
+        outline-offset: 2px;
+        animation: sd-pulse 1.2s ease-in-out infinite;
     }
 }
 
@@ -1833,6 +1906,52 @@
     color: var(--sd-text-2);
 }
 
+/* 工具栏 » 的菜单：挂在 » 下面，点菜单外面收起 */
+.sd-menu-scrim {
+    background: none;
+}
+
+.sd-menu {
+    position: absolute;
+    top: 48px;
+    right: 8px;
+    min-width: 150px;
+    padding: 5px;
+    border-radius: 10px;
+    background: var(--sd-quick);
+    box-shadow:
+        0 0 0 0.5px rgb(0 0 0 / 0.2),
+        0 10px 30px rgb(0 0 0 / 0.25);
+    backdrop-filter: blur(24px);
+}
+
+.sd-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 24px;
+    padding-inline: 8px 14px;
+    border-radius: 6px;
+    text-align: start;
+    white-space: nowrap;
+}
+
+.sd-menu-item .sd-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.sd-menu-item:disabled {
+    color: var(--sd-text-3);
+}
+
+.sd-menu-item:is(:hover, :focus-visible):not(:disabled) {
+    outline: none;
+    background: var(--sd-accent);
+    color: var(--sd-accent-text);
+}
+
 /* MARK: 转圈与提示 */
 
 .sd-spinner {
@@ -1997,281 +2116,217 @@
     animation: sd-pulse 1.2s ease-in-out infinite;
 }
 
-/* MARK: 紧凑版式 */
+/* MARK: 极窄版式 */
 
-/* 窄屏：不再缩放，侧边栏只留三个视图，各栏上下排列，控件放大到手指好点的尺寸 */
+/* 视图导航与侧边栏下面的遮罩，常规版式里不显示 */
+.sd-compact-nav,
+.sd-drawer-scrim {
+    display: none;
+}
+
+.sd-compact-nav {
+    grid-area: nav;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding-inline: 8px;
+    background: var(--sd-bg);
+    box-shadow: inset 0 -1px var(--sd-separator);
+}
+
+.sd-compact-toggle {
+    display: inline-grid;
+    flex: none;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border-radius: 6px;
+    color: var(--sd-text-2);
+}
+
+.sd-compact-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: 28px;
+    padding-inline: 8px;
+    border-radius: 6px;
+}
+
+.sd-compact-nav .sd-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.sd-compact-entry:not(.is-selected) .sd-icon {
+    color: var(--sd-text-2);
+}
+
+.sd-compact-entry .sd-row-label {
+    flex: 0 1 auto;
+}
+
+.sd-compact-toggle[aria-pressed='true'],
+.sd-compact-entry.is-selected {
+    background: rgb(128 128 128 / 0.2);
+}
+
+/*
+ * 容器窄于 820 时窗口换成极窄版式：侧边栏换成一行视图导航，列表与详情上下排列。
+ * 窗口最窄 480，容器再窄就按比例缩小。
+ */
 @container sd (width < 820px) {
     .sd-stage {
-        height: auto;
+        --sd-k: min(1, tan(atan2(100cqw, 480px)));
     }
 
     .sd-window {
-        position: relative;
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto;
+        grid-template-rows: 52px 41px minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
-            'title'
-            'actions'
-            'side'
+            'bar'
+            'nav'
             'middle'
             'detail';
-        width: 100%;
-        height: auto;
-        border-radius: 20px;
-        font-size: 14px;
-        transform: none;
+        width: max(480px, 100cqw);
     }
 
-    .sd-lights {
-        top: 16px;
-        left: 16px;
-    }
-
+    /* 标题让开红绿灯，占固定的宽度，放不下的文字截短 */
     .sd-titlebar {
-        gap: 10px;
-        min-height: 72px;
-        padding: 30px 12px 8px;
-        box-shadow: none;
+        flex: none;
+        gap: 12px;
+        min-width: 0;
+        padding-inline: 96px 0;
     }
 
-    .sd-titlebar .sd-nav {
+    .sd-titlebar::before,
+    .sd-titlebar::after {
         display: none;
+    }
+
+    .sd-heading {
+        width: 152px;
     }
 
     .sd-actions-bar {
-        justify-content: flex-start;
-        gap: 8px;
-        padding: 0 12px 10px;
-        overflow-x: auto;
-        scrollbar-width: none;
+        padding-inline: 12px 7px;
     }
 
-    .sd-actions-bar > :is([data-tier], .sd-host) {
+    .sd-only-narrow {
+        display: inline-flex;
+    }
+
+    .sd-window [data-narrow='none'] {
         display: none;
     }
 
-    .sd-glass {
-        height: 40px;
-        border-radius: 20px;
+    .sd-more {
+        margin-inline-end: -5px;
     }
 
-    .sd-tool {
-        width: 42px;
-        height: 38px;
-        border-radius: 19px;
+    .sd-compact-nav {
+        display: flex;
     }
 
-    .sd-round,
-    .sd-round .sd-tool {
-        width: 40px;
-        height: 40px;
-    }
-
+    /* 侧边栏盖在视图导航下面的主视图上，开头没有书签按钮 */
     .sd-sidebar {
-        box-shadow: inset 0 -1px var(--sd-separator), inset 0 1px var(--sd-separator);
+        position: absolute;
+        top: 93px;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        display: none;
+        grid-area: auto;
+        width: 280px;
     }
 
-    .sd-side-top,
-    .sd-side-bottom,
-    .sd-side-head,
-    .sd-side-list ul:not(:first-of-type),
-    .sd-side-list li:has([data-action='unavailable']) {
+    .sd-window[data-sidebar-open] .sd-sidebar {
+        display: flex;
+    }
+
+    .sd-window[data-sidebar-open] .sd-drawer-scrim {
+        position: absolute;
+        inset: 93px 0 0;
+        z-index: 1;
+        display: block;
+        background: rgb(0 0 0 / 0.2);
+    }
+
+    .sd-side-top {
         display: none;
     }
 
     .sd-side-list {
-        overflow: visible;
-        padding: 6px 4px;
-    }
-
-    .sd-side-list ul:first-of-type {
-        display: flex;
-        gap: 4px;
-    }
-
-    /* 三个视图按文字长短分宽度，工作区的名字最长 */
-    .sd-side-list ul:first-of-type li {
-        flex: auto;
-        min-width: 0;
-    }
-
-    .sd-sidebar .sd-row {
-        justify-content: center;
-        gap: 6px;
-        width: 100%;
-        height: 40px;
-        margin: 0;
-        padding-inline: 6px;
-        font-size: 14px;
-    }
-
-    .sd-sidebar .sd-row-label {
-        flex: 0 1 auto;
+        padding-top: 12px;
     }
 
     .sd-middle {
         box-shadow: none;
     }
 
-    .sd-commit {
-        padding: 14px 12px 12px;
-    }
-
-    .sd-subject input {
-        height: 40px;
-        font-size: 16px;
-    }
-
-    .sd-body textarea {
-        font-size: 16px;
-    }
-
-    .sd-button,
-    .sd-small {
-        height: 34px;
-        font-size: 14px;
-    }
-
-    .sd-help {
-        width: 34px;
-        height: 34px;
-    }
-
-    .sd-check-option {
-        min-height: 32px;
-    }
-
-    .sd-file-list {
-        overflow: visible;
-        padding-inline: 6px;
-    }
-
-    .sd-file {
-        height: 42px;
-    }
-
-    .sd-file .sd-check {
-        width: 20px;
-        height: 20px;
-        margin-inline-end: 10px;
-    }
-
-    .sd-files-head span:nth-child(2) {
-        margin-inline-start: 18px;
-    }
-
     .sd-detail {
-        box-shadow: inset 0 1px var(--sd-separator);
-    }
-
-    .sd-diff-head,
-    .sd-detail-head {
-        height: 52px;
-        padding-inline: 12px;
-    }
-
-    .sd-segment {
-        min-width: 0;
-        height: 30px;
-    }
-
-    .sd-diff-scroll,
-    .sd-detail-scroll {
-        max-height: 30rem;
-    }
-
-    .sd-hunk-head {
-        flex-wrap: wrap;
-        padding-inline: 12px;
-    }
-
-    .sd-gutter {
-        width: 72px;
-    }
-
-    .sd-gutter > span {
-        width: 36px;
-        padding-inline-end: 5px;
-    }
-
-    .sd-line {
-        font-size: 12px;
-        line-height: 20px;
-    }
-
-    .sd-line button.sd-gutter > span {
-        padding-block: 2px;
-    }
-
-    .sd-diff-foot {
-        display: none;
-    }
-
-    .sd-history-list,
-    .sd-stash-list {
-        max-height: 24rem;
-    }
-
-    .sd-history-list .sd-row {
-        height: 52px;
-    }
-
-    .sd-author,
-    .sd-date,
-    .sd-hash,
-    .sd-ref,
-    .sd-meta dl,
-    .sd-changes-bar,
-    .sd-diff-summary,
-    .sd-banner {
-        font-size: 12px;
-    }
-
-    .sd-meta {
-        padding-inline: 12px;
-    }
-
-    .sd-meta-avatars .sd-avatar {
-        --size: 48px !important;
-    }
-
-    .sd-changes {
-        padding-inline: 8px;
-    }
-
-    .sd-message {
-        padding: 16px 12px;
-    }
-
-    .sd-sheet {
-        position: fixed;
-        top: auto;
-        bottom: 1rem;
-        width: calc(100vw - 2rem);
-        max-width: 26rem;
-        z-index: 10;
-    }
-
-    .sd-scrim {
-        position: fixed;
-        z-index: 9;
+        border-top: 1px solid var(--sd-separator);
     }
 
     .sd-quick {
-        position: fixed;
-        top: 1rem;
-        width: calc(100vw - 2rem);
-        max-width: 30rem;
-        height: min(28rem, calc(100dvh - 2rem));
-        z-index: 10;
+        max-width: calc(100% - 24px);
     }
 
-    .sd-quick-input {
-        font-size: 22px !important;
+    /* 已经是极窄版式，不再提示收窄浏览器窗口 */
+    .sd-narrow-hint {
+        display: none;
+    }
+}
+
+/* 极窄版式的工具栏：窗口窄于 `data-narrow` 的那一项收进 » */
+@container sd (width < 810px) {
+    .sd-window [data-narrow='810'] {
+        display: none;
+    }
+}
+
+@container sd (width < 770px) {
+    .sd-window [data-narrow='770'] {
+        display: none;
+    }
+}
+
+@container sd (width < 690px) {
+    .sd-window [data-narrow='690'] {
+        display: none;
+    }
+}
+
+@container sd (width < 650px) {
+    .sd-window [data-narrow='650'] {
+        display: none;
+    }
+}
+
+/* 后退、前进收起后标题挪到红绿灯后面，工具栏的几组挨得更近 */
+@container sd (width < 590px) {
+    .sd-window [data-narrow='590'] {
+        display: none;
     }
 
-    .sd-quick-item {
-        height: 46px;
+    .sd-titlebar {
+        padding-inline-start: 100px;
+    }
+
+    .sd-actions-bar {
+        gap: 4px;
+        padding-inline-start: 6px;
+    }
+
+    .sd-more {
+        margin-inline-end: 1px;
+    }
+}
+
+@container sd (width < 510px) {
+    .sd-window [data-narrow='510'] {
+        display: none;
     }
 }
 

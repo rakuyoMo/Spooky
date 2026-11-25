@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - RepositoryWindowController
 
-/// 仓库窗口的 AppKit 外壳，负责两层分栏、工具栏与错误 sheet。
+/// 仓库窗口的 AppKit 外壳，负责两层分栏、极窄版式、工具栏与错误 sheet。
 @MainActor
 final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     NSToolbarDelegate, NSUserInterfaceValidations
@@ -45,8 +45,26 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 跨窗口的打开与记录管理。
     private(set) weak var coordinator: SpookyApplicationController?
 
-    /// 外层侧边栏分栏。
+    /// 仓库视图当前排成的版式，随内容区的宽度切换。
+    var layout = RepositoryWindowLayout.regular
+
+    /// 侧边栏与详情的外层分栏；极窄版式的仓库视图没有。
     var outerSplit: NSSplitViewController?
+
+    /// 极窄版式仓库视图的窗口内容；其余时候为 nil。
+    var narrowContent: NarrowRepositoryViewController?
+
+    /// 极窄版式视图导航的状态。
+    let compactNavigation = CompactNavigationState()
+
+    /// 常规版式里各分栏首栏定下的宽度，键是分栏的 autosave 名称：分栏装入窗口或分隔线被移动时记下，窗口变窄压窄分栏时不变。
+    var settledSplitWidths: [String: CGFloat] = [:]
+
+    /// 进入极窄版式时各分栏首栏定下的宽度；回到常规版式后放回。
+    var regularSplitWidths: [String: CGFloat] = [:]
+
+    /// 正在把分栏装入窗口或放回记下的宽度，期间分隔线的移动不算定下新的宽度。
+    var isArrangingSplits = false
 
     /// 工作区的列表与详情分栏。
     var workingCopySplit: NSSplitViewController?
@@ -192,6 +210,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
         observeHistorySearch()
         autoFetch.start()
         observeSheets()
+        observeSplitDividers()
     }
 
     /// 窗口由代码构建，不从归档恢复控制器。
@@ -323,6 +342,7 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
 
         showsManager = false
         outerSplit = nil
+        narrowContent = nil
         workingCopySplit = nil
         historySplit = nil
         window?.title = title
@@ -376,7 +396,8 @@ extension RepositoryWindowController {
             return nil
         }
 
-        return outerSplit?.splitViewItems.last?.viewController as? NSSplitViewController
+        let detail = narrowContent?.detail ?? outerSplit?.splitViewItems.last?.viewController
+        return detail as? NSSplitViewController
     }
 
     /// 丢失页所指的仓库；窗口没在显示丢失页时为 nil。
@@ -499,7 +520,7 @@ extension RepositoryWindowController {
 extension RepositoryWindowController {
     /// 分栏按名称恢复宽度；记录不可用时视为恢复失败，先清除记录，由调用方按默认宽度建立。
     static func setAutosaveName(_ name: String, of split: NSSplitViewController) {
-        let key = "NSSplitView Subview Frames " + name
+        let key = splitFramesKey(name)
 
         if let frames = UserDefaults.standard.array(forKey: key), !isUsable(splitFrames: frames) {
             UserDefaults.standard.removeObject(forKey: key)
@@ -633,8 +654,8 @@ extension RepositoryWindowController {
         return true
     }
 
-    /// 仓库主视图切换没有转场；工作区与历史分别保存分栏宽度。
-    private func configureRepositoryView() {
+    /// 仓库主视图切换没有转场；各视图分别保存分栏的尺寸，常规版式与极窄版式也各存一份。
+    func configureRepositoryView() {
         guard let repository = session.repository else {
             return
         }
@@ -643,7 +664,46 @@ extension RepositoryWindowController {
         updateSubtitle()
         window?.representedURL = repository.localURL
 
-        let sidebar = NSHostingController(rootView: RepositorySidebarView(
+        // 常规版式的分栏换下之前，记下回到常规版式后要放回的宽度
+        let fitting = fittingLayout
+
+        if fitting == .narrow, layout == .regular {
+            rememberRegularSplitWidths()
+        }
+
+        layout = fitting
+
+        let detail = makeDetailView()
+
+        // 装入时按默认宽度定位分隔线，不算使用者定下的宽度
+        isArrangingSplits = true
+
+        switch layout {
+        case .regular:
+            let sidebar = NSHostingController(rootView: makeSidebarView())
+            sidebar.sizingOptions = [.minSize]
+
+            installOuterSplit(
+                sidebar: sidebar,
+                detail: detail,
+                name: Self.repositorySplitName,
+                sidebarWidth: Self.repositorySidebarWidth
+            )
+
+        case .narrow:
+            installNarrowContent(detail: detail)
+        }
+
+        positionInnerSplitIfNeeded()
+        isArrangingSplits = false
+
+        settleRegularSplitWidths()
+        didChangeView()
+    }
+
+    /// 仓库窗口的侧边栏：常规版式放在外层分栏里，极窄版式由视图导航弹出。
+    func makeSidebarView() -> RepositorySidebarView {
+        RepositorySidebarView(
             session: session,
             selectionChanged: { [weak self] in self?.configureRepositoryView() },
             openTerminal: { [weak self] in self?.openInTerminal() },
@@ -651,48 +711,38 @@ extension RepositoryWindowController {
             copyPath: { [weak self] in self?.copyPath() },
             request: { [weak self] in self?.presentRepositoryAction($0) },
             showActivity: { [weak self] in self?.showActivity() }
-        ))
-        sidebar.sizingOptions = [.minSize]
-
-        let detail = makeDetailView()
-
-        installOuterSplit(
-            sidebar: sidebar,
-            detail: detail,
-            name: "Spooky.Repository",
-            sidebarWidth: Self.repositorySidebarWidth
         )
+    }
 
-        // 首次使用或恢复失败后工作区列表宽 400 pt、历史与文件历史的列表宽 320 pt，此后交给 NSSplitView 的 autosave 恢复。
-        if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames Spooky.WorkingCopy") == nil {
-            workingCopySplit?.splitView.setPosition(400, ofDividerAt: 0)
+    /// 首次使用或恢复失败后内层分栏第一栏的尺寸，此后交给 NSSplitView 的 autosave 恢复；
+    /// 分栏放进窗口之后才定位，否则列表会被压到分栏项的最小尺寸。
+    ///
+    /// 常规版式里工作区的列表宽 400 pt，历史、文件历史、储藏、Reflog 与 Pull Requests 的列表宽 320 pt，
+    /// Branches Review 的列表宽 420 pt；极窄版式里列表与详情各占一半的高度。
+    private func positionInnerSplitIfNeeded() {
+        guard
+            let split = innerSplit, let name = split.splitView.autosaveName,
+            UserDefaults.standard.object(forKey: Self.splitFramesKey(name)) == nil
+        else {
+            return
         }
 
-        if
-            let historySplit, let name = historySplit.splitView.autosaveName,
-            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
-        {
-            historySplit.splitView.setPosition(320, ofDividerAt: 0)
+        if layout == .narrow {
+            split.splitView.setPosition(split.splitView.bounds.height / 2, ofDividerAt: 0)
+            return
         }
 
-        // 首次使用或恢复失败后储藏、Reflog 与 Pull Requests 的列表宽 320 pt，Branches Review 的列表宽 420 pt，
-        // 此后交给 NSSplitView 的 autosave 恢复；分栏放进窗口之后才定位，否则列表会被压到分栏项的最小宽
-        let firstListWidth: CGFloat? =
+        let width: CGFloat? =
             switch session.activeView {
-            case .stashes, .reflog, .pullRequests: 320
+            case .workingCopy: 400
+            case .history, .fileHistory, .stashes, .reflog, .pullRequests: 320
             case .branchesReview: 420
             default: nil
             }
 
-        if
-            let firstListWidth, let split = detail as? NSSplitViewController,
-            let name = split.splitView.autosaveName,
-            UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil
-        {
-            split.splitView.setPosition(firstListWidth, ofDividerAt: 0)
+        if let width {
+            split.splitView.setPosition(width, ofDividerAt: 0)
         }
-
-        didChangeView()
     }
 
     /// 当前主视图的内容：工作区、历史与文件历史记下各自的内层分栏，其余视图清掉它们；工作区有整页进度时换成进度，不记分栏。
@@ -773,12 +823,9 @@ extension RepositoryWindowController {
         }
     }
 
-    /// 工作区的文件列表与 Diff 详情分栏，宽度按工作区单独保存。
+    /// 工作区的文件列表与 Diff 详情分栏，尺寸按工作区单独保存。
     private func makeWorkingCopySplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName("Spooky.WorkingCopy", of: split)
+        let split = makeInnerSplit(name: "Spooky.WorkingCopy")
 
         // 窗口与分栏决定内容尺寸，HostingController 只提供最小内容约束。
         let list = NSHostingController(rootView: WorkingCopyListView(session: session))
@@ -790,13 +837,13 @@ extension RepositoryWindowController {
         // 列表不延伸到工具栏下面，免得列表的底色与分隔线穿过工具栏上的项
         listItem.allowsFullHeightLayout = false
 
+        // 常规版式里选中的是冲突文件时，右栏一开始就放宽到冲突向导的最小宽度
         let fileDetail = NSHostingController(rootView: WorkingCopyDetailView(session: session))
         fileDetail.sizingOptions = [.minSize]
         let detailItem = NSSplitViewItem(viewController: fileDetail)
         detailItem.holdingPriority = .init(470)
 
-        // 选中的是冲突文件时右栏一开始就放宽到冲突向导的最小宽度
-        if showsConflictWizard {
+        if showsConflictWizard, layout == .regular {
             detailItem.minimumThickness = Self.conflictWizardMinimumWidth
         }
 
@@ -805,12 +852,9 @@ extension RepositoryWindowController {
         return split
     }
 
-    /// 历史的提交列表与提交详情分栏；整页提交详情换成文件列表与补丁，两种布局分别保存宽度。
+    /// 历史的提交列表与提交详情分栏；整页提交详情换成文件列表与补丁，两种布局分别保存尺寸。
     private func makeHistorySplit() -> NSSplitViewController {
-        let split = NSSplitViewController()
-        split.splitView.isVertical = true
-        split.splitView.dividerStyle = .thin
-        Self.setAutosaveName(session.history.showsCommitPage ? "Spooky.Commit" : "Spooky.History", of: split)
+        let split = makeInnerSplit(name: session.history.showsCommitPage ? "Spooky.Commit" : "Spooky.History")
 
         let list: NSViewController
         let content: NSViewController
@@ -847,7 +891,7 @@ extension RepositoryWindowController {
         }
 
         let listItem = NSSplitViewItem(contentListWithViewController: list)
-        listItem.minimumThickness = 300
+        listItem.minimumThickness = listMinimumThickness(300)
         listItem.holdingPriority = .init(475)
         listItem.canCollapse = false
 
@@ -880,7 +924,7 @@ extension RepositoryWindowController {
 
         // 仓库内切换只替换详情，保留侧边栏的展开状态、选择与键盘焦点。
         if
-            name == "Spooky.Repository", let existing = outerSplit,
+            name == Self.repositorySplitName, let existing = outerSplit,
             existing.splitView.autosaveName == name, existing.splitViewItems.count == 2
         {
             split = existing
@@ -905,17 +949,11 @@ extension RepositoryWindowController {
 
         split.addSplitViewItem(detailItem)
         outerSplit = split
-
-        // 换入的分栏先取当前内容尺寸：AppKit 会把窗口缩放到新视图的尺寸，缩小的窗口还会改写分栏的宽度记录。
-        if let size = window?.contentView?.frame.size {
-            split.view.setFrameSize(size)
-        }
-
-        window?.contentViewController = split
-        window?.contentView?.layoutSubtreeIfNeeded()
+        narrowContent = nil
+        install(split)
 
         // 首次使用或恢复失败后侧边栏取给定的宽度，此后交给 NSSplitView 的 autosave 恢复。
-        if UserDefaults.standard.object(forKey: "NSSplitView Subview Frames " + name) == nil {
+        if UserDefaults.standard.object(forKey: Self.splitFramesKey(name)) == nil {
             split.splitView.setPosition(sidebarWidth, ofDividerAt: 0)
         }
 

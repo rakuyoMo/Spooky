@@ -31,6 +31,7 @@ export function icon(name: IconName, className = 'sd-icon'): string {
  * 能点的按钮：`action` 是委托给控制器的动作，`arg` 是动作的参数。
  *
  * 只有图标的按钮必须给 `label`，作为它的名字与悬停提示；`tabIndex` 给一组只占一个 Tab 位置的按钮用。
+ * `item` 是工具栏上一项的名字，`expanded` 给能打开菜单的按钮用。
  */
 export function button(options: {
     action: string;
@@ -42,6 +43,8 @@ export function button(options: {
     pressed?: boolean | undefined;
     guide?: string | undefined;
     tabIndex?: number | undefined;
+    item?: string | undefined;
+    expanded?: boolean | undefined;
 }): string {
     const attributes = [
         `type="button"`,
@@ -53,6 +56,8 @@ export function button(options: {
         options.pressed === undefined ? '' : `aria-pressed="${options.pressed}"`,
         options.guide === undefined ? '' : `data-guide="${options.guide}"`,
         options.tabIndex === undefined ? '' : `tabindex="${options.tabIndex}"`,
+        options.item === undefined ? '' : `data-item="${options.item}"`,
+        options.expanded === undefined ? '' : `aria-haspopup="menu" aria-expanded="${options.expanded}"`,
     ];
 
     return `<button ${attributes.filter(Boolean).join(' ')}>${options.content}</button>`;

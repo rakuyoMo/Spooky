@@ -42,6 +42,9 @@ export interface DemoOptions {
     /** 网站自己的提示文字：演示里没有的功能、获取后没有新提交。 */
     notices: { unavailable: string; upToDate: string };
 
+    /** 工具栏 » 的名字。 */
+    overflowLabel: string;
+
     /** 按需取全部提交的变更集。 */
     loadChanges: () => Promise<Record<string, ChangeData[]>>;
 }
@@ -58,6 +61,9 @@ const fetchDuration = 1200;
 
 /** 提示停留的时长。 */
 const toastDuration = 2600;
+
+/** 外层容器窄于这个宽度时窗口用极窄版式，与 `demo.css` 里的界线相同。 */
+const narrowWidth = 820;
 
 /** 提交信息的输入框与展开后的选项：焦点在它们里面时提交区展开。 */
 const messageArea = '.sd-commit :is(.sd-field, .sd-details)';
@@ -106,6 +112,7 @@ class Demo {
         root.addEventListener('focusin', (event) => this.highlight(event.target));
         root.addEventListener('focusout', () => this.highlight(null));
         this.trackComposing();
+        this.trackLayout();
 
         // 第一次和窗口打交道时就开始取变更集，打开历史时多半已经取好
         this.frame.addEventListener('pointerdown', () => void this.ensureChanges(), { once: true });
@@ -135,6 +142,7 @@ class Demo {
             text: this.text,
             changes: this.changes,
             appIcon: this.options.appIcon,
+            overflowLabel: this.options.overflowLabel,
         };
     }
 
@@ -175,6 +183,7 @@ class Demo {
         }
 
         this.frame.dataset.view = this.state.view;
+        this.frame.toggleAttribute('data-sidebar-open', this.ui.sidebarOpen);
         this.frame
             .querySelector('.sd-quick-input')
             ?.setAttribute('aria-activedescendant', `sd-quick-${this.ui.quickIndex}`);
@@ -195,6 +204,11 @@ class Demo {
 
         if (!target || !this.frame.contains(target) || target.matches(':disabled')) {
             return;
+        }
+
+        // 选了 » 的菜单里的一项：先收起菜单，再执行它
+        if (target.closest('.sd-menu')) {
+            this.update(this.state, { overlay: null });
         }
 
         this.perform(target.dataset.action ?? '', target.dataset.arg ?? '', event.shiftKey, target);
@@ -283,7 +297,7 @@ class Demo {
         }
     }
 
-    /** 窗口上的其余动作：折叠、浮层、获取、推送与演示里没有的功能。 */
+    /** 窗口上的其余动作：折叠、极窄版式里的侧边栏、浮层、获取、推送与演示里没有的功能。 */
     private windowAction(action: string, arg: string, source: HTMLElement | null): void {
         switch (action) {
             case 'toggle-group':
@@ -298,6 +312,12 @@ class Demo {
                 break;
             case 'toggle-metadata':
                 this.update(this.state, { metadataCollapsed: !this.ui.metadataCollapsed });
+                break;
+            case 'toggle-sidebar':
+                this.update(this.state, { sidebarOpen: !this.ui.sidebarOpen });
+                break;
+            case 'more':
+                this.toggleOverflow(source);
                 break;
             case 'push':
                 this.openOverlay('push', source);
@@ -379,12 +399,33 @@ class Demo {
         this.update(this.state, { collapsed: collapse ? [...others, ...keys] : others });
     }
 
-    /** 打开推送对话框或快捷操作，焦点移进去。 */
+    /** 打开或收起工具栏 » 的菜单：列出此刻工具栏上看不到的项，焦点移到第一项。 */
+    private toggleOverflow(source: HTMLElement | null): void {
+        if (this.ui.overlay === 'more') {
+            this.closeOverlay();
+            return;
+        }
+
+        const items = [...this.frame.querySelectorAll<HTMLElement>('[data-item]')];
+        const shown = new Set(items.filter((item) => item.offsetParent !== null).map((item) => item.dataset.item));
+        const overflow = [...new Set(items.map((item) => item.dataset.item ?? ''))].filter((item) => !shown.has(item));
+
+        this.opener = source;
+        this.update(this.state, { overlay: 'more', overflow });
+        this.frame.querySelector<HTMLElement>('.sd-menu-item:not(:disabled)')?.focus({ preventScroll: true });
+    }
+
+    /** 打开推送对话框或快捷操作，焦点移进去；推送对话框出现时盖在主视图上的侧边栏收起。 */
     private openOverlay(overlay: 'push' | 'quick', source: HTMLElement | null): void {
         const active = document.activeElement;
 
         this.opener = source ?? (active instanceof HTMLElement ? active : null);
-        this.update(this.state, { overlay, query: '', quickIndex: 0 });
+        this.update(this.state, {
+            overlay,
+            query: '',
+            quickIndex: 0,
+            sidebarOpen: overlay === 'quick' && this.ui.sidebarOpen,
+        });
 
         if (overlay === 'quick') {
             void this.ensureChanges();
@@ -396,15 +437,16 @@ class Demo {
         target?.focus({ preventScroll: true });
     }
 
-    /** 关掉浮层，焦点回到打开它的控件。 */
+    /** 关掉浮层，焦点回到打开它的控件；它收进了 » 时焦点留在窗口上。 */
     private closeOverlay(): void {
         const opener = this.opener;
 
         this.opener = null;
         this.update(this.state, { overlay: null, query: '', quickIndex: 0 });
 
-        const selector = opener?.dataset.action ? `[data-action="${opener.dataset.action}"]` : null;
-        const target = selector ? this.frame.querySelector<HTMLElement>(selector) : null;
+        const selector = opener?.dataset.action ? `.sd-toolbar [data-action="${opener.dataset.action}"]` : null;
+        const targets = selector ? [...this.frame.querySelectorAll<HTMLElement>(selector)] : [];
+        const target = targets.find((control) => control.offsetParent !== null);
 
         (target ?? this.frame).focus({ preventScroll: true });
     }
@@ -532,9 +574,27 @@ class Demo {
             return;
         }
 
+        if (target.matches('.sd-menu-item')) {
+            this.menuKey(event, target);
+            return;
+        }
+
         if (target.matches('.sd-side-list .sd-row')) {
             this.sidebarKey(event, target);
         }
+    }
+
+    /** » 的菜单里的方向键：上下移动焦点，跳过不能用的项。 */
+    private menuKey(event: KeyboardEvent, target: HTMLElement): void {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+            return;
+        }
+
+        const rows = [...this.frame.querySelectorAll<HTMLElement>('.sd-menu-item:not(:disabled)')];
+        const next = rows[rows.indexOf(target) + (event.key === 'ArrowDown' ? 1 : -1)];
+
+        event.preventDefault();
+        next?.focus({ preventScroll: true });
     }
 
     /** 侧边栏行上的方向键：上下移动焦点，Home 与 End 到首尾，Tab 位置跟着焦点走。 */
@@ -656,8 +716,7 @@ class Demo {
 
         this.frame.addEventListener('focusout', () => setTimeout(settle));
 
-        // 在页面上任何地方按下都算：窄屏上窗口随内容变高，提交区收起时窗口下面的内容也跟着上移
-        document.addEventListener(
+        this.frame.addEventListener(
             'pointerdown',
             (event) => {
                 pressed = event.button === 0;
@@ -665,6 +724,7 @@ class Demo {
             true,
         );
 
+        // 在窗口里按下之后可能拖到窗口外面才松开
         document.addEventListener('pointerup', release, true);
         document.addEventListener('pointercancel', release, true);
 
@@ -676,6 +736,24 @@ class Demo {
                 event.preventDefault();
             }
         });
+    }
+
+    /**
+     * 窗口宽度变了之后：工具栏上收起来的项跟着变，打开着的 » 菜单收起；
+     * 回到常规版式时，极窄版式里打开的侧边栏算作收起，再收窄时不会自己盖上来。
+     */
+    private trackLayout(): void {
+        new ResizeObserver(([entry]) => {
+            const regular = (entry?.contentRect.width ?? 0) >= narrowWidth;
+
+            if (this.ui.overlay === 'more') {
+                this.closeOverlay();
+            }
+
+            if (this.ui.sidebarOpen && regular) {
+                this.update(this.state, { sidebarOpen: false });
+            }
+        }).observe(this.options.root);
     }
 
     /** 输入框里的文字写回状态；只重绘剩余字数、按钮与快捷操作的结果。 */
@@ -737,14 +815,14 @@ class Demo {
         }
     }
 
-    /** 点步骤：焦点移到窗口里对应的第一个控件。 */
+    /** 点步骤：焦点移到窗口里对应的第一个控件；它收进了工具栏的 » 时移到 » 上。 */
     private focusStep(step: string): void {
-        const controls = [...this.frame.querySelectorAll<HTMLElement>(`[data-guide="${step}"]`)];
-        const target = controls.find(
-            (control) => !control.matches(':disabled') && control.offsetParent !== null,
-        );
+        const find = (guide: string) =>
+            [...this.frame.querySelectorAll<HTMLElement>(`[data-guide="${guide}"]`)].find(
+                (control) => !control.matches(':disabled') && control.offsetParent !== null,
+            );
 
-        target?.focus();
+        (find(step) ?? find(`${step}-overflow`))?.focus();
     }
 
     /** 悬停或聚焦步骤时，窗口里对应的控件描上边框。 */

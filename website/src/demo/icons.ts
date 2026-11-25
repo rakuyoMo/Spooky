@@ -169,6 +169,8 @@ export const icons = {
     globe: line('<circle cx="9" cy="9" r="6.8"/><ellipse cx="9" cy="9" rx="3" ry="6.8"/><path d="M2.4 9h13.2"/>'),
     house: line('<path d="M2.8 8.6 9 3.4l6.2 5.2M4.5 7.4V15h3.2v-4h2.6v4h3.2V7.4"/>'),
     drive: line('<path d="M2.6 9.4 4.5 4.6h9l1.9 4.8v3.4a1.2 1.2 0 0 1-1.2 1.2H3.8a1.2 1.2 0 0 1-1.2-1.2Z"/><path d="M2.6 9.4h12.8"/><circle cx="12.6" cy="11.6" r=".5" fill="currentColor"/>'),
+    sidebar: line('<rect x="2.25" y="3.5" width="13.5" height="11" rx="2.4"/><path d="M6.7 3.5v11M4 6.4h1M4 8.4h1M4 10.4h1"/>', ' stroke-width="1.2"'),
+    more: line('<path d="M4.2 4.5 8.7 9l-4.5 4.5M9.3 4.5 13.8 9l-4.5 4.5"/>', ' stroke-width="1.7"'),
     back: line('<path d="M11.2 3.5 5.7 9l5.5 5.5"/>', ' stroke-width="1.7"'),
     forward: line('<path d="M6.8 3.5 12.3 9l-5.5 5.5"/>', ' stroke-width="1.7"'),
     chevronRight: line('<path d="M7 4.5 11.5 9 7 13.5"/>'),
