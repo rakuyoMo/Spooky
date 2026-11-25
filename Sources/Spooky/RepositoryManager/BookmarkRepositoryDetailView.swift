@@ -78,7 +78,12 @@ extension BookmarkRepositoryDetailView {
         RemoteSettingRow(
             label: AppLocalization.text("bookmarks.detail.location"),
             location: bookmark.location,
-            canReveal: !bookmark.isLocalDirectoryGone
+            canReveal: !bookmark.isLocalDirectoryGone,
+            actions: [
+                RemoteSettingAction(title: AppLocalization.text("bookmarks.detail.edit"), isEnabled: true) {
+                    manager.editLocation(of: bookmark)
+                },
+            ]
         )
 
         lastOpenedRow
