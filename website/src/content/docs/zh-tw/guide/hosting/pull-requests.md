@@ -19,7 +19,7 @@ Spooky 會列出儲存庫遠端上的 GitHub Pull Request 和 GitLab Merge Reque
 - 標籤，底色是標籤自己的顏色。把指標停在標籤上，可以看到它的說明。一行放不下的標籤不顯示。
 - 有 [CI/CD 狀態](#checks) 時，右邊有一個表示狀態的圖示
 
-捲到底部會接著讀取更多。
+捲到底部會接著讀取更多。想把列表重新讀一遍，按一下 :ui[action.refresh] 或按 <kbd>⌘R</kbd>。
 
 列表一開始只列開啟著的請求。想連已關閉和已合併的一起看，按一下列表頂部的篩選按鈕，選 :ui[pullRequests.filter.all]。已關閉和已合併的請求不能再合併或關閉。下次開啟視窗時，列表回到 :ui[pullRequests.filter.open]。
 

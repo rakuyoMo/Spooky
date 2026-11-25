@@ -28,8 +28,8 @@ final class RepositoryBookmarks {
     /// 最近一次选中或打开时认出目录已不存在的服务器仓库，是 `missing` 的子集。
     private(set) var directoryGone: Set<RepositoryLocation> = []
 
-    /// 存储只有名称、位置、顺序与打开时间，不含仓库内容或凭据。
-    private let defaults: UserDefaults
+    /// 存储只有名称、位置、顺序与打开时间，不含仓库内容或凭据；仓库管理列表的显示设置在同一个偏好域里。
+    let defaults: UserDefaults
 
     /// 本机仓库的后台检查。
     private var validationTask: Task<Void, Never>? = nil

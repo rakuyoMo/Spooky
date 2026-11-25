@@ -443,6 +443,7 @@ extension SpookyApplicationController {
 
             do {
                 let repository = try await Self.verifiedLocation(of: location)
+                let addsBookmark = await addsBookmark(opening: location, verifiedAs: repository)
                 try Task.checkCancellation()
 
                 // 书签指向子目录或符号链接时改指向工作区根目录，不另建一个书签
@@ -453,7 +454,8 @@ extension SpookyApplicationController {
                     from: source,
                     inNewWindow: inNewWindow,
                     showing: destination,
-                    staysInSource: staysInSource
+                    staysInSource: staysInSource,
+                    bookmarking: addsBookmark
                 )
             } catch {
                 guard !Task.isCancelled else {
@@ -474,6 +476,7 @@ extension SpookyApplicationController {
     /// - Parameters:
     ///   - view: 显示后切到的视图；nil 时显示仓库保存的视图状态。
     ///   - staysInSource: 在发起窗口里显示，不改用已显示这个仓库的其它窗口。
+    ///   - bookmarking: 是否记进书签：还没有书签的加入，已有的记下打开时间。
     /// - Returns: 显示这个仓库的窗口。
     @discardableResult
     func displayRepository(
@@ -481,7 +484,8 @@ extension SpookyApplicationController {
         from source: RepositoryWindowController?,
         inNewWindow: Bool,
         showing view: RepositoryDestination? = nil,
-        staysInSource: Bool = false
+        staysInSource: Bool = false,
+        bookmarking: Bool = true
     ) -> RepositoryWindowController {
         let sourceIsOpen = source.map { source in windows.contains { $0 === source } } ?? false
 
@@ -501,7 +505,10 @@ extension SpookyApplicationController {
                 makeWindow()
             }
 
-        bookmarks.recordOpened(repository)
+        if bookmarking {
+            bookmarks.recordOpened(repository)
+        }
+
         recentDocuments.record(repository)
         let previous = destination.session.repository
 
@@ -665,19 +672,13 @@ extension SpookyApplicationController {
 
             do {
                 // 重试不是用户发起的：服务器仓库只用已存的凭据，取不到按打不开处理
-                let repository = try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
-                    try await verify(location)
+                let (repository, addsBookmark) = try await RemoteCallbackRequest.$allowsInteraction.withValue(false) {
+                    let repository = try await verify(location)
+                    return (repository, await self.addsBookmark(opening: location, verifiedAs: repository))
                 }
                 try Task.checkCancellation()
 
-                // 重试期间窗口离开了丢失页（如回到仓库管理）时不换回仓库
-                guard let source, source.missingLocation == location else {
-                    releaseConnection(location)
-                    return
-                }
-
-                bookmarks.relocate(location, to: repository)
-                displayRepository(repository, from: source, inNewWindow: false, staysInSource: true)
+                showRetriedRepository(repository, replacing: location, in: source, bookmarking: addsBookmark)
             } catch {
                 guard !Task.isCancelled else {
                     return
@@ -710,6 +711,61 @@ extension SpookyApplicationController {
 
         // 本机仓库先校验 Git 版本，再把子目录和符号链接统一到工作区根目录。
         return try await runner.openLocalRepository().location
+    }
+
+    /// 打开成功的仓库还没有书签时是否自动加入：General 页关着列出工作树时，主工作树之外的工作树不加入。
+    ///
+    /// 已有书签或列出工作树时不用读取；工作树读不出时照常加入。
+    ///
+    /// - Parameters:
+    ///   - location: 要打开的位置，连接已经建立。
+    ///   - repository: Git 确认后的仓库位置。
+    private func addsBookmark(
+        opening location: RepositoryLocation,
+        verifiedAs repository: RepositoryLocation
+    ) async -> Bool {
+        guard
+            !RepositoryManagerPreferences.showsWorktrees(in: bookmarks.defaults),
+            bookmarks.bookmark(for: location) == nil,
+            bookmarks.bookmark(for: repository) == nil
+        else {
+            return true
+        }
+
+        let worktrees = try? await RepositoryWorktrees(runner: GitRunner(location: location)).list()
+
+        return worktrees?.first(where: \.isCurrent)?.isMain ?? true
+    }
+
+    /// 丢失页的重试验证通过后，在这个窗口换回仓库界面。
+    ///
+    /// 重试期间窗口关掉或离开了丢失页（如回到仓库管理）时不换回，收回这次建立的连接。
+    ///
+    /// - Parameters:
+    ///   - repository: Git 确认后的仓库位置。
+    ///   - location: 丢失页所指的仓库。
+    ///   - source: 显示丢失页的窗口。
+    ///   - bookmarking: 是否记进书签。
+    private func showRetriedRepository(
+        _ repository: RepositoryLocation,
+        replacing location: RepositoryLocation,
+        in source: RepositoryWindowController?,
+        bookmarking: Bool
+    ) {
+        guard let source, source.missingLocation == location else {
+            releaseConnection(location)
+            return
+        }
+
+        bookmarks.relocate(location, to: repository)
+
+        displayRepository(
+            repository,
+            from: source,
+            inNewWindow: false,
+            staysInSource: true,
+            bookmarking: bookmarking
+        )
     }
 
     /// 打开失败：路径不存在或服务器连不上时整页显示丢失页，其余失败显示错误 sheet。

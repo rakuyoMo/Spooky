@@ -19,7 +19,7 @@ Elige un remoto en el menú de la parte superior de la lista. Cada fila muestra:
 - Sus etiquetas, cada una con su color. Deja el puntero sobre una etiqueta para ver su descripción. Las etiquetas que no caben en una línea no se muestran.
 - A la derecha, un icono con su [estado de CI/CD](#checks), cuando lo tiene
 
-Desplázate hasta el final para cargar más.
+Desplázate hasta el final para cargar más. Para volver a leer la lista, haz clic en :ui[action.refresh] o pulsa <kbd>⌘R</kbd>.
 
 Al principio la lista solo muestra las solicitudes abiertas. Para ver también las cerradas y las fusionadas, haz clic en el botón de filtro de la parte superior de la lista y elige :ui[pullRequests.filter.all]. Las solicitudes cerradas y las fusionadas no se pueden fusionar ni cerrar. La próxima vez que abras la ventana, la lista vuelve a :ui[pullRequests.filter.open].
 

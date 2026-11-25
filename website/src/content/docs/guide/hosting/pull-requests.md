@@ -19,7 +19,7 @@ Choose a remote from the menu at the top of the list. Each row shows:
 - Its labels, each in its own color. Hold the pointer over a label to see its description. Labels that don’t fit on one line are left out.
 - On the right, an icon for its [CI/CD status](#checks), when it has one
 
-Scroll to the bottom to load more.
+Scroll to the bottom to load more. To read the list again, click :ui[action.refresh] or press <kbd>⌘R</kbd>.
 
 The list starts with open requests only. To see closed and merged ones too, click the filter button at the top of the list and choose :ui[pullRequests.filter.all]. Closed and merged requests can’t be merged or closed. The next time you open the window, the list is back to :ui[pullRequests.filter.open].
 

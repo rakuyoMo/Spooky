@@ -59,7 +59,7 @@ extension RepositoryWindowController {
         NSPasteboard.general.setString(location.displayPath, forType: .string)
     }
 
-    /// 菜单和工具栏共用刷新入口。
+    /// 菜单和工具栏共用刷新入口；请求来自托管服务，不在仓库的刷新里，停在请求视图时一并重读。
     @objc
     func refreshRepository() {
         guard !showsManager else {
@@ -67,6 +67,10 @@ extension RepositoryWindowController {
         }
 
         session.refresh(full: true)
+
+        if session.activeView == .pullRequests {
+            session.reloadPullRequests()
+        }
     }
 
     /// 提交菜单聚焦已有的工作区标题框。

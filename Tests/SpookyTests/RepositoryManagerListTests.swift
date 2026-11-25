@@ -188,6 +188,51 @@ struct RepositoryManagerListTests {
         #expect(next.outlineView.isItemExpanded(next.item(for: repository)))
     }
 
+    /// 选项关着时，打开成功的仓库照常自动加入书签，主工作树之外的工作树不加入；工作树已有书签时照常记下打开时间。
+    /// 打开选项后，打开的工作树照常加入。
+    @Test("选项关着时打开工作树不自动加入书签")
+    func openedWorktreeBookmarks() async throws {
+        let (defaults, directory) = try Self.defaults()
+        let (location, _) = try await Self.repositoryWithWorktrees(in: directory)
+        let bookmarks = RepositoryBookmarks(defaults: defaults)
+        let coordinator = SpookyApplicationController(bookmarks: bookmarks, recentDocuments: .ignoring)
+
+        defer {
+            for window in coordinator.windows {
+                window.session.close()
+                window.window?.close()
+            }
+
+            try? FileManager.default.removeItem(at: directory)
+        }
+
+        // 都在同一个窗口里打开，返回 Git 确认后的位置
+        let open = { (location: RepositoryLocation) async throws -> RepositoryLocation in
+            await coordinator.openRepository(at: location, from: coordinator.windows.first, inNewWindow: false)?.value
+            return try #require(coordinator.windows.first?.session.repository)
+        }
+
+        // 选项关着：仓库自己加入书签，工作树不加入
+        let repository = try await open(location)
+        let worktree = try await open(.local(path: directory.appending(path: "zeta").path))
+
+        #expect(worktree != repository)
+        #expect(bookmarks.repositories.compactMap(\.location) == [repository])
+
+        // 工作树已有书签时照常记下打开时间
+        let added = bookmarks.add(worktree)
+
+        _ = try await open(worktree)
+        #expect(bookmarks.bookmark(added)?.lastOpened != nil)
+
+        // 打开选项后，打开的工作树照常加入
+        bookmarks.delete([added])
+        defaults.set(true, forKey: RepositoryManagerPreferences.showsWorktreesKey)
+
+        _ = try await open(worktree)
+        #expect(bookmarks.repositories.compactMap(\.location) == [repository, worktree])
+    }
+
     /// 名称平时不能编辑，点已选中的名称不会进入改名；只选中一个书签时回车进入改名，选中多项时不改名；
     /// 取消与提交之后名称都回到不能编辑。
     @Test("回车改名，名称平时不能编辑")
