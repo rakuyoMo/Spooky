@@ -172,6 +172,10 @@ final class RepositoryPullRequestState {
     @ObservationIgnored
     private var issueCache: (project: String, issues: [HostingIssue], date: Date)? = nil
 
+    /// 上次为 `@` 补全读取项目成员的任务：项目与开始的时刻。
+    @ObservationIgnored
+    private var memberCache: (project: String, date: Date, task: Task<[HostingUser]?, Never>)? = nil
+
     /// 上次读取分支对应的请求的时刻。
     @ObservationIgnored
     private var branchRequestsDate: Date? = nil
@@ -417,6 +421,8 @@ final class RepositoryPullRequestState {
     func close() {
         generation += 1
         issueCache = nil
+        memberCache?.task.cancel()
+        memberCache = nil
         branchRequests = nil
         branchRequestsFailure = nil
         branchRequestsDate = nil
@@ -436,6 +442,47 @@ final class RepositoryPullRequestState {
         selectedID = nil
         checks.close()
         clearDetail()
+    }
+}
+
+// MARK: - Members
+
+extension RepositoryPullRequestState {
+    /// 评论里 `@` 补全用的项目成员；远端对应不上账号或读取失败时没有。
+    ///
+    /// 一分钟内复用上次的读取，还没读完时等同一次读取；失败的不留。
+    ///
+    /// - Parameter project: 项目路径。
+    func members(of project: String) async -> [HostingUser] {
+        if let cache = memberCache, cache.project == project, Date().timeIntervalSince(cache.date) < 60 {
+            return await cache.task.value ?? []
+        }
+
+        guard let client else {
+            return []
+        }
+
+        let date = Date()
+
+        let task = Task { [location] in
+            try? await RepositoryActivities.shared.recordHosting(
+                title: AppLocalization.text("pullRequests.loadMembers.title"),
+                repository: location
+            ) {
+                try await client.members(of: project)
+            }
+        }
+
+        memberCache = (project, date, task)
+
+        let members = await task.value
+
+        // 读取期间仓库可能已关闭或开始了新的读取，只清掉这一次的记录
+        if members == nil, memberCache?.date == date {
+            memberCache = nil
+        }
+
+        return members ?? []
     }
 }
 

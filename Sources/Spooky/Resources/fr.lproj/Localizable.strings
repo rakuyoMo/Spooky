@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "Chargement du journal…";
 "pullRequests.loadChecks.title" = "Charger le statut CI/CD";
 "pullRequests.loadIssues.title" = "Charger les tickets";
+"pullRequests.loadMembers.title" = "Charger les membres";
 "pullRequests.loadMergeOptions.title" = "Charger les options de fusion";
 "pullRequests.merge" = "Fusionner";
 "pullRequests.mergeStrategy" = "Stratégie de fusion :";

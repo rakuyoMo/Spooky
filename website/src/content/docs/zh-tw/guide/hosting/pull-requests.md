@@ -80,6 +80,8 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 
 想發表留言，按一下討論末尾的 :ui[pullRequests.addComment]，或者按 <kbd>⌘S</kbd>。
 
+想在留言裡提及某個人，輸入 `@`。Spooky 會列出參與這個請求的人和專案的成員，並隨著你繼續輸入使用者名稱或名字縮小範圍。按 <kbd>↑</kbd> 或 <kbd>↓</kbd> 選一項，按 <kbd>Return</kbd> 插入使用者名稱，按 <kbd>Esc</kbd> 關掉列表。
+
 自己的留言，可以用留言上的 :ui[pullRequests.comment.edit] 和 :ui[pullRequests.comment.delete]，也可以在它上面按右鍵。按兩下自己的留言同樣會開啟編輯。刪除留言不能還原。
 
 在 GitLab 上，還可以用 :ui[pullRequests.comment.reply] 回覆任何一則留言。回覆會放進 GitLab 上的同一個討論裡。

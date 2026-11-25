@@ -2796,6 +2796,7 @@
 "pullRequests.checks.log.loading" = "正在載入記錄…";
 "pullRequests.loadChecks.title" = "載入 CI/CD 狀態";
 "pullRequests.loadIssues.title" = "載入 Issue";
+"pullRequests.loadMembers.title" = "載入成員";
 "pullRequests.loadMergeOptions.title" = "載入合併選項";
 "pullRequests.merge" = "合併";
 "pullRequests.mergeStrategy" = "合併方式：";

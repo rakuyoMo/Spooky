@@ -80,6 +80,8 @@ Quelle und Ziel dürfen nicht derselbe Branch sein.
 
 Um einen Kommentar hinzuzufügen, klicken Sie am Ende der Konversation auf :ui[pullRequests.addComment] oder drücken Sie <kbd>⌘S</kbd>.
 
+Um jemanden in einem Kommentar zu erwähnen, geben Sie `@` ein. Spooky listet die Beteiligten des Requests und die Mitglieder des Projekts auf und grenzt die Liste ein, während Sie einen Benutzernamen oder Namen weitertippen. Drücken Sie <kbd>↑</kbd> oder <kbd>↓</kbd>, um einen Eintrag zu wählen, den <kbd>Zeilenschalter</kbd>, um den Benutzernamen einzufügen, und <kbd>Esc</kbd>, um die Liste zu schließen.
+
 Bei Ihren eigenen Kommentaren verwenden Sie :ui[pullRequests.comment.edit] und :ui[pullRequests.comment.delete] am Kommentar, oder klicken Sie mit der rechten Maustaste darauf. Auch ein Doppelklick auf Ihren Kommentar öffnet ihn zum Bearbeiten. Das Löschen eines Kommentars lässt sich nicht widerrufen.
 
 Auf GitLab können Sie außerdem mit :ui[pullRequests.comment.reply] auf jeden Kommentar antworten. Die Antwort kommt auf GitLab in dieselbe Diskussion.

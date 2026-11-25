@@ -81,10 +81,10 @@ struct PullRequestTextDialog: View {
         ) {
             switch kind {
             case .comment, .editComment, .reply:
-                editor(label: AppLocalization.text("pullRequests.comment"))
+                editor(label: AppLocalization.text("pullRequests.comment"), completesMentions: true)
 
             case .editDescription:
-                editor(label: AppLocalization.text("pullRequests.description"))
+                editor(label: AppLocalization.text("pullRequests.description"), completesMentions: false)
 
             case .checkout:
                 DialogForm {
@@ -269,13 +269,27 @@ extension PullRequestTextDialog {
     }
 
     /// 评论与描述的多行输入：四周留 20、占满对话框的宽度、高 300，带边框；没有可见的标签，VoiceOver 读出去掉冒号的标签。
-    private func editor(label: String) -> some View {
-        TextEditor(text: $text)
-            .font(.system(size: 13))
-            .frame(height: 300)
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
-            .accessibilityLabel(label.trimmingCharacters(in: CharacterSet(charactersIn: ":：")))
-            .padding(20)
+    ///
+    /// - Parameters:
+    ///   - label: 带冒号的标签。
+    ///   - completesMentions: 输入 `@` 时补全能提及的用户，评论用。
+    private func editor(label: String, completesMentions: Bool) -> some View {
+        let label = label.trimmingCharacters(in: CharacterSet(charactersIn: ":："))
+
+        return Group {
+            if completesMentions {
+                PullRequestCommentEditor(text: $text, label: label) {
+                    await session.mentionCompletions(matching: $0, in: request)
+                }
+            } else {
+                TextEditor(text: $text)
+                    .font(.system(size: 13))
+                    .accessibilityLabel(label)
+            }
+        }
+        .frame(height: 300)
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(AppPalette.color("general_border_color")))
+        .padding(20)
     }
 
     /// 修改评论与描述预填原文，检出预填本地分支名。

@@ -80,6 +80,8 @@ GitLab은 머지 리퀘스트가 닫히거나 병합된 지 14일이 지나면 �
 
 댓글을 추가하려면 대화 끝의 :ui[pullRequests.addComment]를 클릭하거나 <kbd>⌘S</kbd>를 누릅니다.
 
+댓글에서 누군가를 언급하려면 `@`를 입력합니다. Spooky가 리퀘스트에 참여한 사람과 프로젝트의 멤버를 나열하고, 사용자 이름이나 이름을 이어서 입력하는 동안 목록을 좁힙니다. <kbd>↑</kbd>나 <kbd>↓</kbd>로 항목을 고르고, <kbd>Return</kbd>으로 사용자 이름을 넣고, <kbd>Esc</kbd>로 목록을 닫습니다.
+
 내가 쓴 댓글은 댓글에 있는 :ui[pullRequests.comment.edit]과 :ui[pullRequests.comment.delete]를 사용하거나 오른쪽 클릭합니다. 내 댓글을 이중 클릭해도 편집할 수 있게 열립니다. 댓글 삭제는 실행 취소할 수 없습니다.
 
 GitLab에서는 :ui[pullRequests.comment.reply]로 어느 댓글에나 답글을 달 수도 있습니다. 답글은 GitLab의 같은 토론에 들어갑니다.

@@ -80,6 +80,8 @@ GitLab は、マージリクエストがクローズまたはマージされて�
 
 コメントを追加するには、会話の最後にある :ui[pullRequests.addComment] をクリックするか、<kbd>⌘S</kbd> を押します。
 
+コメントでだれかにメンションするには、`@` を入力します。リクエストに参加している人とプロジェクトのメンバーが表示され、ユーザ名または名前を入力するにつれて候補が絞り込まれます。<kbd>↑</kbd> または <kbd>↓</kbd> で候補を選び、<kbd>Return</kbd> でユーザ名を挿入し、<kbd>Esc</kbd> で一覧を閉じます。
+
 自分のコメントでは、コメントにある :ui[pullRequests.comment.edit] と :ui[pullRequests.comment.delete] を使うか、コメントを右クリックします。自分のコメントをダブルクリックしても、編集できる状態で開きます。コメントの削除は取り消せません。
 
 GitLab では、:ui[pullRequests.comment.reply] でどのコメントにも返信できます。返信は、GitLab 上の同じディスカッションに入ります。

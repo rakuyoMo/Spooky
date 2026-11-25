@@ -117,6 +117,22 @@ extension RepositorySession {
     }
 }
 
+// MARK: - Mention Completion
+
+extension RepositorySession {
+    /// 评论里 `@` 补全的候选：请求的参与者与项目成员里，用户名或显示名包含查询的；成员读不到时只有参与者。
+    ///
+    /// - Parameters:
+    ///   - query: `@` 之后的查询。
+    ///   - request: 正在评论的请求。
+    func mentionCompletions(matching query: String, in request: PullRequest) async -> [CommitCompletion] {
+        let members = await pullRequests.members(of: request.id.project)
+        let users = MentionCompletion.candidates(for: request, comments: pullRequests.comments, members: members)
+
+        return MentionCompletion.matches(query, in: users)
+    }
+}
+
 // MARK: - Label Actions
 
 extension RepositorySession {

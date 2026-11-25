@@ -83,6 +83,9 @@ struct CommitCompletion: Identifiable, Equatable {
 
         /// 托管服务上打开着的 Issue。
         case issue(HostingIssue)
+
+        /// 评论里能提及的用户。
+        case user(HostingUser)
     }
 
     /// 列表内的稳定标识。
@@ -91,7 +94,7 @@ struct CommitCompletion: Identifiable, Equatable {
     /// 显示内容。
     let content: Content
 
-    /// 选中后插入的文字，已规范为 NFC：提交与文件后面补一个空格，可以接着输入下一个触发词；fixup 是前面带空格的整行标题。
+    /// 选中后插入的文字，已规范为 NFC：提交、文件与用户后面补一个空格，可以接着输入下一个触发词；fixup 是前面带空格的整行标题。
     let insertion: String
 
     /// 按触发方式筛选候选：提交按哈希前缀或标题、作者匹配，文件按路径匹配，Issue 按编号前缀或标题匹配，查询都不区分大小写。
@@ -334,7 +337,7 @@ private final class CompletionHostingView: NSHostingView<CommitCompletionList> {
 
 // MARK: - CommitCompletionList
 
-/// 候选列表：提交行显示首字母头像、作者、日期、短哈希与标题，文件行显示图标与路径。
+/// 候选列表：提交行显示首字母头像、作者、日期、短哈希与标题，文件行显示图标与路径，Issue 行显示编号与标题，用户行显示头像、用户名与显示名。
 private struct CommitCompletionList: View {
     /// 弹窗模型。
     let model: CommitCompletionPanel.Model
@@ -361,12 +364,12 @@ private struct CommitCompletionList: View {
         }
     }
 
-    /// 提交行 44 pt，文件行 22 pt，Issue 行 24 pt。
+    /// 提交行 44 pt，文件行 22 pt，Issue 行与用户行 24 pt。
     static func rowHeight(for item: CommitCompletion) -> CGFloat {
         switch item.content {
         case .commit: 44
         case .file: 22
-        case .issue: 24
+        case .issue, .user: 24
         }
     }
 }
@@ -393,6 +396,7 @@ extension CommitCompletionList {
             case .commit(let commit): commitRow(commit)
             case .file(let path): fileRow(path)
             case .issue(let issue): issueRow(issue)
+            case .user(let user): userRow(user)
             }
         }
         .font(.system(size: 12))
@@ -445,6 +449,26 @@ extension CommitCompletionList {
             Text(issue.title)
                 .lineLimit(1)
                 .truncationMode(.tail)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// 用户行：18 pt 的头像、用户名与次要色的显示名；读屏时头像不另读一遍名字。
+    private func userRow(_ user: HostingUser) -> some View {
+        HStack(spacing: 6) {
+            HostingUserAvatar(user: user, size: 18)
+                .accessibilityHidden(true)
+
+            Text(user.username)
+                .lineLimit(1)
+
+            if let name = user.name, !name.isEmpty {
+                Text(name)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
 
             Spacer(minLength: 0)
         }
