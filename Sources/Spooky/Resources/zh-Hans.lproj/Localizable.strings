@@ -1933,8 +1933,8 @@
 "settings.updates" = "更新";
 "updates.channel" = "更新通道：";
 "updates.channel.stable" = "稳定版";
-"updates.channel.beta" = "测试版";
-"updates.channel.development" = "开发版";
+"updates.channel.beta" = "公测版";
+"updates.channel.development" = "内测版";
 "updates.automaticChecks" = "自动检查更新";
 "updates.automaticDownloads" = "自动下载更新";
 "updates.interval" = "检查间隔：";

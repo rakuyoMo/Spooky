@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# 发布前的共用检查：版本号与通道的格式、Info.plist 的构建号、这一版的更新说明，以及远端是否已有同名标签
+# 发布前的共用检查：版本号的格式、Info.plist 的构建号、这一版的更新说明，以及远端是否已有同名标签
 # 本机的 `mise run release`、release PR 的检查与发布工作流都调用这一份
 #
+# 版本号决定通道：稳定版 X.Y.Z 发往 stable，公测版 X.Y.Z-beta.N 发往 beta，内测版 X.Y.Z-alpha.N 发往 development
+#
 # 用法：
-#   scripts/check-release.sh X.Y.Z [stable|beta|development]
-#     开 release PR 之前：Info.plist 里当前的构建号须是正整数，通道默认为 stable
+#   scripts/check-release.sh <版本号>
+#     开 release PR 之前：Info.plist 里当前的构建号须是正整数
 #   scripts/check-release.sh --title '<PR 标题>' --base <提交>
-#     release PR 与发布工作流：从标题取出版本号与通道；Info.plist 的版本号须与标题一致，
+#     release PR 与发布工作流：从标题取出版本号；Info.plist 的版本号须与标题一致，
 #     构建号须比基准提交里的增加 1；通过后向标准输出写出 VERSION=… 与 CHANNEL=… 两行
 
 set -euo pipefail
@@ -19,11 +21,11 @@ cd "$project_root"
 # 版本号与构建号所在的 Info.plist
 readonly info_plist="Sources/Spooky/Info.plist"
 
-# 版本号：三段都是不带前导零的非负整数，不带 v
-readonly version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+# 版本号：X.Y.Z 三段都是不带前导零的非负整数，公测版与内测版再带 `-beta.N` 或 `-alpha.N`，N 从 1 开始，不带 v
+readonly version_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta)\.([1-9][0-9]*))?$'
 
-# PR 标题：稳定版为 `release: X.Y.Z`，测试与开发版本在后面加 ` (beta)` 或 ` (development)`
-readonly title_pattern='^release: ([0-9.]+)( \((beta|development)\))?$'
+# PR 标题：`release: <版本号>`
+readonly title_pattern='^release: ([^ ]+)$'
 
 # 输出中文报错并退出
 fail() {
@@ -44,7 +46,7 @@ plist_value() {
     git show "$commit:$info_plist" | plutil -extract "$key" raw -o - -
 }
 
-# 1. 解析参数：本机直接给出版本号与通道，PR 与发布工作流给出标题与基准提交
+# 1. 解析参数：本机直接给出版本号，PR 与发布工作流给出标题与基准提交
 title=""
 base=""
 
@@ -57,31 +59,32 @@ if [[ "${1:-}" == "--title" ]]; then
     base="$4"
 
     if [[ ! "$title" =~ $title_pattern ]]; then
-        fail "PR 标题须为 “release: X.Y.Z”，测试与开发版本在后面加 “ (beta)” 或 “ (development)”，实际为 “${title}”"
+        fail "PR 标题须为 “release: <版本号>”，实际为 “${title}”"
     fi
 
     version="${BASH_REMATCH[1]}"
-    channel="${BASH_REMATCH[3]:-stable}"
 else
-    if [[ $# -lt 1 || $# -gt 2 ]]; then
-        fail "用法：scripts/check-release.sh X.Y.Z [stable|beta|development]"
+    if [[ $# -ne 1 ]]; then
+        fail "用法：scripts/check-release.sh <版本号>"
     fi
 
     version="$1"
-    channel="${2:-stable}"
 fi
 
-readonly version channel
+readonly version
 
-# 2. 版本号与通道的格式
+# 2. 版本号的格式；带 beta 的发往 beta 通道，带 alpha 的发往 development 通道，不带的是稳定版
 if [[ ! "$version" =~ $version_pattern ]]; then
-    fail "版本号须为 X.Y.Z，三段都是不带前导零的整数，实际为 “${version}”"
+    fail "版本号须为 X.Y.Z、X.Y.Z-beta.N 或 X.Y.Z-alpha.N，各段都是不带前导零的整数，N 从 1 开始，实际为 “${version}”"
 fi
 
-case "$channel" in
-    stable | beta | development) ;;
-    *) fail "通道须为 stable、beta 或 development，实际为 “${channel}”" ;;
+case "${BASH_REMATCH[5]}" in
+    beta) channel="beta" ;;
+    alpha) channel="development" ;;
+    *) channel="stable" ;;
 esac
+
+readonly channel
 
 # 3. 构建号：从不回退，每次发布增加 1，更新按它比较新旧
 build="$(plist_value CFBundleVersion)"

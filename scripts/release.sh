@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 为新版本开 release PR：检查通过后切出 release/X.Y.Z 分支，写入版本号与构建号，提交、推送并向 main 开 PR
-# 用法：mise run release X.Y.Z [stable|beta|development]，通道默认为 stable
+# 为新版本开 release PR：检查通过后切出 release/<版本号> 分支，写入版本号与构建号，提交、推送并向 main 开 PR
+# 用法：mise run release <版本号>，稳定版为 X.Y.Z，公测版为 X.Y.Z-beta.N，内测版为 X.Y.Z-alpha.N
 
 set -euo pipefail
 
@@ -44,18 +44,17 @@ discard_release_branch() {
         || true
 }
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-    fail "用法：mise run release X.Y.Z [stable|beta|development]"
+if [[ $# -ne 1 ]]; then
+    fail "用法：mise run release <版本号>，如 1.2.0、1.2.0-beta.1、1.2.0-alpha.1"
 fi
 
-# 新版本号、通道，以及对应的发布分支与更新说明目录
+# 新版本号，以及对应的发布分支与更新说明目录
 readonly version="$1"
-readonly channel="${2:-stable}"
 readonly branch="release/$version"
 readonly notes_directory="docs/release-notes/$version"
 
-# 1. 共用检查：版本号与通道的格式、当前构建号、更新说明与远端标签
-scripts/check-release.sh "$version" "$channel"
+# 1. 共用检查：版本号的格式、当前构建号、更新说明与远端标签
+scripts/check-release.sh "$version"
 
 # 2. 发布分支从 main 切出
 current_branch="$(git branch --show-current)"
@@ -112,12 +111,8 @@ git switch --quiet --create "$branch"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$info_plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $next_build" "$info_plist"
 
-# 标题即发布提交与 PR 的标题；发布工作流按它取出版本号与通道
-title="release: $version"
-
-if [[ "$channel" != "stable" ]]; then
-    title+=" ($channel)"
-fi
+# 标题即发布提交与 PR 的标题；发布工作流按它取出版本号
+readonly title="release: $version"
 
 # 更新说明已在 main 上且没有改动时，发布提交只改 Info.plist
 git add "$info_plist" "$notes_directory"
@@ -134,7 +129,7 @@ pr_url="$(
         --base main \
         --head "$branch" \
         --title "$title" \
-        --body "发布 ${version}（${channel} 通道）：合并后由 GitHub Actions 打包并创建 Release。这一版的更新说明在 \`${notes_directory}/\`。"
+        --body "发布 ${version}：合并后由 GitHub Actions 打包并创建 Release。这一版的更新说明在 \`${notes_directory}/\`。"
 )" || {
     discard_release_branch
     fail "创建 PR 失败"

@@ -34,8 +34,8 @@ struct AppcastCompositionTests {
         return binary
     }
 
-    /// 稳定版所有用户都会收到，上一份清单里的条目都比它旧，不再带上；测试版带上最新的稳定版，选稳定通道的用户仍能收到它，
-    /// 更旧的稳定版与开发版不带；开发版带上最新的稳定版与测试版；第一次发布没有上一份清单，只有新条目。
+    /// 稳定版所有用户都会收到，上一份清单里的条目都比它旧，不再带上；公测版带上最新的稳定版，选稳定通道的用户仍能收到它，
+    /// 更旧的稳定版与内测版不带；内测版带上最新的稳定版与公测版；第一次发布没有上一份清单，只有新条目。
     @Test("各通道带上更稳定的通道里最新的条目，没有上一份清单时只有新条目")
     func carriesNewestItems() async throws {
         let stable = try await compose(generated: "generated-stable.xml", previous: "previous.xml")

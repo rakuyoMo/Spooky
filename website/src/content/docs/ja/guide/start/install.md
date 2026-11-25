@@ -19,7 +19,7 @@ description: "システム要件の確認、Spooky のダウンロード、初�
 ## ダウンロード {#download}
 
 1. GitHub の [Spooky のリリースページ](https://github.com/rakuyoMo/Spooky/releases) を開きます。
-2. 最新の安定版を探します。名前は `v` にバージョン番号を続けたものです。名前が「(beta)」や「(development)」で終わるものはテスト用のビルドです。
+2. 最新の安定版を探します。名前は `v` にバージョン番号を続けたものです。**Pre-release** と表示されているものはベータ版とアルファ版で、バージョン番号の末尾は `-beta.` や `-alpha.` に数字が続く形です。
 3. `Spooky-` にバージョン番号を続けた名前の zip ファイルをダウンロードします。
 4. ダウンロードした zip ファイルをダブルクリックして展開します。
 5. Spooky を **アプリケーション** フォルダにドラッグします。
@@ -58,7 +58,7 @@ macOS はこの選択を覚えています。以降、Spooky は普通に開け�
 |---|---|
 | :ui[updates.channel.stable] | 安定版。これがデフォルトです。 |
 | :ui[updates.channel.beta] | 安定版とベータ版 |
-| :ui[updates.channel.development] | 開発ビルドを含むすべてのリリース |
+| :ui[updates.channel.development] | アルファ版を含むすべてのリリース |
 
 ### 変更点を確認する {#whats-new}
 

@@ -1933,8 +1933,8 @@
 "settings.updates" = "更新";
 "updates.channel" = "更新頻道：";
 "updates.channel.stable" = "穩定版";
-"updates.channel.beta" = "測試版";
-"updates.channel.development" = "開發版";
+"updates.channel.beta" = "公測版";
+"updates.channel.development" = "內測版";
 "updates.automaticChecks" = "自動檢查更新";
 "updates.automaticDownloads" = "自動下載更新";
 "updates.interval" = "檢查間隔：";

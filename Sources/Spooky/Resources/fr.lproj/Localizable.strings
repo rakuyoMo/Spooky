@@ -1934,7 +1934,7 @@
 "updates.channel" = "Canal de publication :";
 "updates.channel.stable" = "Stable";
 "updates.channel.beta" = "Bêta";
-"updates.channel.development" = "Développement";
+"updates.channel.development" = "Alpha";
 "updates.automaticChecks" = "Rechercher automatiquement les mises à jour";
 "updates.automaticDownloads" = "Télécharger automatiquement les mises à jour";
 "updates.interval" = "Intervalle de vérification :";

@@ -52,14 +52,14 @@ struct ReleaseScriptTests {
     }
 
     /// 开 PR 失败时撤回发布分支：本机与远端都不留下，版本号不变，更新说明留在工作区；
-    /// 不用收拾就能直接重试：发布分支在远端，提交写入版本号与加 1 的构建号，PR 标题带上通道；本机回到 main。
+    /// 不用收拾就能直接重试：发布分支在远端，提交写入带标记的版本号与加 1 的构建号，PR 标题是这个版本号；本机回到 main。
     @Test("开 PR 失败时撤回本机与远端的发布分支，重试后开出 release PR")
     func opensPullRequestAfterFailure() async throws {
         let fixture = try await ReleaseFixture()
         defer { fixture.remove() }
 
-        try fixture.copyReleaseNotes(version: "1.2.0")
-        let failed = try await release(fixture, "1.2.0", environment: ["GH_FAIL_PR": "1"])
+        try fixture.copyReleaseNotes(version: "1.2.0-beta.1")
+        let failed = try await release(fixture, "1.2.0-beta.1", environment: ["GH_FAIL_PR": "1"])
 
         #expect(failed.status == 1)
         #expect(failed.error.contains("创建 PR 失败"))
@@ -69,41 +69,41 @@ struct ReleaseScriptTests {
         let branchAfterFailure = try await fixture.git("branch", "--show-current")
 
         #expect(localBranches.isEmpty)
-        #expect(!remoteBranches.contains("release/1.2.0"))
+        #expect(!remoteBranches.contains("release/1.2.0-beta.1"))
         #expect(branchAfterFailure == "main\n")
         #expect(try fixture.infoPlistValue("CFBundleShortVersionString") == "1.1.0")
         #expect(try fixture.infoPlistValue("CFBundleVersion") == "7")
 
         #expect(
             FileManager.default.fileExists(
-                atPath: fixture.notesDirectory(version: "1.2.0").appending(path: "en.md").path
+                atPath: fixture.notesDirectory(version: "1.2.0-beta.1").appending(path: "en.md").path
             )
         )
 
         // 撤回后的工作区原样重试，这次开 PR 成功
-        let result = try await release(fixture, "1.2.0", "beta")
+        let result = try await release(fixture, "1.2.0-beta.1")
 
         #expect(result.status == 0, "\(result.error)")
         #expect(result.output.contains("已创建 PR：https://github.com/rakuyoMo/Spooky/pull/1"))
 
-        let message = try await fixture.git("log", "-1", "--format=%s", "origin/release/1.2.0")
-        let plist = try await fixture.git("show", "origin/release/1.2.0:Sources/Spooky/Info.plist")
+        let message = try await fixture.git("log", "-1", "--format=%s", "origin/release/1.2.0-beta.1")
+        let plist = try await fixture.git("show", "origin/release/1.2.0-beta.1:Sources/Spooky/Info.plist")
         let notes = try await fixture.git(
             "ls-tree",
             "--name-only",
-            "origin/release/1.2.0",
-            "docs/release-notes/1.2.0/"
+            "origin/release/1.2.0-beta.1",
+            "docs/release-notes/1.2.0-beta.1/"
         )
 
         let currentBranch = try await fixture.git("branch", "--show-current")
         let log = try String(contentsOf: fixture.root.appending(path: "gh.log"), encoding: .utf8)
 
-        #expect(message == "release: 1.2.0 (beta)\n")
-        #expect(plist.contains("<string>1.2.0</string>"))
+        #expect(message == "release: 1.2.0-beta.1\n")
+        #expect(plist.contains("<string>1.2.0-beta.1</string>"))
         #expect(plist.contains("<string>8</string>"))
         #expect(notes.split(separator: "\n").count == 8)
         #expect(currentBranch == "main\n")
-        #expect(log.contains("--title release: 1.2.0 (beta)"))
+        #expect(log.contains("--title release: 1.2.0-beta.1"))
     }
 
     /// 以测试用的 `gh` 运行发布脚本。

@@ -8,6 +8,7 @@
 ### Improved
 
 - The list of pull requests and merge requests now shows each request’s state as an icon before the title instead of text after it: green for an open request, gray for a draft, red for a closed one, and purple for a merged one
+- On the **Updates** page in Settings, the release channels are now **Stable**, **Beta**, and **Alpha**. Beta and alpha versions carry the label in their version number, such as 1.2.0-beta.1, so you can tell them apart in **About Spooky** and in the update window
 
 ### Fixed
 

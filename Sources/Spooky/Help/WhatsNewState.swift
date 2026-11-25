@@ -33,7 +33,7 @@ struct WhatsNewEntry: Identifiable, Equatable {
         }
 
         return versions
-            .sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+            .sorted { isNewer($0, than: $1) }
             .compactMap { version in
                 entry(version: version, in: directory.appending(path: version), preferences: preferences)
             }
@@ -174,7 +174,50 @@ final class WhatsNewState {
 
     /// 已读记录按版本号从新到旧写进偏好。
     private func saveReadVersions() {
-        let versions = readVersions.sorted { $0.compare($1, options: .numeric) == .orderedDescending }
+        let versions = readVersions.sorted { WhatsNewEntry.isNewer($0, than: $1) }
         defaults.set(versions, forKey: Self.readVersionsKey)
+    }
+}
+
+// MARK: - Helpers
+
+extension WhatsNewEntry {
+    /// 一个版本号是否比另一个新。
+    ///
+    /// 先按 X.Y.Z 的数值比较；X.Y.Z 相同时稳定版比带 `-beta.N`、`-alpha.N` 的公测版与内测版新，
+    /// 公测版与内测版之间按标记与序号比较，如 `1.2.0-alpha.1` < `1.2.0-beta.2` < `1.2.0-beta.10` < `1.2.0`。
+    fileprivate static func isNewer(_ version: String, than other: String) -> Bool {
+        let (release, label) = parts(of: version)
+        let (otherRelease, otherLabel) = parts(of: other)
+
+        let order = release.compare(otherRelease, options: .numeric)
+
+        guard order == .orderedSame else {
+            return order == .orderedDescending
+        }
+
+        // X.Y.Z 相同：没有标记的稳定版最新，都带标记时按标记与序号比较
+        switch (label, otherLabel) {
+        case (nil, nil):
+            return false
+
+        case (nil, _):
+            return true
+
+        case (_, nil):
+            return false
+
+        case (let label?, let otherLabel?):
+            return label.compare(otherLabel, options: .numeric) == .orderedDescending
+        }
+    }
+
+    /// 按第一个 “-” 把版本号分成 X.Y.Z 与公测、内测的标记；稳定版的标记为 nil。
+    private static func parts(of version: String) -> (release: Substring, label: Substring?) {
+        guard let dash = version.firstIndex(of: "-") else {
+            return (version[...], nil)
+        }
+
+        return (version[..<dash], version[version.index(after: dash)...])
     }
 }

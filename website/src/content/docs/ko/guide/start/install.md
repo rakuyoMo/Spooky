@@ -19,7 +19,7 @@ description: "시스템 요구 사항을 확인하고, Spooky를 다운로드하
 ## 다운로드 {#download}
 
 1. GitHub에서 [Spooky 릴리스 페이지](https://github.com/rakuyoMo/Spooky/releases)를 엽니다.
-2. 최신 안정 릴리스를 찾습니다. 이름은 `v` 뒤에 버전 번호가 붙은 형태입니다. 이름이 “(beta)”나 “(development)”로 끝나는 것은 테스트 빌드입니다.
+2. 최신 안정 릴리스를 찾습니다. 이름은 `v` 뒤에 버전 번호가 붙은 형태입니다. **Pre-release** 표시가 있는 것은 베타 버전과 알파 버전이며, 버전 번호가 `-beta.`나 `-alpha.` 뒤에 숫자가 붙은 형태로 끝납니다.
 3. 이름이 `Spooky-` 뒤에 버전 번호가 붙은 zip 파일을 다운로드합니다.
 4. 다운로드한 zip 파일을 이중 클릭해 압축을 풉니다.
 5. Spooky를 **응용 프로그램** 폴더로 드래그합니다.
@@ -58,7 +58,7 @@ Spooky의 업데이트 방식을 바꾸려면 :ui[app.name > settings.title]을 
 |---|---|
 | :ui[updates.channel.stable] | 안정 릴리스. 기본값입니다. |
 | :ui[updates.channel.beta] | 안정 릴리스와 베타 릴리스 |
-| :ui[updates.channel.development] | 개발 빌드를 포함한 모든 릴리스 |
+| :ui[updates.channel.development] | 알파 버전을 포함한 모든 릴리스 |
 
 ### 바뀐 내용 {#whats-new}
 

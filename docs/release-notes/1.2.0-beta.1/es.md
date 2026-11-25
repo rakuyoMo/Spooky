@@ -8,6 +8,7 @@
 ### Mejoras
 
 - La lista de pull requests y merge requests muestra ahora el estado de cada solicitud con un icono delante del título, en lugar del texto que había detrás: verde en una solicitud abierta, gris en un borrador, rojo en una cerrada y morado en una fusionada
+- En la página **Actualizaciones** de los ajustes, los canales de versiones se llaman ahora **Estable**, **Beta** y **Alfa**. Las versiones beta y alfa llevan la marca en el número de versión, como 1.2.0-beta.1, así que se distinguen en **Acerca de Spooky** y en la ventana de actualización
 
 ### Correcciones
 

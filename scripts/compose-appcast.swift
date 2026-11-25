@@ -64,7 +64,7 @@ func composeAppcast(appcastPath: String, notesDirectory: String, previousFeedPat
         item.addChild(descriptionElement(language: language, content: content))
     }
 
-    // 4. 测试与开发版本的清单带上更稳定的各通道里最新的条目，选了这些通道的用户仍能收到它们
+    // 4. 公测版与内测版的清单带上更稳定的各通道里最新的条目，选了这些通道的用户仍能收到它们
     if let previousFeedPath {
         let previousItems = carriedItems(from: readDocument(at: previousFeedPath), below: rank(of: item))
 
