@@ -25,7 +25,7 @@
     "demo.step.commit": "寫好訊息並提交",
     "demo.step.push": "推送到 origin",
     "demo.reset": "重設示範",
-    "demo.narrow": "縮窄瀏覽器視窗，看看窄視窗裡的版面。",
+    "demo.narrow": "縮窄瀏覽器視窗",
     "demo.overflow": "更多工具列項目",
     "demo.note": "這是網頁裡的模擬視窗，資料都是範例。",
     "demo.unavailable": "這個示範裡沒有這一項。",

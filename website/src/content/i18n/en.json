@@ -25,7 +25,7 @@
     "demo.step.commit": "Write a message and commit",
     "demo.step.push": "Push to origin",
     "demo.reset": "Reset demo",
-    "demo.narrow": "Narrow your browser window to see the layout for narrow windows.",
+    "demo.narrow": "Narrow your browser window",
     "demo.overflow": "More toolbar items",
     "demo.note": "This is a simulated window in your browser. All data is sample data.",
     "demo.unavailable": "That one isn’t in this demo.",

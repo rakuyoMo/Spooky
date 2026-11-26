@@ -31,6 +31,14 @@ export function mount(root: HTMLElement): void {
         appIcon,
         notices: { unavailable, upToDate },
         overflowLabel,
-        loadChanges: () => import('./data/changes.json').then((module) => module.default),
+        loadChanges: async () => {
+            // 请求的范围补丁和提交补丁一起加载，沿用变更集的渲染方式
+            const [commits, requests] = await Promise.all([
+                import('./data/changes.json'),
+                import('./data/pull-request-changes.json'),
+            ]);
+
+            return { ...commits.default, ...requests.default };
+        },
     });
 }

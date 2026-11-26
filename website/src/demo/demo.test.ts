@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { columnCount, graphRows } from './graph.ts';
 import { inlineRanges } from './inline.ts';
-import type { DemoState, RepoData } from './model.ts';
+import type { ChangeData, DemoState, RepoData } from './model.ts';
 import {
     canCommit,
     commit,
@@ -25,6 +25,7 @@ import {
     toggleFile,
     unpushedCommits,
 } from './model.ts';
+import { availableSources, createRequest, requestChanges, requestCommits, sampleRequests, visibleRequests } from './pull-requests.ts';
 import { quickScore } from './quick.ts';
 import { demoKeys, demoStrings, format } from './text.ts';
 
@@ -36,6 +37,36 @@ import { demoKeys, demoStrings, format } from './text.ts';
 
 const repoUrl = new URL('./data/repo.json', import.meta.url);
 const data = JSON.parse(readFileSync(repoUrl, 'utf8')) as RepoData;
+
+test('PR 筛选、创建与比较使用同一组示例分支和补丁', () => {
+    const requests = sampleRequests(data);
+    const source = 'feature/dark-mode';
+
+    // 只允许发布过且没有打开请求的分支再次发起请求
+    assert.deepEqual(visibleRequests(requests, false).map(({ source }) => source), ['feature/units-toggle']);
+    assert.equal(visibleRequests(requests, true).length, 3);
+    assert.deepEqual(availableSources(data, requests), [source]);
+    assert.equal(createRequest(data, requests, 'feature/units-toggle', 'Units', '', 1), null);
+
+    const created = createRequest(data, requests, source, ' Dark mode ', '', 1);
+
+    assert.ok(created);
+    assert.equal(created.title, 'Dark mode');
+    assert.equal(availableSources(data, [...requests, created]).length, 0);
+    assert.deepEqual(requestCommits(data, created).map(({ message }) => message.split('\n')[0]), [
+        'Persist the chosen theme',
+        'Add a theme toggle to the header',
+    ]);
+
+    // 两次修改 theme.ts 在变更集里合成一个新增文件，保留最终版本的内容
+    const patchUrl = new URL('./data/pull-request-changes.json', import.meta.url);
+    const patches = JSON.parse(readFileSync(patchUrl, 'utf8')) as Record<string, ChangeData[]>;
+    const changes = requestChanges(data, created, patches);
+
+    assert.deepEqual(changes.map(({ path }) => path), ['index.html', 'src/theme.ts']);
+    assert.equal(changes[1]?.status, 'A');
+    assert.match(changes[1]?.patch ?? '', /^\+const STORAGE_KEY/m);
+});
 
 test('从分支进入历史时显示全部提交，后退可以恢复分支范围', () => {
     const ref = 'refs/heads/feature/units-toggle';
@@ -93,7 +124,7 @@ test('未跟踪的文件：没有暂存时两侧都写未跟踪，暂存一部�
 
 test('提交与推送：已暂存的改动离开工作区，分支多领先一个；推送后领先清零，上游指向新提交', () => {
     const start = createState(data);
-    const ahead = headBranch(start, data).ahead;
+    const ahead = headBranch(start).ahead;
     const fullyStaged = start.files.filter((file) => fileCheck(file) === 'on').length;
 
     // 没有标题时不能提交
@@ -101,20 +132,20 @@ test('提交与推送：已暂存的改动离开工作区，分支多领先一�
     assert.equal(canCommit(start), true);
 
     const committed = commit(start, data, new Date('2026-11-19T10:00:00Z'));
-    const branch = headBranch(committed, data);
+    const branch = headBranch(committed);
 
     assert.equal(committed.files.length, start.files.length - fullyStaged);
     assert.equal(branch.ahead, ahead + 1);
     assert.match(branch.hash, /^[0-9a-f]{40}$/);
     assert.equal(committed.commits[0]?.hash, branch.hash);
-    assert.equal(unpushedCommits(committed, data).size, ahead + 1);
+    assert.equal(unpushedCommits(committed).size, ahead + 1);
 
-    const pushed = push(committed, data);
+    const pushed = push(committed);
     const upstream = pushed.remoteBranches.find((remote) => remote.name === branch.upstream);
 
-    assert.equal(headBranch(pushed, data).ahead, 0);
+    assert.equal(headBranch(pushed).ahead, 0);
     assert.equal(upstream?.hash, branch.hash);
-    assert.equal(unpushedCommits(pushed, data).size, 0);
+    assert.equal(unpushedCommits(pushed).size, 0);
 });
 
 test('剩余字数：两个框都空时不显示，标题去掉首尾空白再计', () => {

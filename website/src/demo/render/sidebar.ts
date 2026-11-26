@@ -110,7 +110,7 @@ function sideList(context: RenderContext): string {
     return rows.includes('tabindex="0"') ? rows : rows.replace('tabindex="-1"', 'tabindex="0"');
 }
 
-/** 工作空间：工作区、历史、储藏，以及演示里没有的三项。 */
+/** 工作空间：工作区、历史、储藏，以及请求、分支整理与仓库设置。 */
 function workspace({ state, text }: RenderContext): string {
     const viewing = (view: string) => state.view === view && (view !== 'history' || state.historyRef === null);
 
@@ -125,9 +125,15 @@ function workspace({ state, text }: RenderContext): string {
         },
         { icon: 'clock', label: text.t('history.title'), action: 'view', arg: 'history', selected: viewing('history') },
         { icon: 'tray', label: text.t('stash.title'), action: 'view', arg: 'stashes', selected: viewing('stashes') },
-        { icon: 'pullRequest', label: text.t('pr.title'), action: 'unavailable', selected: false },
+        { icon: 'pullRequest', label: text.t('pr.title'), action: 'view', arg: 'requests', selected: viewing('requests') },
         { icon: 'review', label: text.t('review.title'), action: 'unavailable', selected: false },
-        { icon: 'gear', label: text.t('repositorySettings.title'), action: 'unavailable', selected: false },
+        {
+            icon: 'gear',
+            label: text.t('repositorySettings.title'),
+            action: 'view',
+            arg: 'settings',
+            selected: viewing('settings'),
+        },
     ];
 
     return group(text.t('workspace.group'), rows.map(row));
@@ -135,14 +141,14 @@ function workspace({ state, text }: RenderContext): string {
 
 /** 分支：HEAD 所在的分支带 HEAD 与领先数，`feature/` 下的分支收在一个文件夹里。 */
 function branches(context: RenderContext): string {
-    const { state, data, text } = context;
-    const head = headBranch(state, data);
+    const { state, text } = context;
+    const head = headBranch(state);
     const ahead =
         head.ahead > 0
             ? `<i></i><span aria-label="${esc(text.t('branch.ahead', head.ahead))}">↑${head.ahead}</span>`
             : '';
 
-    const top = state.branches.filter((branch) => !branch.name.includes('/'));
+    const top = state.branches.filter((branch) => !branch.name.startsWith('feature/'));
     const grouped = state.branches.filter((branch) => branch.name.startsWith('feature/'));
 
     const rows = top.map((branch) =>

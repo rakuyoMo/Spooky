@@ -144,9 +144,15 @@ const wide = shots.length === 1 && shots[0].frame === 'window';
     }
 
     @media (max-width: 50rem) {
-        .feature,
-        .wide:has(> :global(.sticker-art)) {
+        .feature {
             grid-template-columns: minmax(0, 1fr);
+        }
+
+        /* 给标题和说明留出行宽，服务器仍与标题排在同一行 */
+        .wide:has(> :global(.sticker-art)) {
+            grid-template-columns: minmax(0, clamp(4.75rem, 24vw, 9rem)) minmax(0, 1fr);
+            align-items: start;
+            column-gap: clamp(0.75rem, 4vw, 2rem);
         }
 
         .reverse .text {

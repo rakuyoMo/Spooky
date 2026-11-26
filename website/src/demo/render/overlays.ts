@@ -5,6 +5,8 @@ import { quickResults } from '../quick.ts';
 import type { DemoKey } from '../text.ts';
 import type { RenderContext } from './context.ts';
 import { button, esc, icon, slot } from './format.ts';
+import { renderRequestForm } from './pull-requests.ts';
+import { renderLocationForm } from './settings.ts';
 import { renderOverflowMenu } from './toolbar.ts';
 
 /**
@@ -57,8 +59,12 @@ export function renderOverlay(context: RenderContext): string {
             return quickPanel(context);
         case 'more':
             return renderOverflowMenu(context, context.ui.overflow);
-        default:
+        case 'location':
+            return renderLocationForm(context);
+        case null:
             return '';
+        default:
+            return renderRequestForm(context, context.ui.overlay);
     }
 }
 
@@ -110,8 +116,8 @@ export function quickItems(context: RenderContext): QuickItem[] {
 
 /** 推送对话框：应用图标、标题与说明、目标分支、选项，底下是帮助按钮与两个按钮。 */
 function pushSheet(context: RenderContext): string {
-    const { state, data, text } = context;
-    const branch = headBranch(state, data);
+    const { state, text } = context;
+    const branch = headBranch(state);
 
     return (
         `<div class="sd-scrim"></div>` +
@@ -159,14 +165,14 @@ function quickPanel({ text }: RenderContext): string {
 }
 
 /** HEAD 里的全部文件：HEAD 能到达的提交里出现过的路径；变更集还没取来时是 `null`。 */
-function headPaths({ state, data, changes }: RenderContext): string[] | null {
+function headPaths({ state, changes }: RenderContext): string[] | null {
     if (changes === null) {
         return null;
     }
 
     const paths = new Set<string>();
 
-    for (const hash of reachableFrom(state.commits, headBranch(state, data).hash)) {
+    for (const hash of reachableFrom(state.commits, headBranch(state).hash)) {
         for (const change of changesOf(state, changes, hash) ?? []) {
             paths.add(change.path);
         }

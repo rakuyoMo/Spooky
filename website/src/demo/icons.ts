@@ -96,6 +96,9 @@ export const icons = {
     review: line('<circle cx="9" cy="9" r="7.8"/><path d="M12.8 6.7H5.3l2.2-2.1M5.2 11.3h7.5l-2.2 2.1"/>', 1.3),
     gear: line(gear(), 1.4),
     branch: line(branchShape),
+
+    // 合并状态用汇合到同一个节点的两条分支
+    merge: line('<circle cx="5" cy="4" r="2"/><circle cx="5" cy="14" r="2"/><circle cx="14" cy="11" r="2"/><path d="M5 6v6m0-5c0 3 3 4 7 4"/>'),
     createBranch: createBranch(),
     tag: line('<path d="M9.6 2.6h5.2a.6.6 0 0 1 .6.6v5.2l-7.1 7.1a1 1 0 0 1-1.4 0l-4.4-4.4a1 1 0 0 1 0-1.4Z"/><circle cx="12.4" cy="5.6" r="1"/>'),
     globe: line(

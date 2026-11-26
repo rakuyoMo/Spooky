@@ -67,7 +67,7 @@ export function renderHistoryList(context: RenderContext): string {
     const { state, data, text } = context;
     const commits = historyCommits(state, data);
     const graph = graphRows(commits);
-    const unpushed = unpushedCommits(state, data);
+    const unpushed = unpushedCommits(state);
     const hasSelection = commits.some((item) => item.hash === state.selectedCommit);
     const focusable = hasSelection ? state.selectedCommit : commits[0]?.hash;
 
@@ -116,7 +116,7 @@ export function renderCommitDetail(context: RenderContext): string {
         return `<div class="sd-detail-head"></div>${emptyState(text.t('history.noSelection'), 'doc')}`;
     }
 
-    const isHead = headBranch(state, data).hash === commit.hash;
+    const isHead = headBranch(state).hash === commit.hash;
     const refs = refBadges(isHead, decorations(state, data, commit.hash));
 
     return commitDetail(context, commit, {
@@ -185,7 +185,7 @@ function commitRow(
 ): string {
     const { state, data, text } = context;
     const selected = state.selectedCommit === commit.hash;
-    const isHead = headBranch(state, data).hash === commit.hash;
+    const isHead = headBranch(state).hash === commit.hash;
     const graphWidth = graph ? columnCount(graph) * 10 + 7 : 0;
     const author = commit.author[0];
     const date = formatDate(commit.committer, 'short', text.lang);

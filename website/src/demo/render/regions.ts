@@ -3,6 +3,8 @@ import { renderWorkingDiff } from './diff.ts';
 import { esc, slot } from './format.ts';
 import { renderCommitDetail, renderHistoryBar, renderHistoryColumn, renderHistoryList } from './history.ts';
 import { renderOverlay, renderQuickResults } from './overlays.ts';
+import { renderRequestDetail, renderRequestList } from './pull-requests.ts';
+import { renderSettings } from './settings.ts';
 import { renderCompactNav, renderSidebar } from './sidebar.ts';
 import { renderStashColumn, renderStashDetail } from './stashes.ts';
 import { renderActions, renderTitle } from './toolbar.ts';
@@ -22,7 +24,7 @@ export function renderRegions(context: RenderContext): Regions {
     const { data, state, text, ui } = context;
     const regions: Regions = new Map();
 
-    // 三个视图的列表上方都显示服务器连接状态
+    // 有列表的视图在列表上方显示服务器连接状态
     const banner = `<p class="sd-banner">${esc(`${data.host}: ${text.t('connection.connected')}`)}</p>`;
 
     regions.set('window', windowFrame(context));
@@ -51,9 +53,17 @@ export function renderRegions(context: RenderContext): Regions {
             regions.set('history-list', renderHistoryList(context));
             regions.set('detail', renderCommitDetail(context));
             break;
-        default:
+        case 'stashes':
             regions.set('middle', banner + renderStashColumn(context));
             regions.set('detail', renderStashDetail(context));
+            break;
+        case 'requests':
+            regions.set('middle', banner + renderRequestList(context));
+            regions.set('detail', renderRequestDetail(context));
+            break;
+        case 'settings':
+            regions.set('middle', '');
+            regions.set('detail', renderSettings(context));
     }
 
     return regions;

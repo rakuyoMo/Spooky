@@ -25,7 +25,7 @@
     "demo.step.commit": "Eine Nachricht schreiben und committen",
     "demo.step.push": "Zu origin pushen",
     "demo.reset": "Demo zurücksetzen",
-    "demo.narrow": "Machen Sie das Browserfenster schmaler, um das Layout für schmale Fenster zu sehen.",
+    "demo.narrow": "Browserfenster schmaler machen",
     "demo.overflow": "Weitere Symbolleistenobjekte",
     "demo.note": "Das ist ein simuliertes Fenster in Ihrem Browser. Alle Daten sind Beispieldaten.",
     "demo.unavailable": "Das gibt es in dieser Demo nicht.",
