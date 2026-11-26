@@ -7,6 +7,14 @@ Spooky affiche les pull requests sur GitHub et les merge requests sur GitLab pou
 
 Il faut pour cela un [compte d’hébergement](/guide/hosting/accounts/) pour le dépôt distant. Quand le dépôt distant est sur GitLab, la barre latérale, les menus et les zones de dialogue indiquent merge request au lieu de pull request.
 
+::screenshot[La vue Merge requests d’un dépôt dont le dépôt distant est sur GitLab. La liste affiche des requêtes ouvertes, fusionnées et fermées, ainsi qu’un brouillon. Chaque ligne a une icône d’état avant le titre, puis le numéro, l’auteur, la date, les branches et les étiquettes, et à droite une icône pour le statut CI/CD. Add a units toggle est sélectionnée. Sa conversation, à droite, affiche ses étiquettes avec le bouton Ajouter, la description, un commit et trois commentaires.]{name="hosting-requests" frame="window" markers="34.5,9 39,9 20.3,46.8 43.5,40 63.9,9"}
+
+1. Le dépôt distant dont les requêtes sont listées
+2. Le bouton de filtre, qui passe de :ui[pullRequests.filter.open] à :ui[pullRequests.filter.all] et inversement
+3. L’icône de l’état d’une requête
+4. L’icône de son statut CI/CD
+5. Les vues de la requête sélectionnée. Consultez [Lire une requête](#details).
+
 ## Ouvrir la liste {#list}
 
 Cliquez sur :ui[pr.title] dans la barre latérale, ou choisissez :ui[menu.view > pr.show.menu] (<kbd>⌘4</kbd>).
@@ -60,6 +68,8 @@ Une vérification ou un job qui a un journal porte un triangle d’affichage à 
 
 Le journal n’affiche ni les horodatages ni les codes de couleur. Vous pouvez sélectionner et copier son texte.
 
+::screenshot[La vue CI/CD d’une merge request dont le pipeline a échoué. Les jobs install, typecheck et lint ont réussi. Le job unit tests a échoué, et son journal s’affiche sous sa ligne. Le journal se termine par le test qui a échoué et l’erreur qui a arrêté le job. Le job preview a été ignoré.]{name="hosting-checks" frame="closeup"}
+
 ## Créer une requête {#create}
 
 La branche source doit déjà se trouver sur un dépôt distant. Poussez-la d’abord, puis faites l’une de ces actions :
@@ -82,6 +92,8 @@ Pour ajouter un commentaire, cliquez sur :ui[pullRequests.addComment] à la fin 
 
 Pour mentionner quelqu’un dans un commentaire, saisissez `@`. Spooky liste les participants de la requête et les membres du projet, et réduit la liste à mesure que vous saisissez un nom d’utilisateur ou un nom. Appuyez sur <kbd>↑</kbd> ou <kbd>↓</kbd> pour choisir une personne, sur <kbd>Retour</kbd> pour insérer son nom d’utilisateur et sur <kbd>Esc</kbd> pour fermer la liste.
 
+::screenshot[Un nouveau commentaire qui commence par @. La liste en dessous affiche sam, jonas, alex, mina, priya et leo, chacun avec ses initiales et son nom complet. sam est sélectionné.]{name="hosting-mention" frame="closeup"}
+
 Pour vos propres commentaires, utilisez :ui[pullRequests.comment.edit] et :ui[pullRequests.comment.delete] sur le commentaire, ou cliquez dessus avec le bouton droit. Un double-clic sur votre commentaire l’ouvre aussi pour modification. La suppression d’un commentaire ne peut pas être annulée.
 
 Sur GitLab, vous pouvez aussi répondre à n’importe quel commentaire avec :ui[pullRequests.comment.reply]. La réponse rejoint la même discussion sur GitLab.
@@ -98,6 +110,8 @@ Les étiquettes d’une requête se trouvent dans :ui[pullRequests.conversation]
 - Pour retirer une étiquette, cliquez sur le × après son nom.
 - Pour ajouter une étiquette, cliquez sur :ui[pullRequests.labels.add] et choisissez l’une des étiquettes du projet. Saisissez du texte dans le champ du haut pour les filtrer.
 - Pour créer une étiquette, cliquez sur :ui[pullRequests.labels.add], puis sur :ui[pullRequests.labels.new]. Saisissez un nom, choisissez une couleur et cliquez sur :ui[pullRequests.createLabel.title]. Spooky crée l’étiquette dans le projet et l’ajoute à la requête.
+
+::screenshot[Les étiquettes d’une requête, enhancement et ui, chacune suivie d’un ×, puis le bouton Ajouter. En dessous, la liste des autres étiquettes du projet est ouverte, avec le champ Filtrer les étiquettes en haut et Nouvelle étiquette… en bas.]{name="hosting-labels" frame="closeup"}
 
 La liste affiche la modification aussitôt. Si votre compte n’est pas autorisé à modifier les étiquettes, Spooky affiche la réponse du service et les étiquettes restent telles quelles.
 

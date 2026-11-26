@@ -7,6 +7,14 @@ Spooky 会列出仓库远端上的 GitHub Pull Request 和 GitLab Merge Request�
 
 这需要为远端添加 [托管账号](/guide/hosting/accounts/)。远端在 GitLab 上时，侧边栏、菜单和对话框里的叫法都换成 Merge Request。
 
+::screenshot[远端在 GitLab 上的仓库的 Merge Request 视图。列表里有打开着的、草稿、已合并和已关闭的请求。每一行的标题前有状态图标，下面是编号、作者、日期、分支和标签，右边是 CI/CD 状态的图标。Add a units toggle 已选中，右边是它的讨论：带 “添加” 按钮的标签、描述、一个提交和三条评论。]{name="hosting-requests" frame="window" markers="30.1,9 39,9 20.3,46.8 43.5,40 77.3,9"}
+
+1. 列出哪个远端的请求
+2. 筛选按钮，在 :ui[pullRequests.filter.open] 和 :ui[pullRequests.filter.all] 之间切换
+3. 请求的状态图标
+4. 它的 CI/CD 状态图标
+5. 所选请求的几个视图，见 [查看请求](#details)
+
 ## 打开列表 {#list}
 
 点侧边栏的 :ui[pr.title]，或者选 :ui[menu.view > pr.show.menu]（<kbd>⌘4</kbd>）。
@@ -60,6 +68,8 @@ GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这
 
 日志里不显示时间戳和颜色码。文字可以选中复制。
 
+::screenshot[一个流水线失败的 Merge Request 的 CI/CD 视图。install、typecheck 和 lint 三个作业已通过。unit tests 作业失败，它的日志显示在这一行下面，最后是没通过的测试和让作业结束的错误。preview 作业已跳过。]{name="hosting-checks" frame="closeup"}
+
 ## 新建请求 {#create}
 
 源分支必须已经在远端上，要先推送它。然后任选一种方式：
@@ -82,6 +92,8 @@ GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这
 
 想在评论里提及某个人，输入 `@`。Spooky 会列出参与这个请求的人和项目的成员，并随着你继续输入用户名或名字缩小范围。按 <kbd>↑</kbd> 或 <kbd>↓</kbd> 选一项，按 <kbd>Return</kbd> 插入用户名，按 <kbd>Esc</kbd> 关掉列表。
 
+::screenshot[一条以 @ 开头的新评论。下面的列表列出 sam、jonas、alex、mina、priya 和 leo，每一项写着名字的首字母和全名，sam 已选中。]{name="hosting-mention" frame="closeup"}
+
 自己的评论，可以用评论上的 :ui[pullRequests.comment.edit] 和 :ui[pullRequests.comment.delete]，也可以右键点按它。连按自己的评论同样会打开编辑。删除评论不能撤销。
 
 在 GitLab 上，还可以用 :ui[pullRequests.comment.reply] 回复任何一条评论。回复会放进 GitLab 上的同一个讨论里。
@@ -98,6 +110,8 @@ GitLab 在 Merge Request 关闭或合并 14 天后不再保留它的提交。这
 - 想移除一个标签，点它名称后面的 ×。
 - 想添加标签，点 :ui[pullRequests.labels.add]，在项目的标签里选一个。在顶部的输入框里打字可以筛选。
 - 想新建标签，点 :ui[pullRequests.labels.add]，再点 :ui[pullRequests.labels.new]。填名称、选颜色，点 :ui[pullRequests.createLabel.title]。Spooky 会在项目里建好这个标签，并加到请求上。
+
+::screenshot[一个请求的标签 enhancement 和 ui，名称后面各有一个 ×，再后面是 “添加” 按钮。下面打开了项目里其它标签的列表，顶部是 “筛选标签” 输入框，底部是 “新建标签…”。]{name="hosting-labels" frame="closeup"}
 
 改完后列表随即更新。账号没有权限改标签时，Spooky 会显示服务给出的原因，标签保持不变。
 

@@ -7,6 +7,14 @@ Spooky shows the pull requests on GitHub and merge requests on GitLab for a repo
 
 This needs a [hosting account](/guide/hosting/accounts/) for the remote. When the remote is on GitLab, the sidebar, menus, and dialogs say merge request instead of pull request.
 
+::screenshot[The Merge Requests view of a repository whose remote is on GitLab. The list shows open, draft, merged, and closed requests. Each row has an icon for the state before the title, then the number, author, date, branches, and labels, and an icon for the CI/CD status on the right. Add a units toggle is selected. Its conversation on the right shows its labels with an Add button, the description, a commit, and three comments.]{name="hosting-requests" frame="window" markers="31.5,9 39,9 20.3,46.8 43.5,40 64.5,9"}
+
+1. The remote whose requests are listed
+2. The filter button, which switches between :ui[pullRequests.filter.open] and :ui[pullRequests.filter.all]
+3. The icon for a request’s state
+4. The icon for its CI/CD status
+5. The views of the selected request. See [Read a request](#details).
+
 ## Open the list {#list}
 
 Click :ui[pr.title] in the sidebar, or choose :ui[menu.view > pr.show.menu] (<kbd>⌘4</kbd>).
@@ -60,6 +68,8 @@ A check or job that has a log has a disclosure triangle on the left of its row. 
 
 The log leaves out the timestamps and color codes. You can select and copy its text.
 
+::screenshot[The CI/CD view of a merge request whose pipeline failed. The jobs install, typecheck, and lint passed. The unit tests job failed, and its log is shown below its row, ending with the failed test and the error that ended the job. The preview job was skipped.]{name="hosting-checks" frame="closeup"}
+
 ## Create a request {#create}
 
 The source branch has to be on a remote already. Push it first, then do one of these:
@@ -82,6 +92,8 @@ To add a comment, click :ui[pullRequests.addComment] at the end of the conversat
 
 To mention someone in a comment, type `@`. Spooky lists the people in the request and the members of the project, and narrows the list as you go on typing a username or a name. Press <kbd>↑</kbd> or <kbd>↓</kbd> to choose one, <kbd>Return</kbd> to insert the username, and <kbd>Esc</kbd> to close the list.
 
+::screenshot[A new comment that starts with @. The list below it shows sam, jonas, alex, mina, priya, and leo, each with their initials and full name. sam is selected.]{name="hosting-mention" frame="closeup"}
+
 For your own comments, use :ui[pullRequests.comment.edit] and :ui[pullRequests.comment.delete] on the comment, or right-click it. Double-clicking your comment also opens it for editing. Deleting a comment can’t be undone.
 
 On GitLab, you can also reply to any comment with :ui[pullRequests.comment.reply]. The reply goes into the same discussion on GitLab.
@@ -98,6 +110,8 @@ A request’s labels are in :ui[pullRequests.conversation], below the title.
 - To remove a label, click the × after its name.
 - To add a label, click :ui[pullRequests.labels.add] and choose one of the project’s labels. Type in the field at the top to filter them.
 - To create a label, click :ui[pullRequests.labels.add], then :ui[pullRequests.labels.new]. Enter a name, choose a color, and click :ui[pullRequests.createLabel.title]. Spooky creates the label in the project and adds it to the request.
+
+::screenshot[The labels of a request, enhancement and ui, each with a × after its name, and the Add button after them. Below, the list of the project’s other labels is open, with the Filter Labels field at the top and New Label… at the bottom.]{name="hosting-labels" frame="closeup"}
 
 The list shows the change right after. If your account isn’t allowed to change labels, Spooky shows the service’s answer and the labels stay as they are.
 

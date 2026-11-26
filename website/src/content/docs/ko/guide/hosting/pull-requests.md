@@ -7,6 +7,14 @@ Spooky는 저장소의 원격에 있는 GitHub 풀 리퀘스트와 GitLab 머지
 
 원격의 [호스팅 계정](/guide/hosting/accounts/)이 필요합니다. 원격이 GitLab에 있으면 사이드바, 메뉴, 대화상자에 풀 리퀘스트 대신 머지 리퀘스트라고 표시됩니다.
 
+::screenshot[원격이 GitLab에 있는 저장소의 머지 리퀘스트 보기. 목록에 열린 리퀘스트, 초안, 병합된 리퀘스트, 닫힌 리퀘스트가 있습니다. 각 행에는 제목 앞에 상태 아이콘이 있고, 그 아래에 번호, 작성자, 날짜, 브랜치, 레이블이 있으며, 오른쪽에 CI/CD 상태 아이콘이 있습니다. Add a units toggle이 선택되어 있고, 오른쪽에 그 대화가 있습니다. 추가 버튼이 붙은 레이블, 설명, 커밋 하나, 댓글 세 개가 보입니다.]{name="hosting-requests" frame="window" markers="29.6,9 39,9 20.3,46.8 43.5,40 74.2,9"}
+
+1. 목록에 리퀘스트를 표시하는 원격
+2. 필터 버튼. :ui[pullRequests.filter.open]과 :ui[pullRequests.filter.all] 사이를 전환합니다.
+3. 리퀘스트의 상태 아이콘
+4. CI/CD 상태 아이콘
+5. 선택한 리퀘스트의 보기. [리퀘스트 읽기](#details)를 참고하세요.
+
 ## 목록 열기 {#list}
 
 사이드바에서 :ui[pr.title]를 클릭하거나 :ui[menu.view > pr.show.menu](<kbd>⌘4</kbd>)를 선택합니다.
@@ -60,6 +68,8 @@ GitLab은 머지 리퀘스트가 닫히거나 병합된 지 14일이 지나면 �
 
 로그에는 타임스탬프와 색상 코드가 표시되지 않습니다. 텍스트는 선택해서 복사할 수 있습니다.
 
+::screenshot[파이프라인이 실패한 머지 리퀘스트의 CI/CD 보기. install, typecheck, lint 작업은 통과했습니다. unit tests 작업은 실패했고, 그 행 아래에 로그가 표시됩니다. 로그 끝에는 실패한 테스트와 작업을 끝낸 오류가 있습니다. preview 작업은 건너뛰었습니다.]{name="hosting-checks" frame="closeup"}
+
 ## 리퀘스트 만들기 {#create}
 
 소스 브랜치가 이미 원격에 있어야 합니다. 먼저 푸시한 다음 아래 중 하나를 합니다.
@@ -82,6 +92,8 @@ GitLab은 머지 리퀘스트가 닫히거나 병합된 지 14일이 지나면 �
 
 댓글에서 누군가를 언급하려면 `@`를 입력합니다. Spooky가 리퀘스트에 참여한 사람과 프로젝트의 멤버를 나열하고, 사용자 이름이나 이름을 이어서 입력하는 동안 목록을 좁힙니다. <kbd>↑</kbd>나 <kbd>↓</kbd>로 항목을 고르고, <kbd>Return</kbd>으로 사용자 이름을 넣고, <kbd>Esc</kbd>로 목록을 닫습니다.
 
+::screenshot[@로 시작하는 새 댓글. 아래 목록에 sam, jonas, alex, mina, priya, leo가 이니셜, 전체 이름과 함께 나열됩니다. sam이 선택되어 있습니다.]{name="hosting-mention" frame="closeup"}
+
 내가 쓴 댓글은 댓글에 있는 :ui[pullRequests.comment.edit]과 :ui[pullRequests.comment.delete]를 사용하거나 오른쪽 클릭합니다. 내 댓글을 이중 클릭해도 편집할 수 있게 열립니다. 댓글 삭제는 실행 취소할 수 없습니다.
 
 GitLab에서는 :ui[pullRequests.comment.reply]로 어느 댓글에나 답글을 달 수도 있습니다. 답글은 GitLab의 같은 토론에 들어갑니다.
@@ -98,6 +110,8 @@ GitLab에서는 :ui[pullRequests.comment.reply]로 어느 댓글에나 답글을
 - 레이블을 제거하려면 이름 뒤의 ×를 클릭합니다.
 - 레이블을 추가하려면 :ui[pullRequests.labels.add]를 클릭하고 프로젝트의 레이블 중 하나를 선택합니다. 맨 위의 필드에 입력하면 목록이 걸러집니다.
 - 레이블을 만들려면 :ui[pullRequests.labels.add]를 클릭한 다음 :ui[pullRequests.labels.new]을 클릭합니다. 이름을 입력하고 색상을 고른 뒤 :ui[pullRequests.createLabel.title]를 클릭합니다. Spooky가 프로젝트에 레이블을 만들고 리퀘스트에 추가합니다.
+
+::screenshot[리퀘스트의 레이블 enhancement와 ui. 이름 뒤에 각각 ×가 있고, 그 뒤에 추가 버튼이 있습니다. 아래에는 프로젝트의 다른 레이블 목록이 열려 있고, 맨 위에 레이블 필터 필드, 맨 아래에 새 레이블… 항목이 있습니다.]{name="hosting-labels" frame="closeup"}
 
 바꾼 내용은 바로 목록에 나타납니다. 계정에 레이블을 바꿀 권한이 없으면 서비스의 응답이 표시되고 레이블은 그대로입니다.
 
