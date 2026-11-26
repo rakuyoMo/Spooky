@@ -7,6 +7,14 @@ Spooky 會列出儲存庫遠端上的 GitHub Pull Request 和 GitLab Merge Reque
 
 這需要為遠端加入 [託管帳號](/guide/hosting/accounts/)。遠端在 GitLab 上時，側邊欄、選單和對話框裡的叫法都換成 Merge Request。
 
+::screenshot[遠端在 GitLab 上的儲存庫的 Merge Request 視圖。列表裡有開啟著的、草稿、已合併和已關閉的請求。每一列的標題前有狀態圖示，下面是編號、作者、日期、分支和標籤，右邊是 CI/CD 狀態的圖示。Add a units toggle 已選取，右邊是它的討論：帶「加入」按鈕的標籤、描述、一個提交和三則留言。]{name="hosting-requests" frame="window" markers="30.4,9 39,9 20.3,46.8 43.5,40 77.3,9"}
+
+1. 列出哪個遠端的請求
+2. 篩選按鈕，在 :ui[pullRequests.filter.open] 和 :ui[pullRequests.filter.all] 之間切換
+3. 請求的狀態圖示
+4. 它的 CI/CD 狀態圖示
+5. 所選請求的幾個視圖，見 [檢視請求](#details)
+
 ## 開啟列表 {#list}
 
 按一下側邊欄的 :ui[pr.title]，或者選 :ui[menu.view > pr.show.menu]（<kbd>⌘4</kbd>）。
@@ -60,6 +68,8 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 
 記錄裡不顯示時間戳記和顏色碼。文字可以選取拷貝。
 
+::screenshot[一個流水線失敗的 Merge Request 的 CI/CD 視圖。install、typecheck 和 lint 三個作業已通過。unit tests 作業失敗，它的記錄顯示在這一列下面，最後是沒通過的測試和讓作業結束的錯誤。preview 作業已略過。]{name="hosting-checks" frame="closeup"}
+
 ## 新增請求 {#create}
 
 來源分支必須已經在遠端上，要先推送它。然後任選一種方式：
@@ -82,6 +92,8 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 
 想在留言裡提及某個人，輸入 `@`。Spooky 會列出參與這個請求的人和專案的成員，並隨著你繼續輸入使用者名稱或名字縮小範圍。按 <kbd>↑</kbd> 或 <kbd>↓</kbd> 選一項，按 <kbd>Return</kbd> 插入使用者名稱，按 <kbd>Esc</kbd> 關掉列表。
 
+::screenshot[一則以 @ 開頭的新留言。下面的列表列出 sam、jonas、alex、mina、priya 和 leo，每一項寫著名字的首字母和全名，sam 已選取。]{name="hosting-mention" frame="closeup"}
+
 自己的留言，可以用留言上的 :ui[pullRequests.comment.edit] 和 :ui[pullRequests.comment.delete]，也可以在它上面按右鍵。按兩下自己的留言同樣會開啟編輯。刪除留言不能還原。
 
 在 GitLab 上，還可以用 :ui[pullRequests.comment.reply] 回覆任何一則留言。回覆會放進 GitLab 上的同一個討論裡。
@@ -98,6 +110,8 @@ GitLab 在 Merge Request 關閉或合併 14 天後不再保留它的提交。這
 - 想移除一個標籤，按一下它名稱後面的 ×。
 - 想加入標籤，按一下 :ui[pullRequests.labels.add]，在專案的標籤裡選一個。在頂部的輸入框裡打字可以篩選。
 - 想新增標籤，按一下 :ui[pullRequests.labels.add]，再按 :ui[pullRequests.labels.new]。填名稱、選顏色，按一下 :ui[pullRequests.createLabel.title]。Spooky 會在專案裡建好這個標籤，並加到請求上。
+
+::screenshot[一個請求的標籤 enhancement 和 ui，名稱後面各有一個 ×，再後面是「加入」按鈕。下面開啟了專案裡其他標籤的列表，頂部是「篩選標籤」輸入框，底部是「新增標籤…」。]{name="hosting-labels" frame="closeup"}
 
 改完後列表隨即更新。帳號沒有權限改標籤時，Spooky 會顯示服務給出的原因，標籤保持不變。
 

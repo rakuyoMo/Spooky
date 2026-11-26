@@ -7,6 +7,14 @@ Spooky muestra las pull requests de GitHub y las merge requests de GitLab del re
 
 Hace falta una [cuenta de alojamiento](/guide/hosting/accounts/) para el remoto. Cuando el remoto está en GitLab, la barra lateral, los menús y los diálogos dicen merge request en lugar de pull request.
 
+::screenshot[La vista Merge requests de un repositorio cuyo remoto está en GitLab. La lista muestra solicitudes abiertas, fusionadas y cerradas, y un borrador. Cada fila tiene un icono de estado delante del título, después el número, el autor, la fecha, las ramas y las etiquetas, y a la derecha un icono con el estado de CI/CD. Add a units toggle está seleccionada. Su conversación, a la derecha, muestra sus etiquetas con el botón Añadir, la descripción, un commit y tres comentarios.]{name="hosting-requests" frame="window" markers="31.5,9 39,9 20.3,46.8 43.5,40 63.7,9"}
+
+1. El remoto cuyas solicitudes se muestran
+2. El botón de filtro, que cambia entre :ui[pullRequests.filter.open] y :ui[pullRequests.filter.all]
+3. El icono del estado de una solicitud
+4. El icono de su estado de CI/CD
+5. Las vistas de la solicitud seleccionada. Consulta [Leer una solicitud](#details).
+
 ## Abrir la lista {#list}
 
 Haz clic en :ui[pr.title] en la barra lateral, o selecciona :ui[menu.view > pr.show.menu] (<kbd>⌘4</kbd>).
@@ -60,6 +68,8 @@ Una comprobación o un job que tiene registro lleva un triángulo desplegable a 
 
 El registro no muestra las marcas de tiempo ni los códigos de color. Puedes seleccionar y copiar el texto.
 
+::screenshot[La vista CI/CD de una merge request cuyo pipeline ha fallado. Los jobs install, typecheck y lint se han superado. El job unit tests ha fallado, y su registro aparece debajo de su fila. El registro termina con la prueba que ha fallado y el error que detuvo el job. El job preview se ha omitido.]{name="hosting-checks" frame="closeup"}
+
 ## Crear una solicitud {#create}
 
 La rama de origen ya tiene que estar en un remoto. Haz antes push de ella, y después haz una de estas cosas:
@@ -82,6 +92,8 @@ Para añadir un comentario, haz clic en :ui[pullRequests.addComment] al final de
 
 Para mencionar a alguien en un comentario, escribe `@`. Spooky muestra las personas que participan en la solicitud y los miembros del proyecto, y reduce la lista a medida que sigues escribiendo un nombre de usuario o un nombre. Pulsa <kbd>↑</kbd> o <kbd>↓</kbd> para elegir a alguien, <kbd>Retorno</kbd> para insertar su nombre de usuario y <kbd>Esc</kbd> para cerrar la lista.
 
+::screenshot[Un comentario nuevo que empieza por @. La lista de debajo muestra a sam, jonas, alex, mina, priya y leo, cada uno con sus iniciales y su nombre completo. sam está seleccionado.]{name="hosting-mention" frame="closeup"}
+
 En tus propios comentarios, usa :ui[pullRequests.comment.edit] y :ui[pullRequests.comment.delete] en el comentario, o haz clic derecho en él. Hacer doble clic en tu comentario también lo abre para editarlo. Eliminar un comentario no se puede deshacer.
 
 En GitLab, también puedes responder a cualquier comentario con :ui[pullRequests.comment.reply]. La respuesta entra en la misma discusión en GitLab.
@@ -98,6 +110,8 @@ Las etiquetas de una solicitud están en :ui[pullRequests.conversation], debajo 
 - Para quitar una etiqueta, haz clic en la × que hay tras su nombre.
 - Para añadir una etiqueta, haz clic en :ui[pullRequests.labels.add] y elige una de las etiquetas del proyecto. Escribe en el campo de arriba para filtrarlas.
 - Para crear una etiqueta, haz clic en :ui[pullRequests.labels.add] y luego en :ui[pullRequests.labels.new]. Escribe un nombre, elige un color y haz clic en :ui[pullRequests.createLabel.title]. Spooky crea la etiqueta en el proyecto y la añade a la solicitud.
+
+::screenshot[Las etiquetas de una solicitud, enhancement y ui, cada una con una × tras su nombre, y después el botón Añadir. Debajo está abierta la lista de las demás etiquetas del proyecto, con el campo Filtrar etiquetas arriba y Nueva etiqueta… abajo.]{name="hosting-labels" frame="closeup"}
 
 La lista muestra el cambio enseguida. Si tu cuenta no tiene permiso para cambiar las etiquetas, Spooky muestra la respuesta del servicio y las etiquetas se quedan como están.
 

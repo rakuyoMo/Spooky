@@ -7,6 +7,14 @@ Spooky zeigt für das Remote eines Repositorys die Pull Requests auf GitHub und 
 
 Dafür brauchen Sie einen [Hosting-Account](/guide/hosting/accounts/) für das Remote. Wenn das Remote bei GitLab liegt, steht in Seitenleiste, Menüs und Dialogfenstern Merge Request statt Pull Request.
 
+::screenshot[Die Ansicht Merge Requests eines Repositorys, dessen Remote bei GitLab liegt. Die Liste zeigt offene, zusammengeführte und geschlossene Requests sowie einen Entwurf. Jede Zeile hat vor dem Titel ein Symbol für den Status, darunter Nummer, Autor, Datum, Branches und Labels, und rechts ein Symbol für den CI/CD-Status. Add a units toggle ist ausgewählt. Rechts steht seine Unterhaltung mit den Labels und der Taste Hinzufügen, der Beschreibung, einem Commit und drei Kommentaren.]{name="hosting-requests" frame="window" markers="31.5,9 39,9 20.3,46.8 43.5,40 64.7,9"}
+
+1. Das Remote, dessen Requests aufgelistet werden
+2. Die Filtertaste, die zwischen :ui[pullRequests.filter.open] und :ui[pullRequests.filter.all] wechselt
+3. Das Symbol für den Status eines Requests
+4. Das Symbol für seinen CI/CD-Status
+5. Die Ansichten des ausgewählten Requests. Siehe [Einen Request lesen](#details).
+
 ## Die Liste öffnen {#list}
 
 Klicken Sie in der Seitenleiste auf :ui[pr.title] oder wählen Sie :ui[menu.view > pr.show.menu] (<kbd>⌘4</kbd>).
@@ -60,6 +68,8 @@ Ein Check oder Job mit Protokoll hat links in seiner Zeile ein Dreiecksymbol. Kl
 
 Das Protokoll zeigt keine Zeitstempel und Farbcodes. Sie können den Text auswählen und kopieren.
 
+::screenshot[Die Ansicht CI/CD eines Merge Requests, dessen Pipeline fehlgeschlagen ist. Die Jobs install, typecheck und lint sind bestanden. Der Job unit tests ist fehlgeschlagen. Sein Protokoll steht unter seiner Zeile und endet mit dem fehlgeschlagenen Test und dem Fehler, der den Job beendet hat. Der Job preview wurde übersprungen.]{name="hosting-checks" frame="closeup"}
+
 ## Einen Request erstellen {#create}
 
 Der Quell-Branch muss bereits auf einem Remote liegen. Pushen Sie ihn zuerst und führen Sie dann einen der folgenden Schritte aus:
@@ -82,6 +92,8 @@ Um einen Kommentar hinzuzufügen, klicken Sie am Ende der Konversation auf :ui[p
 
 Um jemanden in einem Kommentar zu erwähnen, geben Sie `@` ein. Spooky listet die Beteiligten des Requests und die Mitglieder des Projekts auf und grenzt die Liste ein, während Sie einen Benutzernamen oder Namen weitertippen. Drücken Sie <kbd>↑</kbd> oder <kbd>↓</kbd>, um einen Eintrag zu wählen, den <kbd>Zeilenschalter</kbd>, um den Benutzernamen einzufügen, und <kbd>Esc</kbd>, um die Liste zu schließen.
 
+::screenshot[Ein neuer Kommentar, der mit @ beginnt. Die Liste darunter zeigt sam, jonas, alex, mina, priya und leo, jeweils mit Initialen und vollem Namen. sam ist ausgewählt.]{name="hosting-mention" frame="closeup"}
+
 Bei Ihren eigenen Kommentaren verwenden Sie :ui[pullRequests.comment.edit] und :ui[pullRequests.comment.delete] am Kommentar, oder klicken Sie mit der rechten Maustaste darauf. Auch ein Doppelklick auf Ihren Kommentar öffnet ihn zum Bearbeiten. Das Löschen eines Kommentars lässt sich nicht widerrufen.
 
 Auf GitLab können Sie außerdem mit :ui[pullRequests.comment.reply] auf jeden Kommentar antworten. Die Antwort kommt auf GitLab in dieselbe Diskussion.
@@ -98,6 +110,8 @@ Die Labels eines Requests stehen in :ui[pullRequests.conversation] unter dem Tit
 - Um ein Label zu entfernen, klicken Sie auf das × hinter seinem Namen.
 - Um ein Label hinzuzufügen, klicken Sie auf :ui[pullRequests.labels.add] und wählen Sie eines der Labels des Projekts. Tippen Sie in das Feld oben, um sie zu filtern.
 - Um ein Label zu erstellen, klicken Sie auf :ui[pullRequests.labels.add] und dann auf :ui[pullRequests.labels.new]. Geben Sie einen Namen ein, wählen Sie eine Farbe und klicken Sie auf :ui[pullRequests.createLabel.title]. Spooky erstellt das Label im Projekt und fügt es dem Request hinzu.
+
+::screenshot[Die Labels eines Requests, enhancement und ui, jeweils mit einem × hinter dem Namen, danach die Taste Hinzufügen. Darunter ist die Liste der übrigen Labels des Projekts geöffnet, mit dem Feld Labels filtern oben und dem Eintrag Neues Label … unten.]{name="hosting-labels" frame="closeup"}
 
 Die Liste zeigt die Änderung gleich danach. Wenn Ihr Account keine Labels ändern darf, zeigt Spooky die Antwort des Dienstes, und die Labels bleiben, wie sie sind.
 
