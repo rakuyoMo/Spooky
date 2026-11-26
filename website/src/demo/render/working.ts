@@ -19,11 +19,9 @@ import { avatar, button, esc, icon, slot } from './format.ts';
  * 打字或点这些按钮时不重绘输入框。
  */
 
-/** 中间一栏的骨架，里面的几个区域单独输出。 */
+/** 中间一栏的分支摘要、提交区与文件表。 */
 export function renderWorkingColumn(context: RenderContext): string {
-    const { data, text } = context;
-
-    const banner = `<p class="sd-banner">${esc(`${data.host}: ${text.t('connection.connected')}`)}</p>`;
+    const { text } = context;
 
     const filesHead =
         `<div class="sd-files-head" role="presentation">` +
@@ -33,7 +31,6 @@ export function renderWorkingColumn(context: RenderContext): string {
         `</div>`;
 
     return (
-        banner +
         branchBar(context) +
         commitForm(context) +
         `<div class="sd-files">` +
@@ -208,7 +205,8 @@ function fileRow({ state, text }: RenderContext, file: WorkFile): string {
     const box =
         `<button type="button" role="checkbox" class="sd-check" ` +
         `data-action="toggle-file" data-arg="${path}" data-guide="stage" ` +
-        `aria-checked="${check === 'mixed' ? 'mixed' : check === 'on'}" aria-label="${path}">` +
+        `aria-checked="${check === 'mixed' ? 'mixed' : check === 'on'}" ` +
+        `aria-label="${esc(text.t('working.staging', file.path))}">` +
         checkMark(check) +
         `</button>`;
 

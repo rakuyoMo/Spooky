@@ -14,9 +14,9 @@ import { button, esc, icon, shortRef } from './format.ts';
 
 /** 能收进 » 的项：`data-item` 的名字、图标、标签与点按时的动作，顺序与 App 的溢出菜单相同。 */
 const overflowable: { item: string; icon: IconName | null; label: DemoKey | null; action: string }[] = [
+    { item: 'bookmarks', icon: 'drive', label: 'toolbar.bookmarks', action: 'unavailable' },
     { item: 'back', icon: 'back', label: 'toolbar.previous', action: 'back' },
     { item: 'forward', icon: 'forward', label: 'toolbar.next', action: 'forward' },
-    { item: 'bookmarks', icon: 'drive', label: 'toolbar.bookmarks', action: 'unavailable' },
     { item: 'finder', icon: 'finder', label: 'toolbar.finder', action: 'unavailable' },
     { item: 'terminal', icon: 'terminal', label: 'toolbar.terminal', action: 'unavailable' },
     { item: 'host', icon: null, label: null, action: 'unavailable' },
@@ -67,7 +67,7 @@ export function renderTitle(context: RenderContext): string {
  * 常规版式里中间的几组收起后，安全强推与新建分支挨在一起，`sd-join-end` 与 `sd-join-start` 让两块底连成一块。
  */
 export function renderActions(context: RenderContext): string {
-    const { data, text, ui } = context;
+    const { data, state, text, ui } = context;
 
     const tool = (item: string, action: string, image: IconName, key: DemoKey, guide?: string) =>
         button({ action, className: 'sd-tool', content: icon(image), label: text.t(key), guide, item });
@@ -90,6 +90,22 @@ export function renderActions(context: RenderContext): string {
         expanded: ui.overlay === 'more',
     });
 
+    // 搜索项在右端，空间充足时展开当前视图的搜索提示
+    const searchHint =
+        state.view === 'working'
+            ? ''
+            : text.t(state.view === 'history' ? 'history.search.forMessage' : 'stash.search');
+
+    const search = button({
+        action: 'unavailable',
+        className: 'sd-tool sd-search-tool',
+        content:
+            icon('search') +
+            (searchHint ? `<span class="sd-search-hint" aria-hidden="true">${esc(searchHint)}</span>` : ''),
+        label: text.t('action.search'),
+        item: 'search',
+    });
+
     return (
         `<div class="sd-glass sd-round sd-only-narrow" data-narrow="510">` +
         `${tool('bookmarks', 'unavailable', 'drive', 'toolbar.bookmarks')}</div>` +
@@ -110,7 +126,7 @@ export function renderActions(context: RenderContext): string {
         `<span class="sd-tool-slot" data-regular="1080">` +
         `${tool('refresh', 'unavailable', 'refresh', 'action.refresh')}</span></div>` +
         `<div class="sd-glass sd-round sd-more">${more}</div>` +
-        `<div class="sd-glass sd-round sd-spread">${tool('search', 'unavailable', 'search', 'action.search')}</div>`
+        `<div class="sd-glass sd-round sd-spread sd-search">${search}</div>`
     );
 }
 

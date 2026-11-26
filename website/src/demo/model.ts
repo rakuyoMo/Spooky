@@ -721,14 +721,16 @@ export function reachableFrom(commits: readonly CommitData[], start: string): Se
 /**
  * 切换视图。
  *
- * 第一次打开历史时选中列表里的第一个提交，详情里马上有内容。
+ * 直接进入历史时显示全部引用。前进或后退可以带回原来的引用范围。
+ * 如果原选中项不在目标列表中，选中列表里的第一个提交。
  */
-export function selectView(state: DemoState, data: RepoData, view: View): DemoState {
+export function selectView(state: DemoState, data: RepoData, view: View, historyRef: string | null = null): DemoState {
     if (view !== 'history') {
         return { ...state, view };
     }
 
-    const next = { ...state, view };
+    // 先切换范围，再判断原来选中的提交是否仍在列表里
+    const next = { ...state, view, historyRef };
     const visible = historyCommits(next, data);
 
     if (visible.some((item) => item.hash === state.selectedCommit)) {

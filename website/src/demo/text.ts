@@ -21,6 +21,8 @@ export const demoKeys = [
     'toolbar.createBranch',
     'action.refresh',
     'action.search',
+    'history.search.forMessage',
+    'stash.search',
 
     // 侧边栏
     'workspace.group',
@@ -59,6 +61,7 @@ export const demoKeys = [
     'working.stageAll',
     'working.unstageAll',
     'working.commit',
+    'working.staging',
     'status.column',
     'status.filename',
     'status.description',
