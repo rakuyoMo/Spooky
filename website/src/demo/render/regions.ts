@@ -19,8 +19,11 @@ export type Regions = Map<string, string>;
 
 /** 按当前状态输出全部区域；当前视图里不存在的区域不输出。 */
 export function renderRegions(context: RenderContext): Regions {
-    const { state, ui } = context;
+    const { data, state, text, ui } = context;
     const regions: Regions = new Map();
+
+    // 三个视图的列表上方都显示服务器连接状态
+    const banner = `<p class="sd-banner">${esc(`${data.host}: ${text.t('connection.connected')}`)}</p>`;
 
     regions.set('window', windowFrame(context));
     regions.set('sidebar', renderSidebar(context));
@@ -35,7 +38,7 @@ export function renderRegions(context: RenderContext): Regions {
 
     switch (state.view) {
         case 'working':
-            regions.set('middle', renderWorkingColumn(context));
+            regions.set('middle', banner + renderWorkingColumn(context));
             regions.set('counter', renderCounter(context));
             regions.set('body-bar', renderBodyBar(context));
             regions.set('commit-actions', renderCommitActions(context));
@@ -43,13 +46,13 @@ export function renderRegions(context: RenderContext): Regions {
             regions.set('detail', renderWorkingDiff(context));
             break;
         case 'history':
-            regions.set('middle', renderHistoryColumn(context));
+            regions.set('middle', banner + renderHistoryColumn(context));
             regions.set('history-bar', renderHistoryBar(context));
             regions.set('history-list', renderHistoryList(context));
             regions.set('detail', renderCommitDetail(context));
             break;
         default:
-            regions.set('middle', renderStashColumn(context));
+            regions.set('middle', banner + renderStashColumn(context));
             regions.set('detail', renderStashDetail(context));
     }
 

@@ -380,7 +380,8 @@ class Demo {
 
         const current = placeOf(this.state);
         const rest = stack.slice(0, -1);
-        const state = selectView({ ...this.state, historyRef: place.historyRef }, this.options.data, place.view);
+        // 前进和后退复原当时的引用范围，与直接打开全部历史共用提交选择规则
+        const state = selectView(this.state, this.options.data, place.view, place.historyRef);
 
         this.update(
             state,
@@ -469,12 +470,8 @@ class Demo {
                 this.perform('view', item.id, false, null);
                 break;
             case 'commit':
-                this.navigate(
-                    selectCommit(
-                        selectView({ ...this.state, historyRef: null }, data, 'history'),
-                        item.id,
-                    ),
-                );
+                // 快捷操作搜索全部提交，选中的提交也在全部历史中打开
+                this.navigate(selectCommit(selectView(this.state, data, 'history'), item.id));
                 break;
             case 'file':
                 this.pickFile(item.id);
@@ -854,9 +851,9 @@ class Demo {
 
 // MARK: - Helpers
 
-/** 状态所在的位置。 */
+/** 导航位置；只有历史视图需要记录引用范围。 */
 function placeOf(state: DemoState): Place {
-    return { view: state.view, historyRef: state.historyRef };
+    return { view: state.view, historyRef: state.view === 'history' ? state.historyRef : null };
 }
 
 /** 有就去掉，没有就加上。 */

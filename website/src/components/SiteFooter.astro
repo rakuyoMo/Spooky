@@ -1,7 +1,4 @@
 ---
-import { Icon } from '@astrojs/starlight/components';
-import { localeOfRoute, localizedUrl } from '../site/locales.ts';
-
 /*
  * 首页与 404 页的页脚：几个常用链接与版权声明。
  */
@@ -13,11 +10,9 @@ const repository = 'https://github.com/rakuyoMo/Spooky';
 const copyright = '© 2026 Rakuyo';
 
 const { t } = Astro.locals;
-const locale = localeOfRoute(Astro.locals.starlightRoute.locale);
 
+/** 页脚里的发行说明、问题反馈与许可证链接。 */
 const links = [
-    { text: t('footer.guide'), href: localizedUrl('/guide/', locale) },
-    { text: 'GitHub', href: repository, icon: 'github' as const },
     { text: t('footer.releaseNotes'), href: `${repository}/releases` },
     { text: t('footer.issues'), href: `${repository}/issues` },
     { text: t('footer.license'), href: `${repository}/blob/main/LICENSE` },
@@ -28,12 +23,9 @@ const links = [
     <div class="inner">
         <ul class="links">
             {
-                links.map(({ text, href, icon }) => (
+                links.map(({ text, href }) => (
                     <li>
-                        <a href={href}>
-                            {icon && <Icon name={icon} size="1.1em" />}
-                            {text}
-                        </a>
+                        <a href={href}>{text}</a>
                     </li>
                 ))
             }
@@ -77,15 +69,7 @@ const links = [
         list-style: none;
     }
 
-    /* 每项排成弹性盒，带图标的链接与纯文字的链接文字对齐 */
-    .links li {
-        display: flex;
-    }
-
     .links a {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4em;
         color: var(--sl-color-gray-2);
         font-size: var(--sl-text-sm);
         text-decoration: none;

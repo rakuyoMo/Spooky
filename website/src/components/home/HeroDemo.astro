@@ -55,6 +55,7 @@ const windowHtml = compose(
 // 写进 `<script type="application/json">`，`<` 转义后文案里不会出现能结束脚本的字符
 const stringsJson = JSON.stringify(strings).replaceAll('<', '\\u003c');
 
+/** 可在窗口里完成的三个步骤。 */
 const steps = [
     { step: 'stage', label: t('demo.step.stage') },
     { step: 'commit', label: t('demo.step.commit') },
@@ -104,7 +105,7 @@ const endId = 'spooky-demo-end';
                 {
                     steps.map(({ step, label }, index) => (
                         <li>
-                            <button type="button" data-step={step}>
+                            <button class="sd-step" type="button" data-step={step}>
                                 <span class="sd-step-number" aria-hidden="true">
                                     {index + 1}
                                 </span>
@@ -120,13 +121,19 @@ const endId = 'spooky-demo-end';
                         </li>
                     ))
                 }
+
+                <li class="sd-narrow-hint">
+                    <span class="sd-step">
+                        <span class="sd-step-number" aria-hidden="true">{steps.length + 1}</span>
+
+                        {t('demo.narrow')}
+                    </span>
+                </li>
             </ol>
 
             <button type="button" class="sd-reset" data-reset>
                 {t('demo.reset')}
             </button>
-
-            <p class="sd-note sd-narrow-hint">{t('demo.narrow')}</p>
 
             <p class="sd-note">{t('demo.note')}</p>
         </div>

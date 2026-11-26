@@ -33,14 +33,11 @@ const groupHeight = 30;
 const badgeLimit = 300;
 
 /** 历史一栏在宽版式里的宽度，估算徽标放得下几个时用。 */
-const columnWidth = 440;
+const columnWidth = 320;
 
-/** 中间一栏：连接横幅、所看范围与显示选项、提交列表。 */
-export function renderHistoryColumn(context: RenderContext): string {
-    const { data, text } = context;
-
+/** 中间一栏：所看范围与显示选项、提交列表。 */
+export function renderHistoryColumn({ text }: RenderContext): string {
     return (
-        `<p class="sd-banner">${esc(`${data.host}: ${text.t('connection.connected')}`)}</p>` +
         slot('history-bar', 'div', 'class="sd-bar sd-history-bar"') +
         slot(
             'history-list',

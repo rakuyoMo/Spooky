@@ -135,8 +135,8 @@
     user-select: none;
 }
 
-.sd-window[data-view='history'] {
-    --sd-mid: 440px;
+.sd-window:is([data-view='history'], [data-view='stashes']) {
+    --sd-mid: 320px;
 }
 
 .sd-window:focus {
@@ -183,6 +183,16 @@
 .sd-icon svg {
     width: 100%;
     height: 100%;
+}
+
+/* 同步按钮与菜单共用 App 的透明模板图，填色随控件状态变化 */
+.sd-template-icon {
+    width: 100%;
+    height: 100%;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
 }
 
 /* MARK: 红绿灯与侧边栏 */
@@ -347,8 +357,9 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 36px;
-    padding-inline: 10px;
+    height: 40px;
+    padding-inline: 8px;
+    box-shadow: inset 0 1px var(--sd-separator);
     color: var(--sd-text-2);
 }
 
@@ -387,32 +398,20 @@
     display: flex;
     flex: 0 1 var(--sd-mid, 400px);
     align-items: center;
-    gap: 18px;
-    min-width: 250px;
+    gap: 12px;
+    min-width: 216px;
     padding-inline: 8px 12px;
     overflow: clip;
 }
 
-/*
- * 标题与按钮之间的分隔线：标题占满中间一栏时，与下面两栏之间的分隔线连成一条；
- * 标题让出了宽度，这条线落在标题外面被裁掉，只剩标题末尾的一小段。
- */
-.sd-titlebar::before,
-.sd-titlebar::after {
+/* 标题占满中间一栏时，分隔线与下面的分栏接上 */
+.sd-titlebar::before {
     position: absolute;
+    inset-block: 0;
+    left: calc(var(--sd-mid, 400px) - 1px);
     width: 1px;
     background: var(--sd-separator);
     content: '';
-}
-
-.sd-titlebar::before {
-    inset-block: 0;
-    left: calc(var(--sd-mid, 400px) - 1px);
-}
-
-.sd-titlebar::after {
-    inset-block: 16px;
-    right: 0;
 }
 
 .sd-capsule,
@@ -423,12 +422,21 @@
 
 /* 分段的一组里相邻按钮之间的短竖线；挨着的几个独立按钮共用一块底（.sd-cluster），之间没有 */
 .sd-capsule .sd-tool + .sd-tool {
-    background: linear-gradient(var(--sd-separator), var(--sd-separator)) left center / 1px 16px no-repeat;
+    position: relative;
+}
+
+.sd-capsule .sd-tool + .sd-tool::before {
+    position: absolute;
+    inset-block: 6px;
+    inset-inline-start: 0;
+    width: 1px;
+    background: var(--sd-separator);
+    content: '';
 }
 
 .sd-tool {
     display: inline-grid;
-    width: 34px;
+    width: 36px;
     height: 32px;
     place-items: center;
     border-radius: 16px;
@@ -475,13 +483,41 @@
     display: flex;
     flex: 1 0 auto;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
     padding-inline: 12px 8px;
 }
 
 .sd-more {
     margin-inline-start: auto;
+}
+
+.sd-search-hint {
+    display: none;
+}
+
+/* 历史与储藏的列表比工作区窄，宽窗口给搜索项留出显示提示的空间 */
+@container sd (width >= 1240px) {
+    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search {
+        width: 146px;
+    }
+
+    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search-tool {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding-inline: 10px;
+        border-radius: 18px;
+        color: var(--sd-text-2);
+    }
+
+    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search-hint {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 /* 工具栏一组里的一项：单独包一层，能单独收进 » */
@@ -542,7 +578,7 @@
     }
 
     .sd-join-start {
-        margin-inline-start: -10px;
+        margin-inline-start: -8px;
         border-radius: 0 18px 18px 0;
         clip-path: inset(-6px -6px -6px 0);
     }
@@ -562,8 +598,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    border-inline-end: 1px solid var(--sd-separator);
     background: var(--sd-list);
-    box-shadow: inset -1px 0 var(--sd-separator);
 }
 
 .sd-banner {
@@ -579,16 +615,19 @@
     align-items: center;
     gap: 4px;
     height: 40px;
-    padding-inline: 14px 12px;
+    padding-inline: 12px 8px;
+    box-shadow: inset 0 -1px var(--sd-separator);
     color: var(--sd-text-2);
 }
 
 .sd-bar-end {
+    width: 28px;
     margin-inline-start: auto;
 }
 
 .sd-branch-name {
     color: var(--sd-text-2);
+    padding-inline-start: 2px;
 }
 
 .sd-branch-chevron {
@@ -768,7 +807,6 @@
 }
 
 .sd-button {
-    min-width: 74px;
     height: 24px;
     padding-inline: 12px;
     border-radius: 6px;
@@ -797,24 +835,26 @@
     flex: 1;
     flex-direction: column;
     min-height: 0;
+
+    --sd-status-width: 68px;
 }
 
 .sd-files-head {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--sd-status-width) minmax(0, 1fr) auto;
     align-items: center;
+    flex: none;
     height: 26px;
-    padding-inline: 18px 16px;
+    padding-inline: 16px;
     background: var(--sd-toolbar);
     box-shadow: inset 0 -1px var(--sd-separator);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11px;
 }
 
-.sd-files-head span:nth-child(2) {
-    flex: 1;
-    margin-inline-start: 26px;
-    padding-inline-start: 6px;
+.sd-files-head > span:nth-child(2) {
+    padding-inline-start: 3px;
     box-shadow: inset 1px 0 var(--sd-separator);
+    font-weight: 600;
 }
 
 .sd-sort {
@@ -827,39 +867,46 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 4px 10px;
+    padding: 5px 10px;
 }
 
 .sd-file {
     position: relative;
-    display: flex;
+    display: grid;
+    grid-template-columns: 26px calc(var(--sd-status-width) - 26px) minmax(0, 1fr);
     align-items: center;
-    gap: 6px;
     height: 28px;
-    padding-inline: 8px;
-    border-radius: 6px;
+    padding-inline: 6px 8px;
+    border-radius: 8px;
 }
 
 /* 行与行之间的分隔线，选中行的上下两条让给选中底色 */
-.sd-file::after {
+.sd-file:has(+ .sd-file):not(.is-selected, :has(+ .is-selected))::after {
     position: absolute;
-    inset-inline: 8px;
+    inset-inline: 6px;
     bottom: 0;
     height: 1px;
     background: var(--sd-row-separator);
     content: '';
-}
-
-.sd-file:is(.is-selected, :has(+ .is-selected))::after {
-    display: none;
+    pointer-events: none;
 }
 
 .sd-file.is-selected {
     background: var(--sd-selected);
 }
 
+/* 文件列表有焦点时，选中行和文件名使用强调配色 */
+.sd-file-list:focus-within .sd-file.is-selected {
+    background: var(--sd-accent);
+    color: var(--sd-accent-text);
+}
+
+.sd-file-list:focus-within .sd-file.is-selected .sd-check {
+    background: rgb(255 255 255 / 0.24);
+}
+
 .sd-file .sd-check {
-    margin-inline-end: 2px;
+    margin-inline-start: 3px;
 }
 
 /* 暂存与未暂存两格总是占位，没有改动的一格留空 */
@@ -894,12 +941,11 @@
 
 .sd-file-name {
     display: flex;
-    flex: 1;
     align-items: center;
     gap: 8px;
     min-width: 0;
     height: 100%;
-    margin-inline-start: 4px;
+    padding-inline-start: 9px;
     text-align: start;
 }
 
@@ -912,7 +958,7 @@
 .sd-file-icon {
     display: inline-flex;
     flex: none;
-    width: 14px;
+    width: 16px;
     height: 16px;
 }
 
@@ -936,6 +982,11 @@
     stroke-width: 0.8;
 }
 
+.sd-doc-type {
+    font: 600 5.2px var(--sd-font);
+    text-anchor: middle;
+}
+
 /* MARK: 右边一栏 */
 
 .sd-detail {
@@ -952,10 +1003,15 @@
     display: flex;
     flex: none;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     height: 40px;
-    padding-inline: 22px 20px;
+    padding-inline: 20px;
     box-shadow: inset 0 -1px var(--sd-separator);
+}
+
+.sd-diff-head .sd-file-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .sd-diff-name {
@@ -1017,9 +1073,9 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    min-height: 34px;
+    min-height: 32px;
     padding: 5px 20px;
-    box-shadow: inset 0 1px var(--sd-separator);
+    box-shadow: inset 0 1px var(--sd-separator), inset 0 -1px var(--sd-separator);
     color: var(--sd-text-2);
 }
 
@@ -1641,15 +1697,14 @@
 /* MARK: 储藏 */
 
 .sd-stash-bar {
-    color: var(--sd-text);
-    font-weight: 600;
+    padding-inline: 12px;
 }
 
 .sd-stash-list {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 0 10px;
+    padding: 5px 10px;
 }
 
 .sd-stash {
@@ -2027,7 +2082,8 @@
     margin: 0;
 }
 
-.sd-guide button {
+.sd-step,
+.sd-guide .sd-reset {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -2038,6 +2094,9 @@
     background: var(--spooky-surface);
     color: var(--sl-color-white);
     font: inherit;
+}
+
+.sd-guide button {
     cursor: pointer;
 }
 
@@ -2052,6 +2111,7 @@
 
 .sd-step-number {
     display: inline-grid;
+    flex: none;
     width: 1.375rem;
     height: 1.375rem;
     place-items: center;
@@ -2060,6 +2120,8 @@
     color: #fff;
     font-size: var(--sl-text-xs);
     font-weight: 700;
+    line-height: 1;
+    padding-block-end: 1px;
 }
 
 .sd-step-check {
@@ -2072,6 +2134,7 @@
 
 [data-step].is-done .sd-step-check {
     display: inline-grid;
+    flex: none;
     width: 1.375rem;
     height: 1.375rem;
     place-items: center;
@@ -2194,23 +2257,23 @@
 
     /* 标题让开红绿灯，占固定的宽度，放不下的文字截短 */
     .sd-titlebar {
-        flex: none;
+        flex: 0 1 auto;
         gap: 12px;
         min-width: 0;
         padding-inline: 96px 0;
     }
 
-    .sd-titlebar::before,
-    .sd-titlebar::after {
+    .sd-titlebar::before {
         display: none;
     }
 
     .sd-heading {
-        width: 152px;
+        width: 148px;
     }
 
     .sd-actions-bar {
-        padding-inline: 12px 7px;
+        gap: 7px;
+        padding-inline: 7px;
     }
 
     .sd-only-narrow {
@@ -2219,10 +2282,6 @@
 
     .sd-window [data-narrow='none'] {
         display: none;
-    }
-
-    .sd-more {
-        margin-inline-end: -5px;
     }
 
     .sd-compact-nav {
@@ -2262,7 +2321,7 @@
     }
 
     .sd-middle {
-        box-shadow: none;
+        border-inline-end: 0;
     }
 
     .sd-detail {
@@ -2312,15 +2371,6 @@
 
     .sd-titlebar {
         padding-inline-start: 100px;
-    }
-
-    .sd-actions-bar {
-        gap: 4px;
-        padding-inline-start: 6px;
-    }
-
-    .sd-more {
-        margin-inline-end: 1px;
     }
 }
 

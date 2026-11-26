@@ -12,11 +12,14 @@ import {
     fileBadges,
     fileCheck,
     headBranch,
+    historyCommits,
     multilineParts,
     push,
     remainingCharacters,
     selectFile,
     selectLine,
+    selectRef,
+    selectView,
     sideDiff,
     stageSelection,
     toggleFile,
@@ -33,6 +36,25 @@ import { demoKeys, demoStrings, format } from './text.ts';
 
 const repoUrl = new URL('./data/repo.json', import.meta.url);
 const data = JSON.parse(readFileSync(repoUrl, 'utf8')) as RepoData;
+
+test('从分支进入历史时显示全部提交，后退可以恢复分支范围', () => {
+    const ref = 'refs/heads/feature/units-toggle';
+    const branch = selectRef(createState(data), data, ref);
+    const branchCommits = historyCommits(branch, data);
+
+    // 直接打开历史时，分支之外的提交也能访问，仍在列表里的选中项继续保留
+    const all = selectView(branch, data, 'history');
+
+    assert.equal(all.historyRef, null);
+    assert.equal(historyCommits(all, data).length, all.commits.length);
+    assert.ok(all.commits.length > branchCommits.length);
+    assert.equal(all.selectedCommit, branch.selectedCommit);
+
+    // 后退带回该分支之前看到的提交列表
+    const restored = selectView(all, data, 'history', branch.historyRef);
+
+    assert.deepEqual(historyCommits(restored, data), branchCommits);
+});
 
 test('按行暂存：选中的行进入索引，文件变成半选，再点勾选框暂存或取消整个文件', () => {
     const path = 'src/readings.ts';
