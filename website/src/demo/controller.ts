@@ -18,8 +18,10 @@ import {
     stageSelection,
     toggleFile,
 } from './model.ts';
-import type { Place, RenderContext, UiState } from './render/context.ts';
-import { createUi } from './render/context.ts';
+import type { PullRequest, RequestLabel } from './pull-requests.ts';
+import { createRequest, requestChanges, requestLabels, requestPages, visibleRequests } from './pull-requests.ts';
+import type { DemoForm, Place, RenderContext, UiState } from './render/context.ts';
+import { createUi, locationMethods, settingsPages } from './render/context.ts';
 import { quickItems } from './render/overlays.ts';
 import type { Regions } from './render/regions.ts';
 import { renderRegions } from './render/regions.ts';
@@ -68,6 +70,11 @@ const narrowWidth = 820;
 /** 提交信息的输入框与展开后的选项：焦点在它们里面时提交区展开。 */
 const messageArea = '.sd-commit :is(.sd-field, .sd-details)';
 
+/** 窗口上能通过按钮打开的表单。 */
+const demoForms: readonly DemoForm[] = [
+    'pr-create', 'pr-edit', 'pr-comment', 'pr-checkout', 'pr-close', 'pr-merge', 'location',
+];
+
 /** 启动演示。 */
 export function startDemo(options: DemoOptions): void {
     new Demo(options).start();
@@ -76,7 +83,7 @@ export function startDemo(options: DemoOptions): void {
 /** 一个演示窗口的全部运行状态。 */
 class Demo {
     private state: DemoState;
-    private ui: UiState = createUi();
+    private ui: UiState;
     private changes: Record<string, ChangeData[]> | null = null;
     private loading: Promise<void> | null = null;
     private regions: Regions;
@@ -86,12 +93,16 @@ class Demo {
     private readonly toast: HTMLElement | null;
     private toastTimer = 0;
 
+    /** 在当前页面第一次看到极窄版式后，步骤一直显示为已完成。 */
+    private sawNarrowLayout = false;
+
     /** 打开浮层之前焦点所在的控件，关掉浮层时放回去。 */
     private opener: HTMLElement | null = null;
 
     /** 用页面给的数据建出初始状态；窗口的 HTML 已在构建时写好，与初始状态一致。 */
     constructor(private readonly options: DemoOptions) {
         this.state = createState(options.data);
+        this.ui = createUi(options.data);
         this.text = createText(options.strings, options.lang);
         this.frame = options.root.querySelector<HTMLElement>('.sd-window') ?? options.root;
         this.toast = options.root.querySelector<HTMLElement>('.sd-toast');
@@ -105,6 +116,8 @@ class Demo {
         this.frame.addEventListener('click', (event) => this.click(event));
         this.frame.addEventListener('keydown', (event) => this.keydown(event));
         this.frame.addEventListener('input', (event) => this.input(event));
+        this.frame.addEventListener('change', (event) => this.changeForm(event));
+        this.frame.addEventListener('submit', (event) => this.submitForm(event));
         this.frame.addEventListener('paste', (event) => this.paste(event));
         root.addEventListener('click', (event) => this.guideClick(event));
         root.addEventListener('pointerover', (event) => this.highlight(event.target));
@@ -220,7 +233,7 @@ class Demo {
             return;
         }
 
-        if (this.navigationAction(action, arg)) {
+        if (this.navigationAction(action, arg) || this.requestAction(action, arg)) {
             return;
         }
 
@@ -274,7 +287,9 @@ class Demo {
 
         switch (action) {
             case 'view': {
-                const view = arg === 'history' || arg === 'stashes' ? arg : 'working';
+                const view = arg === 'history' || arg === 'stashes' || arg === 'requests' || arg === 'settings'
+                    ? arg
+                    : 'working';
 
                 this.navigate(selectView(this.state, data, view));
                 return true;
@@ -304,7 +319,10 @@ class Demo {
                 this.update(this.state, { closedGroups: toggled(this.ui.closedGroups, arg) });
                 break;
             case 'toggle-file-changes':
-                this.update(this.state, { collapsed: toggled(this.ui.collapsed, arg) });
+                this.update(this.state, { expandedFiles: toggled(this.ui.expandedFiles, arg) });
+                break;
+            case 'select-change':
+                this.update(this.state, { selectedFileChange: arg });
                 break;
             case 'collapse-all':
             case 'expand-all':
@@ -322,11 +340,29 @@ class Demo {
             case 'push':
                 this.openOverlay('push', source);
                 break;
+            case 'show-form': {
+                const form = demoForms.find((name) => name === arg);
+
+                if (form) {
+                    this.openOverlay(form, source);
+                }
+
+                break;
+            }
+            case 'settings-page': {
+                const page = settingsPages.find((name) => name === arg);
+
+                if (page) {
+                    this.update(this.state, { settingsPage: page });
+                }
+
+                break;
+            }
             case 'close':
                 this.closeOverlay();
                 break;
             case 'confirm-push':
-                this.update(push(this.state, this.options.data));
+                this.update(push(this.state));
                 this.closeOverlay();
                 break;
             case 'quick-pick':
@@ -359,14 +395,18 @@ class Demo {
     private navigate(next: DemoState): void {
         const from = placeOf(this.state);
         const to = placeOf(next);
+        const sidebarFocused = this.ui.sidebarOpen && document.activeElement?.closest('.sd-sidebar');
 
         if (from.view === to.view && from.historyRef === to.historyRef) {
-            this.update(next);
-            return;
+            this.update(next, { sidebarOpen: false });
+        } else {
+            this.update(next, { back: [...this.ui.back, from], forward: [], sidebarOpen: false });
+            void this.ensureChanges();
         }
 
-        this.update(next, { back: [...this.ui.back, from], forward: [] });
-        void this.ensureChanges();
+        if (sidebarFocused) {
+            this.frame.querySelector<HTMLElement>('.sd-compact-toggle')?.focus({ preventScroll: true });
+        }
     }
 
     /** 后退或前进一步。 */
@@ -393,11 +433,62 @@ class Demo {
 
     /** 全部折叠或展开一个提交的文件。 */
     private collapseAll(scope: string, collapse: boolean): void {
-        const changes = this.changes?.[scope] ?? this.state.addedChanges[scope] ?? [];
+        const request = this.ui.requests.find(({ id }) => scope === `pr:${id}`);
+        const changes = request && this.changes
+            ? requestChanges(this.options.data, request, this.changes)
+            : this.state.addedChanges[scope] ?? this.changes?.[scope] ?? [];
         const keys = changes.map((change) => `${scope}:${change.path}`);
-        const others = this.ui.collapsed.filter((key) => !keys.includes(key));
+        const others = this.ui.expandedFiles.filter((key) => !keys.includes(key));
 
-        this.update(this.state, { collapsed: collapse ? [...others, ...keys] : others });
+        this.update(this.state, { expandedFiles: collapse ? others : [...others, ...keys] });
+    }
+
+    /** 请求列表和详情的选择；筛选结果变了时，保持可见的请求或选择首项。 */
+    private requestAction(action: string, arg: string): boolean {
+        switch (action) {
+            case 'pr-filter': {
+                const allRequests = arg === 'all';
+                const requests = visibleRequests(this.ui.requests, allRequests);
+
+                this.update(this.state, requests.some(({ id }) => id === this.ui.requestId)
+                    ? { allRequests }
+                    : { allRequests, requestId: requests[0]?.id ?? null, requestPage: 'conversation', requestCommit: null });
+                return true;
+            }
+            case 'pr-select':
+                if (this.ui.requestId !== Number(arg)) {
+                    this.update(this.state, { requestId: Number(arg), requestPage: 'conversation', requestCommit: null });
+                }
+
+                return true;
+            case 'pr-page': {
+                const page = requestPages.find((name) => name === arg);
+
+                if (page) {
+                    this.update(this.state, { requestPage: page });
+                }
+
+                return true;
+            }
+            case 'pr-commit':
+                this.update(this.state, { requestPage: 'commits', requestCommit: arg });
+                return true;
+            case 'pr-label': {
+                const request = this.ui.requests.find(({ id }) => id === this.ui.requestId);
+
+                if (request && Object.hasOwn(requestLabels, arg)) {
+                    const labels = toggled(request.labels, arg as RequestLabel);
+
+                    this.update(this.state, {
+                        requests: this.ui.requests.map((item) => item.id === request.id ? { ...item, labels } : item),
+                    });
+                }
+
+                return true;
+            }
+            default:
+                return false;
+        }
     }
 
     /** 打开或收起工具栏 » 的菜单：列出此刻工具栏上看不到的项，焦点移到第一项。 */
@@ -416,8 +507,8 @@ class Demo {
         this.frame.querySelector<HTMLElement>('.sd-menu-item:not(:disabled)')?.focus({ preventScroll: true });
     }
 
-    /** 打开推送对话框或快捷操作，焦点移进去；推送对话框出现时盖在主视图上的侧边栏收起。 */
-    private openOverlay(overlay: 'push' | 'quick', source: HTMLElement | null): void {
+    /** 打开对话框或快捷操作并挪入焦点；对话框打开时收起侧边栏。 */
+    private openOverlay(overlay: 'push' | 'quick' | DemoForm, source: HTMLElement | null): void {
         const active = document.activeElement;
 
         this.opener = source ?? (active instanceof HTMLElement ? active : null);
@@ -425,6 +516,7 @@ class Demo {
             overlay,
             query: '',
             quickIndex: 0,
+            locationMethod: this.ui.location.method,
             sidebarOpen: overlay === 'quick' && this.ui.sidebarOpen,
         });
 
@@ -432,24 +524,168 @@ class Demo {
             void this.ensureChanges();
         }
 
-        const targetSelector = overlay === 'quick' ? '.sd-quick-input' : '.sd-default';
-        const target = this.frame.querySelector<HTMLElement>(targetSelector);
+        const field = this.frame.querySelector<HTMLElement>('.sd-demo-form [data-form-field]');
+        const target = field ?? this.frame.querySelector<HTMLElement>(overlay === 'quick' ? '.sd-quick-input' : '.sd-default');
 
         target?.focus({ preventScroll: true });
     }
 
-    /** 关掉浮层，焦点回到打开它的控件；它收进了 » 时焦点留在窗口上。 */
+    /** 关掉浮层，焦点回到打开它的控件；控件已消失时回到窗口。 */
     private closeOverlay(): void {
         const opener = this.opener;
+        const action = opener?.dataset.action;
+        const arg = opener?.dataset.arg;
 
         this.opener = null;
         this.update(this.state, { overlay: null, query: '', quickIndex: 0 });
 
-        const selector = opener?.dataset.action ? `.sd-toolbar [data-action="${opener.dataset.action}"]` : null;
+        const selector = action === undefined ? null :
+            `[data-action="${CSS.escape(action)}"]${arg === undefined ? '' : `[data-arg="${CSS.escape(arg)}"]`}`;
         const targets = selector ? [...this.frame.querySelectorAll<HTMLElement>(selector)] : [];
-        const target = targets.find((control) => control.offsetParent !== null);
+        const target = targets.find((control) => control.offsetParent !== null && !control.matches(':disabled'));
 
         (target ?? this.frame).focus({ preventScroll: true });
+    }
+
+    /** 切换本机位置的方法，表单按该方法显示目录字段。 */
+    private changeForm(event: Event): void {
+        const field = event.target;
+
+        if (!(field instanceof HTMLSelectElement) || field.dataset.formField !== 'method') {
+            return;
+        }
+
+        const method = locationMethods.find((value) => value === field.value);
+
+        if (method) {
+            this.update(this.state, { locationMethod: method });
+        }
+    }
+
+    /** 将表单里的值写回演示状态；挂载和托管服务操作都由示例数据反馈。 */
+    private submitForm(event: SubmitEvent): void {
+        const form = event.target;
+
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const action = form.dataset.demoForm;
+        const { data } = this.options;
+        const fields = new FormData(form);
+        const read = (name: string) => String(fields.get(name) ?? '').trim();
+        const date = Math.floor(Date.now() / 1000);
+
+        if (action === 'location') {
+            const method = this.ui.locationMethod;
+            const folder = method === 'smbMount' ? `/Volumes/${data.repository}` : read('folder');
+
+            if ((method === 'sshfsMount' || method === 'chosenFolder') && !folder) {
+                return;
+            }
+
+            this.update(this.state, { location: { method, folder } });
+            this.closeOverlay();
+            return;
+        }
+
+        if (action === 'pr-create') {
+            const request = createRequest(data, this.ui.requests, read('source'), read('title'), read('description'), date);
+
+            if (request) {
+                this.update(this.state, {
+                    requests: [request, ...this.ui.requests],
+                    requestId: request.id,
+                    requestPage: 'conversation',
+                    requestCommit: null,
+                });
+                this.closeOverlay();
+            }
+
+            return;
+        }
+
+        const request = this.ui.requests.find(({ id }) => id === this.ui.requestId);
+
+        if (request) {
+            this.submitRequestAction(request, action, read, date);
+        }
+    }
+
+    /** 修改当前请求。关闭或合并后切到全部请求，保留当前请求供访客查看结果。 */
+    private submitRequestAction(
+        request: PullRequest,
+        action: string | undefined,
+        read: (name: string) => string,
+        date: number,
+    ): void {
+        let changed: PullRequest;
+
+        switch (action) {
+            case 'pr-edit':
+                if (!read('title')) {
+                    return;
+                }
+
+                changed = { ...request, title: read('title'), description: read('description') };
+                break;
+            case 'pr-comment':
+                if (!read('comment')) {
+                    return;
+                }
+
+                changed = {
+                    ...request,
+                    comments: [...request.comments, { author: this.options.data.identity.name, date, body: read('comment') }],
+                };
+                break;
+            case 'pr-checkout':
+                this.checkoutRequest(request, read('branch'));
+                return;
+            case 'pr-close':
+            case 'pr-merge':
+                if (request.status !== 'open') {
+                    return;
+                }
+
+                changed = { ...request, status: action === 'pr-close' ? 'closed' : 'merged' };
+                break;
+            default:
+                return;
+        }
+
+        this.update(this.state, {
+            requests: this.ui.requests.map((item) => item.id === request.id ? changed : item),
+            allRequests: this.ui.allRequests || changed.status !== 'open',
+        });
+        this.closeOverlay();
+    }
+
+    /** 检出示例请求的源分支；同名分支指向别的提交时保留原分支，并要求另取名字。 */
+    private checkoutRequest(request: PullRequest, name: string): void {
+        if (!name) {
+            return;
+        }
+
+        const existing = this.state.branches.find((branch) => branch.name === name);
+
+        if (existing && existing.hash !== request.head) {
+            this.notify(this.text.t('pullRequests.error.branchMismatch'));
+            return;
+        }
+
+        const upstream = this.state.remoteBranches.find(({ hash, name }) =>
+            hash === request.head && name === `origin/${request.source}`)?.name ?? null;
+        const branches = existing ? this.state.branches : [
+            ...this.state.branches,
+            { name, hash: request.head, upstream, ahead: 0, behind: 0 },
+        ];
+
+        this.closeOverlay();
+        this.navigate({ ...this.state, branches, head: name, view: 'working' });
+        this.frame.focus({ preventScroll: true });
     }
 
     /** 快捷操作里回车或点一行：去对应的视图、引用、文件或提交。 */
@@ -561,6 +797,21 @@ class Demo {
             return;
         }
 
+        // 表单开着时，Tab 在输入框和按钮之间循环
+        if (event.key === 'Tab') {
+            const controls = this.frame.querySelectorAll<HTMLElement>(
+                '.sd-demo-form :is(input, textarea, select, button):not(:disabled)',
+            );
+            const end = controls[event.shiftKey ? 0 : controls.length - 1];
+            const start = controls[event.shiftKey ? controls.length - 1 : 0];
+
+            if (target === end && start) {
+                event.preventDefault();
+                start.focus();
+                return;
+            }
+        }
+
         if (target.dataset.input === 'query') {
             this.quickKey(event);
             return;
@@ -578,6 +829,19 @@ class Demo {
 
         if (target.matches('.sd-side-list .sd-row')) {
             this.sidebarKey(event, target);
+            return;
+        }
+
+        // 文件行有焦点时，方向键逐行选中文件，展开仍由独立的三角按钮控制
+        if (target.matches('.sd-change-select') && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+            const rows = [...(target.closest('.sd-change-list')?.querySelectorAll<HTMLButtonElement>('.sd-change-select') ?? [])];
+            const next = rows[rows.indexOf(target as HTMLButtonElement) + (event.key === 'ArrowUp' ? -1 : 1)];
+
+            if (next) {
+                event.preventDefault();
+                next.focus();
+                next.click();
+            }
         }
     }
 
@@ -741,7 +1005,20 @@ class Demo {
      */
     private trackLayout(): void {
         new ResizeObserver(([entry]) => {
-            const regular = (entry?.contentRect.width ?? 0) >= narrowWidth;
+            if (!entry || entry.contentRect.width === 0) {
+                return;
+            }
+
+            const regular = entry.contentRect.width >= narrowWidth;
+
+            // 版式变回常规或重置仓库时，保留已经完成的这一步
+            if (!regular && !this.sawNarrowLayout) {
+                this.sawNarrowLayout = true;
+                const step = this.options.root.querySelector('[data-narrow-step]');
+
+                step?.classList.add('is-done');
+                step?.querySelector('.sd-step-state')?.removeAttribute('hidden');
+            }
 
             if (this.ui.overlay === 'more') {
                 this.closeOverlay();
@@ -840,7 +1117,7 @@ class Demo {
     private reset(): void {
         this.scrolls.clear();
         this.opener = null;
-        this.update(createState(this.options.data), createUi());
+        this.update(createState(this.options.data), createUi(this.options.data));
 
         // 留在页面上没被替换的列表同样回到顶上
         for (const element of this.frame.querySelectorAll<HTMLElement>('[data-scroll]')) {
@@ -857,6 +1134,6 @@ function placeOf(state: DemoState): Place {
 }
 
 /** 有就去掉，没有就加上。 */
-function toggled(values: readonly string[], value: string): string[] {
+function toggled<T>(values: readonly T[], value: T): T[] {
     return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }

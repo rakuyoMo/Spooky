@@ -25,7 +25,7 @@
     "demo.step.commit": "メッセージを書いてコミットする",
     "demo.step.push": "origin にプッシュする",
     "demo.reset": "デモをリセット",
-    "demo.narrow": "ブラウザのウインドウを狭めると、狭いウインドウでのレイアウトを確認できます。",
+    "demo.narrow": "ブラウザのウインドウを狭める",
     "demo.overflow": "その他のツールバー項目",
     "demo.note": "これはブラウザ上で再現したウインドウです。データはすべてサンプルです。",
     "demo.unavailable": "この項目はデモにはありません。",

@@ -1,0 +1,31 @@
+{
+    "f6b437e0c5ff0cd63fe682b18e0eddda2fcfa299:10e44ab815cbe3bfb862409c32adfc86474fa262": [
+        {
+            "path": "index.html",
+            "status": "M",
+            "patch": "@@ -8,14 +8,15 @@\n     <link rel=\"stylesheet\" href=\"/styles/dashboard.css\" />\n     <link rel=\"stylesheet\" href=\"/styles/alerts.css\" />\n   </head>\n   <body>\n     <header class=\"masthead\">\n       <img src=\"/assets/station-icon.png\" alt=\"\" width=\"32\" height=\"32\" />\n       <h1>Driftwood</h1>\n+      <button id=\"theme-toggle\" type=\"button\">system</button>\n     </header>\n     <p id=\"stale-banner\" class=\"stale-banner\" hidden>Showing saved readings. The feed is not responding.</p>\n     <main id=\"stations\"></main>\n     <aside id=\"drawer\" class=\"drawer\" hidden></aside>\n     <script type=\"module\" src=\"/src/main.ts\"></script>\n   </body>\n </html>"
+        },
+        {
+            "path": "src/theme.ts",
+            "status": "A",
+            "patch": "@@ -0,0 +1,24 @@\n+export type Theme = \"light\" | \"dark\" | \"system\";\n+\n+const STORAGE_KEY = \"driftwood.theme\";\n+\n+export function savedTheme(): Theme {\n+  const value = localStorage.getItem(STORAGE_KEY);\n+  return value === \"light\" || value === \"dark\" ? value : \"system\";\n+}\n+\n+export function applyTheme(theme: Theme): void {\n+  document.documentElement.dataset.theme = theme;\n+  localStorage.setItem(STORAGE_KEY, theme);\n+}\n+\n+export function installThemeToggle(button: HTMLButtonElement): void {\n+  const themes: Theme[] = [\"system\", \"light\", \"dark\"];\n+  let index = 0;\n+\n+  button.addEventListener(\"click\", () => {\n+    index = (index + 1) % themes.length;\n+    applyTheme(themes[index]);\n+    button.textContent = themes[index];\n+  });\n+}"
+        }
+    ],
+    "9029dd8df95a90c2b8729e5bfcf8e1dabc8ce3ff:17b2036a654e658bc9bb1b18c7b9ef50ccdefc3e": [
+        {
+            "path": "src/api/client.ts",
+            "status": "M",
+            "patch": "@@ -43,7 +43,12 @@ async function request(url: string): Promise<Response> {\n }\n \n export async function fetchReadings(stationId: string): Promise<Reading[]> {\n   const response = await request(`${FEED_URL}?station=${encodeURIComponent(stationId)}`);\n   const body = await response.text();\n   return body.trim().split(\"\\n\").map(parseReading);\n }\n+\n+export async function fetchForecast(stationId: string): Promise<{ time: string; temperature: number }[]> {\n+  const response = await request(`https://feed.example.com/v1/forecast?station=${encodeURIComponent(stationId)}`);\n+  return response.json();\n+}"
+        },
+        {
+            "path": "src/forecast.ts",
+            "status": "A",
+            "patch": "@@ -0,0 +1,23 @@\n+export interface ForecastHour {\n+  time: Date;\n+  temperature: number;\n+  precipitation: number;\n+}\n+\n+export function renderForecast(hours: ForecastHour[]): HTMLElement {\n+  const panel = document.createElement(\"section\");\n+  panel.className = \"forecast\";\n+\n+  for (const hour of hours) {\n+    const cell = document.createElement(\"div\");\n+    cell.className = \"forecast-hour\";\n+    cell.innerHTML = `\n+      <time>${hour.time.getHours()}:00</time>\n+      <strong>${Math.round(hour.temperature)}°</strong>\n+      <span class=\"chance\">${Math.round(hour.precipitation * 100)}%</span>\n+    `;\n+    panel.append(cell);\n+  }\n+\n+  return panel;\n+}"
+        },
+        {
+            "path": "styles/forecast.css",
+            "status": "A",
+            "patch": "@@ -0,0 +1,17 @@\n+.forecast {\n+  display: flex;\n+  gap: 8px;\n+  overflow-x: auto;\n+  padding: 12px 0;\n+}\n+\n+.forecast-hour {\n+  display: grid;\n+  justify-items: center;\n+  min-width: 48px;\n+  font-size: 13px;\n+}\n+\n+.forecast-hour .chance {\n+  color: #2a6b9e;\n+}"
+        }
+    ]
+}

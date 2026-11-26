@@ -104,8 +104,8 @@ export function renderFiles(context: RenderContext): string {
 
 /** 分支栏：当前分支、它的上游与右端的视图选项。 */
 function branchBar(context: RenderContext): string {
-    const { state, data, text } = context;
-    const branch = headBranch(state, data);
+    const { state, text } = context;
+    const branch = headBranch(state);
 
     return (
         `<div class="sd-bar sd-branchbar">` +
@@ -199,7 +199,7 @@ function fileRow({ state, text }: RenderContext, file: WorkFile): string {
             return '<b class="sd-st"></b>';
         }
 
-        return `<b class="sd-st sd-st-${letter === '?' ? 'U' : letter}">${letter}</b>`;
+        return `<b class="sd-st sd-st-${letter}">${letter}</b>`;
     };
 
     const box =

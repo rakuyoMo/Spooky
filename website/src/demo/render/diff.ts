@@ -41,14 +41,14 @@ export function renderWorkingDiff(context: RenderContext): string {
 }
 
 /**
- * 提交或储藏详情里各文件的改动：顶上是全部折叠 / 展开与改动统计，下面每个文件一段，能单独折叠。
+ * 详情里各文件的改动：按路径排序，文件行可以选中，三角独立控制展开与折叠。
  *
- * `scope` 区分是哪个提交，折叠状态按它记。
+ * `scope` 区分所属的变更集，展开状态按它记。
  */
 export function renderChanges(context: RenderContext, changes: readonly ChangeData[], scope: string): string {
     const { text, ui } = context;
-    const keys = changes.map((change) => `${scope}:${change.path}`);
-    const allCollapsed = keys.length > 0 && keys.every((key) => ui.collapsed.includes(key));
+    const sorted = [...changes].sort((a, b) => a.path.localeCompare(b.path, 'en', { numeric: true }));
+    const allExpanded = sorted.length > 0 && sorted.every(({ path }) => ui.expandedFiles.includes(`${scope}:${path}`));
     const totals = changes.map(changeCounts);
     const additions = totals.reduce((sum, item) => sum + item.insertions, 0);
     const deletions = totals.reduce((sum, item) => sum + item.deletions, 0);
@@ -60,17 +60,17 @@ export function renderChanges(context: RenderContext, changes: readonly ChangeDa
         text.count('history.summary.deletions', deletions),
     );
 
-    const files = changes.map((change, index) => changeFile(context, change, keys[index] ?? '')).join('');
+    const files = sorted.map((change) => changeFile(context, change, `${scope}:${change.path}`)).join('');
 
     return (
         `<div class="sd-changes-bar">` +
         button({
-            action: allCollapsed ? 'expand-all' : 'collapse-all',
+            action: allExpanded ? 'collapse-all' : 'expand-all',
             arg: scope,
             className: 'sd-link',
-            content: esc(text.t(allCollapsed ? 'history.expandAll' : 'history.collapseAll')),
+            content: esc(text.t(allExpanded ? 'history.collapseAll' : 'history.expandAll')),
         }) +
-        `<span>${esc(summary)}</span></div>${files}`
+        `<span>${esc(summary)}</span></div><div class="sd-change-list">${files}</div>`
     );
 }
 
@@ -191,15 +191,35 @@ function footer(text: DemoText, summary: string): string {
 /** 详情里的一个文件：可折叠的标题行、统计与各块。 */
 function changeFile(context: RenderContext, change: ChangeData, key: string): string {
     const { text, ui } = context;
-    const open = !ui.collapsed.includes(key);
-    const status = change.status === 'A' ? 'A' : 'M';
-    const statusName = text.t(status === 'A' ? 'status.added' : 'status.modified');
+    const open = ui.expandedFiles.includes(key);
+    const selected = ui.selectedFileChange === key;
+    const status = change.status.charAt(0);
+    const statusName = {
+        A: text.t('status.added'),
+        C: text.t('status.copied'),
+        D: text.t('status.deleted'),
+        M: text.t('status.modified'),
+        R: text.t('status.renamed'),
+        T: text.t('status.typeChanged'),
+        U: text.t('status.conflicted'),
+    }[status] ?? status;
+    const path = change.oldPath ? `${change.oldPath} → ${change.path}` : change.path;
 
+    // 三角与整行各接自己的点击，选中行的状态徽标保留原色
     const head =
-        `<button type="button" class="sd-change-head" data-action="toggle-file-changes" data-arg="${esc(key)}" ` +
-        `aria-expanded="${open}">${icon(open ? 'chevronDown' : 'chevronRight', 'sd-icon sd-chevron')}` +
-        `<b class="sd-st sd-st-${status}" title="${esc(statusName)}">` +
-        `${status}</b><span>${esc(change.path)}</span></button>`;
+        `<div class="sd-change-head${selected ? ' is-selected' : ''}">` +
+        button({
+            action: 'select-change',
+            arg: key,
+            className: 'sd-change-select',
+            content: `<b class="sd-st sd-st-${esc(status)}" title="${esc(statusName)}" ` +
+                `aria-label="${esc(statusName)}">${esc(status)}</b><span title="${esc(path)}">${esc(path)}</span>`,
+            pressed: selected,
+        }) +
+        `<button type="button" class="sd-change-disclosure" data-action="toggle-file-changes" data-arg="${esc(key)}" ` +
+        `aria-label="${esc(path)}" aria-expanded="${open}">` +
+        icon(open ? 'chevronDown' : 'chevronRight', 'sd-icon sd-chevron') +
+        `</button></div>`;
 
     if (!open) {
         return `<section class="sd-change">${head}</section>`;
@@ -234,7 +254,8 @@ function changeFile(context: RenderContext, change: ChangeData, key: string): st
         })
         .join('');
 
-    return `<section class="sd-change">${head}<p class="sd-diff-summary">${esc(summary)}</p>${body}</section>`;
+    return `<section class="sd-change">${head}<div class="sd-change-diff">` +
+        `<p class="sd-diff-summary">${esc(summary)}</p>${body}</div></section>`;
 }
 
 // MARK: - Private

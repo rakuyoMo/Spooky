@@ -89,7 +89,7 @@ export interface WorkFile {
 export type Side = 'staged' | 'unstaged';
 
 /** 主视图。 */
-export type View = 'working' | 'history' | 'stashes';
+export type View = 'working' | 'history' | 'stashes' | 'requests' | 'settings';
 
 /** 引导的三步。 */
 export type Step = 'stage' | 'commit' | 'push';
@@ -97,6 +97,9 @@ export type Step = 'stage' | 'commit' | 'push';
 /** 演示窗口的全部状态。 */
 export interface DemoState {
     view: View;
+
+    /** 当前检出的分支。 */
+    head: string;
     files: WorkFile[];
     selectedPath: string | null;
     side: Side;
@@ -166,6 +169,7 @@ export function createState(data: RepoData): DemoState {
 
     return {
         view: 'working',
+        head: data.head,
         files,
         selectedPath: files.some((file) => file.path === 'src/readings.ts') ? 'src/readings.ts' : null,
         side: 'unstaged',
@@ -226,11 +230,11 @@ export function hasUnstagedChanges(state: DemoState): boolean {
 }
 
 /** 当前分支。 */
-export function headBranch(state: DemoState, data: RepoData): BranchData {
-    const branch = state.branches.find((candidate) => candidate.name === data.head);
+export function headBranch(state: DemoState): BranchData {
+    const branch = state.branches.find((candidate) => candidate.name === state.head);
 
     if (!branch) {
-        throw new Error(`没有分支 ${data.head}`);
+        throw new Error(`没有分支 ${state.head}`);
     }
 
     return branch;
@@ -527,7 +531,7 @@ export function commit(state: DemoState, data: RepoData, now: Date): DemoState {
         return state;
     }
 
-    const branch = headBranch(state, data);
+    const branch = headBranch(state);
     const message =
         state.body.trim() === ''
             ? state.subject.trim()
@@ -597,8 +601,8 @@ export function commit(state: DemoState, data: RepoData, now: Date): DemoState {
 // MARK: - Push
 
 /** 推送当前分支：远端分支指向本地的最新提交，领先数清零。 */
-export function push(state: DemoState, data: RepoData): DemoState {
-    const branch = headBranch(state, data);
+export function push(state: DemoState): DemoState {
+    const branch = headBranch(state);
     const upstream = branch.upstream;
 
     if (!upstream) {
@@ -649,7 +653,7 @@ export function decorations(state: DemoState, data: RepoData, hash: string): Dec
         all.push({ name, kind: 'remote', ref: `refs/remotes/${name}` });
     }
 
-    const headRef = `refs/heads/${data.head}`;
+    const headRef = `refs/heads/${state.head}`;
 
     return all.sort((a, b) => {
         if (a.ref === headRef || b.ref === headRef) {
@@ -684,8 +688,8 @@ export function historyCommits(state: DemoState, data: RepoData): CommitData[] {
 }
 
 /** 还没推送的提交：当前分支能到达、它的上游到达不了的提交。 */
-export function unpushedCommits(state: DemoState, data: RepoData): Set<string> {
-    const branch = headBranch(state, data);
+export function unpushedCommits(state: DemoState): Set<string> {
+    const branch = headBranch(state);
     const upstream = state.remoteBranches.find((remote) => remote.name === branch.upstream);
     const local = reachableFrom(state.commits, branch.hash);
 

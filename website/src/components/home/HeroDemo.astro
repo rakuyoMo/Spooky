@@ -42,7 +42,7 @@ const sheetIcon = await getImage({ src: appIcon, width: 104, format: 'png' });
 const windowHtml = compose(
     renderRegions({
         state: createState(data),
-        ui: createUi(),
+        ui: createUi(data),
         data,
         text: createText(strings, locale.lang),
         changes: null,
@@ -122,11 +122,17 @@ const endId = 'spooky-demo-end';
                     ))
                 }
 
-                <li class="sd-narrow-hint">
-                    <span class="sd-step">
+                <li>
+                    <span class="sd-step" data-narrow-step>
                         <span class="sd-step-number" aria-hidden="true">{steps.length + 1}</span>
 
+                        <Fragment set:html={icon('check', 'sd-step-check')} />
+
                         {t('demo.narrow')}
+
+                        <span class="sd-step-state sr-only" hidden>
+                            {t('demo.done')}
+                        </span>
                     </span>
                 </li>
             </ol>

@@ -70,6 +70,10 @@ function focusKey(frame: HTMLElement): string | null {
         return `[data-input="${active.dataset.input}"]`;
     }
 
+    if (active.dataset.formField) {
+        return `[data-form-field="${active.dataset.formField}"]`;
+    }
+
     if (active.dataset.action) {
         const arg = active.dataset.arg;
         const argSelector = arg === undefined ? '' : `[data-arg="${CSS.escape(arg)}"]`;

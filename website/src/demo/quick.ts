@@ -101,7 +101,7 @@ export function quickResults(
     paths: readonly string[] | null,
     viewTitles: Record<QuickView, string>,
 ): QuickItem[] {
-    const head = headBranch(state, data);
+    const head = headBranch(state);
     const text = query.trim();
 
     const views: QuickItem[] = (['working', 'history', 'stashes'] as const).map((view) => ({
@@ -137,7 +137,7 @@ export function quickResults(
         return ranked;
     }
 
-    return [...ranked, ...fileResults(paths ?? [], text), ...commitResults(state, data, text)];
+    return [...ranked, ...fileResults(paths ?? [], text), ...commitResults(state, text)];
 }
 
 // MARK: - Private
@@ -164,7 +164,7 @@ function fileResults(paths: readonly string[], query: string): QuickItem[] {
 /**
  * 匹配的提交：像哈希的输入按哈希前缀找一个提交，其余按提交信息在 HEAD 能到达的提交里找。
  */
-function commitResults(state: DemoState, data: RepoData, query: string): QuickItem[] {
+function commitResults(state: DemoState, query: string): QuickItem[] {
     const item = (commit: CommitData): QuickItem => ({
         kind: 'commit',
         id: commit.hash,
@@ -178,7 +178,7 @@ function commitResults(state: DemoState, data: RepoData, query: string): QuickIt
         return found ? [item(found)] : [];
     }
 
-    const reachable = reachableFrom(state.commits, headBranch(state, data).hash);
+    const reachable = reachableFrom(state.commits, headBranch(state).hash);
 
     const needle = fold(query);
 
