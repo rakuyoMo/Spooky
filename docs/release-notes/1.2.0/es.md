@@ -1,0 +1,23 @@
+### Novedades
+
+- Cuando la ventana del repositorio es demasiado estrecha para tres columnas, cambia a un diseño para ventanas estrechas: una fila bajo la barra de herramientas sustituye a la barra lateral y permite cambiar entre **Copia de trabajo**, **Historial** y **Stashes**, y la lista queda encima de los detalles. Haz clic en **Barra lateral** al principio de la fila para abrir la barra lateral completa encima de la vista. Ensancha la ventana y vuelven las tres columnas con la anchura que tenían; la vista en la que estás, tu selección y el mensaje de commit que estás escribiendo se mantienen
+- En una ventana estrecha, los botones que no caben en la barra de herramientas pasan al menú », mientras que **Hacer fetch**, **Hacer pull** y **Hacer push** se quedan en la barra de herramientas
+- La ventana **Repositorios** también cambia de diseño cuando se estrecha: la lista de repositorios queda encima de los detalles del repositorio seleccionado, y puedes arrastrar la línea que los separa
+- Para usar siempre el mismo diseño con cualquier anchura, selecciona **Estrecho** o **Ancho** en **Visualización › Diseño de la ventana**; con **Automático**, la opción predeterminada, el diseño sigue la anchura de la ventana. La selección se aplica a todas las ventanas
+- En la ventana **Repositorios** puedes cambiar la ubicación de un repositorio sin eliminarlo y volver a añadirlo: en los detalles, coloca el puntero sobre la fila **Ubicación** y haz clic en **Editar**. En un repositorio de servidor puedes cambiar solo el alias del host o solo la ruta. El repositorio sigue en su grupo y conserva el nombre que le hayas puesto
+- En la vista **CI/CD** de los detalles de una solicitud, una comprobación o un trabajo que tiene registro se puede desplegar para mostrar el registro debajo de su fila. Los trabajos de GitHub Actions tienen registro cuando terminan; se puede desplegar cualquier trabajo de un pipeline de GitLab y, mientras un trabajo está en ejecución, su registro se actualiza junto con el estado
+- Puedes añadir y quitar las etiquetas de una solicitud en **Conversación**: haz clic en la × que hay tras el nombre de una etiqueta para quitarla, en **Añadir** para elegir una de las etiquetas del proyecto, o usa **Nueva etiqueta…** para crear una y añadirla a la solicitud
+- Para mencionar a alguien en un comentario de una solicitud, también al responder o al editar, escribe @. Spooky muestra las personas que participan en la solicitud y los miembros del proyecto, y reduce la lista a medida que escribes un nombre de usuario o un nombre; pulsa Retorno para insertar el nombre de usuario
+
+### Mejoras
+
+- La lista de pull requests y merge requests muestra ahora el estado de cada solicitud con un icono delante del título, en lugar del texto que había detrás: verde en una solicitud abierta, gris en un borrador, rojo en una cerrada y morado en una fusionada
+- En la página **Actualizaciones** de los ajustes, los canales de versiones se llaman ahora **Estable**, **Beta** y **Alfa**. Las versiones beta y alfa llevan la marca en el número de versión, como 1.2.0-beta.1, así que se distinguen en **Acerca de Spooky** y en la ventana de actualización
+
+### Correcciones
+
+- macOS ya no vuelve a pedir la contraseña de tu llavero después de cada actualización de Spooky cuando Spooky lee el token de una cuenta o las credenciales guardadas en el llavero. Tras instalar esta versión, la pide una vez más por cada elemento guardado
+- Después de cambiar un alias en la página **Hosts SSH** de los ajustes, los repositorios de ese host guardados en los marcadores ya no fallan al conectarse con el alias antiguo; sus ajustes y las credenciales guardadas en el llavero pasan también al alias nuevo
+- En la vista de pull requests o merge requests, **Actualizar** y ⌘R ahora vuelven a cargar la lista y la solicitud seleccionada, y la lista se vuelve a cargar al regresar al repositorio en la misma ventana
+- Al volver a cargar la lista de pull requests o merge requests ya no se pierden la selección ni los detalles de una solicitud que está más abajo en la lista
+- Con **Mostrar los worktrees en la lista de repositorios** desactivado en la página **General** de los ajustes, abrir un worktree ya no lo añade automáticamente a los marcadores
