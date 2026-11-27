@@ -2580,9 +2580,28 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
-    padding-inline: 8px;
+    padding-inline-start: 8px;
     background: var(--sd-bg);
     box-shadow: inset 0 -1px var(--sd-separator);
+}
+
+/* 侧边栏按钮后面的各视图排成一行，排不下时横向滚动；末尾的空白与开头相同 */
+.sd-compact-scroll {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    align-self: stretch;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.sd-compact-scroll::after {
+    flex: none;
+    width: 4px;
+    content: '';
 }
 
 .sd-compact-toggle {
@@ -2597,9 +2616,9 @@
 
 .sd-compact-entry {
     display: inline-flex;
+    flex: none;
     align-items: center;
     gap: 6px;
-    min-width: 0;
     height: 28px;
     padding-inline: 8px;
     border-radius: 6px;
@@ -2612,10 +2631,6 @@
 
 .sd-compact-entry:not(.is-selected) .sd-icon {
     color: var(--sd-text-2);
-}
-
-.sd-compact-entry .sd-row-label {
-    flex: 0 1 auto;
 }
 
 .sd-compact-toggle[aria-pressed='true'],
@@ -2727,38 +2742,34 @@
 }
 
 /* 极窄版式的工具栏：窗口窄于 `data-narrow` 的那一项收进 » */
-@container sd (width < 810px) {
-    .sd-window [data-narrow='810'] {
+@container sd (width < 735px) {
+    .sd-window [data-narrow='735'] {
         display: none;
     }
 }
 
-@container sd (width < 690px) {
-    .sd-window [data-narrow='690'] {
+@container sd (width < 688px) {
+    .sd-window [data-narrow='688'] {
         display: none;
     }
 }
 
-@container sd (width < 650px) {
-    .sd-window [data-narrow='650'] {
+@container sd (width < 645px) {
+    .sd-window [data-narrow='645'] {
         display: none;
     }
 }
 
-/* 后退、前进收起后标题挪到红绿灯后面，工具栏的几组挨得更近 */
-@container sd (width < 590px) {
-    .sd-window [data-narrow='590'] {
+@container sd (width < 585px) {
+    .sd-window [data-narrow='585'] {
         display: none;
     }
 
-    .sd-titlebar {
-        padding-inline-start: 100px;
-    }
-}
-
-@container sd (width < 510px) {
-    .sd-window [data-narrow='510'] {
-        display: none;
+    /* 推送收进了 »，悬停或聚焦推送那一步时改描 » */
+    .sd-window[data-highlight='push'] [data-guide='push-overflow'] {
+        outline: 2px solid var(--sl-color-accent);
+        outline-offset: 2px;
+        animation: sd-pulse 1.2s ease-in-out infinite;
     }
 }
 

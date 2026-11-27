@@ -293,7 +293,7 @@ extension RepositoryWindowController {
         updateToolbarItems()
     }
 
-    /// 视图导航切换三个视图，与侧边栏的行、⌘1 至 ⌘3 使用相同状态。
+    /// 视图导航切换视图，与侧边栏 Workspace 分组的行、⌘1 至 ⌘6 使用相同状态。
     private func showCompactView(_ view: RepositoryView) {
         switch view {
         case .workingCopy:
@@ -302,8 +302,23 @@ extension RepositoryWindowController {
         case .history:
             showHistory()
 
-        default:
+        case .stashes:
             showStashes()
+
+        case .pullRequests:
+            showPullRequests()
+
+        case .branchesReview:
+            showBranchesReview()
+
+        case .reflog:
+            showReflog()
+
+        case .settings:
+            showRepositorySettings()
+
+        default:
+            break
         }
     }
 

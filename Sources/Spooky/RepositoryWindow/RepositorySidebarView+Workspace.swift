@@ -74,10 +74,15 @@ extension RepositorySidebarView {
 // MARK: - Private
 
 extension RepositorySidebarView {
-    /// Working Copy 行：行尾是刷新进度或标记；悬停提示写出本地 HEAD 与未提交的文件数。
+    /// Working Copy 行：加载时图标换成进度，行尾是标记；悬停提示写出本地 HEAD 与未提交的文件数。
     private var workingCopy: some View {
         HStack {
-            Label(AppLocalization.text("workspace.title"), systemImage: "folder")
+            Label {
+                Text(AppLocalization.text("workspace.title"))
+            } icon: {
+                Image(systemName: "folder")
+                    .modifier(SidebarWorkingCopyProgress(session: session))
+            }
 
             Spacer(minLength: 4)
 

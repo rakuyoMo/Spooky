@@ -8,8 +8,6 @@ export const demoKeys = [
     'toolbar.bookmarks',
     'navigation.back',
     'navigation.forward',
-    'toolbar.previous',
-    'toolbar.next',
     'toolbar.finder',
     'toolbar.terminal',
     'sync.fetch',

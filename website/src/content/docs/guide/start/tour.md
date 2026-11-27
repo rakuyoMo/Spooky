@@ -82,9 +82,9 @@ When the window gets too narrow for three columns, it switches to a narrow layou
 2. The list for the current view
 3. Details of what is selected in the list
 
-- The view row has :ui[workspace.title], :ui[history.title], and :ui[stash.title]. For branches, tags, remotes, and the other views, click :ui[sidebar.menu] at the start of the row. The sidebar opens on top of the view. Click :ui[sidebar.menu] again, or click outside the sidebar, to close it.
+- The view row has the views listed under :ui[workspace.group] in the sidebar. Scroll the row sideways to reach the ones that don’t fit. For branches, tags, remotes, and the other views, click :ui[sidebar.menu] at the start of the row. The sidebar opens on top of the view. Click :ui[sidebar.menu] again, or click outside the sidebar, to close it.
 - The list sits above the details. Drag the line between them to give one of them more room.
-- Buttons that don’t fit on the toolbar move into the » menu at its end. :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] stay on the toolbar.
+- :ui[toolbar.bookmarks], :ui[toolbar.previous], and :ui[toolbar.next] sit before the window title, and they stay on the toolbar along with the search field. Other buttons that don’t fit move into the » menu at the end of the toolbar. :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] are the last to go.
 
 The view you’re in, your selection, and the commit message you’re writing stay as they are when the layout changes.
 

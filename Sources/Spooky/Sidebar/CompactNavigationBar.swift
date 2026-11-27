@@ -13,26 +13,21 @@ final class CompactNavigationState {
 
 // MARK: - CompactNavigationBar
 
-/// 极窄版式顶部的视图导航：开头的按钮显示或收起侧边栏，后面是 Working Copy、History 与 Stashes。
+/// 极窄版式顶部的视图导航：开头的按钮显示或收起侧边栏，后面是侧边栏 Workspace 分组里的各个视图。
+///
+/// 各视图排不下时横向滚动，所在视图的一项总在可见范围里。
 struct CompactNavigationBar: View {
     /// 导航里的一个视图。
     private struct Entry {
         /// 点按后显示的视图。
         let view: RepositoryView
 
-        /// 标题的资源键。
+        /// 标题。
         let title: String
 
-        /// 图标的符号名。
+        /// 图标的名字：系统符号或自绘的图形，见 `AppSymbol`。
         let symbol: String
     }
-
-    /// 导航里的三个视图，与侧边栏 Workspace 分组开头的三行相同。
-    private static let entries = [
-        Entry(view: .workingCopy, title: "workspace.title", symbol: "folder"),
-        Entry(view: .history, title: "history.title", symbol: "clock"),
-        Entry(view: .stashes, title: "stash.title", symbol: "tray.full"),
-    ]
 
     /// 当前窗口会话。
     let session: RepositorySession
@@ -43,42 +38,89 @@ struct CompactNavigationBar: View {
     /// 显示或收起侧边栏：分支、标签、远端与其余视图都从侧边栏进入。
     let toggleSidebar: () -> Void
 
-    /// 切换到三个视图之一。
+    /// 切换到导航里的一个视图。
     let show: (RepositoryView) -> Void
 
     /// Stashes 入口显示储藏个数，与侧边栏共用同一项视图设置。
     @AppStorage(SidebarPreferences.showStashCountKey)
     private var showsStashCount = SidebarPreferences.defaultFlag(SidebarPreferences.showStashCountKey)
 
-    /// 三个视图里当前所在的一个；文件历史、文件原文与 Blame 算在 History 里，其余视图不在导航里。
+    /// 显示 Reflog 入口，与侧边栏共用同一项视图设置。
+    @AppStorage(SidebarPreferences.showReflogKey)
+    private var showsReflog = SidebarPreferences.defaultFlag(SidebarPreferences.showReflogKey)
+
+    /// 导航里的视图，与侧边栏 Workspace 分组的行相同。
+    private var entries: [Entry] {
+        let entries = [
+            Entry(view: .workingCopy, title: AppLocalization.text("workspace.title"), symbol: "folder"),
+            Entry(view: .history, title: AppLocalization.text("history.title"), symbol: "clock"),
+            Entry(view: .stashes, title: AppLocalization.text("stash.title"), symbol: "tray.full"),
+
+            // 选中远端对应 GitLab 时叫 Merge Requests
+            Entry(view: .pullRequests, title: session.pullRequestText("title"), symbol: AppSymbol.pullRequest),
+            Entry(
+                view: .branchesReview,
+                title: AppLocalization.text("review.title"),
+                symbol: "arrow.left.arrow.right.circle"
+            ),
+            Entry(view: .reflog, title: AppLocalization.text("reflog.title"), symbol: "clock.arrow.circlepath"),
+            Entry(view: .settings, title: AppLocalization.text("repositorySettings.title"), symbol: "gearshape"),
+        ]
+
+        // 视图设置打开 Show Reflog 时才有 Reflog
+        return showsReflog ? entries : entries.filter { $0.view != .reflog }
+    }
+
+    /// 导航里当前所在的一项；文件历史、文件原文与 Blame 算在 History 里，其余视图不在导航里。
     private var currentView: RepositoryView? {
         switch session.activeView {
-        case .workingCopy:
-            .workingCopy
-
         case .history, .fileHistory, .fileContent:
             .history
 
-        case .stashes:
-            .stashes
+        case .workingCopy, .stashes, .pullRequests, .branchesReview, .reflog, .settings:
+            session.activeView
 
         default:
             nil
         }
     }
 
-    /// 侧边栏按钮与三个视图靠左排成一行，各取文字的宽度，排不下时截短文字。
+    /// 侧边栏按钮固定在开头，各视图在它后面的滚动区里靠左排成一行，各取标题的宽度。
     var body: some View {
         HStack(spacing: 4) {
             sidebarButton
 
-            ForEach(Self.entries, id: \.view) { entry in
-                entryButton(entry, isSelected: entry.view == currentView)
-            }
+            // 换了所在的视图、刚出现或宽度变了时，把所在视图的一项滚进可见范围，只滚到完整露出为止；换视图时带动画
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(spacing: 4) {
+                        ForEach(entries, id: \.view) { entry in
+                            entryButton(entry, isSelected: entry.view == currentView)
+                        }
+                    }
+                    .padding(.trailing, 8)
+                    .frame(maxHeight: .infinity)
+                }
+                .scrollIndicators(.never)
+                .onChange(of: currentView) { _, view in
+                    guard let view else {
+                        return
+                    }
 
-            Spacer(minLength: 0)
+                    withAnimation {
+                        proxy.scrollTo(view)
+                    }
+                }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
+                    guard let currentView else {
+                        return
+                    }
+
+                    proxy.scrollTo(currentView)
+                }
+            }
         }
-        .padding(.horizontal, 8)
+        .padding(.leading, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -111,12 +153,11 @@ extension CompactNavigationBar {
             show(entry.view)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: entry.symbol)
+                icon(of: entry)
                     .foregroundStyle(isSelected ? .primary : .secondary)
 
-                Text(AppLocalization.text(entry.title))
+                Text(entry.title)
                     .lineLimit(1)
-                    .truncationMode(.tail)
 
                 accessory(of: entry)
             }
@@ -133,7 +174,19 @@ extension CompactNavigationBar {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// 标题后面的标记：Working Copy 是进度、进行中操作的图标或改动文件数，Stashes 是视图设置打开时的储藏个数。
+    /// 标题前面的图标；Working Copy 的图标在加载时换成进度。
+    @ViewBuilder
+    private func icon(of entry: Entry) -> some View {
+        let image = AppSymbolImage(name: entry.symbol)
+
+        if entry.view == .workingCopy {
+            image.modifier(SidebarWorkingCopyProgress(session: session))
+        } else {
+            image
+        }
+    }
+
+    /// 标题后面的标记：Working Copy 是进行中操作的图标或改动文件数，Stashes 是视图设置打开时的储藏个数。
     @ViewBuilder
     private func accessory(of entry: Entry) -> some View {
         switch entry.view {

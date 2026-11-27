@@ -82,9 +82,9 @@ Wird das Fenster zu schmal für drei Spalten, wechselt es in ein Layout für sch
 2. Die Liste der aktuellen Ansicht
 3. Details zu dem, was in der Liste ausgewählt ist
 
-- Die Ansichtszeile enthält :ui[workspace.title], :ui[history.title] und :ui[stash.title]. Für Branches, Tags, Remotes und die übrigen Ansichten klicken Sie am Anfang der Zeile auf :ui[sidebar.menu]. Die Seitenleiste öffnet sich über der Ansicht. Klicken Sie erneut auf :ui[sidebar.menu] oder neben die Seitenleiste, um sie zu schließen.
+- Die Ansichtszeile enthält die Ansichten, die in der Seitenleiste unter :ui[workspace.group] stehen. Was nicht hineinpasst, erreichen Sie, indem Sie die Zeile seitwärts scrollen. Für Branches, Tags, Remotes und die übrigen Ansichten klicken Sie am Anfang der Zeile auf :ui[sidebar.menu]. Die Seitenleiste öffnet sich über der Ansicht. Klicken Sie erneut auf :ui[sidebar.menu] oder neben die Seitenleiste, um sie zu schließen.
 - Die Liste steht über den Details. Ziehen Sie die Linie dazwischen, um einem der beiden mehr Platz zu geben.
-- Tasten, die nicht mehr in die Symbolleiste passen, wandern in das Menü » an ihrem Ende. :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] bleiben in der Symbolleiste.
+- :ui[toolbar.bookmarks], :ui[toolbar.previous] und :ui[toolbar.next] stehen vor dem Fenstertitel und bleiben zusammen mit dem Suchfeld immer in der Symbolleiste. Andere Tasten, die nicht mehr hineinpassen, wandern in das Menü » am Ende der Symbolleiste. :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] wandern als letzte dorthin.
 
 Die aktuelle Ansicht, Ihre Auswahl und die Commit-Nachricht, an der Sie schreiben, bleiben beim Wechsel des Layouts erhalten.
 

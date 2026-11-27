@@ -276,19 +276,25 @@ extension RepositoryWindowController {
 
         insertDetailSeparatorIfNeeded(in: toolbar)
 
-        // 极窄版式里没有侧边栏，工具栏排不下时先留 Fetch | Pull | Push，新建分支与安全强推不再优先
+        // 极窄版式里没有侧边栏：仓库管理与 Clone 随后退 / 前进排在标题之前，仓库管理与后退 / 前进最后才进溢出菜单；
+        // 标题之后的其余各项排不下时都进溢出菜单，Fetch | Pull | Push 在其中最后才进，新建分支与安全强推不再优先
         let isNarrow = showsNarrowLayout
 
         for item in toolbar.items {
             switch item.itemIdentifier {
             case RepositoryToolbar.repositories:
                 (item as? NSToolbarItemGroup)?.setSelected(showsManager, at: 0)
+                item.isNavigational = isNarrow
+                item.visibilityPriority = isNarrow ? .user : .high
+
+            case RepositoryToolbar.navigation:
+                item.visibilityPriority = isNarrow ? .user : .standard
 
             case RepositoryToolbar.sidebarSeparator:
                 item.isHidden = isNarrow
 
             case RepositoryToolbar.sync:
-                item.visibilityPriority = isNarrow ? .user : .standard
+                item.visibilityPriority = isNarrow ? .high : .standard
 
             case RepositoryToolbar.createBranch,
                  RepositoryToolbar.forcePush:
@@ -299,6 +305,7 @@ extension RepositoryWindowController {
 
             case RepositoryToolbar.clone:
                 item.isHidden = coordinator?.clones.isEmpty ?? true
+                item.isNavigational = isNarrow
 
             case RepositoryToolbar.parentRepository:
                 item.isHidden = showsManager || session.superprojectLocation == nil

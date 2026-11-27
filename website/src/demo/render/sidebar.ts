@@ -62,7 +62,7 @@ export function renderSidebar(context: RenderContext): string {
 }
 
 /**
- * 极窄版式顶部的视图导航：开头的按钮显示或收起侧边栏，后面是工作区、历史与储藏。
+ * 极窄版式顶部的视图导航：开头的按钮显示或收起侧边栏，后面是工作空间里的各个视图，排不下时横向滚动。
  *
  * 看某个引用的历史时，历史一项同样算所在的视图。
  */
@@ -78,6 +78,14 @@ export function renderCompactNav({ state, text, ui }: RenderContext): string {
 
     const count = state.files.length > 0 ? `<span class="sd-badge">${state.files.length}</span>` : '';
 
+    // 分支整理不在演示里，与侧边栏的一行相同
+    const review = button({
+        action: 'unavailable',
+        className: 'sd-compact-entry',
+        content: `${icon('review')}<span class="sd-row-label">${esc(text.t('review.title'))}</span>`,
+        pressed: false,
+    });
+
     return (
         button({
             action: 'toggle-sidebar',
@@ -86,9 +94,14 @@ export function renderCompactNav({ state, text, ui }: RenderContext): string {
             label: text.t('sidebar.menu'),
             pressed: ui.sidebarOpen,
         }) +
+        `<div class="sd-compact-scroll" data-scroll="nav">` +
         entry('working', 'folder', text.t('workspace.title'), count) +
         entry('history', 'clock', text.t('history.title')) +
-        entry('stashes', 'tray', text.t('stash.title'))
+        entry('stashes', 'tray', text.t('stash.title')) +
+        entry('requests', 'pullRequest', text.t('pr.title')) +
+        review +
+        entry('settings', 'gear', text.t('repositorySettings.title')) +
+        `</div>`
     );
 }
 
