@@ -52,7 +52,7 @@ Der erste Klick auf :ui[status.column] stellt gestagte Dateien nach oben. Danach
 2. Geben Sie einen Teil des Dateipfads ein. Spooky schlägt Dateien vor, die diese Buchstaben in derselben Reihenfolge enthalten.
 3. Wählen Sie eine Datei, um nur diesen Pfad aufzulisten. Der letzte Vorschlag listet jede Datei auf, deren Pfad Ihre Eingabe enthält.
 
-Leeren Sie das Suchfeld, um wieder alle Dateien zu sehen.
+Drücken Sie <kbd>Esc</kbd>, um das Suchfeld zu verlassen. Die Liste bleibt gefiltert. Leeren Sie das Suchfeld, um wieder alle Dateien zu sehen.
 
 ## Nicht verfolgte und ignorierte Dateien {#untracked-ignored}
 

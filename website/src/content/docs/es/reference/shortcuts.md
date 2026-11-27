@@ -185,6 +185,7 @@ Con el ratón, mantén pulsada <kbd>⇧</kbd> y haz clic en un número de línea
 | El historial del archivo | <kbd>↩</kbd> | Abre el commit seleccionado en los detalles a página completa |
 | La barra lateral | <kbd>⌘⌫</kbd> | Elimina las ramas, las etiquetas, el remoto o el submódulo seleccionados, después de preguntar |
 | El campo de filtro de la barra lateral | <kbd>Esc</kbd> | Vacía el campo |
+| El campo de búsqueda de la barra de herramientas | <kbd>Esc</kbd> | Sale del campo sin vaciarlo |
 | Los stashes | <kbd>⌘⌫</kbd> | Elimina los stashes seleccionados, después de preguntar |
 | La revisión de ramas | <kbd>⌘⌫</kbd> | Elimina las ramas seleccionadas, después de preguntar |
 | La ventana Repositorios | <kbd>↩</kbd> | Renombra la entrada seleccionada |

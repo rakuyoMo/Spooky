@@ -78,7 +78,7 @@ With several conditions:
 - Conditions of different kinds must all match.
 - Of several conditions of the same kind, a commit needs to match only one. Dates are the exception: a commit must match every date condition.
 
-The search ends when you switch to another view.
+Press <kbd>Esc</kbd> to leave the search field. The list stays filtered. The search ends when you switch to another view.
 
 ## View options {#view-options}
 
