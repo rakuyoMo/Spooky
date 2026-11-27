@@ -508,13 +508,13 @@
     display: none;
 }
 
-/* 历史与储藏的列表比工作区窄，宽窗口给搜索项留出显示提示的空间 */
-@container sd (width >= 1240px) {
-    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search {
+/* 工具栏排得下完整搜索框时，展开带搜索提示的按钮。 */
+@container sd (width >= 1200px) {
+    .sd-search:has(.sd-search-hint) {
         width: 146px;
     }
 
-    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search-tool {
+    .sd-search:has(.sd-search-hint) .sd-search-tool {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -524,7 +524,7 @@
         color: var(--sd-text-2);
     }
 
-    .sd-window:is([data-view='history'], [data-view='stashes']) .sd-search-hint {
+    .sd-search-hint {
         display: block;
         overflow: hidden;
         text-overflow: ellipsis;

@@ -9,6 +9,41 @@ import TestSupport
 // MARK: - Toolbar
 
 extension WindowChromeTests {
+    /// 工具栏搜索结束编辑时交出焦点，当前搜索词仍用于过滤。
+    @Test("Esc 退出工具栏搜索并保留搜索词")
+    func escapeEndsToolbarSearch() async throws {
+        let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
+        defer { fixture.close() }
+
+        let controller = fixture.controller
+        let window = try #require(controller.window)
+        let toolbar = try #require(window.toolbar)
+        let item = try #require(Self.item(RepositoryToolbar.search, in: controller) as? NSSearchToolbarItem)
+        let search = item.searchField
+
+        // 单独给搜索框留出空间，在后台窗口里直接设置第一响应者。
+        for index in toolbar.items.indices.reversed() where toolbar.items[index] !== item {
+            toolbar.removeItem(at: index)
+        }
+
+        window.contentView?.superview?.layoutSubtreeIfNeeded()
+        try #require(search.window === window)
+
+        search.stringValue = "a.txt"
+        search.sendAction(search.action, to: search.target)
+
+        try #require(window.makeFirstResponder(search))
+        let editor = try #require(search.currentEditor())
+        try #require(window.firstResponder === editor)
+
+        // 让窗口把 Esc 交给当前的工具栏搜索框处理。
+        try RepositoryFocusTests.press(keyCode: 53, function: 0x1B, in: window)
+
+        #expect(window.firstResponder !== editor)
+        #expect(search.stringValue == "a.txt")
+        #expect(controller.session.searchText == "a.txt")
+    }
+
     /// 同一个工具栏独有的仓库窗口依次核对：本机仓库的提示随显示方式与 ⌥ 改写；
     /// 跟随内层分栏的分隔符与内层分栏的列表；服务器仓库的主机前缀一项，与本机相同的提示，以及按本机位置的状态写的 Finder 项提示。
     @Test("工具栏的提示、跟随内层分栏的分隔符与服务器仓库的主机前缀")

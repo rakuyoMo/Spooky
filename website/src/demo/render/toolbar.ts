@@ -89,16 +89,23 @@ export function renderActions(context: RenderContext): string {
         expanded: ui.overlay === 'more',
     });
 
-    // 搜索项在右端，空间充足时展开当前视图的搜索提示
-    const searchHint = state.view === 'history' ? text.t('history.search.forMessage') :
-        state.view === 'stashes' ? text.t('stash.search') : '';
+    // 带搜索提示的视图可在工具栏有空间时展开搜索框。
+    const searchHint = {
+        working: 'history.search.forFile',
+        history: 'history.search.forMessage',
+        stashes: 'stash.search',
+        requests: null,
+        settings: null,
+    } as const;
+
+    const hint = searchHint[state.view];
 
     const search = button({
         action: 'unavailable',
         className: 'sd-tool sd-search-tool',
         content:
             icon('search') +
-            (searchHint ? `<span class="sd-search-hint" aria-hidden="true">${esc(searchHint)}</span>` : ''),
+            (hint ? `<span class="sd-search-hint" aria-hidden="true">${esc(text.t(hint))}</span>` : ''),
         label: text.t('action.search'),
         item: 'search',
     });
