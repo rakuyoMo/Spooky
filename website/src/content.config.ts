@@ -31,6 +31,7 @@ const siteTexts = z.object({
     'demo.step.push': z.string(),
     'demo.reset': z.string(),
     'demo.narrow': z.string(),
+    'demo.narrow.completed': z.string(),
     'demo.overflow': z.string(),
     'demo.note': z.string(),
     'demo.unavailable': z.string(),

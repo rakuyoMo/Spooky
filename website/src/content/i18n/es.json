@@ -26,6 +26,7 @@
     "demo.step.push": "Haz push a origin",
     "demo.reset": "Restablecer la demo",
     "demo.narrow": "Estrecha la ventana del navegador",
+    "demo.narrow.completed": "Usa el diseño para ventanas estrechas",
     "demo.overflow": "Más ítems de la barra de herramientas",
     "demo.note": "Esta es una ventana simulada en tu navegador. Todos los datos son de ejemplo.",
     "demo.unavailable": "Eso no está en esta demo.",
