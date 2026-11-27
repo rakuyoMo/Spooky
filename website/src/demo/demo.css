@@ -2530,6 +2530,12 @@
     height: 0.875rem;
 }
 
+/* 完成状态同时显示绿色勾号和对应的步骤文案。 */
+.sd-step:not(.is-done) .sd-step-completed-label,
+.sd-step.is-done .sd-step-pending-label {
+    display: none;
+}
+
 .sd-guide .sd-reset {
     border-style: dashed;
     color: var(--sl-color-gray-2);

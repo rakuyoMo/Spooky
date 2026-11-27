@@ -26,6 +26,7 @@
     "demo.step.push": "Pousser vers origin",
     "demo.reset": "Réinitialiser la démo",
     "demo.narrow": "Rétrécissez la fenêtre du navigateur",
+    "demo.narrow.completed": "Utilisez la disposition pour fenêtre étroite",
     "demo.overflow": "Autres éléments de la barre d’outils",
     "demo.note": "Ceci est une fenêtre simulée dans votre navigateur. Toutes les données sont des exemples.",
     "demo.unavailable": "Cet élément n’est pas dans la démo.",

@@ -128,7 +128,9 @@ const endId = 'spooky-demo-end';
 
                         <Fragment set:html={icon('check', 'sd-step-check')} />
 
-                        {t('demo.narrow')}
+                        <span class="sd-step-pending-label">{t('demo.narrow')}</span>
+
+                        <span class="sd-step-completed-label">{t('demo.narrow.completed')}</span>
 
                         <span class="sd-step-state sr-only" hidden>
                             {t('demo.done')}

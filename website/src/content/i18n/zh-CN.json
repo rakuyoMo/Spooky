@@ -26,6 +26,7 @@
     "demo.step.push": "推送到 origin",
     "demo.reset": "重置演示",
     "demo.narrow": "收窄浏览器窗口",
+    "demo.narrow.completed": "使用窄窗口版式",
     "demo.overflow": "更多工具栏项目",
     "demo.note": "这是网页里的模拟窗口，数据都是示例。",
     "demo.unavailable": "这个演示里没有这一项。",

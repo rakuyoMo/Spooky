@@ -26,6 +26,7 @@
     "demo.step.push": "Zu origin pushen",
     "demo.reset": "Demo zurücksetzen",
     "demo.narrow": "Browserfenster schmaler machen",
+    "demo.narrow.completed": "Schmales Fensterlayout verwenden",
     "demo.overflow": "Weitere Symbolleistenobjekte",
     "demo.note": "Das ist ein simuliertes Fenster in Ihrem Browser. Alle Daten sind Beispieldaten.",
     "demo.unavailable": "Das gibt es in dieser Demo nicht.",

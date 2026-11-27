@@ -26,6 +26,7 @@
     "demo.step.push": "Push to origin",
     "demo.reset": "Reset demo",
     "demo.narrow": "Narrow your browser window",
+    "demo.narrow.completed": "Use the narrow window layout",
     "demo.overflow": "More toolbar items",
     "demo.note": "This is a simulated window in your browser. All data is sample data.",
     "demo.unavailable": "That one isn’t in this demo.",
