@@ -185,6 +185,7 @@ Mit der Maus halten Sie <kbd>⇧</kbd> gedrückt und klicken auf eine Zeilennumm
 | Dateiverlauf | <kbd>↩</kbd> | Öffnet den ausgewählten Commit in den ganzseitigen Details |
 | Die Seitenleiste | <kbd>⌘⌫</kbd> | Löscht nach Rückfrage die ausgewählten Branches, Tags, das Remote oder das Submodul |
 | Das Filterfeld der Seitenleiste | <kbd>Esc</kbd> | Leert das Feld |
+| Das Suchfeld in der Symbolleiste | <kbd>Esc</kbd> | Verlässt das Feld, ohne es zu leeren |
 | Stashes | <kbd>⌘⌫</kbd> | Löscht nach Rückfrage die ausgewählten Stashes |
 | Branch-Übersicht | <kbd>⌘⌫</kbd> | Löscht nach Rückfrage die ausgewählten Branches |
 | Das Fenster „Repositorys“ | <kbd>↩</kbd> | Benennt den ausgewählten Eintrag um |

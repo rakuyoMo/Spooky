@@ -52,7 +52,7 @@ The first click on :ui[status.column] puts staged files first. Next come the oth
 2. Type part of the file’s path. Spooky suggests files that contain those letters in the same order.
 3. Choose a file to list only that path. The last suggestion lists every file whose path contains what you typed.
 
-Clear the search field to see all files again.
+Press <kbd>Esc</kbd> to leave the search field. The list stays filtered. Clear the search field to see all files again.
 
 ## Untracked and ignored files {#untracked-ignored}
 

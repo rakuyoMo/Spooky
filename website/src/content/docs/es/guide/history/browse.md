@@ -78,7 +78,7 @@ Con varias condiciones:
 - Las condiciones de tipos distintos deben cumplirse todas.
 - De varias condiciones del mismo tipo, basta con que un commit cumpla una. Las fechas son la excepción: un commit debe cumplir todas las condiciones de fecha.
 
-La búsqueda termina cuando cambias a otra vista.
+Pulsa <kbd>Esc</kbd> para salir del campo de búsqueda. La lista sigue filtrada. La búsqueda termina cuando cambias a otra vista.
 
 ## Opciones de visualización {#view-options}
 

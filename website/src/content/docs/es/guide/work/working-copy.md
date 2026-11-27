@@ -52,7 +52,7 @@ El primer clic en :ui[status.column] pone primero los archivos que están en el 
 2. Escribe parte de la ruta del archivo. Spooky sugiere archivos que contienen esas letras en el mismo orden.
 3. Elige un archivo para mostrar solo esa ruta. La última sugerencia muestra todos los archivos cuya ruta contiene lo que has escrito.
 
-Vacía el campo de búsqueda para volver a ver todos los archivos.
+Pulsa <kbd>Esc</kbd> para salir del campo de búsqueda. La lista sigue filtrada. Vacía el campo de búsqueda para volver a ver todos los archivos.
 
 ## Archivos sin seguimiento e ignorados {#untracked-ignored}
 

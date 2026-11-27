@@ -78,7 +78,7 @@ Bei mehreren Bedingungen:
 - Bedingungen verschiedener Art müssen alle zutreffen.
 - Von mehreren Bedingungen derselben Art muss ein Commit nur eine erfüllen. Datumsangaben sind die Ausnahme: Ein Commit muss jede Datumsbedingung erfüllen.
 
-Die Suche endet, wenn Sie zu einer anderen Ansicht wechseln.
+Drücken Sie <kbd>Esc</kbd>, um das Suchfeld zu verlassen. Die Liste bleibt gefiltert. Die Suche endet, wenn Sie zu einer anderen Ansicht wechseln.
 
 ## Darstellungsoptionen {#view-options}
 

@@ -185,6 +185,7 @@ With the mouse, hold <kbd>⇧</kbd> and click a line number to select every line
 | File history | <kbd>↩</kbd> | Opens the selected commit in full-page details |
 | The sidebar | <kbd>⌘⌫</kbd> | Deletes the selected branches, tags, remote, or submodule, after asking |
 | The filter field of the sidebar | <kbd>Esc</kbd> | Clears the field |
+| The search field in the toolbar | <kbd>Esc</kbd> | Leaves the field without clearing it |
 | Stashes | <kbd>⌘⌫</kbd> | Deletes the selected stashes, after asking |
 | Branches Review | <kbd>⌘⌫</kbd> | Deletes the selected branches, after asking |
 | The Repositories window | <kbd>↩</kbd> | Renames the selected entry |

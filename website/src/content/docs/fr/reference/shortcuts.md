@@ -185,6 +185,7 @@ Avec la souris, maintenez <kbd>⇧</kbd> et cliquez sur un numéro de ligne pour
 | L’historique du fichier | <kbd>↩</kbd> | Ouvre le commit sélectionné dans les détails en pleine page |
 | La barre latérale | <kbd>⌘⌫</kbd> | Supprime les branches, les tags, le dépôt distant ou le sous-module sélectionnés, après confirmation |
 | Le champ de filtre de la barre latérale | <kbd>Esc</kbd> | Vide le champ |
+| Le champ de recherche de la barre d’outils | <kbd>Esc</kbd> | Quitte le champ sans le vider |
 | Les remisages | <kbd>⌘⌫</kbd> | Supprime les remisages sélectionnés, après confirmation |
 | La revue des branches | <kbd>⌘⌫</kbd> | Supprime les branches sélectionnées, après confirmation |
 | La fenêtre Dépôts | <kbd>↩</kbd> | Renomme l’entrée sélectionnée |

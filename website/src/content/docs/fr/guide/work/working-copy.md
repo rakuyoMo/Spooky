@@ -52,7 +52,7 @@ Le premier clic sur :ui[status.column] place les fichiers indexés en premier. V
 2. Saisissez une partie du chemin du fichier. Spooky suggère les fichiers qui contiennent ces lettres dans le même ordre.
 3. Choisissez un fichier pour ne lister que ce chemin. La dernière suggestion liste tous les fichiers dont le chemin contient ce que vous avez saisi.
 
-Effacez le champ de recherche pour revoir tous les fichiers.
+Appuyez sur <kbd>Esc</kbd> pour quitter le champ de recherche. La liste reste filtrée. Effacez le champ de recherche pour revoir tous les fichiers.
 
 ## Fichiers non suivis et ignorés {#untracked-ignored}
 
