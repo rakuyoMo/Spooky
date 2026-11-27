@@ -250,7 +250,13 @@ extension WindowChromeTests {
 
         #expect(try #require(item(RepositoryToolbar.repositories, in: controller)).isNavigational)
         #expect(try #require(item(RepositoryToolbar.clone, in: controller)).isNavigational)
-        #expect(visible.isSuperset(of: [RepositoryToolbar.repositories, RepositoryToolbar.navigation, RepositoryToolbar.search]))
+        #expect(
+            visible.isSuperset(of: [
+                RepositoryToolbar.repositories,
+                RepositoryToolbar.navigation,
+                RepositoryToolbar.search,
+            ])
+        )
         #expect(others.allSatisfy { $0 < sync })
     }
 }

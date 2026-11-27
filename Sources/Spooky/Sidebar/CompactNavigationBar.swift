@@ -52,19 +52,43 @@ struct CompactNavigationBar: View {
     /// 导航里的视图，与侧边栏 Workspace 分组的行相同。
     private var entries: [Entry] {
         let entries = [
-            Entry(view: .workingCopy, title: AppLocalization.text("workspace.title"), symbol: "folder"),
-            Entry(view: .history, title: AppLocalization.text("history.title"), symbol: "clock"),
-            Entry(view: .stashes, title: AppLocalization.text("stash.title"), symbol: "tray.full"),
+            Entry(
+                view: .workingCopy,
+                title: AppLocalization.text("workspace.title"),
+                symbol: "folder"
+            ),
+            Entry(
+                view: .history,
+                title: AppLocalization.text("history.title"),
+                symbol: "clock"
+            ),
+            Entry(
+                view: .stashes,
+                title: AppLocalization.text("stash.title"),
+                symbol: "tray.full"
+            ),
 
             // 选中远端对应 GitLab 时叫 Merge Requests
-            Entry(view: .pullRequests, title: session.pullRequestText("title"), symbol: AppSymbol.pullRequest),
+            Entry(
+                view: .pullRequests,
+                title: session.pullRequestText("title"),
+                symbol: AppSymbol.pullRequest
+            ),
             Entry(
                 view: .branchesReview,
                 title: AppLocalization.text("review.title"),
                 symbol: "arrow.left.arrow.right.circle"
             ),
-            Entry(view: .reflog, title: AppLocalization.text("reflog.title"), symbol: "clock.arrow.circlepath"),
-            Entry(view: .settings, title: AppLocalization.text("repositorySettings.title"), symbol: "gearshape"),
+            Entry(
+                view: .reflog,
+                title: AppLocalization.text("reflog.title"),
+                symbol: "clock.arrow.circlepath"
+            ),
+            Entry(
+                view: .settings,
+                title: AppLocalization.text("repositorySettings.title"),
+                symbol: "gearshape"
+            ),
         ]
 
         // 视图设置打开 Show Reflog 时才有 Reflog

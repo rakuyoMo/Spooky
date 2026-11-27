@@ -37,7 +37,9 @@ struct SidebarWorkingCopyProgress: ViewModifier {
                 if showsProgress {
                     ProgressView()
                         .controlSize(.small)
-                        .accessibilityLabel(session.workspaceProgress?.title ?? AppLocalization.text("loading.status"))
+                        .accessibilityLabel(
+                            session.workspaceProgress?.title ?? AppLocalization.text("loading.status")
+                        )
                 }
             }
             .task(id: isLoading) {
@@ -65,7 +67,10 @@ extension SidebarWorkingCopyProgress {
         }
 
         // 加载结束：已经显示的进度留满最短时间再撤下
-        guard showsProgress, await wait(Self.minimumDuration - shownAt.duration(to: .now)) else {
+        guard
+            showsProgress,
+            await wait(Self.minimumDuration - shownAt.duration(to: .now))
+        else {
             return
         }
 
