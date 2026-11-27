@@ -21,6 +21,7 @@ export const demoKeys = [
     'toolbar.createBranch',
     'action.refresh',
     'action.search',
+    'history.search.forFile',
     'history.search.forMessage',
     'stash.search',
 

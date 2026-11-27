@@ -2,12 +2,16 @@ import AppKit
 
 // MARK: - RepositoryWindow
 
-/// 仓库窗口：点在列表里时，先把键盘焦点交给这个列表。
+/// 仓库窗口：点击列表时交出焦点，按 Esc 时可退出工具栏搜索。
 ///
 /// 侧边栏与历史列表的行是不接受第一响应者的 SwiftUI 视图，窗口不会因为点击把焦点交给列表，焦点会留在原处。
 final class RepositoryWindow: NSWindow {
-    /// 按下鼠标左键时，点中的列表还没有焦点就先交给它，再照常分发。
+    /// 分发事件前处理列表点击与工具栏搜索的焦点。
     override func sendEvent(_ event: NSEvent) {
+        if endToolbarSearchOnEscape(event) {
+            return
+        }
+
         if event.type == .leftMouseDown, let list = unfocusedList(at: event.locationInWindow) {
             makeFirstResponder(list)
         }
@@ -37,5 +41,26 @@ final class RepositoryWindow: NSWindow {
         }
 
         return list
+    }
+
+    /// 只有焦点在工具栏搜索框上时，Esc 才结束搜索编辑。
+    private func endToolbarSearchOnEscape(_ event: NSEvent) -> Bool {
+        guard
+            event.type == .keyDown, event.keyCode == 53,
+            event.modifierFlags.isDisjoint(with: [.command, .option, .control, .shift]),
+            let item = toolbar?.items.first(where: { $0.itemIdentifier == RepositoryToolbar.search })
+            as? NSSearchToolbarItem,
+            let editor = item.searchField.currentEditor() as? NSTextView,
+            firstResponder === editor
+        else { return false }
+
+        // 输入法还有候选文字时，先让它处理 Esc。
+        guard !editor.hasMarkedText() else {
+            return false
+        }
+
+        // 走工具栏的原生结束流程，保留搜索词，并让搜索项恢复随宽度变化的尺寸。
+        item.endSearchInteraction()
+        return true
     }
 }

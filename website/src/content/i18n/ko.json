@@ -26,7 +26,7 @@
     "demo.step.push": "origin에 푸시하기",
     "demo.reset": "데모 재설정",
     "demo.narrow": "브라우저 창 좁히기",
-    "demo.narrow.completed": "좁은 창 레이아웃 사용",
+    "demo.narrow.completed": "좁은 창 모드 사용",
     "demo.overflow": "도구 막대 항목 더 보기",
     "demo.note": "브라우저에서 재현한 윈도우입니다. 데이터는 모두 예시입니다.",
     "demo.unavailable": "이 데모에는 없는 항목입니다.",
