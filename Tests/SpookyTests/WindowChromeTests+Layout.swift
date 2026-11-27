@@ -9,9 +9,10 @@ import TestSupport
 // MARK: - Layout
 
 extension WindowChromeTests {
-    /// 同一个仓库窗口依次核对：收窄后换成极窄版式，列表与详情上下排列，换主视图时视图导航留着；
-    /// 拉宽后回到常规版式，分栏随窗口变宽回到收窄前的宽度；来回切换时所在的视图、选中的文件与提交草稿都不变。
-    @Test("极窄版式的切换、视图导航与分栏宽度的恢复")
+    /// 同一个仓库窗口依次核对：收窄后换成极窄版式，列表与详情上下排列，工具栏的仓库管理与 Clone 排到标题之前，
+    /// 换主视图时视图导航留着；拉宽后回到常规版式，分栏随窗口变宽回到收窄前的宽度；
+    /// 来回切换时所在的视图、选中的文件与提交草稿都不变。
+    @Test("极窄版式的切换、工具栏、视图导航与分栏宽度的恢复")
     func narrowLayout() async throws {
         let fixture = try await NavigationTests.makeWindow(isolatesToolbar: true)
         defer { fixture.close() }
@@ -57,8 +58,8 @@ extension WindowChromeTests {
         #expect(try !isStacked())
         #expect(firstWidths() == [400, 400])
 
-        // 收窄：侧边栏换成视图导航，列表与详情上下排列，跟随内层分栏的分隔符隐藏
-        window.setContentSize(NSSize(width: 500, height: 700))
+        // 收到最窄：侧边栏换成视图导航，列表与详情上下排列，跟随内层分栏的分隔符隐藏
+        window.setContentSize(NSSize(width: RepositoryWindowLayout.narrowMinimumWidth, height: 700))
 
         let content = try #require(controller.narrowContent)
 
@@ -70,6 +71,8 @@ extension WindowChromeTests {
         #expect(session.activeView == .workingCopy)
         #expect(session.selectedIDs == [row])
         #expect(session.commitSubject == "draft")
+
+        try Self.expectNarrowToolbar(in: controller)
 
         // 极窄版式里换主视图只替换下面的一块，盖在上面的侧边栏留着；单栏视图没有内层分栏
         controller.setCompactSidebarShown(true)
@@ -98,6 +101,10 @@ extension WindowChromeTests {
         #expect(controller.layout == .regular)
         #expect(controller.narrowContent == nil)
         #expect(try !isStacked())
+
+        // 仓库管理与 Clone 回到侧边栏上方
+        #expect(try !#require(Self.item(RepositoryToolbar.repositories, in: controller)).isNavigational)
+        #expect(try !#require(Self.item(RepositoryToolbar.clone, in: controller)).isNavigational)
 
         let squeezed = firstWidths()
         #expect(squeezed.first == 400)
@@ -211,5 +218,45 @@ extension WindowChromeTests {
 
         #expect(controller.layout == .narrow)
         #expect(other.layout == .regular)
+    }
+}
+
+// MARK: - Helpers
+
+extension WindowChromeTests {
+    /// 收到最窄的极窄版式工具栏：仓库管理与 Clone 随后退 / 前进排在标题之前，仓库管理、后退 / 前进与搜索框仍在工具栏上；
+    /// 标题之后的其余各项排不下时都进溢出菜单，Fetch | Pull | Push 在其中最后才进。
+    private static func expectNarrowToolbar(in controller: RepositoryWindowController) throws {
+        let window = try #require(controller.window)
+        window.layoutIfNeeded()
+
+        let visible = Set(window.toolbar?.visibleItems?.map(\.itemIdentifier) ?? [])
+
+        /// 一项的可见优先级。
+        func priority(_ identifier: NSToolbarItem.Identifier) throws -> Int {
+            try #require(item(identifier, in: controller)).visibilityPriority.rawValue
+        }
+
+        let sync = try priority(RepositoryToolbar.sync)
+
+        let others = try [
+            RepositoryToolbar.finder,
+            RepositoryToolbar.terminal,
+            RepositoryToolbar.forcePush,
+            RepositoryToolbar.stashes,
+            RepositoryToolbar.createBranch,
+            RepositoryToolbar.refresh,
+        ].map(priority)
+
+        #expect(try #require(item(RepositoryToolbar.repositories, in: controller)).isNavigational)
+        #expect(try #require(item(RepositoryToolbar.clone, in: controller)).isNavigational)
+        #expect(
+            visible.isSuperset(of: [
+                RepositoryToolbar.repositories,
+                RepositoryToolbar.navigation,
+                RepositoryToolbar.search,
+            ])
+        )
+        #expect(others.allSatisfy { $0 < sync })
     }
 }

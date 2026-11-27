@@ -82,9 +82,9 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 2. 当前视图的列表
 3. 列表里所选内容的详情
 
-- 切换视图的一行里有 :ui[workspace.title]、:ui[history.title] 与 :ui[stash.title]。要看分支、标签、远端和其它视图，点这一行开头的 :ui[sidebar.menu]，侧边栏会盖在视图上面。再点一次 :ui[sidebar.menu]，或点侧边栏外面，就能收起它。
+- 切换视图的一行里是侧边栏 :ui[workspace.group] 下的各个视图，放不下的，横向滚动这一行就能看到。要看分支、标签、远端和其它视图，点这一行开头的 :ui[sidebar.menu]，侧边栏会盖在视图上面。再点一次 :ui[sidebar.menu]，或点侧边栏外面，就能收起它。
 - 列表在上，详情在下。拖动两者之间的分隔线，可以调整各自的高度。
-- 工具栏上放不下的按钮收进末尾的 » 菜单。:ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 一直留在工具栏上。
+- :ui[toolbar.bookmarks]、:ui[toolbar.previous] 与 :ui[toolbar.next] 排在窗口标题前面，和搜索框一起一直留在工具栏上。其它放不下的按钮收进工具栏末尾的 » 菜单，:ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 最后才收进去。
 
 版式切换时，所在的视图、选中的内容和正在写的提交信息都不变。
 

@@ -82,9 +82,9 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 2. 目前視圖的列表
 3. 列表裡所選內容的詳細資訊
 
-- 切換視圖的一列裡有 :ui[workspace.title]、:ui[history.title] 與 :ui[stash.title]。要看分支、標籤、遠端和其他視圖，按一下這一列開頭的 :ui[sidebar.menu]，側邊欄會蓋在視圖上面。再按一下 :ui[sidebar.menu]，或按一下側邊欄外面，就能收起它。
+- 切換視圖的一列裡是側邊欄 :ui[workspace.group] 下的各個視圖，放不下的，橫向捲動這一列就能看到。要看分支、標籤、遠端和其他視圖，按一下這一列開頭的 :ui[sidebar.menu]，側邊欄會蓋在視圖上面。再按一下 :ui[sidebar.menu]，或按一下側邊欄外面，就能收起它。
 - 列表在上，詳細資訊在下。拖移兩者之間的分隔線，可以調整各自的高度。
-- 工具列上放不下的按鈕收進末尾的 » 選單。:ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 一直留在工具列上。
+- :ui[toolbar.bookmarks]、:ui[toolbar.previous] 與 :ui[toolbar.next] 排在視窗標題前面，和搜尋框一起一直留在工具列上。其他放不下的按鈕收進工具列末尾的 » 選單，:ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 最後才收進去。
 
 版面切換時，所在的視圖、選取的內容和正在寫的提交訊息都不變。
 

@@ -82,9 +82,9 @@ Cuando la ventana es demasiado estrecha para tres columnas, cambia a un diseño 
 2. La lista de la vista actual
 3. Los detalles de lo que está seleccionado en la lista
 
-- La fila de vistas tiene :ui[workspace.title], :ui[history.title] y :ui[stash.title]. Para las ramas, las etiquetas, los remotos y las demás vistas, haz clic en :ui[sidebar.menu] al principio de la fila. La barra lateral se abre encima de la vista. Haz clic otra vez en :ui[sidebar.menu], o fuera de la barra lateral, para cerrarla.
+- La fila de vistas tiene las vistas que están bajo :ui[workspace.group] en la barra lateral. Desplaza la fila hacia los lados para llegar a las que no caben. Para las ramas, las etiquetas, los remotos y las demás vistas, haz clic en :ui[sidebar.menu] al principio de la fila. La barra lateral se abre encima de la vista. Haz clic otra vez en :ui[sidebar.menu], o fuera de la barra lateral, para cerrarla.
 - La lista está encima de los detalles. Arrastra la línea que los separa para dar más espacio a uno de los dos.
-- Los botones que no caben en la barra de herramientas pasan al menú » del final. :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] se quedan en la barra de herramientas.
+- :ui[toolbar.bookmarks], :ui[toolbar.previous] y :ui[toolbar.next] van delante del título de la ventana y se quedan siempre en la barra de herramientas, junto con el campo de búsqueda. Los demás botones que no caben pasan al menú » del final de la barra de herramientas. :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] son los últimos en pasar.
 
 La vista en la que estás, tu selección y el mensaje de commit que estás escribiendo se mantienen cuando cambia el diseño.
 

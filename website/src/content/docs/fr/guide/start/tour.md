@@ -82,9 +82,9 @@ Quand la fenêtre devient trop étroite pour trois colonnes, elle passe à une d
 2. La liste de la vue actuelle
 3. Le détail de ce qui est sélectionné dans la liste
 
-- La rangée des vues contient :ui[workspace.title], :ui[history.title] et :ui[stash.title]. Pour les branches, les tags, les dépôts distants et les autres vues, cliquez sur :ui[sidebar.menu] au début de la rangée. La barre latérale s’ouvre par-dessus la vue. Cliquez de nouveau sur :ui[sidebar.menu], ou en dehors de la barre latérale, pour la fermer.
+- La rangée des vues contient les vues qui se trouvent sous :ui[workspace.group] dans la barre latérale. Faites défiler la rangée sur le côté pour atteindre celles qui ne tiennent pas. Pour les branches, les tags, les dépôts distants et les autres vues, cliquez sur :ui[sidebar.menu] au début de la rangée. La barre latérale s’ouvre par-dessus la vue. Cliquez de nouveau sur :ui[sidebar.menu], ou en dehors de la barre latérale, pour la fermer.
 - La liste se trouve au-dessus du détail. Faites glisser la ligne qui les sépare pour donner plus de place à l’un des deux.
-- Les boutons qui ne tiennent plus dans la barre d’outils passent dans le menu » à son extrémité. :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] restent dans la barre d’outils.
+- :ui[toolbar.bookmarks], :ui[toolbar.previous] et :ui[toolbar.next] se placent avant le titre de la fenêtre et restent toujours dans la barre d’outils, avec le champ de recherche. Les autres boutons qui ne tiennent plus passent dans le menu » au bout de la barre d’outils. :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] y passent en dernier.
 
 La vue actuelle, votre sélection et le message de commit en cours de rédaction restent tels quels quand la disposition change.
 

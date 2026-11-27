@@ -15,7 +15,7 @@ enum RepositoryWindowLayout: Equatable {
     /// 常规版式里各视图的最小宽度都比它小，窗口在任何视图里都能收窄到这里。
     static let narrowThreshold: CGFloat = 820
 
-    /// 极窄版式里内容区的最小宽度：视图导航排得下，默认排布的工具栏在标题后面还留得住 Fetch | Pull | Push。
+    /// 极窄版式里内容区的最小宽度：默认排布的工具栏在标题前后还留得住仓库管理、后退 / 前进与搜索框。
     static let narrowMinimumWidth: CGFloat = 480
 
     /// 极窄版式里内层分栏上面一栏的最小高度。

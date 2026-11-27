@@ -162,6 +162,7 @@ class Demo {
     /** 改状态并重绘变了的区域；新完成的步骤发出事件。 */
     private update(state: DemoState, ui: Partial<UiState> = {}): void {
         const before = this.state.done;
+        const view = this.state.view;
 
         this.state = state;
         this.ui = { ...this.ui, ...ui };
@@ -171,6 +172,10 @@ class Demo {
         patch(this.frame, this.regions, next, this.scrolls);
         this.regions = next;
         this.syncChrome();
+
+        if (state.view !== view) {
+            this.revealCompactEntry();
+        }
 
         for (const step of Object.keys(stepEvents) as Step[]) {
             if (state.done[step] && !before[step]) {
@@ -1001,7 +1006,8 @@ class Demo {
 
     /**
      * 窗口宽度变了之后：工具栏上收起来的项跟着变，打开着的 » 菜单收起；
-     * 回到常规版式时，极窄版式里打开的侧边栏算作收起，再收窄时不会自己盖上来。
+     * 回到常规版式时，极窄版式里打开的侧边栏算作收起，再收窄时不会自己盖上来；
+     * 极窄版式里所在视图的一项留在视图导航的可见范围里。
      */
     private trackLayout(): void {
         new ResizeObserver(([entry]) => {
@@ -1027,7 +1033,29 @@ class Demo {
             if (this.ui.sidebarOpen && regular) {
                 this.update(this.state, { sidebarOpen: false });
             }
+
+            this.revealCompactEntry();
         }).observe(this.options.root);
+    }
+
+    /** 极窄版式的视图导航里，把所在视图的一项滚进可见范围，只滚到它完整露出为止。 */
+    private revealCompactEntry(): void {
+        const list = this.frame.querySelector<HTMLElement>('.sd-compact-scroll');
+        const entry = list?.querySelector<HTMLElement>('.is-selected');
+
+        // 常规版式里导航不显示，没有可滚的
+        if (!list || !entry || list.offsetParent === null) {
+            return;
+        }
+
+        const start = entry.offsetLeft;
+        const end = start + entry.offsetWidth;
+
+        if (start < list.scrollLeft) {
+            list.scrollLeft = start;
+        } else if (end > list.scrollLeft + list.clientWidth) {
+            list.scrollLeft = end - list.clientWidth;
+        }
     }
 
     /** 输入框里的文字写回状态；只重绘剩余字数、按钮与快捷操作的结果。 */
