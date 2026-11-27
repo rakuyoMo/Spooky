@@ -17,32 +17,27 @@ extension WindowChromeTests {
 
         let controller = fixture.controller
         let window = try #require(controller.window)
+        let toolbar = try #require(window.toolbar)
         let item = try #require(Self.item(RepositoryToolbar.search, in: controller) as? NSSearchToolbarItem)
         let search = item.searchField
 
-        // 用工具栏的展开入口切入搜索，模拟搜索框带着当前筛选词获得焦点。
+        // 单独给搜索框留出空间，在后台窗口里直接设置第一响应者。
+        for index in toolbar.items.indices.reversed() where toolbar.items[index] !== item {
+            toolbar.removeItem(at: index)
+        }
+
+        window.contentView?.superview?.layoutSubtreeIfNeeded()
+        try #require(search.window === window)
+
         search.stringValue = "a.txt"
         search.sendAction(search.action, to: search.target)
-        item.beginSearchInteraction()
 
+        try #require(window.makeFirstResponder(search))
         let editor = try #require(search.currentEditor())
         try #require(window.firstResponder === editor)
 
-        let escape = try #require(NSEvent.keyEvent(
-            with: .keyDown,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: 0,
-            windowNumber: window.windowNumber,
-            context: nil,
-            characters: "\u{1B}",
-            charactersIgnoringModifiers: "\u{1B}",
-            isARepeat: false,
-            keyCode: 53
-        ))
-
-        // 直接向窗口分发按键，覆盖搜索框和补全可能拦截 Esc 的路径。
-        window.sendEvent(escape)
+        // 让窗口把 Esc 交给当前的工具栏搜索框处理。
+        try RepositoryFocusTests.press(keyCode: 53, function: 0x1B, in: window)
 
         #expect(window.firstResponder !== editor)
         #expect(search.stringValue == "a.txt")
