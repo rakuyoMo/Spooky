@@ -254,6 +254,10 @@ SwiftLint 以严格模式运行，警告同样算不通过。其余编码约定�
 
 - 引入外部代码前，请先确认它的许可证与 GPL-3.0 兼容
 
+## 友链
+
+[LINUX DO](https://linux.do)
+
 ## 许可证
 
 Spooky 以 [GNU General Public License v3.0](LICENSE) 许可证发布。

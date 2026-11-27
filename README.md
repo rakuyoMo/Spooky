@@ -254,6 +254,10 @@ SwiftLint runs in strict mode, so warnings fail the check too. The other coding 
 
 - Before bringing in outside code, make sure its license is compatible with GPL-3.0
 
+## Friends
+
+[LINUX DO](https://linux.do)
+
 ## License
 
 Spooky is licensed under the [GNU General Public License v3.0](LICENSE).
