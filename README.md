@@ -244,19 +244,6 @@ mise run swift:lint
 
 SwiftLint runs in strict mode, so warnings fail the check too. The other coding conventions are in [AGENTS.md](AGENTS.md) (in Chinese).
 
-## Releasing
-
-Maintainers release new versions from `main`:
-
-```sh
-# Open a release PR: X.Y.Z for a stable release, X.Y.Z-beta.N for a beta, X.Y.Z-alpha.N for an alpha
-mise run release <version>
-```
-
-The script checks the version, the release notes in `docs/release-notes/<version>/`, and the state of the repository, then opens a release PR. Once it's merged, GitHub Actions bundles the app, signs the update, tags the merge commit, and creates the GitHub Release. Betas and alphas are published as pre-releases.
-
-[Releasing](docs/releasing.md) (in Chinese) has the details.
-
 ## Contributing
 
 - Before opening a pull request, run `mise run swift:lint`, `mise run build`, and `mise run test`, and make sure they all pass. CI runs the same checks on every pull request and push to `main`, and bundles the app as well
