@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "Die Umgebungsvariablen der Login-Shell konnten nicht gelesen werden.";
 "settings.environment.key" = "Name";
 "settings.environment.value" = "Wert";
-"settings.environment.custom" = "Eigene Umgebungsvariablen konfigurieren, die beim Ausführen von Git-Befehlen verwendet werden:";
+"settings.environment.custom" = "Eigene Umgebungsvariablen konfigurieren, die beim Ausführen von Git-Befehlen und den Skripten der Symbolleistentasten verwendet werden:";
 "settings.environment.add" = "Variable hinzufügen";
 "settings.environment.remove" = "Variable entfernen";
-"settings.environment.localOnly" = "Diese Einstellungen gelten nur für Git-Befehle, die auf diesem Mac ausgeführt werden. Repositorys auf Servern verwenden die Umgebung des Servers.";
+"settings.environment.localOnly" = "Diese Einstellungen gelten nur für Git-Befehle und die Skripte der Symbolleistentasten, die auf diesem Mac ausgeführt werden. Git in Server-Repositorys verwendet die Umgebung des Servers.";
 "settings.environment.server" = "Nicht interaktive Umgebung prüfen, die Git auf einem Server verwendet:";
 "settings.environment.server.hosts" = "Server";
 "settings.environment.server.check" = "Prüfen";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "SSH-Konfiguration kann nicht gesichert werden";
 "sshHosts.error.changed" = "SSH-Konfiguration wurde von einer anderen App geändert";
 "sshHosts.error.changed.help" = "Ihre Änderung wurde nicht gesichert. Die Liste zeigt jetzt den aktuellen Inhalt von ~/.ssh/config. Nehmen Sie die Änderung erneut vor.";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "Tasten für die Symbolleiste:";
+"toolbarButtons.name" = "Name";
+"toolbarButtons.script" = "Skript";
+"toolbarButtons.empty" = "Keine Tasten";
+"toolbarButtons.add" = "Taste hinzufügen";
+"toolbarButtons.edit" = "Bearbeiten …";
+"toolbarButtons.help" = "Wählen Sie „%1$@ › %2$@“, um diese Tasten in der Symbolleiste zu platzieren.";
+"toolbarButtons.delete.title" = "Taste löschen";
+"toolbarButtons.delete.message" = "Die Taste „%@“ und ihr Skript werden gelöscht und aus der Symbolleiste entfernt.";
+"toolbarButtons.delete.submit" = "Löschen";
+"toolbarButtons.edit.title" = "Taste bearbeiten";
+"toolbarButtons.message" = "Ein Klick auf die Taste führt das Skript auf diesem Mac aus, mit zsh, sofern die erste Zeile nicht mit #! beginnt. Umgebungsvariablen, die mit SPOOKY_ beginnen, beschreiben das Repository.";
+"toolbarButtons.add.submit" = "Hinzufügen";
+"toolbarButtons.edit.submit" = "Sichern";
+"toolbarButtons.icon" = "Symbol:";
+"toolbarButtons.nameField" = "Name:";
+"toolbarButtons.scriptField" = "Skript:";
+"toolbarButtons.symbols.empty" = "Keine Symbole";
+"toolbarButtons.error" = "Skript fehlgeschlagen";
+"toolbarButtons.error.help" = "Prüfen Sie das Skript der Taste unter „Einstellungen › Integration“. Details stehen unten.";
+"toolbarButtons.error.status" = "Mit Status %d beendet.";
+"toolbarButtons.error.signal" = "Durch Signal %d beendet.";

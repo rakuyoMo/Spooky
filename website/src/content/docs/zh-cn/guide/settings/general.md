@@ -107,7 +107,7 @@ description: "认识设置窗口，以及通用、更新、环境三页的选项
 
 | 设置 | 作用 |
 |---|---|
-| :ui[settings.environment.loginShell] | 启动一次你的登录 shell，读出它的启动文件设置的变量，交给 Git。下方的表格列出读到了什么。起初是打开的。 |
+| :ui[settings.environment.loginShell] | 启动一次你的登录 shell，读出它的启动文件设置的变量，交给 Git 与工具栏按钮的脚本。下方的表格列出读到了什么。起初是打开的。 |
 | :ui[settings.environment.custom] | 你自己加的变量。点添加按钮加一个，点移除按钮移除选中的那个。它们会覆盖登录 shell 里的同名变量。 |
 
 还有几点：
@@ -118,7 +118,7 @@ description: "认识设置窗口，以及通用、更新、环境三页的选项
 - 想用系统之外的 SSH agent，在这里或登录 shell 里设置 `SSH_AUTH_SOCK`。见 [SSH agent](/guide/settings/integration/#ssh-agent)。
 
 :::note[服务器仓库]
-这些变量只作用于本机的 Git。服务器上的 Git 用服务器自己的环境。
+这些变量只作用于本机的 Git 与工具栏按钮的脚本。服务器上的 Git 用服务器自己的环境。
 :::
 
 ### 检查服务器 {#server-check}

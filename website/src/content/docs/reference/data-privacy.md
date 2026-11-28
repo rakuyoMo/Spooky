@@ -9,7 +9,7 @@ There’s no Spooky account, and Spooky doesn’t collect usage data. This page 
 
 | What | Where |
 |---|---|
-| Settings, the repository list, user profiles, the list of hosting accounts, and the locations of server repositories on this Mac | Spooky’s preferences, `com.rakuyo.spooky` |
+| Settings, the repository list, user profiles, the list of hosting accounts, the locations of server repositories on this Mac, and toolbar buttons with their scripts | Spooky’s preferences, `com.rakuyo.spooky` |
 | Themes, one `.spookytheme` file each | `~/Library/Application Support/Spooky/Themes/` |
 | Small `.spookyrepo` folders that let server repositories show up among recent documents | `~/Library/Application Support/Spooky/Locations/` |
 | Records of remote operations in :ui[activity.title], such as fetch, pull, and push, kept for 7 days | `~/Library/Application Support/Spooky/Activity/` |

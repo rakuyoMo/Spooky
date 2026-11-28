@@ -269,6 +269,10 @@ extension RepositoryWindowController {
         case #selector(showQuickActions):
             return repositoryView
 
+        // 自定义按钮的脚本描述的是窗口里的仓库，显示仓库管理时没有仓库
+        case #selector(runCustomButton(_:)):
+            return repositoryView
+
         default:
             return true
         }

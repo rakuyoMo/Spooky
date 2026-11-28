@@ -7,7 +7,7 @@ Spooky는 Mac의 다른 앱과 함께 동작합니다. 브라우저, 비교 및 
 
 ## 통합 페이지 {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration]에는 설정이 세 가지 있습니다.
+:ui[app.name > settings.title] › :ui[settings.integration]에는 설정이 네 가지 있습니다.
 
 ### github.com의 링크 {#github-links}
 
@@ -38,6 +38,44 @@ Spooky는 에이전트를 서버로 전달하지 않습니다. 서버의 Git은 
 지난번에 Spooky가 예기치 않게 종료되었으면 다음에 실행할 때 충돌을 보고할지 묻습니다. :ui[settings.crashReports.always]를 선택하면 묻지 않고 바로 이슈 페이지를 엽니다. 처음에는 꺼져 있습니다.
 
 보고서에 들어가는 내용은 [충돌 보고서](/reference/data-privacy/#crash-reports)를 참고하세요.
+
+### 도구 막대 버튼 {#toolbar-buttons}
+
+도구 막대 버튼은 직접 작성한 스크립트를 클릭 한 번으로 실행합니다. :ui[toolbarButtons.title]에 만든 버튼이 나열됩니다.
+
+- 버튼을 만들려면 추가 버튼을 클릭합니다. 아이콘을 고르고, 이름을 붙이고, 스크립트를 입력합니다.
+- 버튼을 바꾸려면 이중 클릭하거나, 선택한 다음 :ui[toolbarButtons.edit]을 클릭합니다.
+- 버튼을 삭제하려면 선택한 다음 제거 버튼을 클릭합니다. 모든 윈도우의 도구 막대에서 사라집니다.
+
+버튼을 도구 막대에 놓으려면 :ui[menu.view > menu.customizeToolbar]를 선택하고 원하는 위치로 드래그합니다. 이름이 너무 길면 도구 막대에서는 뒷부분이 잘리고 “…”가 붙습니다. 버튼에 포인터를 올려 두면 전체 이름이 표시됩니다.
+
+버튼을 클릭하면 다음과 같이 실행됩니다.
+
+- 스크립트는 이 Mac의 저장소 폴더에서 실행됩니다.
+- zsh로 실행됩니다. 첫 줄이 `#!`로 시작하면 그 줄이 고른 프로그램으로 실행됩니다. 예를 들면 `#!/usr/bin/env python3`입니다. 이미 있는 스크립트 파일을 실행하려면 `sh ~/bin/deploy.sh`처럼 그 파일을 실행하는 명령을 입력합니다.
+- 이 Mac의 Git과 같은 변수를 받습니다. [이 Mac의 변수](/guide/settings/general/#local-variables)를 참고하세요.
+- 성공하면 아무것도 표시되지 않습니다. 실패하면 Spooky가 스크립트의 출력과 종료 상태를 보여 줍니다.
+
+스크립트는 저장소에 관한 다음 변수도 받습니다. 값이 없는 변수는 설정되지 않습니다.
+
+| 변수 | 값 |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | 저장소 폴더입니다. 서버 저장소는 서버에서의 경로입니다. |
+| `SPOOKY_REPOSITORY_NAME` | 그 폴더의 이름 |
+| `SPOOKY_SSH_HOST` | 서버 저장소의 호스트 별칭 |
+| `SPOOKY_BRANCH` | 현재 브랜치입니다. HEAD가 분리되어 있으면 설정되지 않습니다. |
+| `SPOOKY_HEAD` | HEAD가 가리키는 커밋의 전체 해시 |
+| `SPOOKY_UPSTREAM` | 현재 브랜치의 업스트림입니다. 예를 들면 `origin/main`입니다. |
+| `SPOOKY_REMOTE` | 업스트림이 있는 원격입니다. 원격에 업스트림이 없으면 `origin`입니다. |
+| `SPOOKY_REMOTE_URL` | 그 원격의 가져오기 URL |
+
+:::note[서버 저장소]
+이때도 스크립트는 이 Mac의 홈 폴더에서 실행됩니다. 서버에서 명령을 실행하려면 위의 변수와 함께 ssh를 사용합니다. 예를 들면 다음과 같습니다.
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## 비교 및 병합 도구 {#diff-merge-tools}
 

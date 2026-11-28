@@ -107,7 +107,7 @@ Apps opened from Finder or the Dock don’t get the environment you have in Term
 
 | Setting | What it does |
 |---|---|
-| :ui[settings.environment.loginShell] | Starts your login shell once, reads the variables its startup files set, and passes them to Git. The table below it lists what was read. On at first. |
+| :ui[settings.environment.loginShell] | Starts your login shell once, reads the variables its startup files set, and passes them to Git and to toolbar button scripts. The table below it lists what was read. On at first. |
 | :ui[settings.environment.custom] | Variables you add yourself. Click the add button to add one, and the remove button to remove the selected one. These override the login shell’s. |
 
 A few things to know:
@@ -118,7 +118,7 @@ A few things to know:
 - To use an SSH agent other than the system one, set `SSH_AUTH_SOCK` here or in your login shell. See [SSH agent](/guide/settings/integration/#ssh-agent).
 
 :::note[Server repositories]
-These variables apply only to Git on this Mac. Git on a server uses the server’s own environment.
+These variables apply only to Git and toolbar button scripts on this Mac. Git on a server uses the server’s own environment.
 :::
 
 ### Check a server {#server-check}

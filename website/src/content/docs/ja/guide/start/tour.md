@@ -64,7 +64,7 @@ Spooky を初めて開くと、「リポジトリ」ビューが表示されま�
 
 <kbd>⌥</kbd> を押している間、:ui[sync.fetch]、:ui[sync.pull]、:ui[sync.push] は :ui[sync.quickPush] のようなクイック版に変わります。クイック版はダイアログを開かずに、すぐ追跡ブランチに対して実行します。
 
-:ui[toolbar.clone] は、最近のクローンがある間だけ表示されます。[リポジトリウインドウ](/guide/repositories/manager/) を参照してください。ボタンを追加または削除するには、:ui[menu.view > menu.customizeToolbar] を選びます。上のボタンのほかに、:ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] と :ui[sync.rebaseHead]、:ui[toolbar.pushTo] を追加できます。
+:ui[toolbar.clone] は、最近のクローンがある間だけ表示されます。[リポジトリウインドウ](/guide/repositories/manager/) を参照してください。ボタンを追加または削除するには、:ui[menu.view > menu.customizeToolbar] を選びます。上のボタンのほかに、:ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] と :ui[sync.rebaseHead]、:ui[toolbar.pushTo] を追加できます。自分のスクリプトを実行するボタンも作れます。[ツールバーボタン](/guide/settings/integration/#toolbar-buttons) を参照してください。
 
 ### 3 つのカラム {#columns}
 

@@ -2,13 +2,13 @@ import SwiftUI
 
 // MARK: - IntegrationSettingsView
 
-/// Integration 页：github.com 仓库链接由哪个 App 打开、本机使用的 SSH agent，以及崩溃报告是否直接打开问题页。
+/// Integration 页：github.com 仓库链接由哪个 App 打开、本机使用的 SSH agent、崩溃报告是否直接打开问题页，以及工具栏的自定义按钮。
 struct IntegrationSettingsView: View {
     /// 上次运行崩溃时不再询问，直接打开预填的问题页。
     @AppStorage(CrashReporter.alwaysSendKey)
     private var alwaysSendsCrashReports = false
 
-    /// 标签右对齐、控件列宽 254 pt 的表单，组间以分隔线隔开。
+    /// 标签右对齐、控件列宽 254 pt 的表单，组间以分隔线隔开；自定义按钮的表格横贯整页。
     var body: some View {
         SettingsForm(layout: .integration) {
             GitHubLinksSettingsRow()
@@ -20,6 +20,10 @@ struct IntegrationSettingsView: View {
             SettingsSeparator(next: .checkbox)
 
             crashReportsRow
+
+            SettingsSeparator(next: .checkbox)
+
+            CustomToolbarButtonsSection(store: .shared)
         }
     }
 }

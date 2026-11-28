@@ -7,7 +7,7 @@ Spooky travaille avec d’autres apps de votre Mac : votre navigateur, les apps
 
 ## La page Intégration {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration] comporte trois réglages.
+:ui[app.name > settings.title] › :ui[settings.integration] comporte quatre réglages.
 
 ### Liens depuis github.com {#github-links}
 
@@ -38,6 +38,44 @@ Spooky ne transfère jamais votre agent à un serveur. Le Git du serveur utilise
 Si Spooky a quitté de façon inattendue la dernière fois, il demande au lancement suivant s’il faut signaler le plantage. Sélectionnez :ui[settings.crashReports.always] pour passer la question et ouvrir tout de suite la page de signalement. Désactivé au départ.
 
 Consultez [Rapports de plantage](/reference/data-privacy/#crash-reports) pour le contenu du rapport.
+
+### Boutons de la barre d’outils {#toolbar-buttons}
+
+Un bouton de la barre d’outils exécute un script à vous en un clic. :ui[toolbarButtons.title] liste les boutons que vous avez créés.
+
+- Pour en créer un, cliquez sur le bouton d’ajout. Choisissez une icône, donnez-lui un nom et saisissez le script.
+- Pour en modifier un, double-cliquez dessus, ou sélectionnez-le et cliquez sur :ui[toolbarButtons.edit].
+- Pour en supprimer un, sélectionnez-le et cliquez sur le bouton de suppression. Il disparaît de la barre d’outils de toutes les fenêtres.
+
+Pour placer un bouton dans la barre d’outils, choisissez :ui[menu.view > menu.customizeToolbar] et faites-le glisser où vous voulez. Si le nom est trop long, la barre d’outils le raccourcit avec « … ». Placez le pointeur sur le bouton pour voir le nom complet.
+
+Quand vous cliquez sur le bouton, voici ce qui se passe :
+
+- Le script s’exécute sur ce Mac, dans le dossier du dépôt.
+- Il s’exécute avec zsh. Si la première ligne commence par `#!`, c’est cette ligne qui choisit le programme, par exemple `#!/usr/bin/env python3`. Pour exécuter un fichier de script que vous avez déjà, saisissez une commande qui le lance, par exemple `sh ~/bin/deploy.sh`.
+- Il reçoit les mêmes variables que le Git de ce Mac. Consultez [Variables sur ce Mac](/guide/settings/general/#local-variables).
+- Rien ne s’affiche s’il réussit. S’il échoue, Spooky affiche ce qu’il a écrit et son code de sortie.
+
+Le script reçoit aussi ces variables sur le dépôt. Une variable sans valeur n’est pas définie.
+
+| Variable | Valeur |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | Le dossier du dépôt. Pour un dépôt sur un serveur, son chemin sur le serveur. |
+| `SPOOKY_REPOSITORY_NAME` | Le nom de ce dossier |
+| `SPOOKY_SSH_HOST` | L’alias d’hôte d’un dépôt sur un serveur |
+| `SPOOKY_BRANCH` | La branche actuelle. Non définie quand la HEAD est détachée. |
+| `SPOOKY_HEAD` | Le hash complet du commit sur lequel pointe la HEAD |
+| `SPOOKY_UPSTREAM` | La branche amont de la branche actuelle, par exemple `origin/main` |
+| `SPOOKY_REMOTE` | Le dépôt distant de la branche amont. `origin` quand il n’y a pas de branche amont sur un dépôt distant. |
+| `SPOOKY_REMOTE_URL` | L’URL de récupération de ce dépôt distant |
+
+:::note[Dépôts sur un serveur]
+Là aussi, le script s’exécute sur ce Mac, dans votre dossier de départ. Pour exécuter des commandes sur le serveur, utilisez ssh avec les variables ci-dessus. Par exemple :
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## Outils de comparaison et de fusion {#diff-merge-tools}
 

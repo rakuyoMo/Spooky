@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "No se han podido leer las variables de entorno del shell de inicio de sesión.";
 "settings.environment.key" = "Nombre";
 "settings.environment.value" = "Valor";
-"settings.environment.custom" = "Configura variables de entorno personalizadas para usar al ejecutar comandos de Git:";
+"settings.environment.custom" = "Configura variables de entorno personalizadas para usar al ejecutar comandos de Git y los scripts de los botones de la barra de herramientas:";
 "settings.environment.add" = "Añadir variable";
 "settings.environment.remove" = "Eliminar variable";
-"settings.environment.localOnly" = "Estos ajustes solo se aplican a los comandos de Git que se ejecutan en este Mac. Los repositorios en servidores usan el entorno del propio servidor.";
+"settings.environment.localOnly" = "Estos ajustes solo se aplican a los comandos de Git y a los scripts de los botones de la barra de herramientas que se ejecutan en este Mac. Git en los repositorios de servidores usa el entorno del propio servidor.";
 "settings.environment.server" = "Comprobar el entorno no interactivo que usa Git en un servidor:";
 "settings.environment.server.hosts" = "Servidores";
 "settings.environment.server.check" = "Comprobar";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "No se puede guardar la configuración de SSH";
 "sshHosts.error.changed" = "Otra app ha modificado la configuración de SSH";
 "sshHosts.error.changed.help" = "Tu cambio no se ha guardado. La lista muestra ahora el contenido actual de ~/.ssh/config. Vuelve a hacer el cambio.";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "Botones de la barra de herramientas:";
+"toolbarButtons.name" = "Nombre";
+"toolbarButtons.script" = "Script";
+"toolbarButtons.empty" = "No hay botones en la barra de herramientas";
+"toolbarButtons.add" = "Añadir botón a la barra de herramientas";
+"toolbarButtons.edit" = "Editar…";
+"toolbarButtons.help" = "Elige %1$@ › %2$@ para colocar estos botones en la barra de herramientas.";
+"toolbarButtons.delete.title" = "Eliminar botón de la barra de herramientas";
+"toolbarButtons.delete.message" = "Se eliminarán el botón “%@” y su script, y el botón se quitará de la barra de herramientas.";
+"toolbarButtons.delete.submit" = "Eliminar";
+"toolbarButtons.edit.title" = "Editar botón de la barra de herramientas";
+"toolbarButtons.message" = "Al hacer clic en el botón, el script se ejecuta en este Mac con zsh, salvo que la primera línea empiece por #!. Las variables de entorno que empiezan por SPOOKY_ describen el repositorio.";
+"toolbarButtons.add.submit" = "Añadir";
+"toolbarButtons.edit.submit" = "Guardar";
+"toolbarButtons.icon" = "Icono:";
+"toolbarButtons.nameField" = "Nombre:";
+"toolbarButtons.scriptField" = "Script:";
+"toolbarButtons.symbols.empty" = "No hay símbolos";
+"toolbarButtons.error" = "El script ha fallado";
+"toolbarButtons.error.help" = "Comprueba el script del botón en Ajustes › Integración. Los detalles se muestran abajo.";
+"toolbarButtons.error.status" = "Ha terminado con el código de salida %d.";
+"toolbarButtons.error.signal" = "Lo ha detenido la señal %d.";

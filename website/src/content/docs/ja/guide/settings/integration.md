@@ -7,7 +7,7 @@ Spooky は、Mac のほかのアプリケーションと連携します。ブラ
 
 ## 「連携」ページ {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration] には 3 つの設定があります。
+:ui[app.name > settings.title] › :ui[settings.integration] には 4 つの設定があります。
 
 ### github.com からのリンク {#github-links}
 
@@ -38,6 +38,44 @@ Spooky がエージェントをサーバに転送することはありません�
 Spooky が前回予期せず終了したときは、次の起動時に、クラッシュを報告するかどうかを尋ねます。:ui[settings.crashReports.always] を選択すると、確認を省いてすぐに Issue ページを開きます。最初はオフです。
 
 レポートに含まれる内容は [クラッシュレポート](/reference/data-privacy/#crash-reports) を参照してください。
+
+### ツールバーボタン {#toolbar-buttons}
+
+ツールバーボタンは、自分で書いたスクリプトをワンクリックで実行します。:ui[toolbarButtons.title] に、作成したボタンが並びます。
+
+- 作成するには、追加ボタンをクリックします。アイコンを選び、名前を付けて、スクリプトを入力します。
+- 変更するには、ボタンをダブルクリックするか、選択して :ui[toolbarButtons.edit] をクリックします。
+- 削除するには、選択して削除ボタンをクリックします。すべてのウインドウのツールバーからなくなります。
+
+ボタンをツールバーに置くには、:ui[menu.view > menu.customizeToolbar] を選び、好きな位置にドラッグします。名前が長すぎるときは、ツールバーでは途中で切れて “…” が付きます。ボタンにポインタを合わせると、名前全体が表示されます。
+
+ボタンをクリックしたときの動作は次のとおりです。
+
+- スクリプトは、この Mac 上のリポジトリのフォルダで実行されます。
+- zsh で実行されます。1 行目が `#!` で始まるときは、その行で選んだプログラムで実行されます。たとえば `#!/usr/bin/env python3` です。手元のスクリプトファイルを実行するには、`sh ~/bin/deploy.sh` のように、それを実行するコマンドを入力します。
+- この Mac 上の Git と同じ変数を受け取ります。[この Mac 上の変数](/guide/settings/general/#local-variables) を参照してください。
+- 成功したときは何も表示されません。失敗すると、Spooky がスクリプトの出力と終了ステータスを表示します。
+
+スクリプトは、リポジトリについての次の変数も受け取ります。値のない変数は設定されません。
+
+| 変数 | 値 |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | リポジトリのフォルダ。サーバリポジトリでは、サーバ上のパスです。 |
+| `SPOOKY_REPOSITORY_NAME` | そのフォルダの名前 |
+| `SPOOKY_SSH_HOST` | サーバリポジトリのホストエイリアス |
+| `SPOOKY_BRANCH` | 現在のブランチ。HEAD が分離しているときは設定されません。 |
+| `SPOOKY_HEAD` | HEAD が指すコミットの完全なハッシュ |
+| `SPOOKY_UPSTREAM` | 現在のブランチの上流。たとえば `origin/main` です。 |
+| `SPOOKY_REMOTE` | 上流があるリモート。リモートに上流がないときは `origin` です。 |
+| `SPOOKY_REMOTE_URL` | そのリモートのフェッチ URL |
+
+:::note[サーバリポジトリ]
+この場合も、スクリプトはこの Mac 上のホームフォルダで実行されます。サーバでコマンドを実行するには、上の変数を使って ssh を実行します。たとえば：
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## 比較ツールとマージツール {#diff-merge-tools}
 

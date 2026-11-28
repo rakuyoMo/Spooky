@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "无法读取登录 shell 的环境变量。";
 "settings.environment.key" = "名称";
 "settings.environment.value" = "值";
-"settings.environment.custom" = "配置执行 Git 命令时使用的自定义环境变量：";
+"settings.environment.custom" = "配置执行 Git 命令和工具栏按钮的脚本时使用的自定义环境变量：";
 "settings.environment.add" = "添加变量";
 "settings.environment.remove" = "移除变量";
-"settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令；服务器上的仓库使用服务器自己的环境。";
+"settings.environment.localOnly" = "这些设置只作用于在这台 Mac 上执行的 Git 命令和工具栏按钮的脚本；服务器仓库里的 Git 使用服务器自己的环境。";
 "settings.environment.server" = "检查服务器上 Git 使用的非交互环境：";
 "settings.environment.server.hosts" = "服务器";
 "settings.environment.server.check" = "检查";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "无法保存 SSH 配置";
 "sshHosts.error.changed" = "SSH 配置已被其它程序修改";
 "sshHosts.error.changed.help" = "这次修改没有保存。列表已换成 ~/.ssh/config 现在的内容，请重新修改。";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "工具栏按钮：";
+"toolbarButtons.name" = "名称";
+"toolbarButtons.script" = "脚本";
+"toolbarButtons.empty" = "没有工具栏按钮";
+"toolbarButtons.add" = "添加工具栏按钮";
+"toolbarButtons.edit" = "编辑…";
+"toolbarButtons.help" = "选择 “%1$@ › %2$@”，把这些按钮放到工具栏上。";
+"toolbarButtons.delete.title" = "删除工具栏按钮";
+"toolbarButtons.delete.message" = "将删除按钮 “%@” 及其脚本，并从工具栏上移除这个按钮。";
+"toolbarButtons.delete.submit" = "删除";
+"toolbarButtons.edit.title" = "编辑工具栏按钮";
+"toolbarButtons.message" = "点按按钮时在这台 Mac 上运行脚本；第一行不以 #! 开头时用 zsh 运行。以 SPOOKY_ 开头的环境变量描述当前的仓库。";
+"toolbarButtons.add.submit" = "添加";
+"toolbarButtons.edit.submit" = "保存";
+"toolbarButtons.icon" = "图标：";
+"toolbarButtons.nameField" = "名称：";
+"toolbarButtons.scriptField" = "脚本：";
+"toolbarButtons.symbols.empty" = "没有符号";
+"toolbarButtons.error" = "脚本运行失败";
+"toolbarButtons.error.help" = "请在 “设置 › 集成” 中检查这个按钮的脚本。详细信息见下方。";
+"toolbarButtons.error.status" = "退出状态为 %d。";
+"toolbarButtons.error.signal" = "被信号 %d 终止。";

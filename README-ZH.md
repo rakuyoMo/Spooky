@@ -170,7 +170,7 @@ Spooky 的日志写在 `com.rakuyo.spooky` 子系统下，category 是所在的�
 
 在设置的 “通用” 页勾选 “显示 Developer 菜单” 后，菜单栏多出 Developer 菜单：
 
-- **User Defaults**：把全部偏好打印到标准输出；重置设置，保留书签、身份档案、账号与服务器仓库的本机位置；或者不经询问清空整个偏好域
+- **User Defaults**：把全部偏好打印到标准输出；重置设置，保留书签、身份档案、账号、服务器仓库的本机位置与工具栏按钮；或者不经询问清空整个偏好域
 
 - **Test Crash Reporting**：用伪造的异常或非法内存访问让 App 崩溃，检查崩溃报告
 
@@ -186,7 +186,7 @@ Spooky 的日志写在 `com.rakuyo.spooky` 子系统下，category 是所在的�
 
 | 数据 | 位置 |
 |---|---|
-| 设置、书签、身份档案、账号列表与服务器仓库的本机位置 | 偏好设置域 `com.rakuyo.spooky` |
+| 设置、书签、身份档案、账号列表、服务器仓库的本机位置与工具栏按钮 | 偏好设置域 `com.rakuyo.spooky` |
 | 主题，一个主题一个 `.spookytheme` 文件 | `~/Library/Application Support/Spooky/Themes/` |
 | 把服务器仓库登记进最近文稿的 `.spookyrepo` 文件夹 | `~/Library/Application Support/Spooky/Locations/` |
 | “活动” 窗口里的远程操作记录，保留 7 天 | `~/Library/Application Support/Spooky/Activity/` |

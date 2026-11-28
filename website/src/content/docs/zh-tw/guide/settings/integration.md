@@ -7,7 +7,7 @@ Spooky 能與 Mac 上的其他 App 搭配：瀏覽器、比較與合併 App、�
 
 ## 整合頁 {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration] 裡有三項設定。
+:ui[app.name > settings.title] › :ui[settings.integration] 裡有四項設定。
 
 ### 來自 github.com 的連結 {#github-links}
 
@@ -38,6 +38,44 @@ Spooky 從不把你的 agent 轉送到伺服器。伺服器上的 Git 用那台�
 Spooky 上次意外結束時，下次啟動會問要不要回報這次當機。勾選 :ui[settings.crashReports.always]，就不再問，直接開啟問題頁。起初是關閉的。
 
 報告裡有什麼，見 [當機報告](/reference/data-privacy/#crash-reports)。
+
+### 工具列按鈕 {#toolbar-buttons}
+
+工具列按鈕按一下就執行你自己寫的腳本。:ui[toolbarButtons.title] 列出你建立的按鈕。
+
+- 想建立一個，按一下加入按鈕，選個圖示，取個名稱，再寫上腳本。
+- 想修改一個，按兩下它，或選取它再按一下 :ui[toolbarButtons.edit]。
+- 想刪除一個，選取它再按一下移除按鈕。每個視窗的工具列裡都不會再有它。
+
+想把按鈕放進工具列，選 :ui[menu.view > menu.customizeToolbar]，把它拖到想放的位置。名稱太長時，工具列只顯示前面一段，末尾加上 “…”。把指標停在按鈕上，可以看到完整的名稱。
+
+按一下按鈕時：
+
+- 腳本在這台 Mac 上執行，工作目錄是儲存庫資料夾。
+- 腳本交給 zsh 執行。第一行以 `#!` 開頭時，改由這一行選程式，例如 `#!/usr/bin/env python3`。想執行現有的腳本檔，就寫一條執行它的指令，例如 `sh ~/bin/deploy.sh`。
+- 腳本拿到的變數與本機的 Git 相同，見 [本機的變數](/guide/settings/general/#local-variables)。
+- 成功時什麼也不顯示。失敗時，Spooky 會顯示腳本的輸出與結束狀態。
+
+腳本還會拿到下面這些描述儲存庫的變數。沒有值的變數不設定。
+
+| 變數 | 值 |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | 儲存庫資料夾。伺服器儲存庫是它在伺服器上的路徑。 |
+| `SPOOKY_REPOSITORY_NAME` | 這個資料夾的名稱 |
+| `SPOOKY_SSH_HOST` | 伺服器儲存庫的主機別名 |
+| `SPOOKY_BRANCH` | 目前的分支。HEAD 分離時不設定。 |
+| `SPOOKY_HEAD` | HEAD 指向的提交的完整雜湊 |
+| `SPOOKY_UPSTREAM` | 目前分支的上游，例如 `origin/main` |
+| `SPOOKY_REMOTE` | 上游所在的遠端。沒有遠端上的上游時是 `origin`。 |
+| `SPOOKY_REMOTE_URL` | 這個遠端的擷取位址 |
+
+:::note[伺服器儲存庫]
+腳本同樣在這台 Mac 上執行，工作目錄是個人資料夾。想在伺服器上執行指令，就用 ssh 加上上面的變數。例如：
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## 比較與合併工具 {#diff-merge-tools}
 

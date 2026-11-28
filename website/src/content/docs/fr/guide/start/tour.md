@@ -64,7 +64,7 @@ De gauche à droite, la barre d’outils contient ces boutons :
 
 Maintenez <kbd>⌥</kbd> enfoncée et :ui[sync.fetch], :ui[sync.pull] et :ui[sync.push] passent en version rapide, comme :ui[sync.quickPush]. Une version rapide agit tout de suite sur la branche amont, sans ouvrir de zone de dialogue.
 
-:ui[toolbar.clone] apparaît tant que vous avez des clones récents. Consultez [La fenêtre Dépôts](/guide/repositories/manager/). Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter ou retirer des boutons. En plus des boutons ci-dessus, vous pouvez ajouter :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] et :ui[sync.rebaseHead], ainsi que :ui[toolbar.pushTo].
+:ui[toolbar.clone] apparaît tant que vous avez des clones récents. Consultez [La fenêtre Dépôts](/guide/repositories/manager/). Choisissez :ui[menu.view > menu.customizeToolbar] pour ajouter ou retirer des boutons. En plus des boutons ci-dessus, vous pouvez ajouter :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] et :ui[sync.rebaseHead], ainsi que :ui[toolbar.pushTo]. Vous pouvez aussi créer des boutons qui exécutent vos propres scripts. Consultez [Boutons de la barre d’outils](/guide/settings/integration/#toolbar-buttons).
 
 ### Les trois colonnes {#columns}
 

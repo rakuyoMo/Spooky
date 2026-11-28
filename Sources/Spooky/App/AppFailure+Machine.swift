@@ -4,7 +4,7 @@ import SpookyKit
 // MARK: - Machine
 
 extension AppFailure {
-    /// 本机启动终端与外部工具、目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，托管服务 API、账号、获取与检出请求的失败，以及没有全部完成的删除与导出：文案键、类别、恢复说明与原文。
+    /// 本机启动终端与外部工具、运行自定义按钮的脚本，目标机器上新建、克隆、扫描与目录浏览、仓库所在机器上 Git LFS，托管服务 API、账号、获取与检出请求的失败，以及没有全部完成的删除与导出：文案键、类别、恢复说明与原文。
     ///
     /// 不属于这几类的错误返回 nil。
     ///
@@ -21,6 +21,9 @@ extension AppFailure {
 
         case let tool as ExternalToolLaunchError:
             ("externalTool.error", .environment, "externalTool.error.help", nil, tool.diagnostic)
+
+        case let script as CustomToolbarScriptError:
+            ("toolbarButtons.error", .environment, "toolbarButtons.error.help", nil, script.diagnostic)
 
         case let host as HostOperationError:
             classification(of: host)

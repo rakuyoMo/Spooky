@@ -7,7 +7,7 @@ Spooky arbeitet mit anderen Apps auf Ihrem Mac zusammen: Ihrem Browser, Vergleic
 
 ## Die Seite „Integration“ {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration] hat drei Einstellungen.
+:ui[app.name > settings.title] › :ui[settings.integration] hat vier Einstellungen.
 
 ### Links von github.com {#github-links}
 
@@ -38,6 +38,44 @@ Spooky leitet Ihren Agent niemals an einen Server weiter. Git auf dem Server ver
 Wenn Spooky beim letzten Mal unerwartet beendet wurde, fragt es beim nächsten Start, ob der Absturz gemeldet werden soll. Aktivieren Sie :ui[settings.crashReports.always], um die Frage zu überspringen und die Issue-Seite sofort zu öffnen. Anfangs ist die Option ausgeschaltet.
 
 Was der Bericht enthält, lesen Sie unter [Absturzberichte](/reference/data-privacy/#crash-reports).
+
+### Symbolleistentasten {#toolbar-buttons}
+
+Eine Symbolleistentaste führt mit einem Klick ein eigenes Skript aus. :ui[toolbarButtons.title] listet die Tasten auf, die Sie angelegt haben.
+
+- Zum Anlegen klicken Sie auf die Hinzufügen-Taste. Wählen Sie ein Symbol, geben Sie einen Namen ein und schreiben Sie das Skript.
+- Zum Ändern doppelklicken Sie auf die Taste, oder wählen Sie sie aus und klicken Sie auf :ui[toolbarButtons.edit].
+- Zum Löschen wählen Sie die Taste aus und klicken auf die Entfernen-Taste. Sie verschwindet aus der Symbolleiste jedes Fensters.
+
+Um eine Taste in die Symbolleiste zu legen, wählen Sie :ui[menu.view > menu.customizeToolbar] und ziehen sie an die gewünschte Stelle. Ist der Name zu lang, kürzt die Symbolleiste ihn mit „…“. Bewegen Sie den Zeiger über die Taste, um den ganzen Namen zu sehen.
+
+Wenn Sie auf die Taste klicken:
+
+- Das Skript läuft auf diesem Mac, im Ordner des Repositorys.
+- Es läuft mit zsh. Beginnt die erste Zeile mit `#!`, wählt stattdessen diese Zeile das Programm, etwa `#!/usr/bin/env python3`. Um eine vorhandene Skriptdatei auszuführen, geben Sie einen Befehl ein, der sie startet, etwa `sh ~/bin/deploy.sh`.
+- Es erhält dieselben Variablen wie Git auf diesem Mac. Siehe [Variablen auf diesem Mac](/guide/settings/general/#local-variables).
+- Bei Erfolg wird nichts angezeigt. Schlägt es fehl, zeigt Spooky die Ausgabe des Skripts und den Status, mit dem es beendet wurde.
+
+Das Skript erhält außerdem diese Variablen zum Repository. Eine Variable ohne Wert wird nicht gesetzt.
+
+| Variable | Wert |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | Der Ordner des Repositorys. Bei einem Server-Repository der Pfad auf dem Server. |
+| `SPOOKY_REPOSITORY_NAME` | Der Name dieses Ordners |
+| `SPOOKY_SSH_HOST` | Der Host-Alias eines Server-Repositorys |
+| `SPOOKY_BRANCH` | Der aktuelle Branch. Nicht gesetzt, wenn HEAD losgelöst ist. |
+| `SPOOKY_HEAD` | Der vollständige Hash des Commits, auf den HEAD zeigt |
+| `SPOOKY_UPSTREAM` | Der Upstream des aktuellen Branches, etwa `origin/main` |
+| `SPOOKY_REMOTE` | Das Remote, auf dem der Upstream liegt. `origin`, wenn es keinen Upstream auf einem Remote gibt. |
+| `SPOOKY_REMOTE_URL` | Die URL dieses Remotes zum Abrufen |
+
+:::note[Server-Repositorys]
+Auch dann läuft das Skript auf diesem Mac, in Ihrem Benutzerordner. Um Befehle auf dem Server auszuführen, verwenden Sie ssh mit den Variablen oben. Zum Beispiel:
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## Vergleichs- und Zusammenführungswerkzeuge {#diff-merge-tools}
 

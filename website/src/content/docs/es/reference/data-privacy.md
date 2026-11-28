@@ -9,7 +9,7 @@ No existe ninguna cuenta de Spooky, y Spooky no recoge datos de uso. Esta págin
 
 | Qué | Dónde |
 |---|---|
-| Los ajustes, la lista de repositorios, los perfiles de usuario, la lista de cuentas de alojamiento y las ubicaciones de los repositorios de servidor en este Mac | Las preferencias de Spooky, `com.rakuyo.spooky` |
+| Los ajustes, la lista de repositorios, los perfiles de usuario, la lista de cuentas de alojamiento, las ubicaciones de los repositorios de servidor en este Mac y los botones de la barra de herramientas con sus scripts | Las preferencias de Spooky, `com.rakuyo.spooky` |
 | Los temas, un archivo `.spookytheme` cada uno | `~/Library/Application Support/Spooky/Themes/` |
 | Pequeñas carpetas `.spookyrepo` que permiten que los repositorios de servidor aparezcan entre los documentos recientes | `~/Library/Application Support/Spooky/Locations/` |
 | Los registros de las operaciones con remotos de :ui[activity.title], como fetch, pull y push, que se conservan 7 días | `~/Library/Application Support/Spooky/Activity/` |

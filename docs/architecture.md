@@ -54,6 +54,7 @@ Spooky 由两个 target 组成：
 | `Activity/` | Activity 窗口、按 Remote / Repository / Service 分页的操作与读取记录、读取的增减计数与它的基准、Remote 记录与增减基准的本机保存 |
 | `ExternalTools/` | 外部比较与合并工具、Open With 与远程编辑 |
 | `Settings/`、`RepositorySettings/` | 设置窗口与仓库设置 |
+| `ToolbarButtons/` | 工具栏的自定义按钮：按钮的保存、设置页的按钮表与编辑对话框、符号面板、脚本的运行 |
 | `LocalLocation/` | 服务器仓库的本机位置对话框与 Show in Finder 的流程 |
 | `Accounts/`、`PullRequests/` | 托管账号、Pull Request 与 Merge Request |
 | `Submodules/`、`Worktrees/`、`LFS/` | 子模块、工作树与 Git LFS 的视图与对话框 |
@@ -378,6 +379,15 @@ Spooky 由两个 target 组成：
 - 窗口收窄时先把各分栏挤窄、之后才跨过界线，所以回到常规版式时要恢复的是使用者定下的宽度：
   - 使用者拖动分隔线定下的宽度记在 `settledSplitWidths`，窗口变宽变窄引起的挤压不记
   - 换成极窄版式时把它们存进 `regularSplitWidths`；回到常规版式后随窗口变宽逐个放回，使用者再拖动分隔线的那一栏不再放回
+
+## 工具栏的自定义按钮
+
+- 按钮由 `CustomToolbarButtonStore` 存在偏好 `customToolbarButtons` 里，所有仓库窗口共用；工具栏项的标识是 `customButton.<按钮的 UUID>`，自定义面板在内置项之后按添加的先后列出
+- 同一标识的工具栏同步增删：删除按钮后，各窗口只移除自己工具栏里还在的那一项；以前保存的排布里已删除的按钮由系统跳过
+- 脚本一律在本机运行（`CustomToolbarScript`），服务器仓库的脚本经 `SPOOKY_SSH_HOST` 与 `SPOOKY_REPOSITORY_PATH` 自己连到服务器
+  - 脚本写进 `0700` 的临时目录再执行：第一行以 `#!` 开头时由系统按这一行选解释器，否则交给 `/bin/zsh`
+  - 本机仓库在仓库根目录运行，服务器仓库在家目录运行；环境是继承的环境加上本机执行 Git 时设置的变量（`LocalExecutionSettings.variables`），再写入描述仓库的 `SPOOKY_*` 变量
+  - 标准输出与标准错误合在一起，只留最后 64 KiB，只在失败时连同结束的状态显示在错误框里
 
 ## 仓库窗口的键盘焦点
 

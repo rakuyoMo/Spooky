@@ -165,6 +165,7 @@ extension RepositoryWindowController {
         updateToolbarItems()
         observeClones()
         observeSuperproject()
+        observeToolbarButtons()
     }
 
     /// 工具栏 Clone 项：开关最近克隆的气泡，点气泡外面关闭。
@@ -211,9 +212,9 @@ extension RepositoryWindowController {
         RepositoryToolbar.defaultItems
     }
 
-    /// 自定义面板里可选的项。
+    /// 自定义面板里可选的项：内置项之后是设置里添加的自定义按钮。
     func toolbarAllowedItemIdentifiers(_: NSToolbar) -> [NSToolbarItem.Identifier] {
-        RepositoryToolbar.allowedItems
+        RepositoryToolbar.allowedItems + customButtonIdentifiers
     }
 
     /// 不能移除或移动的项。
@@ -221,7 +222,7 @@ extension RepositoryWindowController {
         RepositoryToolbar.immovableItems
     }
 
-    /// 按标识创建工具栏项；同步、储藏与搜索框由各自的扩展创建。
+    /// 按标识创建工具栏项；同步、储藏、搜索框与自定义按钮由各自的扩展创建。
     func toolbar(
         _: NSToolbar,
         itemForItemIdentifier identifier: NSToolbarItem.Identifier,
@@ -263,7 +264,7 @@ extension RepositoryWindowController {
             return makeDetailSeparator()
 
         default:
-            return makeButton(identifier)
+            return makeButton(identifier) ?? makeCustomButtonItem(identifier)
         }
     }
 

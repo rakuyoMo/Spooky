@@ -82,7 +82,12 @@ extension NavigationTests {
     ///   - commits: 按顺序写入 main 的提交信息；nil 时只有一个添加 a.txt 的提交。
     ///   - isolatesToolbar: 工具栏改用本窗口独有的标识。切换显示方式的测试都要打开：同一标识的工具栏会同步显示方式，
     ///     切换一次就要逐个重排同一进程里其它测试的全部仓库窗口。
-    static func makeWindow(commits: [String]? = nil, isolatesToolbar: Bool = false) async throws -> WindowFixture {
+    ///   - toolbarButtons: 工具栏上可以放的自定义按钮。
+    static func makeWindow(
+        commits: [String]? = nil,
+        isolatesToolbar: Bool = false,
+        toolbarButtons: CustomToolbarButtonStore = .shared
+    ) async throws -> WindowFixture {
         let directory = try FileViewsTests.temporaryDirectory()
         let location = RepositoryLocation.local(path: directory.path)
         let runner = try await FileViewsTests.initializeRepository(at: location)
@@ -104,7 +109,8 @@ extension NavigationTests {
         let controller = RepositoryWindowController(
             coordinator: coordinator,
             session: RepositorySession(makeRunner: { _ in runner }),
-            toolbarIdentifier: isolatesToolbar ? NSToolbar.Identifier(identifier) : RepositoryToolbar.identifier
+            toolbarIdentifier: isolatesToolbar ? NSToolbar.Identifier(identifier) : RepositoryToolbar.identifier,
+            toolbarButtons: toolbarButtons
         )
 
         controller.display(location)
