@@ -64,7 +64,7 @@ Von links nach rechts enthält die Symbolleiste diese Tasten:
 
 Halten Sie <kbd>⌥</kbd> gedrückt, und :ui[sync.fetch], :ui[sync.pull] und :ui[sync.push] werden zu Schnellversionen, etwa :ui[sync.quickPush]. Eine Schnellversion arbeitet sofort mit dem Tracking-Branch, ohne ein Dialogfenster zu öffnen.
 
-:ui[toolbar.clone] erscheint, solange es kürzlich geklonte Repositorys gibt. Siehe [Das Fenster „Repositorys“](/guide/repositories/manager/). Wählen Sie :ui[menu.view > menu.customizeToolbar], um Tasten hinzuzufügen oder zu entfernen. Neben den Tasten oben können Sie :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] und :ui[sync.rebaseHead] sowie :ui[toolbar.pushTo] hinzufügen.
+:ui[toolbar.clone] erscheint, solange es kürzlich geklonte Repositorys gibt. Siehe [Das Fenster „Repositorys“](/guide/repositories/manager/). Wählen Sie :ui[menu.view > menu.customizeToolbar], um Tasten hinzuzufügen oder zu entfernen. Neben den Tasten oben können Sie :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] und :ui[sync.rebaseHead] sowie :ui[toolbar.pushTo] hinzufügen. Sie können auch Tasten anlegen, die eigene Skripte ausführen. Siehe [Symbolleistentasten](/guide/settings/integration/#toolbar-buttons).
 
 ### Die drei Spalten {#columns}
 

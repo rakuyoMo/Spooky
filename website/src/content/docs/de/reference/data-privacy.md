@@ -9,7 +9,7 @@ Es gibt keinen Spooky-Account, und Spooky erfasst keine Nutzungsdaten. Diese Sei
 
 | Was | Wo |
 |---|---|
-| Einstellungen, die Liste der Repositorys, Benutzerprofile, die Liste der Hosting-Accounts und die Orte von Server-Repositorys auf diesem Mac | Einstellungen von Spooky, `com.rakuyo.spooky` |
+| Einstellungen, die Liste der Repositorys, Benutzerprofile, die Liste der Hosting-Accounts, die Orte von Server-Repositorys auf diesem Mac sowie Symbolleistentasten mit ihren Skripten | Einstellungen von Spooky, `com.rakuyo.spooky` |
 | Themen, je eine `.spookytheme`-Datei | `~/Library/Application Support/Spooky/Themes/` |
 | Kleine `.spookyrepo`-Ordner, durch die Server-Repositorys unter den zuletzt benutzten Dokumenten erscheinen | `~/Library/Application Support/Spooky/Locations/` |
 | Einträge zu Remote-Vorgängen in :ui[activity.title], etwa Abrufen, Pullen und Pushen, 7 Tage lang aufbewahrt | `~/Library/Application Support/Spooky/Activity/` |

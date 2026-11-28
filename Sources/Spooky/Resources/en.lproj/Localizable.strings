@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "The login shell’s environment variables couldn’t be read.";
 "settings.environment.key" = "Key";
 "settings.environment.value" = "Value";
-"settings.environment.custom" = "Configure custom environment variables used when running Git commands:";
+"settings.environment.custom" = "Configure custom environment variables used when running Git commands and toolbar button scripts:";
 "settings.environment.add" = "Add Variable";
 "settings.environment.remove" = "Remove Variable";
-"settings.environment.localOnly" = "These settings apply only to Git commands run on this Mac. Repositories on servers use the server’s own environment.";
+"settings.environment.localOnly" = "These settings apply only to Git commands and toolbar button scripts run on this Mac. Git in server repositories uses the server’s own environment.";
 "settings.environment.server" = "Check the non-interactive environment that Git uses on a server:";
 "settings.environment.server.hosts" = "Servers";
 "settings.environment.server.check" = "Check";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "Couldn’t Save the SSH Configuration";
 "sshHosts.error.changed" = "The SSH Configuration Was Changed by Another App";
 "sshHosts.error.changed.help" = "Your change wasn’t saved. The list now shows the current content of ~/.ssh/config. Make the change again.";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "Toolbar buttons:";
+"toolbarButtons.name" = "Name";
+"toolbarButtons.script" = "Script";
+"toolbarButtons.empty" = "No Toolbar Buttons";
+"toolbarButtons.add" = "Add Toolbar Button";
+"toolbarButtons.edit" = "Edit…";
+"toolbarButtons.help" = "Choose %1$@ › %2$@ to put these buttons in the toolbar.";
+"toolbarButtons.delete.title" = "Delete Toolbar Button";
+"toolbarButtons.delete.message" = "The button “%@” and its script will be deleted, and the button is removed from the toolbar.";
+"toolbarButtons.delete.submit" = "Delete";
+"toolbarButtons.edit.title" = "Edit Toolbar Button";
+"toolbarButtons.message" = "Clicking the button runs the script on this Mac, in zsh unless the first line starts with #!. Environment variables starting with SPOOKY_ describe the repository.";
+"toolbarButtons.add.submit" = "Add";
+"toolbarButtons.edit.submit" = "Save";
+"toolbarButtons.icon" = "Icon:";
+"toolbarButtons.nameField" = "Name:";
+"toolbarButtons.scriptField" = "Script:";
+"toolbarButtons.symbols.empty" = "No Symbols";
+"toolbarButtons.error" = "Script Failed";
+"toolbarButtons.error.help" = "Check the button’s script in Settings › Integration. The details are shown below.";
+"toolbarButtons.error.status" = "Exited with status %d.";
+"toolbarButtons.error.signal" = "Terminated by signal %d.";

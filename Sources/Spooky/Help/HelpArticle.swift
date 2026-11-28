@@ -145,6 +145,11 @@ enum HelpArticle: String, CaseIterable {
     /// “发布仓库”：在托管服务上新建仓库并推送。
     case publishRepository = "guide/hosting/accounts/#publish"
 
+    // MARK: 设置
+
+    /// “工具栏按钮”：添加或编辑工具栏的自定义按钮。
+    case toolbarButtons = "guide/settings/integration/#toolbar-buttons"
+
     /// 这一节在官网上的地址。
     var url: URL? {
         URL(string: rawValue, relativeTo: HelpLinks.website)?.absoluteURL

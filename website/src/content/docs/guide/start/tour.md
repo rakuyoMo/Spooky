@@ -64,7 +64,7 @@ From left to right, the toolbar has these buttons:
 
 Hold <kbd>⌥</kbd> and :ui[sync.fetch], :ui[sync.pull], and :ui[sync.push] become quick versions, such as :ui[sync.quickPush]. A quick version works with the tracking branch right away, without opening a dialog.
 
-:ui[toolbar.clone] appears while you have recent clones. See [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] and :ui[sync.rebaseHead], and :ui[toolbar.pushTo].
+:ui[toolbar.clone] appears while you have recent clones. See [The Repositories Window](/guide/repositories/manager/). Choose :ui[menu.view > menu.customizeToolbar] to add or remove buttons. Besides the buttons above, you can add :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] and :ui[sync.rebaseHead], and :ui[toolbar.pushTo]. You can also make buttons that run your own scripts. See [Toolbar buttons](/guide/settings/integration/#toolbar-buttons).
 
 ### The three columns {#columns}
 

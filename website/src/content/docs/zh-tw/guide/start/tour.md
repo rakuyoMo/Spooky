@@ -64,7 +64,7 @@ Spooky 的視窗顯示兩樣東西：儲存庫管理和儲存庫。儲存庫管�
 
 按住 <kbd>⌥</kbd> 時，:ui[sync.fetch]、:ui[sync.pull] 與 :ui[sync.push] 會換成快速版本，例如 :ui[sync.quickPush]。快速版本直接對追蹤分支執行，不跳出對話框。
 
-有最近的複製時，工具列上還會出現 :ui[toolbar.clone]，見 [儲存庫管理視窗](/guide/repositories/manager/)。想增減按鈕，選 :ui[menu.view > menu.customizeToolbar]。除了上面這些，還可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 與 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。
+有最近的複製時，工具列上還會出現 :ui[toolbar.clone]，見 [儲存庫管理視窗](/guide/repositories/manager/)。想增減按鈕，選 :ui[menu.view > menu.customizeToolbar]。除了上面這些，還可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 與 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。還可以建立執行自己腳本的按鈕，見 [工具列按鈕](/guide/settings/integration/#toolbar-buttons)。
 
 ### 三欄 {#columns}
 

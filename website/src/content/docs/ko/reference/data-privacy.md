@@ -9,7 +9,7 @@ Spooky에는 계정이 없으며, Spooky는 사용 데이터를 수집하지 않
 
 | 무엇을 | 어디에 |
 |---|---|
-| 설정, 저장소 목록, 사용자 프로필, 호스팅 계정 목록, 서버 저장소의 이 Mac의 위치 | Spooky의 환경설정 `com.rakuyo.spooky` |
+| 설정, 저장소 목록, 사용자 프로필, 호스팅 계정 목록, 서버 저장소의 이 Mac의 위치, 도구 막대 버튼과 그 스크립트 | Spooky의 환경설정 `com.rakuyo.spooky` |
 | 테마. 테마마다 `.spookytheme` 파일 하나 | `~/Library/Application Support/Spooky/Themes/` |
 | 서버 저장소가 최근 문서에 나타나게 해 주는 작은 `.spookyrepo` 폴더 | `~/Library/Application Support/Spooky/Locations/` |
 | :ui[activity.title]에 있는 가져오기, 풀, 푸시 같은 원격 작업의 기록. 7일 동안 보관됩니다 | `~/Library/Application Support/Spooky/Activity/` |

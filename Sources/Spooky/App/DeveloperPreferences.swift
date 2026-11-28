@@ -10,7 +10,8 @@ enum DeveloperPreferences {
     /// 本机仓库的文件监听与服务器仓库的轮询是否触发刷新；没有记录时触发。
     static let autoReloadKey = "autoReloadRepository"
 
-    /// Reset User Defaults 保留的数据：书签与最近打开列表的清空时间、身份档案、托管账号、远端地址与账号的关联，以及服务器仓库的本机位置（含迁移前只记手动指定文件夹的旧记录）。
+    /// Reset User Defaults 保留的数据：书签与最近打开列表的清空时间、身份档案、托管账号、远端地址与账号的关联、
+    /// 服务器仓库的本机位置（含迁移前只记手动指定文件夹的旧记录），以及工具栏的自定义按钮。
     @MainActor
     static let dataKeys = [
         RepositoryBookmarks.key,
@@ -20,6 +21,7 @@ enum DeveloperPreferences {
         PullRequestAssociations.key,
         ServerLocalLocation.key,
         ServerLocalLocation.legacyKey,
+        CustomToolbarButtonStore.key,
     ]
 
     /// 文件监听与轮询发现变化时是否刷新仓库。

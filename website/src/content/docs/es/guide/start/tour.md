@@ -64,7 +64,7 @@ De izquierda a derecha, la barra de herramientas tiene estos botones:
 
 Mantén pulsada <kbd>⌥</kbd> y :ui[sync.fetch], :ui[sync.pull] y :ui[sync.push] pasan a su versión rápida, como :ui[sync.quickPush]. Una versión rápida trabaja directamente con la rama de seguimiento, sin abrir ningún diálogo.
 
-:ui[toolbar.clone] aparece mientras tienes clones recientes. Consulta [La ventana Repositorios](/guide/repositories/manager/). Selecciona :ui[menu.view > menu.customizeToolbar] para añadir o quitar botones. Además de los botones anteriores, puedes añadir :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] y :ui[sync.rebaseHead], y :ui[toolbar.pushTo].
+:ui[toolbar.clone] aparece mientras tienes clones recientes. Consulta [La ventana Repositorios](/guide/repositories/manager/). Selecciona :ui[menu.view > menu.customizeToolbar] para añadir o quitar botones. Además de los botones anteriores, puedes añadir :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge] y :ui[sync.rebaseHead], y :ui[toolbar.pushTo]. También puedes crear botones que ejecuten tus propios scripts. Consulta [Botones de la barra de herramientas](/guide/settings/integration/#toolbar-buttons).
 
 ### Las tres columnas {#columns}
 

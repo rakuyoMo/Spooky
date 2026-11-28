@@ -9,7 +9,7 @@ Spooky 没有自己的账号，也不收集使用数据。这一页列出它存�
 
 | 内容 | 位置 |
 |---|---|
-| 设置、仓库列表、身份档案、托管账号的列表，以及服务器仓库在这台 Mac 上的位置 | Spooky 的偏好设置 `com.rakuyo.spooky` |
+| 设置、仓库列表、身份档案、托管账号的列表、服务器仓库在这台 Mac 上的位置，以及工具栏按钮与它们的脚本 | Spooky 的偏好设置 `com.rakuyo.spooky` |
 | 主题，每个主题一个 `.spookytheme` 文件 | `~/Library/Application Support/Spooky/Themes/` |
 | 让服务器仓库能出现在最近使用的文稿里的 `.spookyrepo` 小文件夹 | `~/Library/Application Support/Spooky/Locations/` |
 | :ui[activity.title] 里获取、拉取、推送等远端操作的记录，保留 7 天 | `~/Library/Application Support/Spooky/Activity/` |

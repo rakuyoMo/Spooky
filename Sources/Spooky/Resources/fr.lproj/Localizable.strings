@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "Impossible de lire les variables d’environnement du shell de connexion.";
 "settings.environment.key" = "Nom";
 "settings.environment.value" = "Valeur";
-"settings.environment.custom" = "Configurez les variables d’environnement personnalisées utilisées lors de l’exécution des commandes Git :";
+"settings.environment.custom" = "Configurez les variables d’environnement personnalisées utilisées lors de l’exécution des commandes Git et des scripts des boutons de la barre d’outils :";
 "settings.environment.add" = "Ajouter une variable";
 "settings.environment.remove" = "Supprimer la variable";
-"settings.environment.localOnly" = "Ces réglages ne s’appliquent qu’aux commandes Git exécutées sur ce Mac. Les dépôts sur des serveurs utilisent l’environnement du serveur.";
+"settings.environment.localOnly" = "Ces réglages ne s’appliquent qu’aux commandes Git et aux scripts des boutons de la barre d’outils exécutés sur ce Mac. Git, dans les dépôts sur des serveurs, utilise l’environnement du serveur.";
 "settings.environment.server" = "Vérifier l’environnement non interactif utilisé par Git sur un serveur :";
 "settings.environment.server.hosts" = "Serveurs";
 "settings.environment.server.check" = "Vérifier";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "Impossible d’enregistrer la configuration SSH";
 "sshHosts.error.changed" = "La configuration SSH a été modifiée par une autre app";
 "sshHosts.error.changed.help" = "Votre modification n’a pas été enregistrée. La liste affiche maintenant le contenu actuel de ~/.ssh/config. Effectuez de nouveau la modification.";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "Boutons de la barre d’outils :";
+"toolbarButtons.name" = "Nom";
+"toolbarButtons.script" = "Script";
+"toolbarButtons.empty" = "Aucun bouton de barre d’outils";
+"toolbarButtons.add" = "Ajouter un bouton de barre d’outils";
+"toolbarButtons.edit" = "Modifier…";
+"toolbarButtons.help" = "Choisissez %1$@ › %2$@ pour placer ces boutons dans la barre d’outils.";
+"toolbarButtons.delete.title" = "Supprimer le bouton de barre d’outils";
+"toolbarButtons.delete.message" = "Le bouton « %@ » et son script seront supprimés, et le bouton sera retiré de la barre d’outils.";
+"toolbarButtons.delete.submit" = "Supprimer";
+"toolbarButtons.edit.title" = "Modifier le bouton de barre d’outils";
+"toolbarButtons.message" = "Cliquer sur le bouton exécute le script sur ce Mac, avec zsh sauf si la première ligne commence par #!. Les variables d’environnement commençant par SPOOKY_ décrivent le dépôt.";
+"toolbarButtons.add.submit" = "Ajouter";
+"toolbarButtons.edit.submit" = "Enregistrer";
+"toolbarButtons.icon" = "Icône :";
+"toolbarButtons.nameField" = "Nom :";
+"toolbarButtons.scriptField" = "Script :";
+"toolbarButtons.symbols.empty" = "Aucun symbole";
+"toolbarButtons.error" = "Échec du script";
+"toolbarButtons.error.help" = "Vérifiez le script du bouton dans Réglages › Intégration. Les détails figurent ci-dessous.";
+"toolbarButtons.error.status" = "Terminé avec le code de sortie %d.";
+"toolbarButtons.error.signal" = "Interrompu par le signal %d.";

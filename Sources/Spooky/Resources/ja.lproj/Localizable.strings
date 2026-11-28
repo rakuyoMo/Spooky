@@ -1842,10 +1842,10 @@
 "settings.environment.loginShellFailed" = "ログインシェルの環境変数を読み込めませんでした。";
 "settings.environment.key" = "名前";
 "settings.environment.value" = "値";
-"settings.environment.custom" = "Git コマンドの実行時に使うカスタム環境変数を設定します：";
+"settings.environment.custom" = "Git コマンドとツールバーボタンのスクリプトの実行時に使うカスタム環境変数を設定します：";
 "settings.environment.add" = "変数を追加";
 "settings.environment.remove" = "変数を削除";
-"settings.environment.localOnly" = "これらの設定は、この Mac で実行する Git コマンドにのみ適用されます。サーバ上のリポジトリはサーバ自身の環境を使います。";
+"settings.environment.localOnly" = "これらの設定は、この Mac で実行する Git コマンドとツールバーボタンのスクリプトにのみ適用されます。サーバ上のリポジトリの Git はサーバ自身の環境を使います。";
 "settings.environment.server" = "サーバ上で Git が使う非対話環境を確認：";
 "settings.environment.server.hosts" = "サーバ";
 "settings.environment.server.check" = "確認";
@@ -2948,3 +2948,27 @@
 "sshHosts.error.write" = "SSH 設定を保存できません";
 "sshHosts.error.changed" = "SSH 設定がほかのアプリで変更されました";
 "sshHosts.error.changed.help" = "今回の変更は保存されていません。リストは ~/.ssh/config の現在の内容に更新されました。もう一度変更してください。";
+
+/* Settings → Integration 的工具栏按钮：按钮表、添加与编辑的对话框、符号面板与脚本失败的错误框。 */
+"toolbarButtons.title" = "ツールバーボタン：";
+"toolbarButtons.name" = "名前";
+"toolbarButtons.script" = "スクリプト";
+"toolbarButtons.empty" = "ツールバーボタンがありません";
+"toolbarButtons.add" = "ツールバーボタンを追加";
+"toolbarButtons.edit" = "編集…";
+"toolbarButtons.help" = "「%1$@ › %2$@」を選ぶと、これらのボタンをツールバーに置けます。";
+"toolbarButtons.delete.title" = "ツールバーボタンを削除";
+"toolbarButtons.delete.message" = "ボタン「%@」とそのスクリプトを削除し、ツールバーからも取り除きます。";
+"toolbarButtons.delete.submit" = "削除";
+"toolbarButtons.edit.title" = "ツールバーボタンを編集";
+"toolbarButtons.message" = "ボタンをクリックすると、この Mac でスクリプトを実行します。1 行目が #! で始まらないときは zsh で実行します。SPOOKY_ で始まる環境変数がリポジトリを表します。";
+"toolbarButtons.add.submit" = "追加";
+"toolbarButtons.edit.submit" = "保存";
+"toolbarButtons.icon" = "アイコン：";
+"toolbarButtons.nameField" = "名前：";
+"toolbarButtons.scriptField" = "スクリプト：";
+"toolbarButtons.symbols.empty" = "シンボルがありません";
+"toolbarButtons.error" = "スクリプトが失敗しました";
+"toolbarButtons.error.help" = "「設定 › 連携」でこのボタンのスクリプトを確認してください。詳細は以下のとおりです。";
+"toolbarButtons.error.status" = "終了ステータス %d で終了しました。";
+"toolbarButtons.error.signal" = "シグナル %d で終了しました。";

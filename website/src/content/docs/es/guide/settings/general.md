@@ -107,7 +107,7 @@ Las apps abiertas desde el Finder o el Dock no reciben el entorno que tienes en 
 
 | Ajuste | Qué hace |
 |---|---|
-| :ui[settings.environment.loginShell] | Inicia una vez tu shell de inicio de sesión, lee las variables que definen sus archivos de inicio y se las pasa a Git. La tabla de debajo muestra lo que se ha leído. Activado al principio. |
+| :ui[settings.environment.loginShell] | Inicia una vez tu shell de inicio de sesión, lee las variables que definen sus archivos de inicio y se las pasa a Git y a los scripts de los botones de la barra de herramientas. La tabla de debajo muestra lo que se ha leído. Activado al principio. |
 | :ui[settings.environment.custom] | Las variables que añades tú. Haz clic en el botón de añadir para añadir una, y en el de eliminar para quitar la seleccionada. Tienen prioridad sobre las del shell de inicio de sesión. |
 
 Algunas cosas que conviene saber:
@@ -118,7 +118,7 @@ Algunas cosas que conviene saber:
 - Para usar un agente SSH distinto del del sistema, define `SSH_AUTH_SOCK` aquí o en tu shell de inicio de sesión. Consulta [Agente SSH](/guide/settings/integration/#ssh-agent).
 
 :::note[Repositorios de servidor]
-Estas variables solo se aplican al Git de este Mac. El Git de un servidor usa el entorno del propio servidor.
+Estas variables solo se aplican al Git y a los scripts de los botones de la barra de herramientas de este Mac. El Git de un servidor usa el entorno del propio servidor.
 :::
 
 ### Comprobar un servidor {#server-check}

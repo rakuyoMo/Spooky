@@ -21,6 +21,9 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     /// 每个窗口独立拥有读取任务与选区。
     let session: RepositorySession
 
+    /// 工具栏上可以放的自定义按钮，所有仓库窗口共用。
+    let toolbarButtons: CustomToolbarButtonStore
+
     /// 窗口是否正在显示仓库管理。
     private(set) var showsManager = true
 
@@ -98,13 +101,16 @@ final class RepositoryWindowController: NSWindowController, NSWindowDelegate,
     ///   - coordinator: 跨窗口的打开与记录管理。
     ///   - session: 窗口独立拥有的仓库会话。
     ///   - toolbarIdentifier: 工具栏标识；标识相同的工具栏同步显示方式与排布，App 的仓库窗口都用默认的标识。
+    ///   - toolbarButtons: 工具栏上可以放的自定义按钮；测试传入读写独立偏好域的存取。
     init(
         coordinator: SpookyApplicationController,
         session: RepositorySession = RepositorySession(),
-        toolbarIdentifier: NSToolbar.Identifier = RepositoryToolbar.identifier
+        toolbarIdentifier: NSToolbar.Identifier = RepositoryToolbar.identifier,
+        toolbarButtons: CustomToolbarButtonStore = .shared
     ) {
         self.coordinator = coordinator
         self.session = session
+        self.toolbarButtons = toolbarButtons
 
         let window = RepositoryWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1000, height: 540),

@@ -64,7 +64,7 @@ Spooky 的窗口显示两样东西：仓库管理和仓库。仓库管理列出�
 
 按住 <kbd>⌥</kbd> 时，:ui[sync.fetch]、:ui[sync.pull] 与 :ui[sync.push] 会换成快速版本，例如 :ui[sync.quickPush]。快速版本直接对跟踪分支执行，不弹出对话框。
 
-有最近的克隆时，工具栏上还会出现 :ui[toolbar.clone]，见 [仓库管理窗口](/guide/repositories/manager/)。想增减按钮，选 :ui[menu.view > menu.customizeToolbar]。除了上面这些，还可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 与 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。
+有最近的克隆时，工具栏上还会出现 :ui[toolbar.clone]，见 [仓库管理窗口](/guide/repositories/manager/)。想增减按钮，选 :ui[menu.view > menu.customizeToolbar]。除了上面这些，还可以加上 :ui[toolbar.quickActions]、:ui[toolbar.synchronize]、:ui[sync.merge] 与 :ui[sync.rebaseHead]，以及 :ui[toolbar.pushTo]。还可以建运行自己脚本的按钮，见 [工具栏按钮](/guide/settings/integration/#toolbar-buttons)。
 
 ### 三栏 {#columns}
 

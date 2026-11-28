@@ -64,7 +64,7 @@ Spooky를 처음 열면 저장소 보기가 나타납니다. 사이드바의 :ui
 
 <kbd>⌥</kbd>을 누르고 있으면 :ui[sync.fetch], :ui[sync.pull], :ui[sync.push]가 :ui[sync.quickPush] 같은 빠른 버전으로 바뀝니다. 빠른 버전은 대화상자를 열지 않고 추적 브랜치를 대상으로 바로 실행합니다.
 
-:ui[toolbar.clone]는 최근에 복제한 항목이 있는 동안 나타납니다. [저장소 윈도우](/guide/repositories/manager/)를 참고하세요. 버튼을 추가하거나 제거하려면 :ui[menu.view > menu.customizeToolbar]를 선택합니다. 위의 버튼 외에 :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge]과 :ui[sync.rebaseHead], :ui[toolbar.pushTo]도 추가할 수 있습니다.
+:ui[toolbar.clone]는 최근에 복제한 항목이 있는 동안 나타납니다. [저장소 윈도우](/guide/repositories/manager/)를 참고하세요. 버튼을 추가하거나 제거하려면 :ui[menu.view > menu.customizeToolbar]를 선택합니다. 위의 버튼 외에 :ui[toolbar.quickActions], :ui[toolbar.synchronize], :ui[sync.merge]과 :ui[sync.rebaseHead], :ui[toolbar.pushTo]도 추가할 수 있습니다. 직접 작성한 스크립트를 실행하는 버튼도 만들 수 있습니다. [도구 막대 버튼](/guide/settings/integration/#toolbar-buttons)을 참고하세요.
 
 ### 세 개의 열 {#columns}
 

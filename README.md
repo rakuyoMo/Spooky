@@ -170,7 +170,7 @@ Repository paths, host aliases, and other user data are marked private, so the l
 
 Turn on **Show Developer menu** in **Settings › General** to add the **Developer** menu:
 
-- **User Defaults**: log all preferences to standard output, reset settings while keeping bookmarks, user profiles, accounts, and the locations of server repositories on this Mac, or clear the whole preferences domain without asking
+- **User Defaults**: log all preferences to standard output, reset settings while keeping bookmarks, user profiles, accounts, the locations of server repositories on this Mac, and toolbar buttons, or clear the whole preferences domain without asking
 
 - **Test Crash Reporting**: crash with a fake exception or a bad access, to test crash reports
 
@@ -186,7 +186,7 @@ On your Mac:
 
 | Data | Location |
 |---|---|
-| Settings, bookmarks, user profiles, the account list, and the locations of server repositories on this Mac | Preferences domain `com.rakuyo.spooky` |
+| Settings, bookmarks, user profiles, the account list, the locations of server repositories on this Mac, and toolbar buttons | Preferences domain `com.rakuyo.spooky` |
 | Themes, one `.spookytheme` file each | `~/Library/Application Support/Spooky/Themes/` |
 | The `.spookyrepo` folders that list server repositories in recent documents | `~/Library/Application Support/Spooky/Locations/` |
 | Remote operations in the Activity window, kept for 7 days | `~/Library/Application Support/Spooky/Activity/` |

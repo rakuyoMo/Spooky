@@ -107,7 +107,7 @@ Apps, die aus dem Finder oder dem Dock geöffnet werden, erhalten nicht die Umge
 
 | Einstellung | Wirkung |
 |---|---|
-| :ui[settings.environment.loginShell] | Startet Ihre Login-Shell einmal, liest die Variablen, die ihre Startdateien setzen, und gibt sie an Git weiter. Die Tabelle darunter führt auf, was gelesen wurde. Anfangs eingeschaltet. |
+| :ui[settings.environment.loginShell] | Startet Ihre Login-Shell einmal, liest die Variablen, die ihre Startdateien setzen, und gibt sie an Git und die Skripte der Symbolleistentasten weiter. Die Tabelle darunter führt auf, was gelesen wurde. Anfangs eingeschaltet. |
 | :ui[settings.environment.custom] | Variablen, die Sie selbst hinzufügen. Klicken Sie auf die Hinzufügen-Taste, um eine hinzuzufügen, und auf die Entfernen-Taste, um die ausgewählte zu entfernen. Sie haben Vorrang vor denen der Login-Shell. |
 
 Einige Dinge, die Sie wissen sollten:
@@ -118,7 +118,7 @@ Einige Dinge, die Sie wissen sollten:
 - Um einen anderen SSH-Agent als den des Systems zu verwenden, setzen Sie `SSH_AUTH_SOCK` hier oder in Ihrer Login-Shell. Siehe [SSH-Agent](/guide/settings/integration/#ssh-agent).
 
 :::note[Server-Repositorys]
-Diese Variablen gelten nur für Git auf diesem Mac. Git auf einem Server verwendet die eigene Umgebung des Servers.
+Diese Variablen gelten nur für Git und die Skripte der Symbolleistentasten auf diesem Mac. Git auf einem Server verwendet die eigene Umgebung des Servers.
 :::
 
 ### Einen Server prüfen {#server-check}

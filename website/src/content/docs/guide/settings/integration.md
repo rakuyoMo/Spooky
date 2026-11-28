@@ -7,7 +7,7 @@ Spooky works with other apps on your Mac: your browser, diff and merge apps, edi
 
 ## The Integration page {#integration-page}
 
-:ui[app.name > settings.title] › :ui[settings.integration] has three settings.
+:ui[app.name > settings.title] › :ui[settings.integration] has four settings.
 
 ### Links from github.com {#github-links}
 
@@ -38,6 +38,44 @@ Spooky never forwards your agent to a server. Git on the server uses that machin
 If Spooky quit unexpectedly last time, it asks at the next launch whether to report the crash. Select :ui[settings.crashReports.always] to skip the question and open the issue page right away. It’s off at first.
 
 See [Crash reports](/reference/data-privacy/#crash-reports) for what the report contains.
+
+### Toolbar buttons {#toolbar-buttons}
+
+A toolbar button runs a script of your own with one click. :ui[toolbarButtons.title] lists the buttons you’ve made.
+
+- To make one, click the add button. Pick an icon, give it a name, and type the script.
+- To change one, double-click it, or select it and click :ui[toolbarButtons.edit].
+- To delete one, select it and click the remove button. It disappears from the toolbar of every window.
+
+To put a button in the toolbar, choose :ui[menu.view > menu.customizeToolbar] and drag it anywhere you like. If the name is too long, the toolbar cuts it short with “…”. Hold the pointer over the button to see the whole name.
+
+When you click the button:
+
+- The script runs on this Mac, in the repository folder.
+- It runs in zsh. If the first line starts with `#!`, that line picks the program instead, such as `#!/usr/bin/env python3`. To run a script file you already have, type a command that runs it, such as `sh ~/bin/deploy.sh`.
+- It gets the same variables as Git on this Mac. See [Variables on this Mac](/guide/settings/general/#local-variables).
+- Nothing is shown if it succeeds. If it fails, Spooky shows its output and exit status.
+
+The script also gets these variables about the repository. A variable without a value isn’t set.
+
+| Variable | Value |
+|---|---|
+| `SPOOKY_REPOSITORY_PATH` | The repository folder. For a server repository, its path on the server. |
+| `SPOOKY_REPOSITORY_NAME` | The name of that folder |
+| `SPOOKY_SSH_HOST` | The host alias of a server repository |
+| `SPOOKY_BRANCH` | The current branch. Not set when HEAD is detached. |
+| `SPOOKY_HEAD` | The full hash of the commit HEAD points to |
+| `SPOOKY_UPSTREAM` | The upstream of the current branch, such as `origin/main` |
+| `SPOOKY_REMOTE` | The remote the upstream is on. `origin` when there’s no upstream on a remote. |
+| `SPOOKY_REMOTE_URL` | The fetch URL of that remote |
+
+:::note[Server repositories]
+The script runs on this Mac too, in your home folder. To run commands on the server, use ssh with the variables above. For example:
+
+```sh
+ssh "$SPOOKY_SSH_HOST" "cd '$SPOOKY_REPOSITORY_PATH' && make deploy"
+```
+:::
 
 ## Diff and merge tools {#diff-merge-tools}
 

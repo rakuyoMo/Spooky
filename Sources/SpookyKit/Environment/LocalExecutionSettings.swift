@@ -4,7 +4,7 @@ import Synchronization
 
 // MARK: - LocalExecutionSettings
 
-/// 在本机启动 Git 与 SSH 时使用的程序与环境：所选的 Git 程序、登录 shell 的变量、自定义变量与所选 SSH agent 的 socket。
+/// 在本机启动 Git、SSH 与工具栏按钮的脚本时使用的程序与环境：所选的 Git 程序、登录 shell 的变量、自定义变量与所选 SSH agent 的 socket。
 ///
 /// 只作用于本机：服务器仓库的 Git 在对方机器上执行，用那台机器自己的程序与环境。
 /// App 在启动和设置变化时写入 ``current``；变量的值可能含有令牌，不进日志、错误对象与 Activity。
@@ -33,9 +33,23 @@ public struct LocalExecutionSettings: Sendable, Equatable {
     /// 所选 SSH agent 的 socket；nil 时沿用 Spooky 进程继承的 `SSH_AUTH_SOCK`。
     public var sshAuthSocket: String?
 
-    /// 本机 ssh、sftp 与 ssh-add 的覆盖项：只有所选 SSH agent 的 socket，登录 shell 与自定义变量只交给 Git。
+    /// 本机 ssh、sftp 与 ssh-add 的覆盖项：只有所选 SSH agent 的 socket，登录 shell 与自定义变量只交给 Git 与工具栏按钮的脚本。
     var sshOverrides: [Environment.Key: String?] {
         Self.keyed(sshAuthSocket.map { ["SSH_AUTH_SOCK": $0] } ?? [:])
+    }
+
+    /// 本机 Git 与工具栏按钮的脚本在继承的环境之上设置的变量，后写的覆盖先写的：
+    /// 依次是登录 shell 的变量、自定义变量、所选 SSH agent 的 socket；名称不能交给子进程的变量不在其中。
+    public var variables: [String: String] {
+        var values = loginShellVariables.filter { Self.isValidName($0.key) }
+
+        values.merge(customVariables.filter { Self.isValidName($0.key) }) { $1 }
+
+        if let sshAuthSocket {
+            values["SSH_AUTH_SOCK"] = sshAuthSocket
+        }
+
+        return values
     }
 
     /// 创建一份设置，各项默认与 Spooky 没有任何设置时相同。
@@ -71,21 +85,13 @@ public struct LocalExecutionSettings: Sendable, Equatable {
         )
     }
 
-    /// 本机 git 子进程在继承的环境之上的覆盖项，后写的覆盖先写的。
-    ///
-    /// 依次是登录 shell 的变量、自定义变量、所选 SSH agent 的 socket；
+    /// 本机 git 子进程在继承的环境之上的覆盖项：``variables`` 之外，
     /// 所选程序所在的目录不在 `PATH` 里时补在最前，同目录下随它安装的 git-lfs 等程序才能被找到。
     /// 语言、终端提示与仓库定位相关的变量由 ``GitRunner`` 在这之后统一固定。
     ///
     /// - Parameter inheritedPath: 子进程继承到的 `PATH`，用于判断 Git 所在目录是否已在其中。
     func gitOverrides(inheritedPath: String?) -> [Environment.Key: String?] {
-        var values = loginShellVariables.filter { Self.isValidName($0.key) }
-
-        values.merge(customVariables.filter { Self.isValidName($0.key) }) { $1 }
-
-        if let sshAuthSocket {
-            values["SSH_AUTH_SOCK"] = sshAuthSocket
-        }
+        var values = variables
 
         // 只在缺少这个目录时改写 PATH；系统 Git 所在的 /usr/bin 总在 PATH 里，默认设置下 PATH 保持原样。
         let directory = URL(fileURLWithPath: gitExecutable).deletingLastPathComponent().path

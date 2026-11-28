@@ -9,7 +9,7 @@ Spooky にはアカウントがなく、利用状況のデータも収集しま�
 
 | 内容 | 場所 |
 |---|---|
-| 設定、リポジトリの一覧、ユーザプロファイル、ホスティングアカウントの一覧、サーバリポジトリのこの Mac 上の場所 | Spooky の設定、`com.rakuyo.spooky` |
+| 設定、リポジトリの一覧、ユーザプロファイル、ホスティングアカウントの一覧、サーバリポジトリのこの Mac 上の場所、ツールバーボタンとそのスクリプト | Spooky の設定、`com.rakuyo.spooky` |
 | テーマ。1 つにつき `.spookytheme` ファイルが 1 つ | `~/Library/Application Support/Spooky/Themes/` |
 | サーバリポジトリを最近使った書類に表示するための、小さな `.spookyrepo` フォルダ | `~/Library/Application Support/Spooky/Locations/` |
 | :ui[activity.title] にある、フェッチ、プル、プッシュなどのリモート操作の記録。7 日間保存されます | `~/Library/Application Support/Spooky/Activity/` |
